@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as TareasIndexRouteImport } from './routes/tareas.index'
+import { Route as TareasTaskIdRouteImport } from './routes/tareas.$taskId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -34,17 +35,24 @@ const TareasIndexRoute = TareasIndexRouteImport.update({
   path: '/tareas/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TareasTaskIdRoute = TareasTaskIdRouteImport.update({
+  id: '/tareas/$taskId',
+  path: '/tareas/$taskId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/clientes': typeof ClientesRoute
   '/perfil': typeof PerfilRoute
+  '/tareas/$taskId': typeof TareasTaskIdRoute
   '/tareas/': typeof TareasIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/clientes': typeof ClientesRoute
   '/perfil': typeof PerfilRoute
+  '/tareas/$taskId': typeof TareasTaskIdRoute
   '/tareas': typeof TareasIndexRoute
 }
 export interface FileRoutesById {
@@ -52,20 +60,23 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/clientes': typeof ClientesRoute
   '/perfil': typeof PerfilRoute
+  '/tareas/$taskId': typeof TareasTaskIdRoute
   '/tareas/': typeof TareasIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/clientes' | '/perfil' | '/tareas/'
+  fullPaths: '/' | '/clientes' | '/perfil' | '/tareas/$taskId' | '/tareas/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/clientes' | '/perfil' | '/tareas'
-  id: '__root__' | '/' | '/clientes' | '/perfil' | '/tareas/'
+  to: '/' | '/clientes' | '/perfil' | '/tareas/$taskId' | '/tareas'
+  id:
+    '__root__' | '/' | '/clientes' | '/perfil' | '/tareas/$taskId' | '/tareas/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ClientesRoute: typeof ClientesRoute
   PerfilRoute: typeof PerfilRoute
+  TareasTaskIdRoute: typeof TareasTaskIdRoute
   TareasIndexRoute: typeof TareasIndexRoute
 }
 
@@ -99,6 +110,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TareasIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tareas/$taskId': {
+      id: '/tareas/$taskId'
+      path: '/tareas/$taskId'
+      fullPath: '/tareas/$taskId'
+      preLoaderRoute: typeof TareasTaskIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -106,6 +124,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ClientesRoute: ClientesRoute,
   PerfilRoute: PerfilRoute,
+  TareasTaskIdRoute: TareasTaskIdRoute,
   TareasIndexRoute: TareasIndexRoute,
 }
 export const routeTree = rootRouteImport
