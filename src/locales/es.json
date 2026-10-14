@@ -159,7 +159,8 @@
       "no_already_submitted": "{{code}} ya está entregada. Esperá a que el dueño la apruebe o pida cambios.",
       "no_already_accepted": "{{code}} ya está aprobada y no se puede mover.",
       "no_start_first": "Primero empezá {{code}}: pasala a En curso antes de entregarla.",
-      "no_no_going_back": "{{code}} no puede volver a {{to}}."
+      "no_no_going_back": "{{code}} no puede volver a {{to}}.",
+      "t_unstarted": "{{code}} volvió a Por empezar"
     }
   },
   "taskDetail": {

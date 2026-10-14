@@ -49,6 +49,8 @@ function useTaskMutation<V, R>(fn: (vars: V) => Promise<R>) {
 }
 
 export const useStartTask = () => useTaskMutation((id: string) => api.tasks.start(id));
+/** Undo a start made by mistake: in_progress → pending. */
+export const useUnstartTask = () => useTaskMutation((id: string) => api.tasks.updateStatus(id, "pending"));
 export const useSubmitVersion = () =>
   useTaskMutation((v: { id: string } & SubmitVersionInput) => api.tasks.submitVersion(v.id, v));
 export const useAddComment = () =>
