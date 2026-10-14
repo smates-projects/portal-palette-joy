@@ -294,7 +294,7 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
       )}
 
       <Sheet open={!!selected} onOpenChange={(o) => !o && openTask(undefined)}>
-        <SheetContent className="w-full overflow-y-auto p-0 sm:max-w-xl [&>button]:hidden">
+        <SheetContent className="w-full overflow-y-auto bg-surface p-0 sm:max-w-xl [&>button]:hidden">
           <SheetTitle className="sr-only">{selected?.name}</SheetTitle>
           <SheetDescription className="sr-only">{selected?.code}</SheetDescription>
           {selected && (
