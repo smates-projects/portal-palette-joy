@@ -74,10 +74,10 @@ describe("SM rules", () => {
     expect(items.map((i) => i.reason)).toEqual(["overdue", "long_block"]);
     expect(buildSmSummary([dep, blocked], "2026-10-14")).toEqual({ due_today: 0, overdue: 1, stale: 0, blocked: 1 });
   });
-  it("matrix: grey when the area has no tasks, red when one is overdue", () => {
+  it("matrix: green when the area has no tasks, red when one is overdue", () => {
     const t = withComputed({ ...base, area: "B6", status: "in_progress", due_date: "2026-10-01", business_id: "x" }, [], "2026-10-14");
     const [row] = buildNetworkMatrix([t], [], [{ ...seed.businesses[0]!, id: "x" }], "2026-10-14");
     expect(row!.cells.find((c) => c.area === "B6")!.health).toBe("red");
-    expect(row!.cells.find((c) => c.area === "B1")!.health).toBe("grey");
+    expect(row!.cells.find((c) => c.area === "B1")!.health).toBe("green");
   });
 });

@@ -19,7 +19,7 @@ describe("owner inbox", () => {
 
 describe("area health", () => {
   const v = (task_id: string, submitted_at: string) => ({ task_id, submitted_at }) as TaskVersion;
-  it("grey with no tasks", () => expect(areaHealth([], [], "2026-10-14")).toBe("grey"));
+  it("green with no tasks (grey only when the area does not apply)", () => expect(areaHealth([], [], "2026-10-14")).toBe("green"));
   it("red if any overdue", () => expect(areaHealth([task("A", "in_progress", "2026-10-10", true)], [], "2026-10-14")).toBe("red"));
   it("amber if due within 7 days", () => expect(areaHealth([task("A", "in_progress", "2026-10-21")], [], "2026-10-14")).toBe("amber"));
   it("amber if a deliverable waits for the owner more than 7 days", () =>
