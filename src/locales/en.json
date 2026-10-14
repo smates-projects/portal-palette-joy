@@ -248,5 +248,35 @@
     "t_meeting": "Meeting proposed. Waiting for {{name}} to confirm.",
     "t_error": "The action couldn't be completed. Please try again.",
     "undo": "Undo"
+  },
+  "home": {
+    "heading": "What do I need to move today?",
+    "cards": {
+      "overdue": "Overdue",
+      "today": "Due today",
+      "week": "Due this week",
+      "changes": "Changes requested",
+      "waiting": "Awaiting owner approval",
+      "none": "Nothing for now",
+      "in_business": "{{count}} at {{name}}"
+    },
+    "today_title": "For today",
+    "overdue_by_one": "Overdue by {{count}} day",
+    "overdue_by_other": "Overdue by {{count}} days",
+    "due_today": "Due today",
+    "due_tomorrow": "Due tomorrow",
+    "due_in_one": "Due in {{count}} day",
+    "due_in_other": "Due in {{count}} days",
+    "blocked": "Blocked",
+    "empty_title": "Nothing is due today.",
+    "empty_next": "Next up: {{code}} at {{name}}, {{when}}.",
+    "empty_none": "You have no open tasks. When SM assigns a new one, it will show up here.",
+    "when_weekday": "on {{day}}",
+    "when_date": "on {{date}}",
+    "meetings_title": "Upcoming meetings",
+    "meetings_empty": "No meetings scheduled. You can propose one from any task's detail.",
+    "meetings_error": "We couldn't load meetings.",
+    "meeting_proposed": "Proposed",
+    "meeting_confirmed": "Confirmed"
   }
 }
