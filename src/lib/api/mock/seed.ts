@@ -5,6 +5,7 @@ import type {
   OwnerRequest,
   Task,
   TaskComment,
+  TaskEvent,
   TaskStatus,
   TaskStep,
   TaskVersion,
@@ -152,23 +153,114 @@ export const tasks: Task[] = businesses.flatMap((b) =>
   }),
 );
 
+// ---------- Activity ----------
+const addDays = (iso: string, n: number) => {
+  const d = new Date(`${iso}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+};
+const minDate = (a: string, b: string) => (a < b ? a : b);
+const span = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000);
+const at = (date: string, time = "15:00:00") => `${date}T${time}Z`;
+const SEED_TODAY = "2026-10-14";
+const ownerOf = (bizId: string) => businesses.find((b) => b.id === bizId)!.owner_user_id;
+const slug = (bizId: string) => businesses.find((b) => b.id === bizId)!.name.replace(/\s+/g, "_");
+
+export const TASK_B603_VOSSLER = taskId(BIZ_VOSSLER, "B6-03");
+const TASK_B502_VOSSLER = taskId(BIZ_VOSSLER, "B5-02");
+const TASK_B601_PRIME = taskId(BIZ_PRIME, "B6-01");
+
+let n = 0;
+const next = (prefix: string) => uuid(prefix, ++n);
+
+export const versions: TaskVersion[] = [];
+export const comments: TaskComment[] = [];
+export const events: TaskEvent[] = [];
+export const ownerRequests: OwnerRequest[] = [];
+export const meetings: Meeting[] = [];
+
+const changesText: Record<string, string> = {
+  [TASK_B502_VOSSLER]:
+    "Tomás, el perfil quedó bien pero pusiste Kissimmee como zona de servicio y no trabajamos ahí. Sacala y agregá Winter Park, que es donde más obras tenemos.",
+  [TASK_B601_PRIME]:
+    "Lucía, en el inventario faltan los seguros de las camionetas y la licencia de contratista del condado de Hillsborough. Te los mando hoy por mail, ¿los sumás?",
+};
+
+// Generic history for every task except the main example.
+for (const t of tasks) {
+  if (t.id === TASK_B602_VOSSLER) continue;
+  const owner = ownerOf(t.business_id);
+  events.push({ id: next("1c000000"), task_id: t.id, kind: "assigned", actor_user_id: U_NICOLAS, version: null, comment_id: null, created_at: at(t.start_date, "13:00:00") });
+  if (t.status === "pending") continue;
+  events.push({ id: next("1c000000"), task_id: t.id, kind: "started", actor_user_id: t.assignee_user_id, version: null, comment_id: null, created_at: at(addDays(t.start_date, 1), "14:30:00") });
+  if (t.current_version < 1) continue;
+  const end = minDate(t.due_date, SEED_TODAY);
+  let sub = addDays(t.start_date, Math.max(2, Math.floor(span(t.start_date, end) * 0.6)));
+  sub = minDate(sub, addDays(SEED_TODAY, -3));
+  const review = minDate(addDays(sub, 2), addDays(SEED_TODAY, -1));
+  let reviewComment: string | null = null;
+  if (t.status === "changes_requested") {
+    reviewComment = next("0f000000");
+    comments.push({ id: reviewComment, task_id: t.id, author_user_id: owner, body: changesText[t.id] ?? "", created_at: at(review, "12:10:00"), kind: "changes_requested", file_id: null });
+  }
+  versions.push({
+    id: next("0e000000"), task_id: t.id, version: 1, submitted_by_user_id: t.assignee_user_id, submitted_at: at(sub, "18:00:00"),
+    note: "Primera versión para revisar.", files: [{ id: next("1d000000"), name: `${t.code}_${slug(t.business_id)}_v1.pdf`, size_kb: 640 }],
+    status: t.status === "accepted" ? "accepted" : t.status === "changes_requested" ? "changes_requested" : "submitted",
+    review_comment_id: reviewComment,
+  });
+  events.push({ id: next("1c000000"), task_id: t.id, kind: "submitted", actor_user_id: t.assignee_user_id, version: 1, comment_id: null, created_at: at(sub, "18:00:00") });
+  if (t.status === "accepted")
+    events.push({ id: next("1c000000"), task_id: t.id, kind: "approved", actor_user_id: owner, version: 1, comment_id: null, created_at: at(review, "11:20:00") });
+  if (t.status === "changes_requested")
+    events.push({ id: next("1c000000"), task_id: t.id, kind: "changes_requested", actor_user_id: owner, version: 1, comment_id: reviewComment, created_at: at(review, "12:10:00") });
+}
+
 // Main example: B6-02 at Vossler.
-export const versions: TaskVersion[] = [
-  { id: uuid("0e000000", 1), task_id: TASK_B602_VOSSLER, version: 1, submitted_by_user_id: U_LUCIA, submitted_at: "2026-09-29T16:20:00Z", note: "Te dejo el memo con las dos opciones (LLC con elección S-Corp vs. Corporation). Mi recomendación está en la página 4.", file_name: "Vossler_memo_estructura_v1.pdf" },
-  { id: uuid("0e000000", 2), task_id: TASK_B602_VOSSLER, version: 2, submitted_by_user_id: U_LUCIA, submitted_at: "2026-10-12T19:05:00Z", note: "Versión 2 con el acta constitutiva incorporada y el análisis actualizado. Cambié la sección 3 según lo que hablamos.", file_name: "Vossler_memo_estructura_v2.pdf" },
-];
-
-export const comments: TaskComment[] = [
-  { id: uuid("0f000000", 1), task_id: TASK_B602_VOSSLER, author_user_id: U_CARLA, kind: "changes_requested", created_at: "2026-10-01T13:42:00Z", body: "Lucía, gracias. Lo leí con mi contador y nos gusta la opción LLC, pero falta el acta constitutiva. Sin eso no puedo firmar nada. ¿La podés sumar?" },
-  { id: uuid("0f000000", 2), task_id: TASK_B602_VOSSLER, author_user_id: U_LUCIA, kind: "comment", created_at: "2026-10-01T15:10:00Z", body: "Tenés razón, Carla. No la tengo en el data room. Te dejo un pedido para que me la subas y la incorporo esta semana." },
-  { id: uuid("0f000000", 3), task_id: TASK_B602_VOSSLER, author_user_id: U_NICOLAS, kind: "comment", created_at: "2026-10-02T12:00:00Z", body: "Ojo que la fecha de entrega es el 9. Si el acta llega tarde, avisen así lo reprogramamos." },
-  { id: uuid("0f000000", 4), task_id: TASK_B602_VOSSLER, author_user_id: U_LUCIA, kind: "comment", created_at: "2026-10-12T19:06:00Z", body: "Listo, subí la v2. Propuse una llamada corta para repasar la sección 3 antes de que la apruebes." },
-];
-
-export const ownerRequests: OwnerRequest[] = [
-  { id: uuid("1a000000", 1), task_id: TASK_B602_VOSSLER, requested_by_user_id: U_LUCIA, question: "Necesito copia del acta constitutiva (Articles of Organization) de Vossler, con la última enmienda si la hay.", answer: "Ahí la subí. La enmienda de 2023 está en la última página del mismo PDF.", status: "resolved", created_at: "2026-10-01T15:12:00Z", resolved_at: "2026-10-07T21:30:00Z" },
-];
-
-export const meetings: Meeting[] = [
-  { id: uuid("1b000000", 1), task_id: TASK_B602_VOSSLER, proposed_by_user_id: U_LUCIA, topic: "Repaso de la sección 3 del memo (elección S-Corp)", starts_at: "2026-10-16T15:00:00Z", duration_minutes: 30, status: "proposed" },
-];
+const T = TASK_B602_VOSSLER;
+const C_CHANGES = uuid("0f000000", 901);
+const F_MEMO_V2 = uuid("1d000000", 902);
+versions.push(
+  {
+    id: uuid("0e000000", 901), task_id: T, version: 1, submitted_by_user_id: U_LUCIA, submitted_at: "2026-09-29T16:20:00Z",
+    note: "Te dejo el memo con las dos opciones (LLC con elección S-Corp vs. Corporation). Mi recomendación está en la página 4.",
+    files: [
+      { id: uuid("1d000000", 900), name: "Vossler_memo_estructura_v1.pdf", size_kb: 812 },
+      { id: uuid("1d000000", 901), name: "Comparativo_LLC_vs_Corp.xlsx", size_kb: 96 },
+    ],
+    status: "changes_requested", review_comment_id: C_CHANGES,
+  },
+  {
+    id: uuid("0e000000", 902), task_id: T, version: 2, submitted_by_user_id: U_LUCIA, submitted_at: "2026-10-12T19:05:00Z",
+    note: "Versión 2 con el acta constitutiva incorporada y el análisis actualizado. Cambié la sección 3 según lo que hablamos.",
+    files: [
+      { id: F_MEMO_V2, name: "Vossler_memo_estructura_v2.pdf", size_kb: 1024 },
+      { id: uuid("1d000000", 903), name: "Acta_constitutiva_Vossler.pdf", size_kb: 2310 },
+    ],
+    status: "submitted", review_comment_id: null,
+  },
+);
+comments.push(
+  { id: C_CHANGES, task_id: T, author_user_id: U_CARLA, kind: "changes_requested", file_id: null, created_at: "2026-10-01T13:42:00Z", body: "Lucía, gracias. Lo leí con mi contador y nos gusta la opción LLC, pero falta el acta constitutiva. Sin eso no puedo firmar nada. ¿La podés sumar?" },
+  { id: uuid("0f000000", 902), task_id: T, author_user_id: U_LUCIA, kind: "comment", file_id: null, created_at: "2026-10-01T15:10:00Z", body: "Tenés razón, Carla. No la tengo en el data room. Te dejo un pedido para que me la subas y la incorporo esta semana." },
+  { id: uuid("0f000000", 903), task_id: T, author_user_id: U_NICOLAS, kind: "comment", file_id: null, created_at: "2026-10-02T12:00:00Z", body: "Ojo que la fecha de entrega es el 9. Si el acta llega tarde, avisen así lo reprogramamos. @Marylin Boraei para que lo tengas en el radar." },
+  { id: uuid("0f000000", 904), task_id: T, author_user_id: U_LUCIA, kind: "comment", file_id: null, created_at: "2026-10-12T19:06:00Z", body: "Listo, subí la v2. Propuse una llamada corta para repasar la sección 3 antes de que la apruebes, @Carla Méndez." },
+  { id: uuid("0f000000", 905), task_id: T, author_user_id: U_NICOLAS, kind: "comment", file_id: F_MEMO_V2, created_at: "2026-10-13T10:15:00Z", body: "@Lucía Pérez en la página 6 citás la sección 1362, pero creo que es la 1361. ¿Lo revisás?" },
+  { id: uuid("0f000000", 906), task_id: T, author_user_id: U_LUCIA, kind: "comment", file_id: F_MEMO_V2, created_at: "2026-10-13T11:02:00Z", body: "Bien visto, @Nicolás García. Es la 1361; lo corrijo si Carla pide otra vuelta o en la versión final." },
+);
+events.push(
+  { id: uuid("1c000000", 901), task_id: T, kind: "assigned", actor_user_id: U_NICOLAS, version: null, comment_id: null, created_at: "2026-09-07T13:00:00Z" },
+  { id: uuid("1c000000", 902), task_id: T, kind: "started", actor_user_id: U_LUCIA, version: null, comment_id: null, created_at: "2026-09-08T14:30:00Z" },
+  { id: uuid("1c000000", 903), task_id: T, kind: "submitted", actor_user_id: U_LUCIA, version: 1, comment_id: null, created_at: "2026-09-29T16:20:00Z" },
+  { id: uuid("1c000000", 904), task_id: T, kind: "changes_requested", actor_user_id: U_CARLA, version: 1, comment_id: C_CHANGES, created_at: "2026-10-01T13:42:00Z" },
+  { id: uuid("1c000000", 905), task_id: T, kind: "submitted", actor_user_id: U_LUCIA, version: 2, comment_id: null, created_at: "2026-10-12T19:05:00Z" },
+);
+ownerRequests.push(
+  { id: uuid("1a000000", 901), task_id: T, requested_by_user_id: U_LUCIA, question: "Necesito copia del acta constitutiva (Articles of Organization) de Vossler, con la última enmienda si la hay.", due_date: "2026-10-06", answer: "Ahí la subí. La enmienda de 2023 está en la última página del mismo PDF.", status: "resolved", created_at: "2026-10-01T15:12:00Z", resolved_at: "2026-10-07T21:30:00Z" },
+  { id: uuid("1a000000", 902), task_id: TASK_B603_VOSSLER, requested_by_user_id: U_LUCIA, question: "Copia de la licencia de contratista estatal (CGC) vigente.", due_date: "2026-10-16", answer: null, status: "open", created_at: "2026-10-06T14:00:00Z", resolved_at: null },
+  { id: uuid("1a000000", 903), task_id: TASK_B603_VOSSLER, requested_by_user_id: U_LUCIA, question: "Lista de condados donde querés operar en los próximos dos años.", due_date: "2026-10-17", answer: null, status: "open", created_at: "2026-10-06T14:02:00Z", resolved_at: null },
+);
+meetings.push(
+  { id: uuid("1b000000", 901), task_id: T, proposed_by_user_id: U_LUCIA, topic: "Arranque: opciones de estructura societaria", starts_at: "2026-09-10T15:00:00Z", duration_minutes: 45, status: "confirmed" },
+  { id: uuid("1b000000", 902), task_id: T, proposed_by_user_id: U_LUCIA, topic: "Repaso de la sección 3 del memo (elección S-Corp)", starts_at: "2026-10-16T15:00:00Z", duration_minutes: 30, status: "proposed" },
+);
