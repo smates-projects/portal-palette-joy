@@ -37,8 +37,8 @@ export function TaskBoard(props: {
   const [dragId, setDragId] = useState<string | null>(null);
   const [over, setOver] = useState<VisibleTaskStatus | null>(null);
 
-  const drop = (to: VisibleTaskStatus) => {
-    const task = props.rows.find((r) => r.id === dragId);
+  const drop = (to: VisibleTaskStatus, id: string | null = dragId) => {
+    const task = props.rows.find((r) => r.id === id);
     setDragId(null);
     setOver(null);
     if (!task || !me.data) return;
@@ -127,7 +127,17 @@ export function TaskBoard(props: {
                     setOver(null);
                   }}
                   onClick={() => props.onOpen(task.id)}
-                  onKeyDown={(e) => e.key === "Enter" && props.onOpen(task.id)}
+                  aria-keyshortcuts="Shift+ArrowLeft Shift+ArrowRight"
+                  aria-description={t("tasks.board.keyboard_hint")}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); props.onOpen(task.id); return; }
+                    // Keyboard alternative to dragging: Shift + arrow moves to the next/previous column.
+                    if (e.shiftKey && (e.key === "ArrowRight" || e.key === "ArrowLeft")) {
+                      e.preventDefault();
+                      const to = BOARD_COLUMNS[BOARD_COLUMNS.indexOf(col) + (e.key === "ArrowRight" ? 1 : -1)];
+                      if (to) drop(to, task.id);
+                    }
+                  }}
                   tabIndex={0}
                   className={cn(
                     "cursor-grab rounded-[4px] border border-border bg-surface px-3 py-2.5 outline-none transition-[border-color,opacity] hover:border-ring focus-visible:border-ring active:cursor-grabbing",

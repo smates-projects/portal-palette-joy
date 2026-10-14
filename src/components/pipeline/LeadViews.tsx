@@ -20,7 +20,7 @@ function DaysInStage({ lead }: { lead: LeadWithComputed }) {
   return <span className={cn("tabular-nums", stale ? "font-medium text-status-danger-fg" : "text-muted-foreground")}>{t("pipeline.days", { count: d })}</span>;
 }
 
-function LeadCard({ lead, selected, consultantName, onOpen, onDragStart }: { lead: LeadWithComputed; selected: boolean; consultantName: string; onOpen: () => void; onDragStart: () => void }) {
+function LeadCard({ lead, selected, consultantName, onOpen, onDragStart, onKeyMove }: { lead: LeadWithComputed; selected: boolean; consultantName: string; onOpen: () => void; onDragStart: () => void; onKeyMove: (dir: 1 | -1) => void }) {
   const { t } = useTranslation();
   const draggable = lead.stage !== "in_program";
   return (
@@ -29,6 +29,12 @@ function LeadCard({ lead, selected, consultantName, onOpen, onDragStart }: { lea
       draggable={draggable}
       onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; onDragStart(); }}
       onClick={onOpen}
+      aria-keyshortcuts="Shift+ArrowLeft Shift+ArrowRight"
+      aria-description={t("pipeline.keyboard_hint")}
+      onKeyDown={(e) => {
+        // Keyboard alternative to dragging.
+        if (e.shiftKey && (e.key === "ArrowRight" || e.key === "ArrowLeft")) { e.preventDefault(); onKeyMove(e.key === "ArrowRight" ? 1 : -1); }
+      }}
       className={cn(
         "block w-full rounded-md border bg-surface p-3 text-left text-sm transition-colors hover:border-ring",
         selected ? "border-ring ring-2 ring-ring/20" : "border-border",
@@ -67,6 +73,11 @@ export function LeadBoard(props: ViewProps & { onDrop: (lead: LeadWithComputed, 
     onDragLeave: () => setOver((o) => (o === stage ? null : o)),
     onDrop: (e: React.DragEvent) => { e.preventDefault(); drop(stage); },
   });
+  const keyMove = (lead: LeadWithComputed, dir: 1 | -1) => {
+    const order: LeadStage[] = [...LEAD_STAGES, "discarded"];
+    const to = order[order.indexOf(lead.stage) + dir];
+    if (to) props.onDrop(lead, to);
+  };
   const discarded = props.leads.filter((l) => l.stage === "discarded").sort(byTimeInStage);
 
   return (
@@ -85,7 +96,7 @@ export function LeadBoard(props: ViewProps & { onDrop: (lead: LeadWithComputed, 
                 <p className="px-1 py-6 text-center text-xs text-muted-foreground">{t("pipeline.column_empty")}</p>
               ) : (
                 items.map((l) => (
-                  <LeadCard key={l.id} lead={l} selected={props.selectedId === l.id} consultantName={props.consultantName(l.consultant_user_id)} onOpen={() => props.onOpen(l.id)} onDragStart={() => setDragId(l.id)} />
+                  <LeadCard key={l.id} lead={l} selected={props.selectedId === l.id} consultantName={props.consultantName(l.consultant_user_id)} onOpen={() => props.onOpen(l.id)} onDragStart={() => setDragId(l.id)} onKeyMove={(d) => keyMove(l, d)} />
                 ))
               )}
             </div>
@@ -105,7 +116,7 @@ export function LeadBoard(props: ViewProps & { onDrop: (lead: LeadWithComputed, 
               <p className="px-1 py-6 text-center text-xs text-muted-foreground">{t("pipeline.column_empty")}</p>
             ) : (
               discarded.map((l) => (
-                <LeadCard key={l.id} lead={l} selected={props.selectedId === l.id} consultantName={props.consultantName(l.consultant_user_id)} onOpen={() => props.onOpen(l.id)} onDragStart={() => setDragId(l.id)} />
+                <LeadCard key={l.id} lead={l} selected={props.selectedId === l.id} consultantName={props.consultantName(l.consultant_user_id)} onOpen={() => props.onOpen(l.id)} onDragStart={() => setDragId(l.id)} onKeyMove={(d) => keyMove(l, d)} />
               ))
             )}
           </div>
@@ -134,7 +145,7 @@ export function LeadTable(props: ViewProps) {
   });
   return (
     <div className="overflow-x-auto rounded-md border border-border bg-surface">
-      <table className="w-full text-sm">
+      <table className="w-full min-w-[880px] text-sm">
         <thead className="border-b border-border bg-muted text-xs text-muted-foreground">
           <tr>
             {["business", "city", "industry", "revenue", "score", "stage", "consultant", "days_in_stage"].map((k) => (
@@ -144,7 +155,7 @@ export function LeadTable(props: ViewProps) {
         </thead>
         <tbody className="divide-y divide-border">
           {rows.map((l) => (
-            <tr key={l.id} onClick={() => props.onOpen(l.id)} className={cn("cursor-pointer hover:bg-accent/40", props.selectedId === l.id && "bg-accent/60")}>
+            <tr key={l.id} tabIndex={0} onClick={() => props.onOpen(l.id)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); props.onOpen(l.id); } }} className={cn("cursor-pointer outline-none hover:bg-accent/40 focus-visible:bg-accent", props.selectedId === l.id && "bg-accent/60")}>
               <td className="px-3 py-2.5">
                 <span className="block font-medium">{l.business.name}</span>
                 <span className="block text-xs text-muted-foreground">{l.contact.name}</span>

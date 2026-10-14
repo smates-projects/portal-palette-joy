@@ -204,7 +204,7 @@ export function NetworkPage({ businessId }: { businessId?: string | undefined } 
               </thead>
               <tbody className="divide-y divide-border">
                 {load.map((f) => (
-                  <tr key={f.firm.id} className="cursor-pointer hover:bg-muted/60" onClick={() => go({ firm: f.firm.id })}>
+                  <tr key={f.firm.id} tabIndex={0} className="cursor-pointer outline-none hover:bg-muted/60 focus-visible:bg-accent" onClick={() => go({ firm: f.firm.id })} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go({ firm: f.firm.id }); } }}>
                     <td className="px-4 py-2.5">
                       <span className="block font-medium">{f.firm.name}</span>
                       <span className="block text-xs text-muted-foreground">{t(`firmWhat.${f.firm.area ?? "B1"}`)}</span>

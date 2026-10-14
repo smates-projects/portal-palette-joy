@@ -219,7 +219,8 @@
       "no_start_first": "Start {{code}} first: move it to In progress before delivering it.",
       "no_no_going_back": "{{code}} can't go back to {{to}}.",
       "t_unstarted": "{{code}} moved back to Not started",
-      "no_firm_only": "Moving {{code}} to {{to}} is the firm's job. You approve or request changes when they deliver."
+      "no_firm_only": "Moving {{code}} to {{to}} is the firm's job. You approve or request changes when they deliver.",
+      "keyboard_hint": "Shift + arrow moves the card to the next column."
     },
     "roadmap": {
       "zoom": "Zoom",
@@ -256,7 +257,8 @@
       "meeting_proposed": "Proposed, not confirmed yet",
       "meeting_confirmed": "Confirmed",
       "google_readonly": "From your Google Calendar, can't be edited here"
-    }
+    },
+    "roadmap_desktop_hint": "The Roadmap works best on a larger screen. Use Table or Board on your phone."
   },
   "taskDetail": {
     "open_full_page": "Open as full page",
@@ -468,7 +470,7 @@
     "blocked_title": "What is blocked",
     "blocked_none": "You have no blocked tasks.",
     "blocked_by": "Blocked by {{codes}}",
-    "avg_days": "Days from delivery to approval",
+    "avg_days": "Days from deliverable to approval",
     "avg_days_hint": "Average on approved tasks",
     "avg_rounds": "Change rounds",
     "avg_rounds_hint": "Average per approved task",
@@ -483,7 +485,7 @@
     "tab_all": "All",
     "mark_all": "Mark all as read",
     "empty_unread": "No unread notifications. When something changes in your tasks, you'll see it here.",
-    "empty_all": "No notifications yet. Due dates, change requests and meetings will show here.",
+    "empty_all": "No notifications yet. Due dates, requested changes and meetings will show here.",
     "error": "We couldn't load notifications.",
     "retry": "Load again",
     "prefs_title": "Notifications",
@@ -718,7 +720,7 @@
     "load_late": "Avg. delay",
     "load_approval": "Avg. approval",
     "load_empty": "No firm has tasks yet.",
-    "load_hint": "Delay: average days of overdue tasks. Approval: days from delivery until the owner approves.",
+    "load_hint": "Delay: average days of overdue tasks. Approval: days from deliverable until the owner approves.",
     "days_short": "{{value}} d"
   },
   "pipeline": {
@@ -856,10 +858,10 @@
       "hispanic": "Hispanic owner",
       "result_title": "What the owner saw in their result",
       "headline": {
-        "high": "Your business is ready to start franchising",
-        "mid": "Your business has a good base to franchise",
-        "low": "Your business can franchise, with work in several areas",
-        "track": "You are on your way"
+        "high": "You are ready for Método 180.",
+        "mid": "You meet the Método 180 requirements and have a base to work on.",
+        "low": "You meet the Método 180 requirements and there is quite a bit to organize, which is exactly what the program works on.",
+        "track": "You are on your way."
       },
       "not_eligible": "Not eligible for the program yet",
       "gaps": {
@@ -887,19 +889,19 @@
       "booking_from_office": "The office link will open because {{name}} has not added one yet."
     },
     "blocks": {
-      "model": "Business model",
-      "operations": "Operations",
-      "finance": "Finance",
-      "technology": "Technology",
-      "marketing": "Marketing and sales",
-      "legal": "Legal",
-      "team": "Team"
+      "time_team": "Your time and your team",
+      "work_quality": "Your work and its quality",
+      "money": "Your business money",
+      "clients_sales": "Your clients and your sales",
+      "info_agreements": "Your information and your agreements",
+      "experience": "Your experience",
+      "vision": "The business you want to build"
     },
     "block_status": {
-      "strong": "Strong",
-      "medium": "Medium",
-      "weak": "Weak",
-      "unknown": "I don't know"
+      "strong": "Solid",
+      "medium": "Developing",
+      "weak": "To build",
+      "unknown": "To discover"
     },
     "events": {
       "submitted": "Completed the assessment",
@@ -912,6 +914,7 @@
     "error_title": "We could not load the pipeline.",
     "retry": "Retry",
     "network_filtered": "Showing only {{name}}",
-    "network_all": "View the whole network"
+    "network_all": "View the whole network",
+    "keyboard_hint": "Shift + arrow moves the lead to the next stage."
   }
 }

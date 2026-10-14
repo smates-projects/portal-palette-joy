@@ -33,7 +33,7 @@
     "role_owner": "Dueño del negocio",
     "role_sm": "Equipo SM",
     "switched": "Ahora ves la plataforma como {{name}}",
-    "switch_error": "No pudimos cambiar de usuario. Probá de nuevo.",
+    "switch_error": "No pudimos cambiar de usuario. Prueba de nuevo.",
     "account": "Mi cuenta"
   },
   "roles": {
@@ -132,12 +132,12 @@
   },
   "notFound": {
     "title": "Esta página no existe",
-    "body": "Volvé al inicio para seguir con tus tareas.",
+    "body": "Vuelve al inicio para seguir con tus tareas.",
     "cta": "Ir al inicio"
   },
   "error": {
     "title": "Esta página no cargó",
-    "body": "Algo falló de nuestro lado. Probá de nuevo o volvé al inicio.",
+    "body": "Algo falló de nuestro lado. Prueba de nuevo o vuelve al inicio.",
     "retry": "Probar de nuevo",
     "home": "Ir al inicio"
   },
@@ -164,13 +164,13 @@
       "calendar": "Calendario"
     },
     "coming_soon_title": "La vista {{view}} llega pronto",
-    "coming_soon_body": "Mientras tanto, usá la vista Tabla para ver y ordenar tus tareas.",
+    "coming_soon_body": "Mientras tanto, usa la vista Tabla para ver y ordenar tus tareas.",
     "back_to_table": "Volver a la tabla",
     "filters": {
       "business": "Negocio",
       "area": "Área",
       "status": "Estado",
-      "due": "Vencimiento",
+      "due": "Fecha límite",
       "all_businesses": "Todos los negocios",
       "all_areas": "Todas las áreas",
       "all_statuses": "Todos los estados",
@@ -196,12 +196,12 @@
     "blocked_by": "Bloqueada por {{codes}}",
     "overdue_days_one": "Vencida hace {{count}} día",
     "overdue_days_other": "Vencida hace {{count}} días",
-    "empty_title": "Todavía no tenés tareas asignadas",
-    "empty_body": "Cuando el equipo SM te asigne tareas del Método 180, van a aparecer acá con su fecha de vencimiento.",
+    "empty_title": "Todavía no tienes tareas asignadas",
+    "empty_body": "Cuando el equipo SM te asigne tareas del Método 180, aparecerán aquí con su fecha límite.",
     "no_results_title": "Ninguna tarea coincide con estos filtros",
-    "no_results_body": "Probá quitar algún filtro o cambiar la búsqueda.",
+    "no_results_body": "Prueba quitar algún filtro o cambiar la búsqueda.",
     "error_title": "No pudimos cargar tus tareas",
-    "error_body": "Revisá tu conexión y probá de nuevo.",
+    "error_body": "Revisa tu conexión y prueba de nuevo.",
     "retry": "Cargar tareas de nuevo",
     "panel_soon": "El detalle completo de la tarea llega en el próximo paso.",
     "close_panel": "Cerrar panel",
@@ -211,15 +211,16 @@
       "col_submitted": "Entregada",
       "col_changes_requested": "Cambios pedidos",
       "col_accepted": "Aprobada",
-      "empty_column": "Sin tareas acá",
+      "empty_column": "Sin tareas aquí",
       "no_blocked": "{{code}} no puede empezar: está bloqueada por {{by}}.",
       "no_owner_only": "Solo el dueño puede pasar {{code}} a {{to}}. Vos enviás la entrega; él aprueba o pide cambios.",
-      "no_already_submitted": "{{code}} ya está entregada. Esperá a que el dueño la apruebe o pida cambios.",
+      "no_already_submitted": "{{code}} ya está entregada. Espera a que el dueño la apruebe o pida cambios.",
       "no_already_accepted": "{{code}} ya está aprobada y no se puede mover.",
-      "no_start_first": "Primero empezá {{code}}: pasala a En curso antes de entregarla.",
+      "no_start_first": "Primero empieza {{code}}: pásala a En curso antes de entregarla.",
       "no_no_going_back": "{{code}} no puede volver a {{to}}.",
       "t_unstarted": "{{code}} volvió a Por empezar",
-      "no_firm_only": "Mover {{code}} a {{to}} le toca a la firma. Tú apruebas o pides cambios cuando te entregan."
+      "no_firm_only": "Mover {{code}} a {{to}} le toca a la firma. Tú apruebas o pides cambios cuando te entregan.",
+      "keyboard_hint": "Shift + flecha mueve la tarjeta a la columna de al lado."
     },
     "roadmap": {
       "zoom": "Zoom",
@@ -249,14 +250,15 @@
       "next": "Siguiente",
       "due": "Vence",
       "more": "+{{count}} más",
-      "legend_due": "Vencimiento",
+      "legend_due": "Fecha límite",
       "legend_proposed": "Reunión propuesta",
       "legend_confirmed": "Reunión confirmada",
       "legend_google": "Google Calendar (no editable)",
       "meeting_proposed": "Propuesta, falta confirmar",
       "meeting_confirmed": "Confirmada",
       "google_readonly": "De tu Google Calendar, no se puede editar aquí"
-    }
+    },
+    "roadmap_desktop_hint": "El Roadmap se ve mejor en una pantalla más grande. Usa Tabla o Tablero desde el celular."
   },
   "taskDetail": {
     "open_full_page": "Abrir como página completa",
@@ -264,7 +266,7 @@
     "close": "Cerrar",
     "back_to_tasks": "Volver a Mis tareas",
     "not_found_title": "No encontramos esta tarea",
-    "not_found_body": "Puede que no esté asignada a tu firma. Volvé a Mis tareas para ver las tuyas.",
+    "not_found_body": "Puede que no esté asignada a tu firma. Vuelve a Mis tareas para ver las tuyas.",
     "load_error": "No pudimos cargar la tarea.",
     "retry": "Cargar la tarea de nuevo",
     "due": "Vence {{date}}",
@@ -293,7 +295,7 @@
     "what_intro": "Esta tarea del Método 180 pertenece a {{area}}, en el paso {{step}}.",
     "criteria_title": "Esto es lo que el dueño va a revisar",
     "s_deliverables": "Entregas",
-    "no_versions": "Todavía no enviaste ninguna entrega. Cuando la envíes, {{name}} la va a revisar acá.",
+    "no_versions": "Todavía no enviaste ninguna entrega. Cuando la envíes, {{name}} la revisará aquí.",
     "v_submitted": "Enviada",
     "v_changes": "Cambios pedidos por {{name}}",
     "v_accepted": "Aprobada",
@@ -301,7 +303,7 @@
     "file_comments_other": "{{count}} comentarios",
     "comment_file": "Comentar este archivo",
     "s_requests": "Pedidos al dueño",
-    "requests_empty": "No le pediste nada al dueño. Si necesitás un documento o una respuesta, pedíselo acá.",
+    "requests_empty": "No le pediste nada al dueño. Si necesitas un documento o una respuesta, pídeselo aquí.",
     "request_due": "Para el {{date}}",
     "mark_resolved": "Marcar como resuelto",
     "resolved_on": "Resuelto el {{date}}",
@@ -309,7 +311,7 @@
     "ask_owner": "Pedir algo al dueño",
     "owner_answer": "Respuesta de {{name}}",
     "s_meetings": "Reuniones",
-    "meetings_empty": "No hay reuniones. Si necesitás hablar con {{name}}, proponé una.",
+    "meetings_empty": "No hay reuniones. Si necesitas hablar con {{name}}, propón una.",
     "propose_meeting": "Proponer reunión",
     "m_proposed": "Propuesta",
     "m_proposed_hint": "Esperando que {{name}} confirme",
@@ -323,7 +325,7 @@
     "e_submitted": "{{name}} entregó la v{{version}}",
     "e_changes": "{{name}} pidió cambios en la v{{version}}",
     "e_approved": "{{name}} aprobó la v{{version}}",
-    "comment_placeholder": "Escribí un comentario. Usá @ para mencionar a alguien.",
+    "comment_placeholder": "Escribe un comentario. Usa @ para mencionar a alguien.",
     "send_comment": "Comentar",
     "mention_people": "Mencionar a",
     "d_submit_title": "Enviar entrega",
@@ -332,13 +334,13 @@
     "d_files": "Archivos",
     "d_attach": "Adjuntar archivo",
     "d_remove_file": "Quitar archivo",
-    "d_files_hint": "Adjuntá al menos un archivo.",
+    "d_files_hint": "Adjunta al menos un archivo.",
     "d_note": "Nota para {{name}}",
-    "d_note_placeholder": "Contá qué incluye esta versión y qué cambió.",
+    "d_note_placeholder": "Cuenta qué incluye esta versión y qué cambió.",
     "d_cancel": "Cancelar",
     "d_send": "Enviar entrega",
     "d_request_title": "Pedir algo al dueño",
-    "d_request_question": "Qué necesitás",
+    "d_request_question": "Qué necesitas",
     "d_request_placeholder": "Ej: copia de la licencia de contratista vigente.",
     "d_request_due": "Para cuándo",
     "d_request_send": "Enviar pedido",
@@ -356,7 +358,7 @@
     "t_resolved": "Pedido marcado como resuelto",
     "t_reopened": "Pedido abierto de nuevo",
     "t_meeting": "Reunión propuesta. Esperando que {{name}} confirme.",
-    "t_error": "No se pudo completar la acción. Probá de nuevo.",
+    "t_error": "No se pudo completar la acción. Prueba de nuevo.",
     "undo": "Deshacer"
   },
   "home": {
@@ -378,9 +380,9 @@
     "due_in_one": "Vence en {{count}} día",
     "due_in_other": "Vence en {{count}} días",
     "blocked": "Bloqueada",
-    "empty_title": "Hoy no tenés nada que venza.",
+    "empty_title": "Hoy no tienes nada que venza.",
     "empty_next": "Lo próximo: {{code}} en {{name}}, {{when}}.",
-    "empty_none": "No tenés tareas pendientes. Cuando SM te asigne una nueva, va a aparecer acá.",
+    "empty_none": "No tienes tareas pendientes. Cuando SM te asigne una nueva, aparecerá aquí.",
     "when_weekday": "el {{day}}",
     "when_date": "el {{date}}",
     "meetings_title": "Próximas reuniones",
@@ -408,14 +410,14 @@
     "accepted": "Aprobadas",
     "next": "Próxima fecha",
     "next_none": "Sin fechas próximas",
-    "stuck_blocked": "{{code}} está trabada hasta que se apruebe {{by}}.",
+    "stuck_blocked": "{{code}} está bloqueada hasta que se apruebe {{by}}.",
     "stuck_waiting_one": "{{count}} entrega esperando que {{name}} la apruebe.",
     "stuck_waiting_other": "{{count}} entregas esperando que {{name}} las apruebe.",
     "stuck_changes": "{{name}} pidió cambios en {{code}}: te toca enviar nueva versión.",
     "stuck_none": "Nada trabado. Todo depende de tu firma.",
     "open_tasks": "Ver tareas de {{name}}",
     "empty_title": "Todavía no trabajás para ningún negocio",
-    "empty_body": "Cuando SM te asigne tareas de un negocio, va a aparecer acá con su avance.",
+    "empty_body": "Cuando SM te asigne tareas de un negocio, aparecerá aquí con su avance.",
     "error_title": "No pudimos cargar tus clientes",
     "retry": "Cargar clientes de nuevo"
   },
@@ -429,7 +431,7 @@
     "phone": "Teléfono",
     "team_title": "Personas del equipo",
     "team_empty": "Tu firma todavía no tiene más personas cargadas. Pedile al equipo SM que las sume.",
-    "you": "(vos)",
+    "you": "(tú)",
     "cal_on_short": "Calendar conectado",
     "cal_off_short": "Sin Calendar",
     "cal_title": "Google Calendar",
@@ -483,7 +485,7 @@
     "tab_all": "Todas",
     "mark_all": "Marcar todas como leídas",
     "empty_unread": "No tienes notificaciones sin leer. Cuando algo cambie en tus tareas, lo verás aquí.",
-    "empty_all": "Todavía no tienes notificaciones. Aquí verás vencimientos, cambios pedidos y reuniones.",
+    "empty_all": "Todavía no tienes notificaciones. Aquí verás fechas límite, cambios pedidos y reuniones.",
     "error": "No pudimos cargar las notificaciones.",
     "retry": "Cargar de nuevo",
     "prefs_title": "Notificaciones",
@@ -856,10 +858,10 @@
       "hispanic": "Dueño hispano",
       "result_title": "Lo que vio el dueño en su resultado",
       "headline": {
-        "high": "Tu negocio está listo para empezar a franquiciar",
-        "mid": "Tu negocio tiene una buena base para franquiciar",
-        "low": "Tu negocio puede franquiciar, con trabajo en varias áreas",
-        "track": "Ya estás en camino"
+        "high": "Estás preparado para el Método 180.",
+        "mid": "Cumples los requisitos del Método 180 y tienes una base sobre la que trabajar.",
+        "low": "Cumples los requisitos del Método 180 y hay bastante por ordenar, que es justamente lo que se trabaja en el programa.",
+        "track": "Ya estás en camino."
       },
       "not_eligible": "Todavía no es elegible para el programa",
       "gaps": {
@@ -887,19 +889,19 @@
       "booking_from_office": "Se abrirá el link de la oficina porque {{name}} todavía no cargó el suyo."
     },
     "blocks": {
-      "model": "Modelo de negocio",
-      "operations": "Operaciones",
-      "finance": "Finanzas",
-      "technology": "Tecnología",
-      "marketing": "Marketing y ventas",
-      "legal": "Legal",
-      "team": "Equipo"
+      "time_team": "Tu tiempo y tu equipo",
+      "work_quality": "Tus trabajos y la calidad",
+      "money": "El dinero de tu negocio",
+      "clients_sales": "Tus clientes y tus ventas",
+      "info_agreements": "Tu información y tus acuerdos",
+      "experience": "Tu experiencia",
+      "vision": "El negocio que quieres construir"
     },
     "block_status": {
-      "strong": "Fuerte",
-      "medium": "Media",
-      "weak": "Débil",
-      "unknown": "No lo sé"
+      "strong": "Sólida",
+      "medium": "En desarrollo",
+      "weak": "Por construir",
+      "unknown": "Por conocer"
     },
     "events": {
       "submitted": "Completó el assessment",
@@ -912,6 +914,7 @@
     "error_title": "No pudimos cargar el embudo.",
     "retry": "Reintentar",
     "network_filtered": "Mostrando solo {{name}}",
-    "network_all": "Ver toda la red"
+    "network_all": "Ver toda la red",
+    "keyboard_hint": "Shift + flecha mueve el lead a la etapa de al lado."
   }
 }
