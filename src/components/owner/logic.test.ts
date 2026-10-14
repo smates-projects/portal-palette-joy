@@ -3,23 +3,23 @@ import type { FinancialSeries, FranchiseSummary, ManualSection, TaskWithComputed
 import { buildAttentionList, buildManualSections, nextManualVersion, readLastMonth } from "./logic";
 
 const task = (code: string, status: string) => ({ id: code, code, status }) as TaskWithComputed;
-const section = (title: string) => ({ id: title, title, pct: 40, status: "drafting" }) as ManualSection;
+const section = (title: string, catalog_codes: string[]) => ({ id: title, title, pct: 40, status: "drafting", catalog_codes, body: "" }) as ManualSection;
 
 describe("manual sections from catalog tasks", () => {
   it("counts approved tasks as included and the rest as pending", () => {
-    const [ventas] = buildManualSections([section("Ventas")], [task("B5-06", "accepted"), task("B5-01", "in_progress"), task("B2-01", "accepted")]);
+    const [ventas] = buildManualSections([section("Ventas", ["B5-01", "B5-06"])], [task("B5-06", "accepted"), task("B5-01", "in_progress"), task("B2-01", "accepted")]);
     expect(ventas!.tasks.map((t) => t.code)).toEqual(["B5-01", "B5-06"]);
     expect(ventas!.included).toBe(1);
     expect(ventas!.ready).toBe(false);
   });
 
   it("is ready only when every task of the section is approved", () => {
-    const [ops] = buildManualSections([section("Operación")], [task("B2-03", "accepted")]);
+    const [ops] = buildManualSections([section("Operación", ["B2-03", "B2-01"])], [task("B2-03", "accepted")]);
     expect(ops!.ready).toBe(true);
   });
 
-  it("has no tasks and is never ready for an unknown or empty section", () => {
-    const [custom, empty] = buildManualSections([section("Otra"), section("Personas")], []);
+  it("has no tasks and is never ready for a section without catalog codes or without tasks in the business", () => {
+    const [custom, empty] = buildManualSections([section("Otra", []), section("Personas", ["B2-04"])], []);
     expect(custom!.tasks).toEqual([]);
     expect(custom!.ready).toBe(false);
     expect(empty!.ready).toBe(false);

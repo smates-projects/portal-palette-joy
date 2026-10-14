@@ -1,92 +1,99 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNetworkFunnel } from "@/lib/api/hooks";
-import { LEAD_STAGES, type LeadStage } from "@/lib/api/types";
+import { useLeads, useOffices, useUsers } from "@/lib/api/hooks";
+import { LEAD_STAGES } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
-import { STAGE_BAR } from "@/components/pipeline/LeadBadges";
+import { LeadDetail } from "@/components/pipeline/LeadDetail";
+import { LeadBoard, LeadTable } from "@/components/pipeline/LeadViews";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyBox, ErrorBox, GlobalHeader } from "../shared";
 
 const ALL = "__all";
-const STAGES: LeadStage[] = [...LEAD_STAGES, "discarded"];
 
 /**
- * Embudo of the whole network, read only. SM Global sees how many leads each office has in each stage;
- * it never moves a lead (the office does). The data layer returns counts per stage and office, not single leads.
+ * Embudo of the whole network, read only. It looks like the office funnel (same board and table) but SM Global
+ * never moves, discards or writes on a lead: each office does. Optional filter by office.
  */
 export function GlobalFunnelPage() {
   const { t } = useTranslation();
-  const funnelQ = useNetworkFunnel();
   const [officeId, setOfficeId] = useState<string>(ALL);
+  const [view, setView] = useState<"board" | "table">("board");
+  const [leadId, setLeadId] = useState<string | undefined>(undefined);
+  const leadsQ = useLeads(officeId === ALL ? undefined : officeId);
+  const officesQ = useOffices();
+  const usersQ = useUsers();
   const header = <GlobalHeader question={t("global.funnel.question")} />;
+  const queries = [leadsQ, officesQ, usersQ];
 
-  if (funnelQ.isError)
+  if (queries.some((q) => q.isError))
     return (
       <div className="mx-auto max-w-7xl px-6 py-8">
         {header}
-        <div className="mt-6"><ErrorBox onRetry={() => void funnelQ.refetch()} /></div>
+        <div className="mt-6"><ErrorBox onRetry={() => queries.forEach((q) => void q.refetch())} /></div>
       </div>
     );
-  if (funnelQ.isLoading || !funnelQ.data)
+  if (queries.some((q) => q.isLoading))
     return (
       <div className="mx-auto max-w-7xl px-6 py-8">
         {header}
-        <div className="mt-6 flex gap-3">{STAGES.map((s) => <Skeleton key={s} className="h-56 w-56 rounded-md" />)}</div>
+        <div className="mt-6 flex gap-3">{LEAD_STAGES.map((s) => <Skeleton key={s} className="h-72 w-64 rounded-md" />)}</div>
       </div>
     );
 
-  const { stages, by_office } = funnelQ.data;
-  const selected = by_office.find((o) => o.office_id === officeId);
-  const countOf = (stage: LeadStage) => (selected ? selected.stages : stages).find((s) => s.stage === stage)?.count ?? 0;
-  const total = STAGES.reduce((n, s) => n + countOf(s), 0);
+  const leads = leadsQ.data ?? [];
+  const offices = officesQ.data ?? [];
+  const consultantName = (id: string) => usersQ.data?.find((u) => u.id === id)?.full_name ?? "";
+  const selected = leads.find((l) => l.id === leadId);
 
   return (
     <div className="mx-auto max-w-[1440px] px-6 py-8">
       {header}
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
+        <div className="inline-flex rounded-md border border-border bg-surface p-0.5">
+          {(["board", "table"] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              aria-pressed={view === v}
+              className={cn("rounded-[4px] px-3 py-1 text-sm", view === v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
+            >
+              {t(`pipeline.view_${v}`)}
+            </button>
+          ))}
+        </div>
         <Select value={officeId} onValueChange={setOfficeId}>
-          <SelectTrigger aria-label={t("global.funnel.office")} className={cn("h-8 w-auto min-w-44 gap-2 bg-surface text-sm", selected && "border-ring")}>
+          <SelectTrigger aria-label={t("global.funnel.office")} className={cn("h-8 w-auto min-w-44 gap-2 bg-surface text-sm", officeId !== ALL && "border-ring")}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL}>{t("global.funnel.all_offices")}</SelectItem>
-            {by_office.map((o) => <SelectItem key={o.office_id} value={o.office_id}>{o.office_name}</SelectItem>)}
+            {offices.map((o) => <SelectItem key={o.office.id} value={o.office.id}>{o.office.name}</SelectItem>)}
           </SelectContent>
         </Select>
-        <span className="text-sm text-muted-foreground">{t("global.funnel.total", { count: total })}</span>
+        <span className="text-sm text-muted-foreground">{t("global.funnel.total", { count: leads.length })}</span>
         <p className="rounded-[4px] border border-border bg-muted px-2 py-1 text-xs text-muted-foreground">{t("global.funnel.read_only")}</p>
       </div>
 
       <div className="mt-4">
-        {total === 0 ? (
+        {leads.length === 0 ? (
           <EmptyBox title={t("global.funnel.empty_title")} body={t("global.funnel.empty_body")} />
+        ) : view === "board" ? (
+          <LeadBoard readOnly leads={leads} selectedId={leadId} consultantName={consultantName} onOpen={setLeadId} />
         ) : (
-          <div className="flex min-h-0 gap-3 overflow-x-auto pb-2">
-            {STAGES.map((stage) => (
-              <section key={stage} className={cn("flex w-56 shrink-0 flex-col rounded-md border bg-muted/50", stage === "discarded" ? "border-dashed border-border" : "border-border")}>
-                <header className="flex items-center gap-2 border-b border-border px-3 py-2">
-                  <span className={cn("h-2 w-2 rounded-full", STAGE_BAR[stage])} />
-                  <h2 className={cn("text-sm font-semibold", stage === "discarded" && "text-muted-foreground")}>{t(`pipeline.stages.${stage}`)}</h2>
-                  <span className="ml-auto font-display text-lg font-semibold tabular-nums">{countOf(stage)}</span>
-                </header>
-                <ul className="flex-1 divide-y divide-border bg-surface">
-                  {(selected ? [selected] : by_office).map((o) => {
-                    const n = o.stages.find((s) => s.stage === stage)?.count ?? 0;
-                    return (
-                      <li key={o.office_id} className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
-                        <span className={cn("truncate", n === 0 && "text-muted-foreground")}>{o.office_name}</span>
-                        <span className={cn("font-display tabular-nums", n === 0 && "text-muted-foreground/40")}>{n}</span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </section>
-            ))}
-          </div>
+          <LeadTable leads={leads} selectedId={leadId} consultantName={consultantName} onOpen={setLeadId} />
         )}
       </div>
+
+      <Sheet open={!!leadId} onOpenChange={(o) => !o && setLeadId(undefined)}>
+        <SheetContent className="w-full overflow-y-auto bg-surface p-0 sm:max-w-xl [&>button]:hidden">
+          <SheetTitle className="sr-only">{selected?.business.name ?? t("pipeline.detail.open_full")}</SheetTitle>
+          <SheetDescription className="sr-only">{selected?.contact.name ?? ""}</SheetDescription>
+          {leadId && <LeadDetail readOnly leadId={leadId} onClose={() => setLeadId(undefined)} />}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

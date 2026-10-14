@@ -1,23 +1,29 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft } from "lucide-react";
+import { toast } from "sonner";
+import { ArrowLeft, Check, Circle } from "lucide-react";
 import { formatDate } from "@/lib/format";
-import { useOffice, useRules } from "@/lib/api/hooks";
+import { useActivateOffice, useOffice, usePauseOffice, useRules } from "@/lib/api/hooks";
 import { expectedFranchisePct } from "@/lib/tasks/office";
 import { AREAS } from "@/lib/tasks/owner";
 import { cn } from "@/lib/utils";
+import { NetworkPage } from "@/components/network/NetworkPage";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { officeHealth } from "../logic";
-import { BusinessSheet, DisabledAction, EmptyBox, ErrorBox, GlobalHeader, HealthBadge, OfficeStatusBadge } from "../shared";
-import { OfficeNetwork } from "./OfficeNetwork";
+import { BusinessSheet, EmptyBox, ErrorBox, GlobalHeader, HealthBadge, OfficeStatusBadge } from "../shared";
+import { PauseOfficeDialog } from "./OfficeDialogs";
 
-/** Ficha de una oficina: data, manager and team, firms by area, businesses and its Red (read only). */
+/** Ficha de una oficina: data, manager and team, opening checklist, firms by area, businesses and its Red (read only). */
 export function OfficeDetailPage({ officeId }: { officeId: string }) {
   const { t, i18n } = useTranslation();
   const officeQ = useOffice(officeId);
   const rulesQ = useRules();
+  const pause = usePauseOffice();
+  const activate = useActivateOffice();
   const [showNetwork, setShowNetwork] = useState(false);
+  const [pausing, setPausing] = useState(false);
   const [businessId, setBusinessId] = useState<string | null>(null);
 
   const header = <GlobalHeader question={t("global.office.question")} />;
@@ -50,8 +56,14 @@ export function OfficeDetailPage({ officeId }: { officeId: string }) {
       </div>
     );
 
-  const { office, manager, stats, businesses, firms, team } = officeQ.data;
+  const { office, manager, stats, businesses, firms, team, checklist } = officeQ.data;
   const goal = rulesQ.data?.franchisability_goal ?? 0;
+  const fail = (error: Error) => toast.error(t(`global.office.api_${error.message}`, { defaultValue: t("global.t_error") }));
+  const activateOffice = () =>
+    activate.mutate(office.id, {
+      onSuccess: () => toast.success(t(office.status === "paused" ? "global.office.t_resumed" : "global.office.t_activated", { name: office.name })),
+      onError: fail,
+    });
   const facts: { label: string; value: string }[] = [
     { label: t("global.office.city"), value: office.city ?? t("global.office.none") },
     { label: t("global.office.opened"), value: office.opened_at ? formatDate(office.opened_at, i18n.language) : t("global.offices.no_date") },
@@ -80,12 +92,79 @@ export function OfficeDetailPage({ officeId }: { officeId: string }) {
           >
             {showNetwork ? t("global.office.hide_network") : t("global.office.see_network")}
           </button>
-          {/* The data layer has no pause-office call yet. */}
-          <DisabledAction label={t("global.office.pause")} />
+          {office.status === "operating" && (
+            <button
+              onClick={() => setPausing(true)}
+              className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-surface px-4 text-sm font-medium transition-colors hover:bg-muted"
+            >
+              {t("global.office.pause")}
+            </button>
+          )}
+          {office.status === "paused" && (
+            <button
+              onClick={activateOffice}
+              disabled={activate.isPending}
+              className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-surface px-4 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50"
+            >
+              {t("global.office.resume")}
+            </button>
+          )}
+          {office.status === "opening" && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                {/* A disabled button gets no hover events, so the tooltip hangs from a focusable wrapper. */}
+                <span tabIndex={checklist?.complete ? -1 : 0} className="inline-flex">
+                  <button
+                    onClick={activateOffice}
+                    disabled={!checklist?.complete || activate.isPending}
+                    className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-surface px-4 text-sm font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {t("global.office.activate")}
+                  </button>
+                </span>
+              </TooltipTrigger>
+              {!checklist?.complete && <TooltipContent>{t("global.office.activate_blocked")}</TooltipContent>}
+            </Tooltip>
+          )}
         </div>
       </div>
 
-      {showNetwork && <div className="mt-6"><OfficeNetwork officeId={office.id} onOpenBusiness={setBusinessId} /></div>}
+      {office.status === "paused" && office.pause_reason && (
+        <p className="mt-4 rounded-md border border-border bg-muted px-3 py-2 text-sm">{t("global.office.paused_reason", { reason: office.pause_reason })}</p>
+      )}
+
+      {showNetwork && <div className="mt-6"><NetworkPage readOnly officeId={office.id} onOpenBusiness={setBusinessId} /></div>}
+
+      {/* Opening checklist: computed from the office data, so it ticks itself as the office gets ready */}
+      {checklist && (
+        <section className="mt-6 rounded-md border border-border bg-surface">
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+            <h2 className="text-sm font-semibold">{t("global.office.checklist_title")}</h2>
+            <span className="text-xs text-muted-foreground">
+              {t("global.office.checklist_progress", { done: checklist.items.filter((i) => i.done).length, total: checklist.items.length })}
+            </span>
+          </div>
+          <ul className="divide-y divide-border">
+            {checklist.items.map((item) => (
+              <li key={item.key} className="flex items-start gap-3 px-4 py-3 text-sm">
+                {item.done ? <Check className="mt-0.5 h-4 w-4 shrink-0 text-status-success-fg" aria-hidden /> : <Circle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />}
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium">{t(`global.office.checklist.${item.key}`)}</p>
+                  {item.key === "partner_firms" && item.missing_areas.length > 0 && (
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {t("global.office.checklist.missing_areas", { areas: item.missing_areas.map((a) => t(`areas.${a}`)).join(", ") })}
+                    </p>
+                  )}
+                </div>
+                <span className="sr-only">{t(item.done ? "global.office.checklist_done" : "global.office.checklist_pending")}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="border-t border-border px-4 py-2.5 text-xs text-muted-foreground">
+            {checklist.complete ? t("global.office.checklist_ready") : t("global.office.checklist_hint")}
+          </p>
+        </section>
+      )}
 
       <div className="mt-6 grid items-start gap-4 lg:grid-cols-2">
         {/* Data */}
@@ -190,6 +269,20 @@ export function OfficeDetailPage({ officeId }: { officeId: string }) {
       </section>
 
       <BusinessSheet businessId={businessId} onClose={() => setBusinessId(null)} />
+
+      {pausing && (
+        <PauseOfficeDialog
+          officeName={office.name}
+          pending={pause.isPending}
+          onClose={() => setPausing(false)}
+          onConfirm={(reason) =>
+            pause.mutate({ officeId: office.id, reason }, {
+              onSuccess: () => { setPausing(false); toast.success(t("global.office.t_paused", { name: office.name })); },
+              onError: fail,
+            })
+          }
+        />
+      )}
     </div>
   );
 }

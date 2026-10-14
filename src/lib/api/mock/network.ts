@@ -4,11 +4,15 @@ import { TODAY, nowIso } from "@/config/app";
 import { PROFIT_SPLIT } from "@/config/economics";
 import { bishopShareAt, estimatePaybackMonth } from "@/lib/bishop/split";
 import { computeReportAmounts, nextMonth, previousMonth } from "@/lib/franchise/fees";
+import { buildPipelineCounters } from "@/lib/leads/pipeline";
+import { expectedFranchisePct } from "@/lib/tasks/office";
 import { buildNetworkMatrix } from "@/lib/tasks/sm";
 import { areaHealth, AREAS } from "@/lib/tasks/owner";
 import { withComputed } from "../computed";
 import { computeFranchisability } from "../franchisability";
+import { computeOfficeChecklist } from "../office-checklist";
 import { AREA_BY_KEY, addDaysIso } from "../program";
+import { MANUAL_SECTION_TITLES, manualSectionContent } from "./seed-manual";
 import type {
   ApiClient,
   BishopRepository,
@@ -37,6 +41,7 @@ import {
   type CatalogItemInput,
   type ChecklistItem,
   type Contract,
+  type CreateOfficeInput,
   type FinancialSeries,
   type Franchise,
   type FranchiseReport,
@@ -44,6 +49,7 @@ import {
   type FranchiseTask,
   type Lead,
   type LeadStage,
+  type ManualEvent,
   type ManualSection,
   type ManualVersion,
   type OfficeBusinessRow,
@@ -53,8 +59,10 @@ import {
   type OpportunityDecision,
   type PlatformRules,
   type ProjectionYear,
+  type ReadinessItem,
   type RecoveryPoint,
   type RulesChange,
+  type StructureHealth,
   type StructureNode,
   type SupportTicket,
   type Task,
@@ -72,6 +80,8 @@ export interface BishopOpportunityRecord {
   ready_date: string;
   summary: string;
   projection: ProjectionYear[];
+  /** Last 12 months verified by SM; null until SM verifies the financials. */
+  verified_revenue: number | null;
   decision: OpportunityDecision;
   decided_at: string | null;
 }
@@ -103,6 +113,7 @@ export interface NetworkDb {
   franchiseTasks: FranchiseTask[];
   manualSections: ManualSection[];
   manualVersions: ManualVersion[];
+  manualEvents: ManualEvent[];
   documents: BusinessDocument[];
   contracts: Contract[];
   financials: FinancialSeries[];
@@ -126,7 +137,6 @@ type NetworkApi = Pick<
   "network" | "rules" | "catalog" | "franchises" | "manual" | "documents" | "financials" | "businessProfile" | "bishop" | "franchisee"
 >;
 
-const MANUAL_SECTION_TITLES = ["Ventas", "Operación", "Compras", "Atención al cliente", "Administración", "Personas"];
 const PRIORITIES = ["minimo", "alto_valor", "opcional", "tercero", "fuera"];
 const AREA_KEY_BY_CODE = Object.fromEntries(Object.entries(AREA_BY_KEY).map(([key, code]) => [code, key])) as Record<AreaCode, string>;
 const average = (values: number[]) => (values.length ? Math.round(values.reduce((a, b) => a + b, 0) / values.length) : 0);
@@ -220,8 +230,12 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
     const ids = new Set(biz.map((b) => b.id));
     const tasks = all.filter((t) => ids.has(t.business_id) && t.status !== "cancelled");
     const matrix = buildNetworkMatrix(tasks, db.versions, programs, TODAY, db.rules.area_amber_days);
+    const month = buildPipelineCounters(db.leads.filter((l) => l.office_id === office.id));
     return {
       programs: programs.length,
+      leads_this_month: month.month_assessments,
+      conversion_month: month.conversion_pct,
+      ready_to_franchise: programs.filter((b) => franchisabilityOf(b).is_ready).length,
       franchisors: biz.length - programs.length,
       franchises: db.franchises.filter((f) => ids.has(f.franchisor_business_id)).length,
       partner_firms: db.orgs.filter((o) => o.kind === "partner_firm" && o.parent_id === office.id).length,
@@ -252,6 +266,8 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       const sums = offices.map((o) => officeStats(o, all));
       const sum = (pick: (s: OfficeStats) => number) => sums.reduce((a, s) => a + pick(s), 0);
       const reports = reportedIn(month);
+      // The conversion of the network is its own ratio, not the average of the offices.
+      const leadsMonth = buildPipelineCounters(db.leads);
       return delay({
         offices: offices.length,
         programs: sum((s) => s.programs),
@@ -259,6 +275,9 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
         franchises: sum((s) => s.franchises),
         partner_firms: sum((s) => s.partner_firms),
         open_leads: sum((s) => s.open_leads),
+        leads_this_month: leadsMonth.month_assessments,
+        conversion_month: leadsMonth.conversion_pct,
+        ready_to_franchise: sum((s) => s.ready_to_franchise),
         overdue_tasks: sum((s) => s.overdue_tasks),
         last_month: month,
         franchise_sales_last_month: reports.reduce((a, r) => a + (r.gross_sales ?? 0), 0),
@@ -294,6 +313,7 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
         businesses,
         firms: db.orgs.filter((o) => o.kind === "partner_firm" && o.parent_id === id),
         team: db.users.filter((x) => x.role === "sm_team" && x.organization_id === id),
+        checklist: office.status === "opening" ? computeOfficeChecklist(office, db.users, db.orgs, db.leads) : null,
       });
     },
     getStructure: async () => {
@@ -301,20 +321,52 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       const global = db.orgs.find((o) => o.kind === "sm_global");
       if (!global) throw new Error("not_found");
       const offices = db.orgs.filter((o) => o.kind === "sm" && o.parent_id === global.id).sort((a, b) => a.name.localeCompare(b.name));
+      // Health, franchisability and facts of every node are computed here, so the screen only draws the tree.
+      const tasks = computedTasks().filter((t) => t.status !== "cancelled");
+      const programs = db.businesses.filter((b) => b.status === "in_program");
+      const rows = buildNetworkMatrix(tasks, db.versions, programs, TODAY, db.rules.area_amber_days);
+      const consultantName = (b: Business) => db.users.find((u) => u.id === b.consultant_id)?.full_name ?? null;
+      const worst = (healths: StructureHealth[]): StructureHealth =>
+        (["red", "amber", "green"] as const).find((h) => healths.includes(h)) ?? "grey";
       const officeNode = (o: Organization): StructureNode => {
-        const businessNodes = db.businesses
-          .filter((b) => b.office_id === o.id)
-          .map((b): StructureNode => ({
-            id: b.id, kind: "business", name: b.name, detail: b.status === "franchisor" ? b.city : `${b.city} · ${b.program_day}`,
-            children: db.franchises.filter((f) => f.franchisor_business_id === b.id).map((f): StructureNode => ({ id: f.id, kind: "franchise", name: f.name, detail: f.status, children: [] })),
-          }));
+        const own = db.businesses.filter((b) => b.office_id === o.id);
+        const businessNodes = own.map((b): StructureNode => {
+          const inProgram = b.status === "in_program";
+          const f = franchisabilityOf(b);
+          return {
+            id: b.id, kind: "business", name: b.name,
+            health: inProgram ? rows.find((r) => r.business.id === b.id)?.health ?? "grey" : null,
+            franchisability: inProgram ? { value: f.franchisability_pct, expected: expectedFranchisePct(b.program_day, f.franchisability_goal) } : null,
+            detail: { kind: "business", status: b.status, program_day: inProgram ? b.program_day : null, consultant_name: consultantName(b) },
+            children: db.franchises.filter((x) => x.franchisor_business_id === b.id).map((x): StructureNode => ({
+              id: x.id, kind: "franchise", name: x.name, health: null, franchisability: null, detail: { kind: "franchise", status: x.status }, children: [],
+            })),
+          };
+        });
         const firmNodes = db.orgs
           .filter((x) => x.kind === "partner_firm" && x.parent_id === o.id)
-          .map((x): StructureNode => ({ id: x.id, kind: "firm", name: x.name, detail: x.area, children: [] }));
-        return { id: o.id, kind: "office", name: o.name, detail: o.city, children: [...businessNodes, ...firmNodes] };
+          .map((x): StructureNode => {
+            const overdue = tasks.filter((t) => t.organization_id === x.id && t.is_overdue).length;
+            return {
+              id: x.id, kind: "firm", name: x.name, health: overdue > 0 ? "red" : "green", franchisability: null,
+              detail: { kind: "firm", area: x.area, overdue_tasks: overdue }, children: [],
+            };
+          });
+        const inProgram = own.filter((b) => b.status === "in_program");
+        return {
+          id: o.id, kind: "office", name: o.name,
+          health: worst(rows.filter((r) => r.business.office_id === o.id).map((r) => r.health)),
+          franchisability: null,
+          detail: {
+            kind: "office", status: o.status ?? "operating", programs: inProgram.length,
+            ready_to_franchise: inProgram.filter((b) => franchisabilityOf(b).is_ready).length,
+            operating_franchises: db.franchises.filter((x) => x.status === "operating" && own.some((b) => b.id === x.franchisor_business_id)).length,
+          },
+          children: [...businessNodes, ...firmNodes],
+        };
       };
       return delay({
-        root: { id: global.id, kind: "global", name: global.name, detail: global.city, children: offices.map(officeNode) },
+        root: { id: global.id, kind: "global", name: global.name, health: null, franchisability: null, detail: null, children: offices.map(officeNode) },
         counts: {
           offices: offices.length,
           businesses: db.businesses.filter((b) => b.status === "in_program").length,
@@ -359,6 +411,54 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
         stages: count(db.leads),
         by_office: db.orgs.filter((o) => o.kind === "sm").map((o) => ({ office_id: o.id, office_name: o.name, stages: count(db.leads.filter((l) => l.office_id === o.id)) })),
       });
+    },
+    createOffice: async (input) => {
+      globalOnly();
+      const global = db.orgs.find((o) => o.kind === "sm_global");
+      const city = input.city.trim();
+      const name = `SM ${city.split(",")[0]!.trim()}`;
+      if (!city) throw new Error("city_required");
+      if (db.orgs.some((o) => o.kind === "sm" && o.name.toLowerCase() === name.toLowerCase())) throw new Error("office_exists");
+      if (!input.manager_name.trim()) throw new Error("manager_required");
+      if (!validEmail(input.manager_email)) throw new Error("invalid_email");
+      if (db.users.some((u) => u.email.toLowerCase() === input.manager_email.trim().toLowerCase())) throw new Error("email_taken");
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(input.planned_opening_date) || input.planned_opening_date < TODAY) throw new Error("invalid_date");
+      const officeId = newId();
+      const managerId = newId();
+      db.users.push({
+        id: managerId, full_name: input.manager_name.trim(), email: input.manager_email.trim(), role: "sm_team", organization_id: officeId, business_id: null,
+        title: "Responsable de la oficina", google_calendar_email: null, booking_url: null,
+      });
+      const office: Organization = {
+        id: officeId, name, kind: "sm", area: null, specialty: null, city, email: null, phone: null, default_booking_url: null,
+        parent_id: global?.id ?? null, status: "opening", opened_at: input.planned_opening_date, pause_reason: null, manager_user_id: managerId,
+      };
+      db.orgs.push(office);
+      return delay(officeSummary(office, computedTasks()));
+    },
+    pauseOffice: async (officeId, reason) => {
+      globalOnly();
+      const office = officeOf(officeId);
+      if (!office) throw new Error("not_found");
+      if (!reason.trim()) throw new Error("reason_required");
+      // An office that is not live yet is never paused: it simply stays in opening.
+      if (office.status !== "operating") throw new Error("invalid_state");
+      office.status = "paused";
+      office.pause_reason = reason.trim();
+      return delay(officeSummary(office, computedTasks()));
+    },
+    activateOffice: async (officeId) => {
+      globalOnly();
+      const office = officeOf(officeId);
+      if (!office) throw new Error("not_found");
+      if (office.status === "operating") throw new Error("invalid_state");
+      if (office.status === "opening") {
+        if (!computeOfficeChecklist(office, db.users, db.orgs, db.leads).complete) throw new Error("checklist_incomplete");
+        office.opened_at = TODAY;
+      }
+      office.status = "operating";
+      office.pause_reason = null;
+      return delay(officeSummary(office, computedTasks()));
     },
   };
 
@@ -551,17 +651,42 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       const b = manualBusiness(businessId);
       // A business whose manual has not started yet gets the six empty sections.
       if (!db.manualSections.some((s) => s.business_id === b.id))
-        db.manualSections.push(...MANUAL_SECTION_TITLES.map((title): ManualSection => ({ id: newId(), business_id: b.id, title, pct: 0, status: "not_started", updated_at: TODAY, published_in: null })));
-      const sections = db.manualSections.filter((s) => s.business_id === b.id);
+        db.manualSections.push(
+          ...MANUAL_SECTION_TITLES.map((title): ManualSection => ({
+            id: newId(), business_id: b.id, title, pct: 0, status: "not_started", updated_at: TODAY, published_in: null, ...manualSectionContent(title, "not_started"),
+          })),
+        );
+      const all = db.manualSections.filter((s) => s.business_id === b.id);
+      const franchisee = me().role === "franchisee";
+      // A franchisee reads only what the franchisor already published, never drafts or the franchisor's own activity.
+      const sections = franchisee ? all.filter((s) => s.published_in !== null) : all;
       const versions = db.manualVersions.filter((v) => v.business_id === b.id).sort((x, y) => y.published_at.localeCompare(x.published_at) || y.version.localeCompare(x.version, undefined, { numeric: true }));
+      const activity = franchisee ? [] : db.manualEvents.filter((e) => e.business_id === b.id).sort((x, y) => y.created_at.localeCompare(x.created_at));
       return delay({
         business_id: b.id,
         sections,
         versions,
+        activity,
         current_version: versions[0]?.version ?? null,
-        completion_pct: average(sections.map((s) => s.pct)),
-        franchises_following: me().role === "franchisee" ? 0 : db.franchises.filter((f) => f.franchisor_business_id === b.id).length,
+        completion_pct: average(all.map((s) => s.pct)),
+        franchises_following: franchisee ? 0 : db.franchises.filter((f) => f.franchisor_business_id === b.id).length,
       });
+    },
+    approveSection: async (sectionId) => {
+      const b = ownOwnerBusiness();
+      const section = db.manualSections.find((s) => s.id === sectionId && s.business_id === b.id);
+      if (!section) throw new Error("not_found");
+      if (section.status === "approved") throw new Error("already_approved");
+      // Only the tasks the business really has count; cancelled or excluded ones do not feed the section.
+      const feeding = db.tasks.filter((t) => t.business_id === b.id && section.catalog_codes.includes(t.code) && !["cancelled", "excluded", "with_third_party"].includes(t.status));
+      if (feeding.length === 0) throw new Error("no_tasks");
+      if (feeding.some((t) => t.status !== "accepted")) throw new Error("tasks_pending");
+      section.status = "approved";
+      section.pct = 100;
+      section.updated_at = TODAY;
+      if (!section.body) section.body = manualSectionContent(section.title, "approved").body;
+      db.manualEvents.push({ id: newId(), business_id: b.id, section_id: section.id, section_title: section.title, kind: "approved", actor_user_id: me().id, created_at: nowIso() });
+      return delay(section);
     },
     publish: async (businessId, input) => {
       const b = ownOwnerBusiness();
@@ -661,8 +786,25 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       stage: f.is_ready ? "ready" : "preparing", investment: o.investment,
       share_year1_pct: Math.round(PROFIT_SPLIT.bishop_year1 * 100), share_stable_pct: Math.round(PROFIT_SPLIT.bishop_stabilized * 100),
       ready_date: o.ready_date, franchisability_pct: f.franchisability_pct, program_day: b.program_day, summary: o.summary,
-      decision: o.decision, decided_at: o.decided_at,
+      verified_revenue: o.verified_revenue, decision: o.decision, decided_at: o.decided_at,
     };
+  };
+  /**
+   * What is done and what is pending before the business can franchise, computed from its own data so the Bishop
+   * never needs access to the rules or the business' tasks.
+   */
+  const readinessOf = (b: Business): ReadinessItem[] => {
+    const f = franchisabilityOf(b);
+    const approved = (code: string) => db.tasks.some((t) => t.business_id === b.id && t.code === code && t.status === "accepted");
+    const fddDelivered = db.documents.some((d) => d.business_id === b.id && d.area === "closing" && d.name.includes("FDD") && d.state !== "requested");
+    return [
+      { key: "franchisability_goal", done: f.franchisability_pct >= f.franchisability_goal },
+      { key: "required_tasks", done: f.missing_required.length === 0 },
+      { key: "manual_published", done: db.manualVersions.some((v) => v.business_id === b.id) },
+      // The FDD itself is prepared by a third party: it is ready when SM handed the business over (B6-09) or the document arrived.
+      { key: "legal_docs", done: approved("B6-09") || fddDelivered },
+      { key: "unit_economics", done: approved("B3-03") && approved("B3-04") },
+    ];
   };
   const myOpportunity = (id: Uuid) => {
     const u = bishopOnly();
@@ -704,7 +846,7 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
     getOpportunity: async (id) => {
       const u = bishopOnly();
       const o = db.opportunities.find((x) => x.id === id && x.bishop_user_id === u.id);
-      return delay(o ? { ...toOpportunity(o), projection: o.projection } : null);
+      return delay(o ? { ...toOpportunity(o), projection: o.projection, readiness: readinessOf(businessOf(o.business_id)!) } : null);
     },
     expressInterest: async (id) => delay(decide(id, "interested")),
     pass: async (id) => delay(decide(id, "passed")),

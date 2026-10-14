@@ -5,8 +5,8 @@ import { formatDate } from "@/lib/format";
 import { EmptyBlock, ErrorBlock, LoadingBlocks, Panel, primaryButton, Screen, Tag } from "@/components/bishop/ui";
 
 /**
- * Read-only manual of the franchisor. The data layer scopes it to the franchisor of this unit.
- * It only has section titles, not their text, so each section is listed with the version that published it.
+ * Read-only manual of the franchisor. The data layer scopes it to the franchisor of this unit and to the sections
+ * already published. Each section shows its text and the version that published it.
  */
 export function FranchiseeManualPage() {
   const { t, i18n } = useTranslation();
@@ -81,11 +81,18 @@ export function FranchiseeManualPage() {
           <Panel title={t("franchisee.manual.sections_title")}>
             <ul className="divide-y divide-border border-t border-border">
               {sections.map((s) => (
-                <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
-                  <span className="text-sm font-medium">{s.title}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {t("franchisee.manual.section_meta", { version: s.published_in, date: formatDate(s.updated_at, lng) })}
-                  </span>
+                <li key={s.id} className="px-4 py-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="text-sm font-medium">{s.title}</h3>
+                    <span className="text-xs text-muted-foreground">
+                      {t("franchisee.manual.section_meta", { version: s.published_in, date: formatDate(s.updated_at, lng) })}
+                    </span>
+                  </div>
+                  {s.body && (
+                    <div className="mt-2 space-y-2 text-sm">
+                      {s.body.split("\n\n").map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>

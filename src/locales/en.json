@@ -960,7 +960,8 @@
       "discard_reason": "Reason: {{reason}}",
       "not_found": "This lead does not exist or is not from your office.",
       "submitted_at": "Took the assessment on {{date}}",
-      "booking_from_office": "The office link will open because {{name}} has not added one yet."
+      "booking_from_office": "The office link will open because {{name}} has not added one yet.",
+      "read_only": "Read only. The office makes the changes."
     },
     "blocks": {
       "time_team": "Your time and your team",
@@ -1109,7 +1110,6 @@
     "cancel": "Cancel",
     "close": "Close",
     "save_changes": "Save changes",
-    "backend_pending": "Available once the backend is connected",
     "health": {
       "red": "Overdue",
       "amber": "Due soon",
@@ -1148,12 +1148,11 @@
         "offices_other": "offices",
         "programs_one": "business in the program",
         "programs_other": "businesses in the program",
-        "open_leads_one": "open lead",
-        "open_leads_other": "open leads",
         "ready_one": "ready to franchise",
         "ready_other": "ready to franchise",
-        "overdue_one": "overdue task",
-        "overdue_other": "overdue tasks"
+        "leads_month_one": "lead this month",
+        "leads_month_other": "leads this month",
+        "conversion": "conversion this month"
       },
       "offices_title": "Offices",
       "offices_empty_title": "There are no offices yet",
@@ -1213,13 +1212,12 @@
       "col_status": "Status",
       "col_opened": "Opening",
       "col_programs": "Businesses in the program",
-      "col_leads": "Leads",
-      "col_conversion": "Conversion",
+      "col_leads": "Leads this month",
+      "col_conversion": "Conversion this month",
       "col_firms": "Partner firms",
       "col_health": "Health",
       "no_manager": "No manager",
       "no_date": "No date",
-      "no_data": "No data",
       "no_programs": "No businesses",
       "status": {
         "opening": "Opening",
@@ -1227,7 +1225,27 @@
         "paused": "Paused"
       },
       "empty_title": "There are no offices yet",
-      "empty_body": "Once an office exists, you will see it here with its manager and its businesses."
+      "empty_body": "Once an office exists, you will see it here with its manager and its businesses.",
+      "col_ready": "Ready to franchise",
+      "no_conversion": "No leads this month",
+      "t_created": "We created {{name}}. It is in opening.",
+      "new_form": {
+        "title": "New office",
+        "body": "The office starts in opening. It goes live when it meets its opening checklist.",
+        "city": "City",
+        "city_hint": "Example: Tampa, FL",
+        "manager_name": "Manager",
+        "manager_email": "Manager email",
+        "manager_email_hint": "We create their SM team account.",
+        "opening_date": "Planned opening date",
+        "confirm": "Create office",
+        "error_city_required": "Enter the city.",
+        "error_manager_required": "Enter the manager's name.",
+        "error_invalid_email": "Enter a valid email.",
+        "error_invalid_date": "Pick a date from today on.",
+        "api_office_exists": "There is already an office in that city.",
+        "api_email_taken": "That email already has an account."
+      }
     },
     "office": {
       "question": "How is this office doing?",
@@ -1259,7 +1277,38 @@
       "network_empty_title": "There are no businesses in the program yet",
       "network_empty_body": "When a business of this office signs its contract, it will appear here with its six areas.",
       "not_found_title": "We could not find this office",
-      "not_found_body": "It may no longer exist. Go back to the list of offices."
+      "not_found_body": "It may no longer exist. Go back to the list of offices.",
+      "resume": "Resume office",
+      "activate": "Activate office",
+      "activate_blocked": "Complete the opening checklist to activate it.",
+      "paused_reason": "Paused: {{reason}}",
+      "t_paused": "We paused {{name}}.",
+      "t_activated": "{{name}} is now operating.",
+      "t_resumed": "{{name}} is operating again.",
+      "api_checklist_incomplete": "The opening checklist still has open items.",
+      "api_invalid_state": "The office is not in a state that allows this action.",
+      "pause_form": {
+        "title": "Pause {{name}}?",
+        "body": "The office keeps its data and businesses. Leave the reason so it is recorded.",
+        "reason": "Reason",
+        "reason_required": "Enter the reason for the pause.",
+        "placeholder": "Example: change of manager",
+        "keep": "Keep operating",
+        "confirm": "Pause office"
+      },
+      "checklist_title": "Opening checklist",
+      "checklist_progress": "{{done}} of {{total}} done",
+      "checklist": {
+        "manager_access": "The manager already has access",
+        "booking_link": "The booking link is set",
+        "partner_firms": "There is a partner firm in each of the six areas",
+        "first_lead": "The office received its first lead",
+        "missing_areas": "Missing a firm in: {{areas}}"
+      },
+      "checklist_done": "Done",
+      "checklist_pending": "Pending",
+      "checklist_ready": "The checklist is complete. You can activate the office now.",
+      "checklist_hint": "Each item ticks itself when the office data meets it."
     },
     "funnel": {
       "question": "How many businesses enter the network?",
@@ -1420,12 +1469,23 @@
       "included_count": "{{included}} of {{total}} deliverables approved and already in the manual.",
       "task_included": "Included in the manual",
       "task_pending": "Pending: not in the manual yet",
-      "ready_hint": "All deliverables of this section are approved. Your SM consultant will close the section.",
+      "ready_hint": "Every deliverable of this section is approved. You can approve the section now.",
       "current_version": "Current version",
       "no_version": "No version",
       "completion": "The manual is {{pct}}% done.",
       "history": "Previous versions",
-      "history_empty": "There are no versions yet. The first one will appear when the manual is ready."
+      "history_empty": "There are no versions yet. The first one will appear when the manual is ready.",
+      "not_ready_hint": "You will be able to approve the section once all its deliverables are approved.",
+      "approve": "Approve section",
+      "confirm_title": "Approve the {{section}} section?",
+      "confirm_body": "All its deliverables are approved. The approval is recorded in the manual activity.",
+      "confirm_action": "Yes, approve",
+      "confirm_cancel": "Go back",
+      "t_approved": "You approved the {{section}} section.",
+      "t_approve_error": "We could not approve the section. Try again.",
+      "activity": "Activity",
+      "activity_empty": "No section has been approved yet.",
+      "activity_approved": "{{section}} section approved"
     },
     "numbers": {
       "question": "How is my business doing?",
@@ -1685,7 +1745,9 @@
       "col_decision": "Your answer",
       "ready_date": "Estimated ready: {{date}}",
       "share_values": "{{year1}}% / {{stable}}%",
-      "share_note": "The split is provisional and may change before signing. Each agreement sets the final split."
+      "share_note": "The split is provisional and may change before signing. Each agreement sets the final split.",
+      "col_revenue": "Verified revenue (12 months)",
+      "not_verified": "Not verified"
     },
     "opportunity_detail": {
       "question": "Is this business right for me?",
@@ -1732,7 +1794,20 @@
       "confirm_passed_title": "Do you want to pass on {{name}}?",
       "confirm_passed_body": "We stop showing you this business. You can change your answer any time.",
       "confirm_passed_action": "Yes, pass",
-      "confirm_cancel": "Go back"
+      "confirm_cancel": "Go back",
+      "verified_revenue": "Verified revenue",
+      "verified_revenue_sub": "Last 12 months, verified by SM",
+      "not_verified": "Not verified",
+      "not_verified_sub": "SM has not verified the financials yet",
+      "readiness": {
+        "franchisability_goal": "Franchisability goal reached",
+        "required_tasks": "Required deliverables approved",
+        "manual_published": "Manual published",
+        "legal_docs": "Legal documents (FDD) ready",
+        "unit_economics": "Unit economics validated"
+      },
+      "readiness_done": "Done",
+      "readiness_pending": "Pending"
     },
     "agreements": {
       "question": "Which agreements do I have?",
@@ -1750,7 +1825,8 @@
       "not_signed": "Not signed",
       "open_document": "View document",
       "open_document_for": "View document of {{name}}",
-      "backend_needed": "Available once the backend is connected"
+      "no_file": "There is no document to open yet",
+      "t_download": "We would download the file {{file}}. This is a test version and has no real documents yet."
     }
   },
   "franchisee": {

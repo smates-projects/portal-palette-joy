@@ -38,11 +38,12 @@ export function OpportunitiesPage() {
       <div className="mt-6">
         <Panel>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[860px] text-left text-sm">
+            <table className="w-full min-w-[960px] text-left text-sm">
               <thead className="bg-muted/50 text-xs text-muted-foreground">
                 <tr>
                   <th scope="col" className="px-4 py-2 font-medium">{t("bishop.opportunities.col_business")}</th>
                   <th scope="col" className="px-4 py-2 font-medium">{t("bishop.opportunities.col_ready")}</th>
+                  <th scope="col" className="px-4 py-2 text-right font-medium">{t("bishop.opportunities.col_revenue")}</th>
                   <th scope="col" className="px-4 py-2 text-right font-medium">{t("bishop.opportunities.col_investment")}</th>
                   <th scope="col" className="px-4 py-2 text-right font-medium">
                     <span className="inline-flex items-center gap-2">{t("bishop.opportunities.col_share")}<ProvisionalTag /></span>
@@ -66,6 +67,9 @@ export function OpportunitiesPage() {
                       </div>
                       <div className="mt-1.5"><ProgressBar value={o.franchisability_pct} label={t("bishop.portfolio.franchisable")} /></div>
                       <p className="mt-1 text-xs text-muted-foreground">{t("bishop.opportunities.ready_date", { date: formatDate(o.ready_date, lng) })}</p>
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums">
+                      {o.verified_revenue === null ? <span className="text-muted-foreground">{t("bishop.opportunities.not_verified")}</span> : formatUsd(o.verified_revenue, lng)}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums">{formatUsd(o.investment, lng)}</td>
                     <td className="px-4 py-3 text-right tabular-nums">

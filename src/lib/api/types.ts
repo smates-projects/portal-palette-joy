@@ -44,7 +44,10 @@ export interface Organization {
   parent_id?: Uuid | null;
   /** SM offices only. */
   status?: OfficeStatus | null;
+  /** Opening date: planned while the office is in opening, the real one once it operates. */
   opened_at?: IsoDate | null;
+  /** Why SM Global paused the office; null when it is not paused. */
+  pause_reason?: string | null;
   manager_user_id?: Uuid | null;
   /** Franchise units only: the franchisor business they belong to. */
   franchisor_business_id?: Uuid | null;

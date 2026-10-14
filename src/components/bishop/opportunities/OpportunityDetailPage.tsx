@@ -8,7 +8,7 @@ import { PROFIT_SPLIT } from "@/config/economics";
 import { useBishopOpportunity, useClearOpportunityDecision, useExpressInterest, usePassOpportunity } from "@/lib/api/hooks";
 import type { OpportunityDecision } from "@/lib/api/types";
 import { formatDate, formatUsd } from "@/lib/format";
-import { EmptyBlock, ErrorBlock, LoadingBlocks, Metric, Panel, primaryButton, ProgressBar, ProvisionalTag, secondaryButton, Screen } from "@/components/bishop/ui";
+import { EmptyBlock, ErrorBlock, LoadingBlocks, Metric, Panel, primaryButton, ProgressBar, ProvisionalTag, secondaryButton, Screen, Tag } from "@/components/bishop/ui";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
@@ -87,7 +87,12 @@ export function OpportunityDetailPage({ opportunityId }: { opportunityId: string
       <p className="mt-3 max-w-3xl text-sm">{o.summary}</p>
 
       <div className="mt-6 space-y-4">
-        <section className="grid overflow-hidden rounded-md border border-border bg-surface md:grid-cols-4">
+        <section className="grid overflow-hidden rounded-md border border-border bg-surface md:grid-cols-5">
+          <Metric
+            label={t("bishop.opportunity_detail.verified_revenue")}
+            value={o.verified_revenue === null ? t("bishop.opportunity_detail.not_verified") : money(o.verified_revenue)}
+            sub={o.verified_revenue === null ? t("bishop.opportunity_detail.not_verified_sub") : t("bishop.opportunity_detail.verified_revenue_sub")}
+          />
           <Metric label={t("bishop.opportunity_detail.investment")} value={money(o.investment)} sub={t("bishop.opportunity_detail.investment_sub")} />
           <Metric label={t("bishop.opportunity_detail.share_year1")} badge={<ProvisionalTag />} value={`${o.share_year1_pct}%`} sub={t("bishop.opportunity_detail.share_year1_sub")} />
           <Metric label={t("bishop.opportunity_detail.share_stable")} badge={<ProvisionalTag />} value={`${o.share_stable_pct}%`} sub={t("bishop.opportunity_detail.share_stable_sub")} />
@@ -156,6 +161,14 @@ export function OpportunityDetailPage({ opportunityId }: { opportunityId: string
                   </p>
                   <div className="mt-1"><ProgressBar value={programPct} label={t("bishop.opportunity_detail.program")} /></div>
                 </div>
+                <ul className="divide-y divide-border rounded-md border border-border">
+                  {o.readiness.map((item) => (
+                    <li key={item.key} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+                      <span>{t(`bishop.opportunity_detail.readiness.${item.key}`)}</span>
+                      <Tag tone={item.done ? "success" : "neutral"}>{t(item.done ? "bishop.opportunity_detail.readiness_done" : "bishop.opportunity_detail.readiness_pending")}</Tag>
+                    </li>
+                  ))}
+                </ul>
                 <p className="rounded-md border border-border px-3 py-2 text-sm">
                   {o.stage === "ready" ? t("bishop.opportunity_detail.ready_yes") : t("bishop.opportunity_detail.ready_no", { date: formatDate(o.ready_date, lng) })}
                 </p>

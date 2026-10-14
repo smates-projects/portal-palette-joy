@@ -3,19 +3,6 @@ import type { FranchiseSummary, FinancialSeries, ManualSection, TaskWithComputed
 
 // Pure rules of the owner screens (manual, numbers, franchisor home). No React here so they are easy to test.
 
-/**
- * Catalog tasks whose result is a procedure or format of each manual section.
- * Keyed by the section title. A task only shows up if this business really has it.
- */
-export const MANUAL_SECTION_TASK_CODES: Record<string, string[]> = {
-  Ventas: ["B5-01", "B5-06", "B5-14", "B5-15"],
-  "Operación": ["B2-01", "B2-02", "B2-03", "B2-08", "B2-09"],
-  Compras: ["B4-03", "B2-06", "B2-16"],
-  "Atención al cliente": ["B4-04", "B2-07"],
-  "Administración": ["B3-01", "B3-02", "B3-11", "B3-16", "B6-15"],
-  Personas: ["B2-04", "B2-05", "B2-17"],
-};
-
 export interface ManualSectionView {
   section: ManualSection;
   /** Tasks of this business that produce what the section needs, sorted by code. */
@@ -26,11 +13,10 @@ export interface ManualSectionView {
   ready: boolean;
 }
 
-/** Joins each manual section with the catalog tasks that feed it. Approved task = included in the manual. */
+/** Joins each manual section with the catalog tasks that feed it (its `catalog_codes`). Approved task = included in the manual. */
 export function buildManualSections(sections: ManualSection[], tasks: TaskWithComputed[]): ManualSectionView[] {
   return sections.map((section) => {
-    const codes = MANUAL_SECTION_TASK_CODES[section.title] ?? [];
-    const own = tasks.filter((t) => codes.includes(t.code)).sort((a, b) => a.code.localeCompare(b.code));
+    const own = tasks.filter((t) => section.catalog_codes.includes(t.code)).sort((a, b) => a.code.localeCompare(b.code));
     const included = own.filter((t) => t.status === "accepted").length;
     return { section, tasks: own, included, ready: own.length > 0 && included === own.length };
   });

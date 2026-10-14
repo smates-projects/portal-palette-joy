@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { AreaBottleneck, StructureTree } from "@/lib/api/network-types";
-import type { Business, Franchisability } from "@/lib/api/types";
+import type { AreaBottleneck, StructureNode, StructureTree } from "@/lib/api/network-types";
+import type { Business } from "@/lib/api/types";
 import type { MatrixRow } from "@/lib/tasks/sm";
-import { buildStructureView, expandableIds, filterTree, officeHealth, sortBottlenecks, stuckBusinesses, worstHealth, type StructureFacts, type TreeNode } from "./logic";
+import { buildStructureView, expandableIds, filterTree, officeHealth, sortBottlenecks, stuckBusinesses, worstHealth, type TreeNode } from "./logic";
 
 const business = (id: string, name: string, status: Business["status"] = "in_program"): Business => ({
   id, name, industry: "services", city: "Miami", state: "FL", owner_user_id: "u", status,
@@ -53,31 +53,27 @@ describe("stuckBusinesses", () => {
 });
 
 describe("structure tree", () => {
+  // The data layer already computed health, franchisability and facts; the builder only arranges and words them.
+  const node = (n: Pick<StructureNode, "id" | "kind" | "name"> & Partial<StructureNode>): StructureNode => ({ health: null, franchisability: null, detail: null, children: [], ...n });
   const tree: StructureTree = {
-    root: {
-      id: "g", kind: "global", name: "SM Global", detail: null,
-      children: [{
-        id: "o1", kind: "office", name: "SM Miami", detail: "Miami, FL",
+    root: node({
+      id: "g", kind: "global", name: "SM Global",
+      children: [node({
+        id: "o1", kind: "office", name: "SM Miami", health: "red",
+        detail: { kind: "office", status: "operating", programs: 1, ready_to_franchise: 0, operating_franchises: 1 },
         children: [
-          { id: "b1", kind: "business", name: "Vossler", detail: null, children: [] },
-          { id: "b2", kind: "business", name: "Bimbo Tacos", detail: null, children: [{ id: "f1", kind: "franchise", name: "Bimbo Sur", detail: "operating", children: [] }] },
-          { id: "p1", kind: "firm", name: "Estudio Pérez", detail: "B6", children: [] },
+          node({ id: "b1", kind: "business", name: "Vossler", health: "red", franchisability: { value: 24, expected: 28 }, detail: { kind: "business", status: "in_program", program_day: 60, consultant_name: null } }),
+          node({
+            id: "b2", kind: "business", name: "Bimbo Tacos", detail: { kind: "business", status: "franchisor", program_day: null, consultant_name: null },
+            children: [node({ id: "f1", kind: "franchise", name: "Bimbo Sur", detail: { kind: "franchise", status: "operating" } })],
+          }),
+          node({ id: "p1", kind: "firm", name: "Estudio Pérez", health: "red", detail: { kind: "firm", area: "B6", overdue_tasks: 2 } }),
         ],
-      }],
-    },
+      })],
+    }),
     counts: { offices: 1, businesses: 1, franchisors: 1, franchises: 1, firms: 1 },
   };
-  const businesses = [business("b1", "Vossler"), business("b2", "Bimbo Tacos", "franchisor")];
-  const franchisability: Franchisability[] = [{ business_id: "b1", franchisability_pct: 24, franchisability_goal: 85, required_task_codes: [], missing_required: [], is_ready: false }];
-  const facts: StructureFacts = {
-    rows: [row(businesses[0]!, "red", 3)],
-    businesses,
-    franchisability,
-    consultantNames: new Map(),
-    firmOverdue: new Map([["p1", 2]]),
-    firmArea: new Map([["p1", "B6"]]),
-  };
-  const view = buildStructureView(tree, facts, t);
+  const view = buildStructureView(tree, t);
   const find = (node: TreeNode, id: string): TreeNode | undefined => (node.id === id ? node : node.children.map((c) => find(c, id)).find(Boolean));
 
   it("groups businesses in the program, franchises and partner firms under each office", () => {

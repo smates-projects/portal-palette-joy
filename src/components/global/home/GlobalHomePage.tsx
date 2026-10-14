@@ -6,7 +6,6 @@ import { TODAY } from "@/config/app";
 import {
   useBottlenecks,
   useBusinesses,
-  useFranchisabilityMany,
   useNetworkSummary,
   useOffices,
   useOrganizations,
@@ -31,8 +30,6 @@ export function GlobalHomePage() {
   const versionsQ = useVersions();
   const orgsQ = useOrganizations();
   const rulesQ = useRules();
-  const programIds = (bizQ.data ?? []).filter((b) => b.status === "in_program").map((b) => b.id);
-  const franchisabilityQ = useFranchisabilityMany(programIds);
   const [openArea, setOpenArea] = useState<string | null>(null);
   const [showAllAttention, setShowAllAttention] = useState(false);
   const [businessId, setBusinessId] = useState<string | null>(null);
@@ -65,14 +62,14 @@ export function GlobalHomePage() {
   const cards = buildOfficeCards(offices, matrix);
   const attention = buildNetworkAttention(tasks, businesses, orgsQ.data ?? []);
   const bottlenecks = sortBottlenecks(bottlenecksQ.data ?? []);
-  const ready = franchisabilityQ.data.filter((f) => f.is_ready).length;
 
-  const counters: { key: string; value: number; danger?: boolean }[] = [
+  // Conversion is a percentage: it has no plural and shows a dash when no assessment arrived this month.
+  const counters: { key: string; value: number | null; percent?: boolean }[] = [
     { key: "offices", value: summary.offices },
     { key: "programs", value: summary.programs },
-    { key: "open_leads", value: summary.open_leads },
-    { key: "ready", value: ready },
-    { key: "overdue", value: summary.overdue_tasks, danger: true },
+    { key: "leads_month", value: summary.leads_this_month },
+    { key: "conversion", value: summary.conversion_month, percent: true },
+    { key: "ready", value: summary.ready_to_franchise },
   ];
   const reasonText = (a: (typeof attention)[number]) =>
     a.reason === "overdue"
@@ -91,8 +88,10 @@ export function GlobalHomePage() {
         {counters.map((c) => (
           <div key={c.key} className="px-4 py-3">
             <div className="flex items-baseline gap-2">
-              <span className={cn("font-display text-2xl font-semibold tabular-nums", c.value === 0 ? "text-muted-foreground/40" : c.danger ? "text-status-danger-fg" : "text-foreground")}>{c.value}</span>
-              <span className="text-xs font-medium text-foreground">{t(`global.home.counters.${c.key}`, { count: c.value })}</span>
+              <span className={cn("font-display text-2xl font-semibold tabular-nums", !c.value ? "text-muted-foreground/40" : "text-foreground")}>
+                {c.value === null ? "—" : c.percent ? `${c.value}%` : c.value}
+              </span>
+              <span className="text-xs font-medium text-foreground">{t(`global.home.counters.${c.key}`, { count: c.value ?? 0 })}</span>
             </div>
           </div>
         ))}

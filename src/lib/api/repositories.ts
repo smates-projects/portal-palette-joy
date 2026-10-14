@@ -10,6 +10,7 @@ import type {
   CatalogItemInput,
   ChecklistItem,
   Contract,
+  CreateOfficeInput,
   FinancialSeries,
   FranchiseDetail,
   FranchiseReport,
@@ -19,6 +20,7 @@ import type {
   FranchisorSummary,
   InviteMemberInput,
   ManualOverview,
+  ManualSection,
   ManualVersion,
   NetworkFunnel,
   NetworkSummary,
@@ -94,9 +96,12 @@ export interface LeadDetail {
   events: LeadEvent[];
 }
 
-/** SM only, scoped to the user's office. */
+/**
+ * SM team: its own office, full access. SM Global: reads the leads of every office (optionally one office)
+ * but never changes them; every write is SM team only.
+ */
 export interface LeadsRepository {
-  list(): Promise<LeadWithComputed[]>;
+  list(opts?: { office_id?: Uuid }): Promise<LeadWithComputed[]>;
   get(id: Uuid): Promise<LeadDetail | null>;
   /** One step forward or back, or reactivate a discarded lead to evaluated. Never to/from in_program. */
   move(id: Uuid, to: Exclude<LeadStage, "discarded" | "in_program">): Promise<LeadWithComputed>;
@@ -176,6 +181,12 @@ export interface NetworkRepository {
   listBottlenecks(): Promise<AreaBottleneck[]>;
   /** SM Global only: leads by stage, overall and per office. */
   getFunnel(): Promise<NetworkFunnel>;
+  /** SM Global only: opens an office in "opening" with its manager and the opening checklist. */
+  createOffice(input: CreateOfficeInput): Promise<OfficeSummary>;
+  /** SM Global only: pauses an operating office. The reason is required. */
+  pauseOffice(officeId: Uuid, reason: string): Promise<OfficeSummary>;
+  /** SM Global only: an office in opening goes live only with its checklist complete; a paused one resumes. */
+  activateOffice(officeId: Uuid): Promise<OfficeSummary>;
 }
 
 /** Platform rules. Everyone reads them; only SM Global changes them, and every change is logged. */
@@ -216,6 +227,8 @@ export interface ManualRepository {
   get(businessId?: Uuid): Promise<ManualOverview>;
   /** Franchisor owner only: publishes the next version; every franchise follows it and gets a task to read it. */
   publish(businessId: Uuid, input: PublishManualInput): Promise<ManualVersion>;
+  /** Owner only, own business: approves a section once every catalog task that feeds it is approved. Logged in the activity. */
+  approveSection(sectionId: Uuid): Promise<ManualSection>;
 }
 
 export interface DocumentsRepository {

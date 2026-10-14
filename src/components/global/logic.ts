@@ -1,7 +1,6 @@
 import type { AreaBottleneck, OfficeSummary, StructureNode, StructureTree } from "@/lib/api/network-types";
-import type { AreaCode, Business, Franchisability, Organization, TaskWithComputed } from "@/lib/api/types";
+import type { AreaCode, Business, Organization, TaskWithComputed } from "@/lib/api/types";
 import type { Health } from "@/lib/tasks/owner";
-import { expectedFranchisePct } from "@/lib/tasks/office";
 import { buildAttention, type AttentionItem, type MatrixRow } from "@/lib/tasks/sm";
 
 /** Home lists show this many rows and then "Ver todo". */
@@ -94,46 +93,34 @@ export interface TreeNode {
   children: TreeNode[];
 }
 
-export interface StructureFacts {
-  /** Matrix rows of the businesses in the program. */
-  rows: MatrixRow[];
-  businesses: Business[];
-  franchisability: Franchisability[];
-  consultantNames: Map<string, string>;
-  /** Overdue tasks per firm id. */
-  firmOverdue: Map<string, number>;
-  firmArea: Map<string, AreaCode | null>;
-}
-
-/** Builds the displayed tree: offices hold three groups (businesses in the program, franchises, partner firms). */
-export function buildStructureView(tree: StructureTree, facts: StructureFacts, t: Translate): TreeNode {
-  const businessOf = (id: string) => facts.businesses.find((b) => b.id === id);
+/**
+ * Builds the displayed tree from the structure the data layer returns (health, franchisability and facts of every
+ * node are already computed there). Offices hold three groups: businesses in the program, franchises and partner firms.
+ */
+export function buildStructureView(tree: StructureTree, t: Translate): TreeNode {
+  const businessStatus = (node: StructureNode) => (node.detail?.kind === "business" ? node.detail.status : null);
 
   const businessNode = (node: StructureNode): TreeNode => {
-    const business = businessOf(node.id);
-    const row = facts.rows.find((r) => r.business.id === node.id);
-    const f = facts.franchisability.find((x) => x.business_id === node.id);
+    const detail = node.detail?.kind === "business" ? node.detail : null;
     const parts: string[] = [];
-    if (business && business.status === "in_program") {
-      parts.push(t("global.structure.day", { day: business.program_day }));
-      if (f) parts.push(t("global.structure.franchisability", { pct: f.franchisability_pct, expected: expectedFranchisePct(business.program_day, f.franchisability_goal) }));
-      const consultant = business.consultant_id ? facts.consultantNames.get(business.consultant_id) : undefined;
-      parts.push(consultant ?? t("global.structure.no_consultant"));
-    } else if (business) {
+    if (detail?.status === "in_program") {
+      if (detail.program_day !== null) parts.push(t("global.structure.day", { day: detail.program_day }));
+      if (node.franchisability) parts.push(t("global.structure.franchisability", { pct: node.franchisability.value, expected: node.franchisability.expected }));
+      parts.push(detail.consultant_name ?? t("global.structure.no_consultant"));
+    } else if (detail) {
       parts.push(t("global.structure.franchises_count", { count: node.children.length }));
     }
-    return { id: node.id, kind: "business", name: node.name, datum: parts.join(" · "), health: row?.health ?? null, children: node.children.map(franchiseNode) };
+    return { id: node.id, kind: "business", name: node.name, datum: parts.join(" · "), health: node.health, children: node.children.map(franchiseNode) };
   };
   const franchiseNode = (node: StructureNode): TreeNode => ({
-    id: node.id, kind: "franchise", name: node.name, datum: node.detail ? t(`global.structure.franchise_status.${node.detail}`) : null, health: null, children: [],
+    id: node.id, kind: "franchise", name: node.name, datum: node.detail?.kind === "franchise" ? t(`global.structure.franchise_status.${node.detail.status}`) : null, health: null, children: [],
   });
   const firmNode = (node: StructureNode): TreeNode => {
-    const area = facts.firmArea.get(node.id) ?? null;
-    const overdue = facts.firmOverdue.get(node.id) ?? 0;
+    const detail = node.detail?.kind === "firm" ? node.detail : null;
     return {
       id: node.id, kind: "firm", name: node.name,
-      datum: [area ? t(`firmWhat.${area}`) : null, t("global.structure.overdue", { count: overdue })].filter(Boolean).join(" · "),
-      health: overdue > 0 ? "red" : "green", children: [],
+      datum: [detail?.area ? t(`firmWhat.${detail.area}`) : null, t("global.structure.overdue", { count: detail?.overdue_tasks ?? 0 })].filter(Boolean).join(" · "),
+      health: node.health, children: [],
     };
   };
   const group = (office: StructureNode, key: string, label: string, datum: string | null, children: TreeNode[]): TreeNode => ({
@@ -141,19 +128,17 @@ export function buildStructureView(tree: StructureTree, facts: StructureFacts, t
   });
 
   const officeNode = (office: StructureNode): TreeNode => {
-    const inProgram = office.children.filter((c) => c.kind === "business" && businessOf(c.id)?.status === "in_program");
-    const franchisors = office.children.filter((c) => c.kind === "business" && businessOf(c.id)?.status === "franchisor");
+    const detail = office.detail?.kind === "office" ? office.detail : null;
+    const inProgram = office.children.filter((c) => c.kind === "business" && businessStatus(c) === "in_program");
+    const franchisors = office.children.filter((c) => c.kind === "business" && businessStatus(c) === "franchisor");
     const firms = office.children.filter((c) => c.kind === "firm");
-    const rows = facts.rows.filter((r) => r.business.office_id === office.id);
-    const ready = facts.franchisability.filter((f) => f.is_ready && inProgram.some((c) => c.id === f.business_id)).length;
-    const open = franchisors.reduce((n, c) => n + c.children.filter((x) => x.detail === "operating").length, 0);
     return {
       id: office.id, kind: "office", name: office.name,
-      datum: t("global.structure.office_datum", { count: inProgram.length }),
-      health: rows.length ? worstHealth(rows.map((r) => r.health)) : "grey",
+      datum: t("global.structure.office_datum", { count: detail?.programs ?? inProgram.length }),
+      health: office.health,
       children: [
         group(office, "programs", t("global.structure.group_programs"), null, inProgram.map(businessNode)),
-        group(office, "franchises", t("global.structure.group_franchises"), t("global.structure.franchise_level", { ready, open }), franchisors.map(businessNode)),
+        group(office, "franchises", t("global.structure.group_franchises"), t("global.structure.franchise_level", { ready: detail?.ready_to_franchise ?? 0, open: detail?.operating_franchises ?? 0 }), franchisors.map(businessNode)),
         group(office, "firms", t("global.structure.group_firms"), null, firms.map(firmNode)),
       ],
     };

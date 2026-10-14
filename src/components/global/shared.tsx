@@ -12,7 +12,6 @@ import { cn } from "@/lib/utils";
 import { DOT } from "@/components/office/shared";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { MAX_HOME_ITEMS } from "./logic";
 
 const BADGE: Record<Health, string> = {
@@ -83,27 +82,6 @@ export function EmptyBox({ title, body }: { title: string; body: string }) {
 export const ListSkeleton = ({ rows = 4 }: { rows?: number }) => (
   <div className="space-y-3">{Array.from({ length: rows }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-md" />)}</div>
 );
-
-/** A button the data layer cannot serve yet: disabled, with the reason in a tooltip. */
-export function DisabledAction({ label }: { label: string }) {
-  const { t } = useTranslation();
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span tabIndex={0} className="inline-flex">
-          <button
-            type="button"
-            disabled
-            className="inline-flex h-8 items-center justify-center rounded-md border border-border bg-surface px-3 text-sm font-medium text-foreground opacity-50"
-          >
-            {label}
-          </button>
-        </span>
-      </TooltipTrigger>
-      <TooltipContent>{t("global.backend_pending")}</TooltipContent>
-    </Tooltip>
-  );
-}
 
 /** Read-only summary of a business for SM Global. Global looks, it never edits tasks or leads. */
 export function BusinessSheet({ businessId, onClose }: { businessId: string | null; onClose: () => void }) {

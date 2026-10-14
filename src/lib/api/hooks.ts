@@ -1,9 +1,10 @@
-import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./index";
 import type { SubmitVersionInput } from "./repositories";
 import type {
   BusinessProfilePatch,
   CatalogItemInput,
+  CreateOfficeInput,
   InviteMemberInput,
   PlatformRules,
   PublishManualInput,
@@ -119,7 +120,14 @@ export const useUpdateTasks = () =>
 export const useCancelTasks = () => useTaskMutation((v: { ids: string[]; reason: string }) => api.tasks.cancel(v.ids, v.reason));
 
 // ---------- Pipeline (SM) ----------
-export const useLeads = () => useQuery({ queryKey: ["leads"], queryFn: api.leads.list });
+/** LeadWithComputed[]. SM team: its office. SM Global: every office (read only), or one office with officeId. */
+export const useLeads = (officeId?: string) =>
+  useQuery({
+    queryKey: ["leads", "list", officeId ?? "all"],
+    queryFn: () => api.leads.list(officeId ? { office_id: officeId } : undefined),
+    // Changing the office filter keeps the previous board on screen until the new one arrives.
+    placeholderData: keepPreviousData,
+  });
 export const useLeadDetail = (id: string | undefined) =>
   useQuery({ queryKey: ["leads", "detail", id], queryFn: () => api.leads.get(id!), enabled: !!id });
 function useLeadMutation<V, R>(fn: (v: V) => Promise<R>) {
@@ -182,6 +190,13 @@ export const useStructure = () => useQuery({ queryKey: ["network", "structure"],
 export const useBottlenecks = () => useQuery({ queryKey: ["network", "bottlenecks"], queryFn: api.network.listBottlenecks });
 /** NetworkFunnel: leads per stage, overall and by office. */
 export const useNetworkFunnel = () => useQuery({ queryKey: ["network", "funnel"], queryFn: api.network.getFunnel });
+/** Offices change who is in the network: refresh offices, structure, users and organizations. */
+const OFFICE_ROOTS = ["network", "organizations", "users"];
+/** SM Global opens an office: it starts in "opening" with its checklist. */
+export const useCreateOffice = () => useNetworkMutation((input: CreateOfficeInput) => api.network.createOffice(input), OFFICE_ROOTS);
+export const usePauseOffice = () => useNetworkMutation((v: { officeId: string; reason: string }) => api.network.pauseOffice(v.officeId, v.reason), OFFICE_ROOTS);
+/** Opening office: only with its checklist complete. Paused office: resumes. */
+export const useActivateOffice = () => useNetworkMutation((officeId: string) => api.network.activateOffice(officeId), OFFICE_ROOTS);
 
 // ---------- SM Global: rules and catalog admin ----------
 /** PlatformRules: franchisability goal, required task codes, area amber days, amber tolerance. Readable by everyone. */
@@ -226,6 +241,8 @@ export const useManual = (businessId?: string) =>
 /** Franchisor publishes the next version; franchises follow it and get a task to read it. */
 export const usePublishManual = () =>
   useNetworkMutation((v: { businessId: string } & PublishManualInput) => api.manual.publish(v.businessId, { note: v.note, section_ids: v.section_ids }), ["manual", "franchises", "franchisee"]);
+/** Owner approves a section once all the catalog tasks that feed it are approved. */
+export const useApproveManualSection = () => useNetworkMutation((sectionId: string) => api.manual.approveSection(sectionId), ["manual"]);
 
 // ---------- Documents, numbers, business ----------
 /** BusinessDocument[]: requested / received / reviewed. Owner: own business. SM: pass a businessId or get all of its office. */
@@ -255,7 +272,7 @@ export const useInviteTeamMember = () =>
 export const useBishopPortfolio = () => useQuery({ queryKey: ["bishop", "portfolio"], queryFn: api.bishop.getPortfolio });
 /** BishopOpportunity[]: businesses SM presents to the Bishop, with decision none/interested/passed. */
 export const useBishopOpportunities = () => useQuery({ queryKey: ["bishop", "opportunities"], queryFn: api.bishop.listOpportunities });
-/** OpportunityDetail | null: opportunity plus the five-year projection (franchises, revenue, result, Bishop, SM). */
+/** OpportunityDetail | null: opportunity plus the five-year projection (franchises, revenue, result, Bishop, SM) and the readiness checklist. */
 export const useBishopOpportunity = (id: string | undefined) =>
   useQuery({ queryKey: ["bishop", "opportunities", id], queryFn: () => api.bishop.getOpportunity(id!), enabled: !!id });
 export const useExpressInterest = () => useNetworkMutation((id: string) => api.bishop.expressInterest(id), ["bishop"]);

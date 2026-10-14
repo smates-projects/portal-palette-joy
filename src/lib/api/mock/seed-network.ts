@@ -5,6 +5,7 @@ import catalogJson from "@/data/catalogo_metodo180.json";
 import { computeReportAmounts, nextMonth } from "@/lib/franchise/fees";
 import { projectYears } from "@/lib/bishop/split";
 import { addDaysIso, generateProgramTasks, type CatalogEntry } from "../program";
+import { MANUAL_SECTION_TITLES, manualSectionContent } from "./seed-manual";
 import type {
   AreaCode,
   Business,
@@ -17,6 +18,7 @@ import type {
   FranchiseReport,
   FranchiseTask,
   FinancialSeries,
+  ManualEvent,
   ManualSection,
   ManualVersion,
   Organization,
@@ -35,6 +37,7 @@ import {
   BIZ_VOSSLER,
   ORG_GLOBAL,
   U_RODRIGO_BIMBO,
+  businesses as miamiBusinesses,
 } from "./seed";
 import { at, blocks, buildLeads, uuid, type LeadSpec } from "./seed-leads";
 
@@ -46,6 +49,12 @@ export const ORG_ORL_FINANZAS = uuid("0a000000", 14);
 export const ORG_ORL_TECNOLOGIA = uuid("0a000000", 15);
 export const ORG_ORL_MARKETING = uuid("0a000000", 16);
 export const ORG_ORL_LEGAL = uuid("0a000000", 17);
+/** SM Tampa: an office in opening that already has everything its checklist asks for and waits for SM Global to activate it. */
+export const ORG_TAMPA = uuid("0a000000", 30);
+const TAMPA_FIRM_IDS: Record<AreaCode, string> = {
+  B1: uuid("0a000000", 31), B2: uuid("0a000000", 32), B3: uuid("0a000000", 33), B4: uuid("0a000000", 34), B5: uuid("0a000000", 35), B6: uuid("0a000000", 36),
+};
+export const U_TAMPA_MANAGER = uuid("0c000000", 60);
 /** A franchise unit is an Organization too: Franchise.id === its organization id. */
 export const FRANCHISE_ORLANDO_SUR = uuid("0a000000", 20);
 export const FRANCHISE_TAMPA = uuid("0a000000", 21);
@@ -80,6 +89,13 @@ export const organizations: Organization[] = [
   { id: ORG_ORL_LEGAL, name: "Bufete Ramos", kind: "partner_firm", area: "B6", specialty: "Contratos, licencias y propiedad intelectual para franquicias", city: "Orlando, FL", email: "contacto@bufeteramos.legal", phone: "+1 407 555 0206", parent_id: ORG_ORLANDO },
   { id: FRANCHISE_ORLANDO_SUR, name: "Bimbo Tacos Orlando Sur", kind: "franchise", area: null, specialty: null, city: "Orlando, FL", email: "orlandosur@bimbotacos.com", phone: "+1 407 555 0310", franchisor_business_id: BIZ_BIMBO },
   { id: FRANCHISE_TAMPA, name: "Bimbo Tacos Tampa", kind: "franchise", area: null, specialty: null, city: "Tampa, FL", email: "tampa@bimbotacos.com", phone: "+1 813 555 0311", franchisor_business_id: BIZ_BIMBO },
+  { id: ORG_TAMPA, name: "SM Tampa", kind: "sm", area: null, specialty: null, city: "Tampa, FL", email: "tampa@strategicmates.com", phone: null, default_booking_url: "https://strategicmates.com/tampa", parent_id: ORG_GLOBAL, status: "opening", opened_at: "2026-11-02", manager_user_id: U_TAMPA_MANAGER },
+  { id: TAMPA_FIRM_IDS.B1, name: "Bahía Estrategia", kind: "partner_firm", area: "B1", specialty: "Modelo de negocio replicable, plan a cinco años y territorios", city: "Tampa, FL", email: "hola@bahiaestrategia.com", phone: "+1 813 555 0401", parent_id: ORG_TAMPA },
+  { id: TAMPA_FIRM_IDS.B2, name: "Flujo Operaciones", kind: "partner_firm", area: "B2", specialty: "Procesos, manuales operativos y capacitación del equipo", city: "Tampa, FL", email: "equipo@flujooperaciones.com", phone: "+1 813 555 0402", parent_id: ORG_TAMPA },
+  { id: TAMPA_FIRM_IDS.B3, name: "Cifra Contadores", kind: "partner_firm", area: "B3", specialty: "Contabilidad, modelos financieros y cumplimiento fiscal en Florida", city: "Tampa, FL", email: "hola@cifracontadores.com", phone: "+1 813 555 0403", parent_id: ORG_TAMPA },
+  { id: TAMPA_FIRM_IDS.B4, name: "Red Digital Tampa", kind: "partner_firm", area: "B4", specialty: "CRM, respaldos y tableros para negocios de servicios", city: "Tampa, FL", email: "soporte@reddigitaltampa.com", phone: "+1 813 555 0404", parent_id: ORG_TAMPA },
+  { id: TAMPA_FIRM_IDS.B5, name: "Costa Marketing", kind: "partner_firm", area: "B5", specialty: "Marca, sitios web y posicionamiento local", city: "Tampa, FL", email: "hola@costamarketing.com", phone: "+1 813 555 0405", parent_id: ORG_TAMPA },
+  { id: TAMPA_FIRM_IDS.B6, name: "Estudio Legal Ybor", kind: "partner_firm", area: "B6", specialty: "Contratos, licencias y propiedad intelectual para franquicias", city: "Tampa, FL", email: "contacto@estudioybor.legal", phone: "+1 813 555 0406", parent_id: ORG_TAMPA },
 ];
 
 const person = (id: string, name: string, email: string, role: User["role"], organization_id: string | null, business_id: string | null, title: string | null): User => ({
@@ -99,6 +115,7 @@ export const users: User[] = [
   person(U_JEFFERSON, "Jefferson Paula", "jefferson@paulainvestments.com", "bishop", null, null, "Business Bishop"),
   person(U_LUISA, "Luisa Paredes", "luisa@bimbotacos.com", "franchisee", FRANCHISE_ORLANDO_SUR, null, "Dueña de la franquicia"),
   person(U_MARCO, "Marco Ibáñez", "marco@bimbotacos.com", "franchisee", FRANCHISE_TAMPA, null, "Dueño de la franquicia"),
+  person(U_TAMPA_MANAGER, "Natalia Escobar", "natalia@strategicmates.com", "sm_team", ORG_TAMPA, null, "Consultora y directora de la oficina"),
 ];
 
 export const businesses: Business[] = [
@@ -228,8 +245,23 @@ const orlandoSpecs: LeadSpec[] = [
   },
 ];
 const orlandoLeads = buildLeads(orlandoSpecs, { office_id: ORG_ORLANDO, lead_prefix: "2e100000", event_prefix: "2f000000" });
-export const leads = orlandoLeads.leads;
-export const leadEvents = orlandoLeads.leadEvents;
+
+// SM Tampa already received its first lead, which completes the last item of its opening checklist.
+const tampaSpecs: LeadSpec[] = [
+  {
+    path: [["submitted", "2026-10-10"]],
+    lead: {
+      consultant_user_id: U_TAMPA_MANAGER, business_id: null,
+      contact: { name: "Mariana Soler", email: "mariana@jardinessoler.com", phone: "+1 813 555 0421", city: "Tampa", state: "FL", hispanic_owner: true },
+      business: { name: "Jardines Soler", industry: "construction", activity: "Jardinería y paisajismo residencial", revenue_range: "500k_1m", margin_range: "20_30", team_range: "6_15", years_range: "5_10", has_active_clients: true },
+      result: { band: "mid", score: 70, eligible_program: true, eligibility_gaps: [], blocks: blocks("smmmsmm"), strengths: ["Clientes con contrato anual", "Cuadrillas con ruta fija"], priorities: ["Procesos escritos", "Precios por servicio"] },
+      know_how_example: null,
+    },
+  },
+];
+const tampaLeads = buildLeads(tampaSpecs, { office_id: ORG_TAMPA, lead_prefix: "2e200000", event_prefix: "2f100000" });
+export const leads = [...orlandoLeads.leads, ...tampaLeads.leads];
+export const leadEvents = [...orlandoLeads.leadEvents, ...tampaLeads.leadEvents];
 
 // ---------- Bimbo Tacos franchise network ----------
 export const franchises: Franchise[] = [
@@ -283,11 +315,12 @@ export const franchiseTasks: FranchiseTask[] = [
 ];
 
 // ---------- Manual ----------
-const SECTION_TITLES = ["Ventas", "Operación", "Compras", "Atención al cliente", "Administración", "Personas"] as const;
+const SECTION_TITLES = MANUAL_SECTION_TITLES;
 
 const sections = (businessId: string, prefix: string, rows: [number, ManualSection["status"], string | null][]): ManualSection[] =>
   rows.map(([pct, status, published_in], i) => ({
     id: uuid(prefix, i + 1), business_id: businessId, title: SECTION_TITLES[i]!, pct, status, updated_at: status === "not_started" ? "2026-10-09" : "2026-10-06", published_in,
+    ...manualSectionContent(SECTION_TITLES[i]!, status),
   }));
 
 export const manualSections: ManualSection[] = [
@@ -305,6 +338,14 @@ export const manualVersions: ManualVersion[] = [
   { id: uuid("6a000000", 2), business_id: BIZ_BIMBO, version: "v1.1", published_at: "2026-05-20", note: "Operación: tiempos de servicio y registro de temperaturas", published_by_user_id: U_RODRIGO_BIMBO, section_titles: ["Operación"] },
   { id: uuid("6a000000", 1), business_id: BIZ_BIMBO, version: "v1.0", published_at: "2026-04-01", note: "Primera versión entregada a Orlando Sur", published_by_user_id: U_RODRIGO_BIMBO, section_titles: [...SECTION_TITLES] },
 ];
+
+/** Every section that is approved in the seed has its approval in the activity, signed by the business owner. */
+export const manualEvents: ManualEvent[] = manualSections
+  .filter((s) => s.status === "approved")
+  .map((s, i): ManualEvent => ({
+    id: uuid("5e100000", i + 1), business_id: s.business_id, section_id: s.id, section_title: s.title, kind: "approved",
+    actor_user_id: [...miamiBusinesses, ...businesses].find((b) => b.id === s.business_id)!.owner_user_id, created_at: at(s.updated_at, "12:00:00"),
+  }));
 
 // ---------- Documents and contracts ----------
 const doc = (n: number, business_id: string, area: BusinessDocument["area"], name: string, state: BusinessDocument["state"], requested_at: string, received_at: string | null): BusinessDocument => ({
@@ -417,7 +458,7 @@ export const bishopInvestment = {
 
 export const opportunities = [
   {
-    id: OPP_VOSSLER, bishop_user_id: U_JEFFERSON, business_id: BIZ_VOSSLER, investment: 150000, ready_date: "2027-01-23", decision: "none" as const, decided_at: null,
+    id: OPP_VOSSLER, bishop_user_id: U_JEFFERSON, business_id: BIZ_VOSSLER, investment: 150000, ready_date: "2027-01-23", verified_revenue: 1804000, decision: "none" as const, decided_at: null,
     summary: "Construcción residencial con 11 años de operación, 14 empleados y 2 cuadrillas. Finanzas ordenadas desde agosto. El manual va en 49% y la marca necesita un rediseño para poder registrarse.",
     projection: projectYears([
       { year: 1, franchises: 4, revenue: 320000, result: 110000 },
@@ -428,7 +469,7 @@ export const opportunities = [
     ]),
   },
   {
-    id: OPP_PRIME, bishop_user_id: U_JEFFERSON, business_id: BIZ_PRIME, investment: 150000, ready_date: "2027-03-08", decision: "none" as const, decided_at: null,
+    id: OPP_PRIME, bishop_user_id: U_JEFFERSON, business_id: BIZ_PRIME, investment: 150000, ready_date: "2027-03-08", verified_revenue: null, decision: "none" as const, decided_at: null,
     summary: "Remodelación residencial en Tampa, 6 años de operación y 9 empleados. Entró al programa hace un mes y todavía no tiene finanzas verificadas.",
     projection: projectYears([
       { year: 1, franchises: 3, revenue: 210000, result: 70000 },
@@ -441,7 +482,8 @@ export const opportunities = [
 ];
 
 export const agreements: BishopAgreement[] = [
-  { id: uuid("9b000000", 1), bishop_user_id: U_JEFFERSON, business_id: BIZ_BIMBO, name: "Acuerdo de participación: Bimbo Tacos", counterparties: "Rodrigo Bimbo, Strategic Mates", state: "signed", signed_at: "2025-11-14" },
-  { id: uuid("9b000000", 2), bishop_user_id: U_JEFFERSON, business_id: null, name: "NDA de Business Bishop", counterparties: "Strategic Mates", state: "signed", signed_at: "2025-10-30" },
-  { id: uuid("9b000000", 3), bishop_user_id: U_JEFFERSON, business_id: BIZ_VOSSLER, name: "Acuerdo de participación: Vossler", counterparties: "Carla Méndez, Strategic Mates", state: "draft", signed_at: null },
+  { id: uuid("9b000000", 1), bishop_user_id: U_JEFFERSON, business_id: BIZ_BIMBO, name: "Acuerdo de participación: Bimbo Tacos", counterparties: "Rodrigo Bimbo, Strategic Mates", state: "signed", signed_at: "2025-11-14", has_file: true, file_name: "Acuerdo_participacion_Bimbo_Tacos.pdf" },
+  { id: uuid("9b000000", 2), bishop_user_id: U_JEFFERSON, business_id: null, name: "NDA de Business Bishop", counterparties: "Strategic Mates", state: "signed", signed_at: "2025-10-30", has_file: true, file_name: "NDA_Business_Bishop.pdf" },
+  // The draft is still with SM's lawyers: no file to open yet.
+  { id: uuid("9b000000", 3), bishop_user_id: U_JEFFERSON, business_id: BIZ_VOSSLER, name: "Acuerdo de participación: Vossler", counterparties: "Carla Méndez, Strategic Mates", state: "draft", signed_at: null, has_file: false, file_name: null },
 ];

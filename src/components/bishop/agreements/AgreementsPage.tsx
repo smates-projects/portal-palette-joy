@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { FileText } from "lucide-react";
 import { useBishopAgreements } from "@/lib/api/hooks";
 import type { AgreementState } from "@/lib/api/types";
@@ -59,18 +60,28 @@ export function AgreementsPage() {
                         {a.signed_at ? t("bishop.agreements.signed_on", { date: formatDate(a.signed_at, lng) }) : t("bishop.agreements.not_signed")}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        {/* The data layer has no file for an agreement yet, so the button is always off. A disabled button
-                            gets no hover events, so the tooltip hangs from a focusable wrapper. */}
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span tabIndex={0} className="inline-block rounded-md focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
-                              <button disabled aria-label={t("bishop.agreements.open_document_for", { name: a.name })} className={secondaryButton}>
-                                <FileText className="mr-1.5 h-3.5 w-3.5" />{t("bishop.agreements.open_document")}
-                              </button>
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent>{t("bishop.agreements.backend_needed")}</TooltipContent>
-                        </Tooltip>
+                        {a.has_file ? (
+                          // The mock has no real file: it only says that the document would download.
+                          <button
+                            onClick={() => toast.info(t("bishop.agreements.t_download", { file: a.file_name ?? a.name }))}
+                            aria-label={t("bishop.agreements.open_document_for", { name: a.name })}
+                            className={secondaryButton}
+                          >
+                            <FileText className="mr-1.5 h-3.5 w-3.5" />{t("bishop.agreements.open_document")}
+                          </button>
+                        ) : (
+                          // A disabled button gets no hover events, so the tooltip hangs from a focusable wrapper.
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span tabIndex={0} className="inline-block rounded-md focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+                                <button disabled aria-label={t("bishop.agreements.open_document_for", { name: a.name })} className={secondaryButton}>
+                                  <FileText className="mr-1.5 h-3.5 w-3.5" />{t("bishop.agreements.open_document")}
+                                </button>
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>{t("bishop.agreements.no_file")}</TooltipContent>
+                          </Tooltip>
+                        )}
                       </td>
                     </tr>
                   ))}

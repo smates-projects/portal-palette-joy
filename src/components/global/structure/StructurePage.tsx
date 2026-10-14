@@ -2,12 +2,10 @@ import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, ChevronRight, Search } from "lucide-react";
-import { TODAY } from "@/config/app";
-import { useBusinesses, useFranchisabilityMany, useOrganizations, useRules, useStructure, useTasks, useUsers, useVersions } from "@/lib/api/hooks";
-import { buildNetworkMatrix } from "@/lib/tasks/sm";
+import { useStructure } from "@/lib/api/hooks";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { expandableIds, filterTree, buildStructureView, type StructureFacts, type TreeNode } from "../logic";
+import { expandableIds, filterTree, buildStructureView, type TreeNode } from "../logic";
 import { BusinessSheet, EmptyBox, ErrorBox, GlobalHeader, HealthBadge } from "../shared";
 
 const INDENT_PX = 20;
@@ -17,44 +15,18 @@ export function StructurePage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const structureQ = useStructure();
-  const bizQ = useBusinesses();
-  const tasksQ = useTasks();
-  const versionsQ = useVersions();
-  const rulesQ = useRules();
-  const usersQ = useUsers();
-  const orgsQ = useOrganizations();
-  const programIds = (bizQ.data ?? []).filter((b) => b.status === "in_program").map((b) => b.id);
-  const franchisabilityQ = useFranchisabilityMany(programIds);
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState<Set<string> | null>(null);
   const [businessId, setBusinessId] = useState<string | null>(null);
 
-  const queries = [structureQ, bizQ, tasksQ, versionsQ, rulesQ, usersQ, orgsQ];
-  const loading = queries.some((q) => q.isLoading);
-  const franchisability = franchisabilityQ.data;
-
-  const buildView = (): TreeNode | null => {
-    if (!structureQ.data || loading) return null;
-    const businesses = bizQ.data ?? [];
-    const tasks = (tasksQ.data ?? []).filter((x) => x.status !== "cancelled");
-    const facts: StructureFacts = {
-      rows: buildNetworkMatrix(tasks, versionsQ.data ?? [], businesses.filter((b) => b.status === "in_program"), TODAY, rulesQ.data?.area_amber_days),
-      businesses,
-      franchisability,
-      consultantNames: new Map((usersQ.data ?? []).map((u) => [u.id, u.full_name])),
-      firmOverdue: tasks.reduce((m, x) => (x.is_overdue ? m.set(x.organization_id, (m.get(x.organization_id) ?? 0) + 1) : m), new Map<string, number>()),
-      firmArea: new Map((orgsQ.data ?? []).map((o) => [o.id, o.area])),
-    };
-    return buildStructureView(structureQ.data, facts, (key, options) => String(t(key, options ?? {})));
-  };
-  const view = buildView();
+  const view: TreeNode | null = structureQ.data ? buildStructureView(structureQ.data, (key, options) => String(t(key, options ?? {}))) : null;
 
   const header = <GlobalHeader question={t("global.structure.question")} />;
-  if (queries.some((q) => q.isError))
+  if (structureQ.isError)
     return (
       <div className="mx-auto max-w-5xl px-6 py-8">
         {header}
-        <div className="mt-6"><ErrorBox onRetry={() => queries.forEach((q) => void q.refetch())} /></div>
+        <div className="mt-6"><ErrorBox onRetry={() => void structureQ.refetch()} /></div>
       </div>
     );
   if (!view)

@@ -10,12 +10,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PrimaryButton } from "@/components/tasks/detail/dialogs";
 import { BandBadge, BlockBadge, StageBadge } from "./LeadBadges";
 
+/**
+ * Detail of one lead. With `readOnly` (SM Global) there are no actions and no note box: it only shows what the
+ * office knows. Without it, `onPrimary`, `onDiscard` and `pending` are required in practice.
+ */
 export function LeadDetail(props: {
   leadId: string;
   onClose: () => void;
-  onPrimary: (lead: LeadWithComputed) => void;
-  onDiscard: (lead: LeadWithComputed) => void;
-  pending: boolean;
+  readOnly?: boolean;
+  onPrimary?: (lead: LeadWithComputed) => void;
+  onDiscard?: (lead: LeadWithComputed) => void;
+  pending?: boolean;
 }) {
   const { t, i18n } = useTranslation();
   const lng = i18n.language;
@@ -82,13 +87,19 @@ export function LeadDetail(props: {
         {lead.stage === "discarded" && lead.discard_reason && (
           <p className="mt-3 rounded-md border border-border bg-muted px-3 py-2 text-sm">{t("pipeline.detail.discard_reason", { reason: lead.discard_reason })}</p>
         )}
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <PrimaryButton onClick={() => props.onPrimary(lead)} disabled={props.pending}>{t(`pipeline.actions.${action}`)}</PrimaryButton>
-          {canDiscard && (
-            <button onClick={() => props.onDiscard(lead)} className="text-sm text-muted-foreground hover:text-foreground hover:underline">{t("pipeline.actions.discard")}</button>
-          )}
-        </div>
-        {fromOffice && <p className="mt-2 text-xs text-muted-foreground">{t("pipeline.detail.booking_from_office", { name: consultant.full_name })}</p>}
+        {props.readOnly ? (
+          <p className="mt-4 rounded-[4px] border border-border bg-muted px-2 py-1 text-xs text-muted-foreground">{t("pipeline.detail.read_only")}</p>
+        ) : (
+          <>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <PrimaryButton onClick={() => props.onPrimary?.(lead)} disabled={props.pending ?? false}>{t(`pipeline.actions.${action}`)}</PrimaryButton>
+              {canDiscard && (
+                <button onClick={() => props.onDiscard?.(lead)} className="text-sm text-muted-foreground hover:text-foreground hover:underline">{t("pipeline.actions.discard")}</button>
+              )}
+            </div>
+            {fromOffice && <p className="mt-2 text-xs text-muted-foreground">{t("pipeline.detail.booking_from_office", { name: consultant.full_name })}</p>}
+          </>
+        )}
       </header>
 
       <div className="flex-1 space-y-6 px-6 py-5">
@@ -168,22 +179,24 @@ export function LeadDetail(props: {
               </li>
             ))}
           </ol>
-          <div className="mt-4 space-y-2">
-            <textarea
-              rows={2}
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder={t("pipeline.detail.note_placeholder")}
-              className="w-full resize-none rounded-md border border-input bg-surface px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30"
-            />
-            <button
-              onClick={submitNote}
-              disabled={!note.trim() || addNote.isPending}
-              className="inline-flex h-8 items-center rounded-md border border-border bg-surface px-3 text-sm font-medium hover:bg-muted disabled:opacity-50"
-            >
-              {t("pipeline.detail.note_add")}
-            </button>
-          </div>
+          {!props.readOnly && (
+            <div className="mt-4 space-y-2">
+              <textarea
+                rows={2}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder={t("pipeline.detail.note_placeholder")}
+                className="w-full resize-none rounded-md border border-input bg-surface px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30"
+              />
+              <button
+                onClick={submitNote}
+                disabled={!note.trim() || addNote.isPending}
+                className="inline-flex h-8 items-center rounded-md border border-border bg-surface px-3 text-sm font-medium hover:bg-muted disabled:opacity-50"
+              >
+                {t("pipeline.detail.note_add")}
+              </button>
+            </div>
+          )}
         </section>
       </div>
     </div>

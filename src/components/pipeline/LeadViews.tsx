@@ -20,20 +20,20 @@ function DaysInStage({ lead }: { lead: LeadWithComputed }) {
   return <span className={cn("tabular-nums", stale ? "font-medium text-status-danger-fg" : "text-muted-foreground")}>{t("pipeline.days", { count: d })}</span>;
 }
 
-function LeadCard({ lead, selected, consultantName, onOpen, onDragStart, onKeyMove }: { lead: LeadWithComputed; selected: boolean; consultantName: string; onOpen: () => void; onDragStart: () => void; onKeyMove: (dir: 1 | -1) => void }) {
+function LeadCard({ lead, selected, consultantName, readOnly, onOpen, onDragStart, onKeyMove }: { lead: LeadWithComputed; selected: boolean; consultantName: string; readOnly: boolean; onOpen: () => void; onDragStart: () => void; onKeyMove: (dir: 1 | -1) => void }) {
   const { t } = useTranslation();
-  const draggable = lead.stage !== "in_program";
+  // Read only (SM Global): the card opens the lead but never moves.
+  const draggable = !readOnly && lead.stage !== "in_program";
   return (
     <button
       type="button"
       draggable={draggable}
       onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; onDragStart(); }}
       onClick={onOpen}
-      aria-keyshortcuts="Shift+ArrowLeft Shift+ArrowRight"
-      aria-description={t("pipeline.keyboard_hint")}
+      {...(readOnly ? {} : { "aria-keyshortcuts": "Shift+ArrowLeft Shift+ArrowRight", "aria-description": t("pipeline.keyboard_hint") })}
       onKeyDown={(e) => {
         // Keyboard alternative to dragging.
-        if (e.shiftKey && (e.key === "ArrowRight" || e.key === "ArrowLeft")) { e.preventDefault(); onKeyMove(e.key === "ArrowRight" ? 1 : -1); }
+        if (!readOnly && e.shiftKey && (e.key === "ArrowRight" || e.key === "ArrowLeft")) { e.preventDefault(); onKeyMove(e.key === "ArrowRight" ? 1 : -1); }
       }}
       className={cn(
         "block w-full rounded-md border bg-surface p-3 text-left text-sm transition-colors hover:border-ring",
@@ -57,8 +57,13 @@ function LeadCard({ lead, selected, consultantName, onOpen, onDragStart, onKeyMo
   );
 }
 
-export function LeadBoard(props: ViewProps & { onDrop: (lead: LeadWithComputed, to: LeadStage) => void }) {
+/**
+ * Board by stage. With `readOnly` (SM Global) cards cannot be dragged or moved with the keyboard and the columns
+ * accept no drops; `onDrop` is then not needed.
+ */
+export function LeadBoard(props: ViewProps & { onDrop?: (lead: LeadWithComputed, to: LeadStage) => void; readOnly?: boolean }) {
   const { t } = useTranslation();
+  const readOnly = !!props.readOnly;
   const [dragId, setDragId] = useState<string | null>(null);
   const [over, setOver] = useState<LeadStage | null>(null);
   const [showDiscarded, setShowDiscarded] = useState(false);
@@ -66,17 +71,20 @@ export function LeadBoard(props: ViewProps & { onDrop: (lead: LeadWithComputed, 
     const lead = props.leads.find((l) => l.id === dragId);
     setDragId(null);
     setOver(null);
-    if (lead) props.onDrop(lead, to);
+    if (lead) props.onDrop?.(lead, to);
   };
-  const zone = (stage: LeadStage) => ({
-    onDragOver: (e: React.DragEvent) => { if (dragId) { e.preventDefault(); setOver(stage); } },
-    onDragLeave: () => setOver((o) => (o === stage ? null : o)),
-    onDrop: (e: React.DragEvent) => { e.preventDefault(); drop(stage); },
-  });
+  const zone = (stage: LeadStage) =>
+    readOnly
+      ? {}
+      : {
+          onDragOver: (e: React.DragEvent) => { if (dragId) { e.preventDefault(); setOver(stage); } },
+          onDragLeave: () => setOver((o) => (o === stage ? null : o)),
+          onDrop: (e: React.DragEvent) => { e.preventDefault(); drop(stage); },
+        };
   const keyMove = (lead: LeadWithComputed, dir: 1 | -1) => {
     const order: LeadStage[] = [...LEAD_STAGES, "discarded"];
     const to = order[order.indexOf(lead.stage) + dir];
-    if (to) props.onDrop(lead, to);
+    if (to) props.onDrop?.(lead, to);
   };
   const discarded = props.leads.filter((l) => l.stage === "discarded").sort(byTimeInStage);
 
@@ -96,7 +104,7 @@ export function LeadBoard(props: ViewProps & { onDrop: (lead: LeadWithComputed, 
                 <p className="px-1 py-6 text-center text-xs text-muted-foreground">{t("pipeline.column_empty")}</p>
               ) : (
                 items.map((l) => (
-                  <LeadCard key={l.id} lead={l} selected={props.selectedId === l.id} consultantName={props.consultantName(l.consultant_user_id)} onOpen={() => props.onOpen(l.id)} onDragStart={() => setDragId(l.id)} onKeyMove={(d) => keyMove(l, d)} />
+                  <LeadCard key={l.id} lead={l} selected={props.selectedId === l.id} consultantName={props.consultantName(l.consultant_user_id)} readOnly={readOnly} onOpen={() => props.onOpen(l.id)} onDragStart={() => setDragId(l.id)} onKeyMove={(d) => keyMove(l, d)} />
                 ))
               )}
             </div>
@@ -116,7 +124,7 @@ export function LeadBoard(props: ViewProps & { onDrop: (lead: LeadWithComputed, 
               <p className="px-1 py-6 text-center text-xs text-muted-foreground">{t("pipeline.column_empty")}</p>
             ) : (
               discarded.map((l) => (
-                <LeadCard key={l.id} lead={l} selected={props.selectedId === l.id} consultantName={props.consultantName(l.consultant_user_id)} onOpen={() => props.onOpen(l.id)} onDragStart={() => setDragId(l.id)} onKeyMove={(d) => keyMove(l, d)} />
+                <LeadCard key={l.id} lead={l} selected={props.selectedId === l.id} consultantName={props.consultantName(l.consultant_user_id)} readOnly={readOnly} onOpen={() => props.onOpen(l.id)} onDragStart={() => setDragId(l.id)} onKeyMove={(d) => keyMove(l, d)} />
               ))
             )}
           </div>

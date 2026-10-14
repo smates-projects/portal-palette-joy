@@ -54,6 +54,7 @@ export function createMockApi(): ApiClient {
     franchiseTasks: structuredClone(seedNetwork.franchiseTasks),
     manualSections: structuredClone(seedNetwork.manualSections),
     manualVersions: structuredClone(seedNetwork.manualVersions),
+    manualEvents: structuredClone(seedNetwork.manualEvents),
     documents: structuredClone(seedNetwork.documents),
     contracts: structuredClone(seedNetwork.contracts),
     financials: structuredClone(seedNetwork.financials),
@@ -128,11 +129,19 @@ export function createMockApi(): ApiClient {
   };
 
   // ---------- Leads ----------
+  /** Leads the current user may change: SM team, own office only. */
   const visibleLeads = () => {
     const u = me();
     if (u.role !== "sm_team") throw new Error("sm_only");
     return db.leads.filter((l) => l.office_id === u.organization_id);
   };
+  /** Leads the current user may read: SM team its own office, SM Global every office (read only). */
+  const readableLeads = () => {
+    const u = me();
+    if (u.role === "sm_global") return db.leads;
+    return visibleLeads();
+  };
+  /** The lead a write acts on. SM Global never gets here: writes are SM team only. */
   const findLead = (id: string) => {
     const l = visibleLeads().find((x) => x.id === id);
     if (!l) throw new Error("not_found");
@@ -316,9 +325,9 @@ export function createMockApi(): ApiClient {
     },
     ...createNetworkRepositories({ db, me, newId, delay }),
     leads: {
-      list: async () => delay(visibleLeads().map(withBooking)),
+      list: async (opts) => delay(readableLeads().filter((l) => !opts?.office_id || l.office_id === opts.office_id).map(withBooking)),
       get: async (id) => {
-        const l = visibleLeads().find((x) => x.id === id);
+        const l = readableLeads().find((x) => x.id === id);
         if (!l) return delay(null);
         return delay({ lead: withBooking(l), events: db.leadEvents.filter((e) => e.lead_id === id).sort((a, b) => a.created_at.localeCompare(b.created_at)) });
       },

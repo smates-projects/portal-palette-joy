@@ -960,7 +960,8 @@
       "discard_reason": "Motivo: {{reason}}",
       "not_found": "Este lead no existe o no es de tu oficina.",
       "submitted_at": "Hizo el assessment el {{date}}",
-      "booking_from_office": "Se abrirá el link de la oficina porque {{name}} todavía no cargó el suyo."
+      "booking_from_office": "Se abrirá el link de la oficina porque {{name}} todavía no cargó el suyo.",
+      "read_only": "Solo lectura. Los cambios los hace la oficina."
     },
     "blocks": {
       "time_team": "Tu tiempo y tu equipo",
@@ -1109,7 +1110,6 @@
     "cancel": "Cancelar",
     "close": "Cerrar",
     "save_changes": "Guardar cambios",
-    "backend_pending": "Disponible al conectar el backend",
     "health": {
       "red": "Vencido",
       "amber": "Por vencer",
@@ -1148,12 +1148,11 @@
         "offices_other": "oficinas",
         "programs_one": "negocio en programa",
         "programs_other": "negocios en programa",
-        "open_leads_one": "lead abierto",
-        "open_leads_other": "leads abiertos",
         "ready_one": "listo para franquiciar",
         "ready_other": "listos para franquiciar",
-        "overdue_one": "tarea vencida",
-        "overdue_other": "tareas vencidas"
+        "leads_month_one": "lead este mes",
+        "leads_month_other": "leads este mes",
+        "conversion": "conversión del mes"
       },
       "offices_title": "Oficinas",
       "offices_empty_title": "Todavía no hay oficinas",
@@ -1213,13 +1212,12 @@
       "col_status": "Estado",
       "col_opened": "Apertura",
       "col_programs": "Negocios en programa",
-      "col_leads": "Leads",
-      "col_conversion": "Conversión",
+      "col_leads": "Leads este mes",
+      "col_conversion": "Conversión del mes",
       "col_firms": "Firmas aliadas",
       "col_health": "Salud",
       "no_manager": "Sin responsable",
       "no_date": "Sin fecha",
-      "no_data": "Sin dato",
       "no_programs": "Sin negocios",
       "status": {
         "opening": "En apertura",
@@ -1227,7 +1225,27 @@
         "paused": "Pausada"
       },
       "empty_title": "Todavía no hay oficinas",
-      "empty_body": "Cuando exista una oficina, la verás aquí con su responsable y sus negocios."
+      "empty_body": "Cuando exista una oficina, la verás aquí con su responsable y sus negocios.",
+      "col_ready": "Listos para franquiciar",
+      "no_conversion": "Sin leads este mes",
+      "t_created": "Creamos {{name}}. Está en apertura.",
+      "new_form": {
+        "title": "Nueva oficina",
+        "body": "La oficina empieza en apertura. Se activa cuando cumple su lista de apertura.",
+        "city": "Ciudad",
+        "city_hint": "Ejemplo: Tampa, FL",
+        "manager_name": "Responsable",
+        "manager_email": "Correo del responsable",
+        "manager_email_hint": "Le creamos su cuenta del equipo SM.",
+        "opening_date": "Fecha prevista de apertura",
+        "confirm": "Crear oficina",
+        "error_city_required": "Escribe la ciudad.",
+        "error_manager_required": "Escribe el nombre del responsable.",
+        "error_invalid_email": "Escribe un correo válido.",
+        "error_invalid_date": "Elige una fecha desde hoy.",
+        "api_office_exists": "Ya existe una oficina en esa ciudad.",
+        "api_email_taken": "Ese correo ya tiene una cuenta."
+      }
     },
     "office": {
       "question": "¿Cómo está esta oficina?",
@@ -1259,7 +1277,38 @@
       "network_empty_title": "Todavía no hay negocios en el programa",
       "network_empty_body": "Cuando un negocio de esta oficina firme su contrato, aparecerá aquí con sus seis áreas.",
       "not_found_title": "No encontramos esta oficina",
-      "not_found_body": "Puede que ya no exista. Vuelve a la lista de oficinas."
+      "not_found_body": "Puede que ya no exista. Vuelve a la lista de oficinas.",
+      "resume": "Reactivar oficina",
+      "activate": "Activar oficina",
+      "activate_blocked": "Completa la lista de apertura para activarla.",
+      "paused_reason": "Pausada: {{reason}}",
+      "t_paused": "Pausamos {{name}}.",
+      "t_activated": "{{name}} ya está operando.",
+      "t_resumed": "{{name}} volvió a operar.",
+      "api_checklist_incomplete": "Aún faltan puntos en la lista de apertura.",
+      "api_invalid_state": "La oficina no está en un estado que permita esta acción.",
+      "pause_form": {
+        "title": "¿Pausar {{name}}?",
+        "body": "La oficina conserva sus datos y sus negocios. Deja el motivo para que quede registrado.",
+        "reason": "Motivo",
+        "reason_required": "Escribe el motivo de la pausa.",
+        "placeholder": "Ejemplo: cambio de responsable",
+        "keep": "Mantener operando",
+        "confirm": "Pausar oficina"
+      },
+      "checklist_title": "Lista de apertura",
+      "checklist_progress": "{{done}} de {{total}} listos",
+      "checklist": {
+        "manager_access": "El responsable ya tiene acceso",
+        "booking_link": "El link de reservas está cargado",
+        "partner_firms": "Hay una firma aliada en cada una de las seis áreas",
+        "first_lead": "La oficina recibió su primer lead",
+        "missing_areas": "Falta firma en: {{areas}}"
+      },
+      "checklist_done": "Listo",
+      "checklist_pending": "Pendiente",
+      "checklist_ready": "La lista está completa. Ya puedes activar la oficina.",
+      "checklist_hint": "Cada punto se marca solo cuando los datos de la oficina lo cumplen."
     },
     "funnel": {
       "question": "¿Cuántos negocios entran a la red?",
@@ -1420,12 +1469,23 @@
       "included_count": "{{included}} de {{total}} entregas aprobadas ya están en el manual.",
       "task_included": "Incluida en el manual",
       "task_pending": "Pendiente: aún no está en el manual",
-      "ready_hint": "Todas las entregas de esta sección están aprobadas. Tu consultor de SM cerrará la sección.",
+      "ready_hint": "Todas las entregas de esta sección están aprobadas. Ya puedes aprobar la sección.",
       "current_version": "Versión actual",
       "no_version": "Sin versión",
       "completion": "El manual va en {{pct}}%.",
       "history": "Versiones anteriores",
-      "history_empty": "Aún no hay versiones. La primera aparecerá cuando el manual esté listo."
+      "history_empty": "Aún no hay versiones. La primera aparecerá cuando el manual esté listo.",
+      "not_ready_hint": "Podrás aprobar la sección cuando todas sus entregas estén aprobadas.",
+      "approve": "Aprobar sección",
+      "confirm_title": "¿Aprobar la sección {{section}}?",
+      "confirm_body": "Todas sus entregas están aprobadas. La aprobación queda registrada en la actividad del manual.",
+      "confirm_action": "Sí, aprobar",
+      "confirm_cancel": "Volver",
+      "t_approved": "Aprobaste la sección {{section}}.",
+      "t_approve_error": "No pudimos aprobar la sección. Inténtalo de nuevo.",
+      "activity": "Actividad",
+      "activity_empty": "Aún no se aprobó ninguna sección.",
+      "activity_approved": "Sección {{section}} aprobada"
     },
     "numbers": {
       "question": "¿Cómo le va a mi negocio?",
@@ -1626,7 +1686,7 @@
   },
   "bishop": {
     "for_role": "Business Bishop",
-    "provisional": "Provisorio",
+    "provisional": "Provisional",
     "error": "No pudimos cargar tus datos.",
     "retry": "Intentar de nuevo",
     "error_action": "No pudimos guardar el cambio. Intenta de nuevo.",
@@ -1685,7 +1745,9 @@
       "col_decision": "Tu respuesta",
       "ready_date": "Listo estimado: {{date}}",
       "share_values": "{{year1}}% / {{stable}}%",
-      "share_note": "El reparto es provisorio y puede cambiar antes de firmar. Cada acuerdo fija el reparto final."
+      "share_note": "El reparto es provisional y puede cambiar antes de firmar. Cada acuerdo fija el reparto final.",
+      "col_revenue": "Ingresos verificados (12 meses)",
+      "not_verified": "Sin verificar"
     },
     "opportunity_detail": {
       "question": "¿Me conviene este negocio?",
@@ -1708,7 +1770,7 @@
       "col_for_you": "Para ti",
       "year": "Año {{year}}",
       "total_for_you": "Total para ti en 5 años",
-      "projection_note": "Reparto provisorio: tú recibes {{year1}}% del resultado el primer año y {{stable}}% después. SM recibe {{sm}}% desde el segundo año. Son cifras de una proyección, no una promesa.",
+      "projection_note": "Reparto provisional: tú recibes {{year1}}% del resultado el primer año y {{stable}}% después. SM recibe {{sm}}% desde el segundo año. Son cifras de una proyección, no una promesa.",
       "ready_title": "Qué está listo y qué falta",
       "franchisable": "Listo para franquiciar",
       "program": "Programa de 180 días",
@@ -1732,7 +1794,20 @@
       "confirm_passed_title": "¿Quieres pasar de {{name}}?",
       "confirm_passed_body": "Dejamos de mostrarte este negocio. Puedes cambiar tu respuesta cuando quieras.",
       "confirm_passed_action": "Sí, pasar",
-      "confirm_cancel": "Volver"
+      "confirm_cancel": "Volver",
+      "verified_revenue": "Ingresos verificados",
+      "verified_revenue_sub": "Últimos 12 meses, verificados por SM",
+      "not_verified": "Sin verificar",
+      "not_verified_sub": "SM aún no verifica las finanzas",
+      "readiness": {
+        "franchisability_goal": "Meta de franquiciabilidad alcanzada",
+        "required_tasks": "Entregas obligatorias aprobadas",
+        "manual_published": "Manual publicado",
+        "legal_docs": "Documentos legales (FDD) listos",
+        "unit_economics": "Economía de la unidad validada"
+      },
+      "readiness_done": "Listo",
+      "readiness_pending": "Pendiente"
     },
     "agreements": {
       "question": "¿Qué acuerdos tengo?",
@@ -1750,7 +1825,8 @@
       "not_signed": "Sin firmar",
       "open_document": "Ver documento",
       "open_document_for": "Ver documento de {{name}}",
-      "backend_needed": "Disponible al conectar el backend"
+      "no_file": "Aún no hay documento para abrir",
+      "t_download": "Descargaríamos el archivo {{file}}. Esta versión es de prueba y todavía no tiene documentos reales."
     }
   },
   "franchisee": {

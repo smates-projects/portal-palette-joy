@@ -20,15 +20,16 @@ const asBishop = () => as(net.U_JEFFERSON);
 const asMiami = () => as(seed.U_NICOLAS);
 
 describe("roles and seed", () => {
-  it("Marilyn is SM Global, parent of both offices, and SM Miami is in Miami", async () => {
+  it("Marilyn is SM Global, parent of every office, and SM Miami is in Miami", async () => {
     const api = await asGlobal();
     const me = await api.session.getCurrentUser();
     expect(me.role).toBe("sm_global");
     const orgs = await api.organizations.list();
     expect(orgs.find((o) => o.id === me.organization_id)?.kind).toBe("sm_global");
     const offices = orgs.filter((o) => o.kind === "sm");
-    expect(offices.map((o) => o.name).sort()).toEqual(["SM Miami", "SM Orlando"]);
-    expect(offices.every((o) => o.parent_id === seed.ORG_GLOBAL && o.status === "operating")).toBe(true);
+    expect(offices.map((o) => o.name).sort()).toEqual(["SM Miami", "SM Orlando", "SM Tampa"]);
+    expect(offices.every((o) => o.parent_id === seed.ORG_GLOBAL)).toBe(true);
+    expect(offices.map((o) => `${o.name}:${o.status}`).sort()).toEqual(["SM Miami:operating", "SM Orlando:operating", "SM Tampa:opening"]);
     expect(offices.find((o) => o.id === seed.ORG_SM)?.city).toBe("Miami, FL");
   });
   it("the franchisor is a business owner of a franchisor business, not a new role", async () => {
@@ -317,9 +318,9 @@ describe("catalog admin (SM Global)", () => {
 describe("network (SM Global)", () => {
   it("the structure tree counts offices, businesses, franchisors, franchises and firms", async () => {
     const tree = await (await asGlobal()).network.getStructure();
-    expect(tree.counts).toEqual({ offices: 2, businesses: 5, franchisors: 1, franchises: 2, firms: 11 });
+    expect(tree.counts).toEqual({ offices: 3, businesses: 5, franchisors: 1, franchises: 2, firms: 17 });
     expect(tree.root.kind).toBe("global");
-    expect(tree.root.children.map((c) => c.name)).toEqual(["SM Miami", "SM Orlando"]);
+    expect(tree.root.children.map((c) => c.name)).toEqual(["SM Miami", "SM Orlando", "SM Tampa"]);
     const miami = tree.root.children[0]!;
     const bimbo = miami.children.find((c) => c.name === "Bimbo Tacos")!;
     expect(bimbo.children.map((c) => c.name).sort()).toEqual(["Bimbo Tacos Orlando Sur", "Bimbo Tacos Tampa"]);
@@ -342,8 +343,9 @@ describe("network (SM Global)", () => {
     expect(detail.firms).toHaveLength(6);
     expect(detail.team.map((u) => u.full_name)).toEqual(["Valentina Ríos"]);
     const summary = await api.network.getSummary();
-    expect(summary).toMatchObject({ offices: 2, programs: 5, franchisors: 1, franchises: 2, partner_firms: 11, last_month: "2026-09", franchise_sales_last_month: 75200, royalties_last_month: 3760 });
-    expect(summary.open_leads).toBe(miami.stats.open_leads + orlando.stats.open_leads);
+    expect(summary).toMatchObject({ offices: 3, programs: 5, franchisors: 1, franchises: 2, partner_firms: 17, last_month: "2026-09", franchise_sales_last_month: 75200, royalties_last_month: 3760 });
+    expect(summary.open_leads).toBe(offices.reduce((sum, o) => sum + o.stats.open_leads, 0));
+    expect(summary.open_leads).toBe(miami.stats.open_leads + orlando.stats.open_leads + 1); // + the first lead of SM Tampa
   });
   it("bottlenecks: six areas, most overdue first, with the offices behind each", async () => {
     const rows = await (await asGlobal()).network.listBottlenecks();
@@ -360,7 +362,7 @@ describe("network (SM Global)", () => {
     const total = funnel.stages.reduce((a, s) => a + s.count, 0);
     expect(total).toBe(seedLeads.leads.length + net.leads.length);
     expect(funnel.by_office.flatMap((o) => o.stages).reduce((a, s) => a + s.count, 0)).toBe(total);
-    expect(funnel.by_office).toHaveLength(2);
+    expect(funnel.by_office).toHaveLength(3);
   });
 });
 

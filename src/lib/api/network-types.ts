@@ -1,6 +1,6 @@
 // Types for the SM network (Global, offices), franchisors, franchises, Bishop and owner data.
 // Same conventions as types.ts: snake_case, UUID string ids, ISO dates.
-import type { AreaCode, IsoDate, IsoDateTime, LeadStage, Organization, User, Uuid } from "./types";
+import type { AreaCode, BusinessStatus, IsoDate, IsoDateTime, LeadStage, OfficeStatus, Organization, User, Uuid } from "./types";
 
 /** Month as YYYY-MM. */
 export type IsoMonth = string;
@@ -15,6 +15,12 @@ export interface OfficeStats {
   franchises: number;
   partner_firms: number;
   open_leads: number;
+  /** Assessments (leads) received this month. */
+  leads_this_month: number;
+  /** Businesses that entered the program this month over the assessments received this month, in percent. Null with no assessments. */
+  conversion_month: number | null;
+  /** Businesses in the program that already meet the franchisability rules. */
+  ready_to_franchise: number;
   open_tasks: number;
   overdue_tasks: number;
   /** Business health counts (worst of its areas). Franchisors are not counted: they have no program. */
@@ -25,6 +31,30 @@ export interface OfficeSummary {
   office: Organization;
   manager: User | null;
   stats: OfficeStats;
+}
+
+/** What SM Global gives to open an office. The manager gets an SM team account. */
+export interface CreateOfficeInput {
+  /** "Tampa, FL". The office is named "SM Tampa". */
+  city: string;
+  manager_name: string;
+  manager_email: string;
+  planned_opening_date: IsoDate;
+}
+
+export type OfficeChecklistKey = "manager_access" | "booking_link" | "partner_firms" | "first_lead";
+
+export interface OfficeChecklistItem {
+  key: OfficeChecklistKey;
+  done: boolean;
+  /** partner_firms only: the areas that still have no firm. */
+  missing_areas: AreaCode[];
+}
+
+/** Opening checklist, computed from the office data. The office can be activated only when it is complete. */
+export interface OfficeChecklist {
+  items: OfficeChecklistItem[];
+  complete: boolean;
 }
 
 export interface OfficeBusinessRow {
@@ -41,14 +71,29 @@ export interface OfficeDetail extends OfficeSummary {
   businesses: OfficeBusinessRow[];
   firms: Organization[];
   team: User[];
+  /** Only for an office in opening; null otherwise. */
+  checklist: OfficeChecklist | null;
 }
+
+export type StructureHealth = "red" | "amber" | "green" | "grey";
+
+/** Facts of a structure node, by kind. Numbers and codes only: the screen writes the text. */
+export type StructureDetail =
+  | { kind: "office"; status: OfficeStatus; programs: number; ready_to_franchise: number; operating_franchises: number }
+  | { kind: "business"; status: BusinessStatus; program_day: number | null; consultant_name: string | null }
+  | { kind: "franchise"; status: FranchiseStatus }
+  | { kind: "firm"; area: AreaCode | null; overdue_tasks: number };
 
 export interface StructureNode {
   id: Uuid;
   kind: "global" | "office" | "business" | "franchise" | "firm";
   name: string;
-  /** Short extra line: city, area, status. */
-  detail: string | null;
+  /** Office: worst of its programs. Business in program: worst of its areas. Firm: red with overdue tasks. Null where it does not apply. */
+  health: StructureHealth | null;
+  /** Business in program: franchisability reached and the value expected for its program day. */
+  franchisability: { value: number; expected: number } | null;
+  /** Null for the global node. */
+  detail: StructureDetail | null;
   children: StructureNode[];
 }
 
@@ -76,6 +121,10 @@ export interface NetworkSummary {
   franchises: number;
   partner_firms: number;
   open_leads: number;
+  /** Same three numbers as OfficeStats, for the whole network. */
+  leads_this_month: number;
+  conversion_month: number | null;
+  ready_to_franchise: number;
   overdue_tasks: number;
   /** Last closed month (2026-09): sales reported by franchises and royalties due. */
   last_month: IsoMonth;
@@ -282,6 +331,20 @@ export interface ManualSection {
   updated_at: IsoDate;
   /** Version in which this section was last published to the franchises. */
   published_in: string | null;
+  /** Catalog tasks whose results feed this section. The section can be approved when all of them are approved. */
+  catalog_codes: string[];
+  /** What the section says: purpose and key steps, paragraphs separated by a blank line. Empty until the section is started. */
+  body: string;
+}
+
+export interface ManualEvent {
+  id: Uuid;
+  business_id: Uuid;
+  section_id: Uuid;
+  section_title: string;
+  kind: "approved";
+  actor_user_id: Uuid;
+  created_at: IsoDateTime;
 }
 
 export interface ManualVersion {
@@ -299,6 +362,8 @@ export interface ManualOverview {
   sections: ManualSection[];
   /** Newest first. */
   versions: ManualVersion[];
+  /** Section approvals, newest first. */
+  activity: ManualEvent[];
   current_version: string | null;
   /** Average of section percentages. */
   completion_pct: number;
@@ -448,12 +513,23 @@ export interface BishopOpportunity {
   franchisability_pct: number;
   program_day: number;
   summary: string;
+  /** Revenue of the last 12 months as verified by SM; null until SM has verified the financials. */
+  verified_revenue: number | null;
   decision: OpportunityDecision;
   decided_at: IsoDateTime | null;
 }
 
+export type ReadinessKey = "franchisability_goal" | "required_tasks" | "manual_published" | "legal_docs" | "unit_economics";
+
+export interface ReadinessItem {
+  key: ReadinessKey;
+  done: boolean;
+}
+
 export interface OpportunityDetail extends BishopOpportunity {
   projection: ProjectionYear[];
+  /** What is done and what is pending before the business can franchise. Computed from the business data. */
+  readiness: ReadinessItem[];
 }
 
 export type AgreementState = "draft" | "sent" | "signed";
@@ -466,6 +542,9 @@ export interface BishopAgreement {
   counterparties: string;
   state: AgreementState;
   signed_at: IsoDate | null;
+  /** The agreement document exists and can be opened. */
+  has_file: boolean;
+  file_name: string | null;
 }
 
 // ---------- Franchisee ----------
