@@ -7,6 +7,7 @@ export const queryKeys = {
   viewAs: ["session", "view-as"] as const,
   tasks: ["tasks"] as const,
   task: (id: string) => ["tasks", "detail", id] as const,
+  meetings: ["tasks", "meetings"] as const,
   businesses: ["businesses"] as const,
   users: ["users"] as const,
 };
@@ -15,6 +16,8 @@ export const useCurrentUser = () => useQuery({ queryKey: queryKeys.me, queryFn: 
 export const useViewAsOptions = () =>
   useQuery({ queryKey: queryKeys.viewAs, queryFn: api.session.getViewAsOptions });
 export const useTasks = () => useQuery({ queryKey: queryKeys.tasks, queryFn: api.tasks.list });
+export const useUpcomingMeetings = () =>
+  useQuery({ queryKey: queryKeys.meetings, queryFn: api.tasks.listUpcomingMeetings });
 export const useBusinesses = () => useQuery({ queryKey: queryKeys.businesses, queryFn: api.businesses.list });
 export const useUsers = () => useQuery({ queryKey: queryKeys.users, queryFn: api.users.list });
 export const useTaskDetail = (id: string) =>

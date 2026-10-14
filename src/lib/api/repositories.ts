@@ -56,6 +56,8 @@ export interface TasksRepository {
   addOwnerRequest(id: Uuid, input: { question: string; due_date: string }): Promise<OwnerRequest>;
   setOwnerRequestResolved(requestId: Uuid, resolved: boolean): Promise<OwnerRequest>;
   proposeMeeting(id: Uuid, input: { topic: string; starts_at: string; duration_minutes: number }): Promise<Meeting>;
+  /** Upcoming (not cancelled) meetings on tasks the current user can see, soonest first. */
+  listUpcomingMeetings(): Promise<Meeting[]>;
 }
 
 export interface ApiClient {

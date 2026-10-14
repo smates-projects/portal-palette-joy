@@ -26,7 +26,7 @@ const AREA_BAR: Record<string, string> = {
 };
 
 /** The one task detail. Rendered inside the side panel or as the /tareas/:id page. */
-export function TaskDetail({ taskId, mode, onClose }: { taskId: string; mode: DetailMode; onClose?: () => void }) {
+export function TaskDetail({ taskId, mode, onClose, openSubmit = false }: { taskId: string; mode: DetailMode; onClose?: () => void; openSubmit?: boolean }) {
   const { t, i18n } = useTranslation();
   const lng = i18n.language;
   const navigate = useNavigate();
@@ -42,7 +42,7 @@ export function TaskDetail({ taskId, mode, onClose }: { taskId: string; mode: De
   const setResolved = useSetOwnerRequestResolved();
   const propose = useProposeMeeting();
 
-  const [submitOpen, setSubmitOpen] = useState(false);
+  const [submitOpen, setSubmitOpen] = useState(openSubmit);
   const [requestOpen, setRequestOpen] = useState(false);
   const [meetingOpen, setMeetingOpen] = useState(false);
 

@@ -248,5 +248,35 @@
     "t_meeting": "Reunión propuesta. Esperando que {{name}} confirme.",
     "t_error": "No se pudo completar la acción. Probá de nuevo.",
     "undo": "Deshacer"
+  },
+  "home": {
+    "heading": "¿Qué tengo que mover hoy?",
+    "cards": {
+      "overdue": "Vencidas",
+      "today": "Vencen hoy",
+      "week": "Vencen esta semana",
+      "changes": "Cambios pedidos",
+      "waiting": "Esperando aprobación del dueño",
+      "none": "Nada por ahora",
+      "in_business": "{{count}} en {{name}}"
+    },
+    "today_title": "Para hoy",
+    "overdue_by_one": "Vencida hace {{count}} día",
+    "overdue_by_other": "Vencida hace {{count}} días",
+    "due_today": "Vence hoy",
+    "due_tomorrow": "Vence mañana",
+    "due_in_one": "Vence en {{count}} día",
+    "due_in_other": "Vence en {{count}} días",
+    "blocked": "Bloqueada",
+    "empty_title": "Hoy no tenés nada que venza.",
+    "empty_next": "Lo próximo: {{code}} en {{name}}, {{when}}.",
+    "empty_none": "No tenés tareas pendientes. Cuando SM te asigne una nueva, va a aparecer acá.",
+    "when_weekday": "el {{day}}",
+    "when_date": "el {{date}}",
+    "meetings_title": "Próximas reuniones",
+    "meetings_empty": "No hay reuniones agendadas. Podés proponer una desde el detalle de cualquier tarea.",
+    "meetings_error": "No pudimos cargar las reuniones.",
+    "meeting_proposed": "Propuesta",
+    "meeting_confirmed": "Confirmada"
   }
 }
