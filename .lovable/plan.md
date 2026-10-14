@@ -3,10 +3,12 @@
 Store the two uploaded logos as the official brand marks, without building new screens.
 
 ## What changes
-- Horizontal logo ("Strategic Mates" with the tower) saved as the main logo, for the top of the side rail.
-- Isotype (tower with SM) saved as the collapsed-rail logo and used as the browser tab icon.
-- Default Lovable tab icon removed; site title set to "SM Platform".
-- A small shared logo piece (full / isotype) ready for the rail when it is built. Logos are never stretched or recolored.
+- Both uploads are the official logos. There is no negative (light) version yet.
+- Blue side rail: only the gold isotype (tower with SM), expanded or collapsed.
+- Horizontal logo ("Strategic Mates" with the tower): only on white backgrounds (e.g. sign-in, white headers), never on blue.
+- Isotype also used as the browser tab icon; default Lovable icon removed; site title set to "SM Platform".
+- A shared logo piece (horizontal / isotype) that only allows the horizontal version on white. Logos are never stretched or recolored.
+- These placement rules are saved as project memory so future screens follow them.
 
 ## Technical details
 - `lovable-assets create` for LogoF.png and Isotype.png into `src/assets/*.asset.json`.
