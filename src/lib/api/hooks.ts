@@ -49,7 +49,7 @@ export function useSetViewAs() {
 /** Task mutations refresh both the list and every detail (status, blocked flags). */
 function useTaskMutation<V, R>(fn: (vars: V) => Promise<R>) {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: fn, onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.tasks }) });
+  return useMutation({ mutationFn: fn, onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: queryKeys.tasks }), qc.invalidateQueries({ queryKey: ["notifications"] })]) });
 }
 
 export const useStartTask = () => useTaskMutation((id: string) => api.tasks.start(id));
@@ -65,3 +65,17 @@ export const useSetOwnerRequestResolved = () =>
   useTaskMutation((v: { requestId: string; resolved: boolean }) => api.tasks.setOwnerRequestResolved(v.requestId, v.resolved));
 export const useProposeMeeting = () =>
   useTaskMutation((v: { id: string; topic: string; starts_at: string; duration_minutes: number }) => api.tasks.proposeMeeting(v.id, v));
+
+export const useNotifications = () => useQuery({ queryKey: ["notifications"], queryFn: api.notifications.list });
+export const useNotificationPreferences = () =>
+  useQuery({ queryKey: ["notifications", "prefs"], queryFn: api.notifications.getPreferences });
+function useNotificationMutation<V>(fn: (v: V) => Promise<unknown>) {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: fn, onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }) });
+}
+export const useMarkNotificationRead = () => useNotificationMutation((id: string) => api.notifications.markRead(id));
+export const useMarkAllNotificationsRead = () => useNotificationMutation((_: void) => api.notifications.markAllRead());
+export const useSetNotificationPreference = () =>
+  useNotificationMutation((v: { kind: import("./types").NotificationKind; channel: import("./types").NotificationChannel; enabled: boolean }) =>
+    api.notifications.setPreference(v.kind, v.channel, v.enabled),
+  );

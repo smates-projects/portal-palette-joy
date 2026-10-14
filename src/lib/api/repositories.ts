@@ -1,5 +1,9 @@
 import type {
+  AppNotification,
   Business,
+  NotificationChannel,
+  NotificationKind,
+  NotificationPreference,
   ExternalCalendarEvent,
   Meeting,
   Organization,
@@ -69,7 +73,17 @@ export interface TasksRepository {
   listVersions(): Promise<TaskVersion[]>;
 }
 
+export interface NotificationsRepository {
+  /** Current user's notifications for kinds enabled "in app", newest first. Due ones are generated from dates. */
+  list(): Promise<AppNotification[]>;
+  markRead(id: string): Promise<void>;
+  markAllRead(): Promise<void>;
+  getPreferences(): Promise<NotificationPreference[]>;
+  setPreference(kind: NotificationKind, channel: NotificationChannel, enabled: boolean): Promise<NotificationPreference[]>;
+}
+
 export interface ApiClient {
+  notifications: NotificationsRepository;
   session: SessionRepository;
   organizations: OrganizationsRepository;
   businesses: BusinessesRepository;

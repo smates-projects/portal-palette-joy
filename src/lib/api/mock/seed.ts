@@ -1,4 +1,4 @@
-import type { ExternalCalendarEvent,
+import type { ExternalCalendarEvent, NotificationKind,
   Business,
   Meeting,
   Organization,
@@ -277,3 +277,16 @@ meetings.push(
   { id: uuid("1b000000", 901), task_id: T, proposed_by_user_id: U_LUCIA, topic: "Arranque: opciones de estructura societaria", starts_at: "2026-09-10T15:00:00Z", duration_minutes: 45, status: "confirmed" },
   { id: uuid("1b000000", 902), task_id: T, proposed_by_user_id: U_LUCIA, topic: "Repaso de la sección 3 del memo (elección S-Corp)", starts_at: "2026-10-16T15:00:00Z", duration_minutes: 30, status: "proposed" },
 );
+
+// Extra meeting the owner proposed to the firm (shows in notifications and calendar).
+meetings.push({ id: uuid("1b000000", 903), task_id: TASK_B603_VOSSLER, proposed_by_user_id: U_CARLA, topic: "Licencia CGC y condados donde operar", starts_at: "2026-10-19T16:00:00Z", duration_minutes: 30, status: "proposed" });
+
+/** Stored (event-driven) notifications. Due-date ones are generated from TODAY, not stored. */
+export const notifications: { id: string; user_id: string; kind: NotificationKind; task_id: string; actor_user_id: string | null; created_at: string; read: boolean }[] = [
+  { id: uuid("1f000000", 1), user_id: U_LUCIA, kind: "mentioned", task_id: TASK_B603_VOSSLER, actor_user_id: U_CARLA, created_at: "2026-10-14T13:20:00Z", read: false },
+  { id: uuid("1f000000", 2), user_id: U_LUCIA, kind: "meeting_proposed", task_id: TASK_B603_VOSSLER, actor_user_id: U_CARLA, created_at: "2026-10-14T12:05:00Z", read: false },
+  { id: uuid("1f000000", 3), user_id: U_LUCIA, kind: "changes_requested", task_id: TASK_B601_PRIME, actor_user_id: U_DANIEL, created_at: "2026-10-13T16:40:00Z", read: false },
+  { id: uuid("1f000000", 4), user_id: U_LUCIA, kind: "changes_requested", task_id: TASK_B602_VOSSLER, actor_user_id: U_CARLA, created_at: "2026-10-01T13:42:00Z", read: true },
+  { id: uuid("1f000000", 5), user_id: U_LUCIA, kind: "meeting_confirmed", task_id: TASK_B602_VOSSLER, actor_user_id: U_CARLA, created_at: "2026-09-08T14:00:00Z", read: true },
+  { id: uuid("1f000000", 6), user_id: U_LUCIA, kind: "unblocked", task_id: TASK_B602_VOSSLER, actor_user_id: null, created_at: "2026-09-05T15:00:00Z", read: true },
+];
