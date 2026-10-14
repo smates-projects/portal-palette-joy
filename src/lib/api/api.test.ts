@@ -51,9 +51,10 @@ describe("mock authorization", () => {
     const xyz = await api.tasks.list();
     expect(xyz.every((t) => t.organization_id === seed.ORG_XYZ)).toBe(true);
   });
-  it("SM view is not available yet", async () => {
+  it("Nicolás García is offered as the SM team user", async () => {
     const api = createMockApi();
-    await expect(api.session.setViewAs(seed.U_MARYLIN)).rejects.toThrow();
+    const opts = await api.session.getViewAsOptions();
+    expect(opts.find((o) => o.user.role === "sm_team" && o.enabled)?.user.id).toBe(seed.U_NICOLAS);
   });
   it("the owner sees every task of her program and nothing from other businesses", async () => {
     const api = createMockApi();
