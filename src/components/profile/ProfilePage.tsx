@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { NotificationPreferences } from "@/components/profile/NotificationPreferences";
+import { BookingUrlSection } from "@/components/profile/BookingUrlSection";
 import { CalendarDays, Mail, MapPin, Phone } from "lucide-react";
 import { useCurrentUser, useOrganizations, useSetGoogleCalendar, useUsers } from "@/lib/api/hooks";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -59,7 +60,7 @@ export function ProfilePage() {
                 <h2 className="text-base font-semibold">{org?.name}</h2>
                 {org?.area && <p className="mt-0.5 text-xs text-muted-foreground">{t("profile.area", { area: `${org.area} · ${t(`areas.${org.area}`)}` })}</p>}
               </div>
-              <span className="rounded-[4px] border border-border px-1.5 py-0.5 text-[11px] text-muted-foreground">{t("roles.partner_firm")}</span>
+              <span className="rounded-[4px] border border-border px-1.5 py-0.5 text-[11px] text-muted-foreground">{t(`roles.${me.role}`)}</span>
             </div>
             <dl className="grid gap-4 px-5 py-4 text-sm sm:grid-cols-2">
               <div className="sm:col-span-2">
@@ -133,6 +134,7 @@ export function ProfilePage() {
             <p className="mt-3 text-xs text-muted-foreground">{t("profile.cal_note")}</p>
           </section>
 
+          <BookingUrlSection />
           <NotificationPreferences />
         </div>
       )}

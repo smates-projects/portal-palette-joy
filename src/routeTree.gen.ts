@@ -14,6 +14,7 @@ import { Route as CatalogoRouteImport } from './routes/catalogo'
 import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as ConfiguracionRouteImport } from './routes/configuracion'
 import { Route as DocumentosRouteImport } from './routes/documentos'
+import { Route as EmbudoRouteImport } from './routes/embudo'
 import { Route as ManualRouteImport } from './routes/manual'
 import { Route as NegocioRouteImport } from './routes/negocio'
 import { Route as NegociosRouteImport } from './routes/negocios'
@@ -47,6 +48,11 @@ const ConfiguracionRoute = ConfiguracionRouteImport.update({
 const DocumentosRoute = DocumentosRouteImport.update({
   id: '/documentos',
   path: '/documentos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmbudoRoute = EmbudoRouteImport.update({
+  id: '/embudo',
+  path: '/embudo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ManualRoute = ManualRouteImport.update({
@@ -101,6 +107,7 @@ export interface FileRoutesByFullPath {
   '/clientes': typeof ClientesRoute
   '/configuracion': typeof ConfiguracionRoute
   '/documentos': typeof DocumentosRoute
+  '/embudo': typeof EmbudoRoute
   '/manual': typeof ManualRoute
   '/negocio': typeof NegocioRoute
   '/negocios': typeof NegociosRoute
@@ -117,6 +124,7 @@ export interface FileRoutesByTo {
   '/clientes': typeof ClientesRoute
   '/configuracion': typeof ConfiguracionRoute
   '/documentos': typeof DocumentosRoute
+  '/embudo': typeof EmbudoRoute
   '/manual': typeof ManualRoute
   '/negocio': typeof NegocioRoute
   '/negocios': typeof NegociosRoute
@@ -134,6 +142,7 @@ export interface FileRoutesById {
   '/clientes': typeof ClientesRoute
   '/configuracion': typeof ConfiguracionRoute
   '/documentos': typeof DocumentosRoute
+  '/embudo': typeof EmbudoRoute
   '/manual': typeof ManualRoute
   '/negocio': typeof NegocioRoute
   '/negocios': typeof NegociosRoute
@@ -152,6 +161,7 @@ export interface FileRouteTypes {
     | '/clientes'
     | '/configuracion'
     | '/documentos'
+    | '/embudo'
     | '/manual'
     | '/negocio'
     | '/negocios'
@@ -168,6 +178,7 @@ export interface FileRouteTypes {
     | '/clientes'
     | '/configuracion'
     | '/documentos'
+    | '/embudo'
     | '/manual'
     | '/negocio'
     | '/negocios'
@@ -184,6 +195,7 @@ export interface FileRouteTypes {
     | '/clientes'
     | '/configuracion'
     | '/documentos'
+    | '/embudo'
     | '/manual'
     | '/negocio'
     | '/negocios'
@@ -201,6 +213,7 @@ export interface RootRouteChildren {
   ClientesRoute: typeof ClientesRoute
   ConfiguracionRoute: typeof ConfiguracionRoute
   DocumentosRoute: typeof DocumentosRoute
+  EmbudoRoute: typeof EmbudoRoute
   ManualRoute: typeof ManualRoute
   NegocioRoute: typeof NegocioRoute
   NegociosRoute: typeof NegociosRoute
@@ -247,6 +260,13 @@ declare module '@tanstack/react-router' {
       path: '/documentos'
       fullPath: '/documentos'
       preLoaderRoute: typeof DocumentosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/embudo': {
+      id: '/embudo'
+      path: '/embudo'
+      fullPath: '/embudo'
+      preLoaderRoute: typeof EmbudoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/manual': {
@@ -321,6 +341,7 @@ const rootRouteChildren: RootRouteChildren = {
   ClientesRoute: ClientesRoute,
   ConfiguracionRoute: ConfiguracionRoute,
   DocumentosRoute: DocumentosRoute,
+  EmbudoRoute: EmbudoRoute,
   ManualRoute: ManualRoute,
   NegocioRoute: NegocioRoute,
   NegociosRoute: NegociosRoute,

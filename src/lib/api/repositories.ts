@@ -1,4 +1,8 @@
 import type {
+  Lead,
+  LeadEvent,
+  LeadStage,
+  LeadWithComputed,
   AppNotification,
   Business,
   Franchisability,
@@ -42,6 +46,26 @@ export interface UsersRepository {
   setGoogleCalendar(email: string | null): Promise<User>;
   /** Current user's Google Calendar events; empty when not connected. */
   listCalendarEvents(): Promise<ExternalCalendarEvent[]>;
+  /** SM team: set or clear the current user's booking link. */
+  setBookingUrl(url: string | null): Promise<User>;
+}
+
+export interface LeadDetail {
+  lead: LeadWithComputed;
+  events: LeadEvent[];
+}
+
+/** SM only, scoped to the user's office. */
+export interface LeadsRepository {
+  list(): Promise<LeadWithComputed[]>;
+  get(id: Uuid): Promise<LeadDetail | null>;
+  /** One step forward or back, or reactivate a discarded lead to evaluated. Never to/from in_program. */
+  move(id: Uuid, to: Exclude<LeadStage, "discarded" | "in_program">): Promise<LeadWithComputed>;
+  /** Required reason. Not allowed once in program. */
+  discard(id: Uuid, reason: string): Promise<LeadWithComputed>;
+  addNote(id: Uuid, body: string): Promise<LeadEvent>;
+  /** contract → in_program: creates the business (day 1 = signed_on) and its tasks from the catalog. */
+  markContractSigned(id: Uuid, signed_on: string): Promise<{ lead: Lead; business_id: Uuid; task_count: number }>;
 }
 
 export interface TaskDetail {
@@ -107,4 +131,5 @@ export interface ApiClient {
   businesses: BusinessesRepository;
   users: UsersRepository;
   tasks: TasksRepository;
+  leads: LeadsRepository;
 }

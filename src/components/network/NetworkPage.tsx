@@ -23,7 +23,7 @@ const COUNTERS: { key: keyof NetworkCounters; search: TasksSearch | null; danger
 ];
 
 /** Red: the whole office at a glance. Every number and cell opens Mis tareas over the whole office. */
-export function NetworkPage() {
+export function NetworkPage({ businessId }: { businessId?: string | undefined } = {}) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const tasksQ = useTasks();
@@ -61,8 +61,10 @@ export function NetworkPage() {
       </div>
     );
 
-  const tasks = tasksQ.data ?? [];
-  const businesses = bizQ.data ?? [];
+  // "Ver programa" from the pipeline: only that business.
+  const focus = businessId ? (bizQ.data ?? []).find((b) => b.id === businessId) : undefined;
+  const tasks = (tasksQ.data ?? []).filter((x) => !focus || x.business_id === focus.id);
+  const businesses = (bizQ.data ?? []).filter((b) => !focus || b.id === focus.id);
   const counters = buildNetworkCounters(tasks, businesses);
   const matrix = buildNetworkMatrix(tasks, versionsQ.data ?? [], businesses);
   const load = buildFirmLoad(tasks, versionsQ.data ?? [], (orgsQ.data ?? []).filter((o) => o.kind === "partner_firm"));
@@ -81,6 +83,12 @@ export function NetworkPage() {
   return (
     <div className="mx-auto max-w-7xl px-6 py-8">
       {header}
+      {focus && (
+        <div className="mt-4 flex items-center gap-3 text-sm">
+          <span className="rounded-[4px] border border-ring bg-accent/60 px-2 py-1">{t("pipeline.network_filtered", { name: focus.name })}</span>
+          <button onClick={() => void navigate({ to: "/red", search: {} })} className="text-link hover:underline">{t("pipeline.network_all")}</button>
+        </div>
+      )}
 
       {/* Counters */}
       <div className="mt-6 grid grid-cols-2 overflow-hidden rounded-md border border-border bg-surface sm:grid-cols-5 sm:divide-x sm:divide-border">

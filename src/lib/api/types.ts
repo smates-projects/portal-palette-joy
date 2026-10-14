@@ -28,6 +28,8 @@ export interface Organization {
   city: string | null;
   email: string | null;
   phone: string | null;
+  /** SM offices: booking link used when the assigned consultant has none. */
+  default_booking_url?: string | null;
 }
 
 export interface User {
@@ -40,6 +42,8 @@ export interface User {
   title: string | null;
   /** Simulated Google Calendar link used to send meeting invites. */
   google_calendar_email: string | null;
+  /** SM team: personal booking link (Google Calendar, Calendly...). Set in Mi perfil. */
+  booking_url: string | null;
 }
 
 export interface Business {
@@ -243,4 +247,80 @@ export interface ViewAsOption {
 export interface FranchisabilityRules {
   goal: number;
   required_task_codes: string[];
+}
+
+// ---------- Pipeline (leads from the external readiness assessment) ----------
+
+export const LEAD_STAGES = ["evaluated", "meeting", "accepted", "contract", "in_program"] as const;
+export type ActiveLeadStage = (typeof LEAD_STAGES)[number];
+export type LeadStage = ActiveLeadStage | "discarded";
+export type LeadBand = "high" | "mid" | "low" | "track";
+export type LeadIndustry = "construction" | "remodeling" | "cleaning" | "restaurant" | "salon";
+export type RevenueRange = "lt_250k" | "250k_500k" | "500k_1m" | "1m_3m" | "gt_3m";
+export type MarginRange = "lt_10" | "10_20" | "20_30" | "gt_30";
+export type TeamRange = "1_5" | "6_15" | "16_50" | "gt_50";
+export type YearsRange = "lt_2" | "2_5" | "5_10" | "gt_10";
+export const ASSESSMENT_BLOCKS = ["model", "operations", "finance", "technology", "marketing", "legal", "team"] as const;
+export type AssessmentBlock = (typeof ASSESSMENT_BLOCKS)[number];
+export type BlockStatus = "strong" | "medium" | "weak" | "unknown";
+export type EligibilityGap = "years" | "revenue";
+
+export interface Lead {
+  id: Uuid;
+  /** SM office that receives the lead. */
+  office_id: Uuid;
+  stage: LeadStage;
+  /** Stage the lead was in when discarded (null otherwise). */
+  discarded_from: ActiveLeadStage | null;
+  discard_reason: string | null;
+  stage_entered_at: IsoDateTime;
+  submitted_at: IsoDateTime;
+  /** Last time SM moved the lead or wrote a note (null = never contacted). */
+  last_contact_at: IsoDateTime | null;
+  consultant_user_id: Uuid;
+  /** Set when the contract is signed and the business is created. */
+  business_id: Uuid | null;
+  contact: { name: string; email: string; phone: string; city: string; state: string; hispanic_owner: boolean };
+  business: {
+    name: string;
+    industry: LeadIndustry;
+    /** Free text as the owner wrote it. */
+    activity: string;
+    revenue_range: RevenueRange;
+    margin_range: MarginRange;
+    team_range: TeamRange;
+    years_range: YearsRange;
+    has_active_clients: boolean;
+  };
+  result: {
+    band: LeadBand;
+    score: number;
+    eligible_program: boolean;
+    eligibility_gaps: EligibilityGap[];
+    blocks: { key: AssessmentBlock; status: BlockStatus }[];
+    strengths: string[];
+    priorities: string[];
+  };
+  know_how_example: string | null;
+}
+
+export interface LeadWithComputed extends Lead {
+  /** Consultant's booking link, or the office default. Resolved by the data layer. */
+  booking_url: string;
+}
+
+export type LeadEventKind = "submitted" | "stage_changed" | "discarded" | "restored" | "note" | "contract_signed";
+
+export interface LeadEvent {
+  id: Uuid;
+  lead_id: Uuid;
+  kind: LeadEventKind;
+  actor_user_id: Uuid | null;
+  created_at: IsoDateTime;
+  from: LeadStage | null;
+  to: LeadStage | null;
+  /** Note text or discard reason. */
+  body: string | null;
+  /** contract_signed: signature date. */
+  signed_on?: IsoDate | null;
 }

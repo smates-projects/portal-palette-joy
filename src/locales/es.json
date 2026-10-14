@@ -20,7 +20,8 @@
     "network": "Red",
     "businesses": "Negocios",
     "catalog": "Catálogo y equipo",
-    "settings": "Configuración"
+    "settings": "Configuración",
+    "pipeline": "Embudo"
   },
   "topbar": {
     "search_placeholder": "Buscar tareas o clientes",
@@ -114,6 +115,10 @@
     "settings": {
       "title": "Configuración",
       "subtitle": "¿Cómo está configurada la oficina?"
+    },
+    "pipeline": {
+      "title": "Embudo",
+      "subtitle": ""
     }
   },
   "meta": {
@@ -122,7 +127,8 @@
     "clients": "Negocios para los que trabaja tu firma.",
     "profile": "Datos de tu firma y de tu usuario.",
     "report": "Avance y ritmo de entregas de tu firma.",
-    "network": "Salud de los negocios y carga de las firmas de la oficina."
+    "network": "Salud de los negocios y carga de las firmas de la oficina.",
+    "pipeline": "Quién hizo el assessment, qué le salió y en qué etapa está."
   },
   "notFound": {
     "title": "Esta página no existe",
@@ -436,7 +442,17 @@
     "t_disconnected": "Google Calendar desconectado",
     "undo": "Deshacer",
     "error_title": "No pudimos cargar tu perfil",
-    "retry": "Cargar perfil de nuevo"
+    "retry": "Cargar perfil de nuevo",
+    "booking_title": "Tu link de reservas",
+    "booking_body": "Se abre cuando tocas \"Agendar reunión\" en un lead tuyo. Puede ser Google Calendar, Calendly o el que uses.",
+    "booking_placeholder": "https://calendly.com/tu-nombre",
+    "booking_save": "Guardar link",
+    "booking_clear": "Quitar link",
+    "booking_default": "Mientras no cargues uno, se usa el de la oficina: {{url}}",
+    "booking_current": "Ahora se usa: {{url}}",
+    "t_booking_saved": "Guardaste tu link de reservas.",
+    "t_booking_cleared": "Quitaste tu link. Se usará el de la oficina.",
+    "booking_invalid": "Escribe un link completo, que empiece con https://"
   },
   "report": {
     "heading": "¿Cómo va mi trabajo?",
@@ -704,5 +720,198 @@
     "load_empty": "Ninguna firma tiene tareas todavía.",
     "load_hint": "Atraso: días promedio de las tareas vencidas. Aprobación: días desde la entrega hasta que el dueño aprueba.",
     "days_short": "{{value}} d"
+  },
+  "pipeline": {
+    "for_role": "Vista para equipo SM",
+    "heading": "¿Quién está entrando?",
+    "counters": {
+      "week": "assessments esta semana",
+      "uncontacted": "sin contactar hace más de 2 días",
+      "contracts": "contratos por firmar",
+      "signed_month": "entraron al programa este mes",
+      "conversion": "Conversión del mes",
+      "conversion_value": "{{pct}}% · {{signed}} de {{total}} assessments",
+      "conversion_none": "Sin assessments este mes"
+    },
+    "view_board": "Tablero",
+    "view_table": "Tabla",
+    "stages": {
+      "evaluated": "Evaluado",
+      "meeting": "Reunión agendada",
+      "accepted": "Aceptado",
+      "contract": "Contrato por firmar",
+      "in_program": "En programa",
+      "discarded": "Descartado"
+    },
+    "discarded_column": "Descartados ({{count}})",
+    "discarded_show": "Mostrar descartados",
+    "discarded_hide": "Ocultar",
+    "bands": {
+      "high": "Alta",
+      "mid": "Media",
+      "low": "Baja",
+      "track": "Ya estás en camino"
+    },
+    "band_label": "Banda",
+    "score": "Puntaje",
+    "consultant": "Consultor",
+    "city": "Ciudad",
+    "industry": "Rubro",
+    "revenue": "Ventas",
+    "stage": "Etapa",
+    "days_in_stage": "Días en etapa",
+    "business": "Negocio",
+    "owner": "Dueño",
+    "days": "{{count}} d en la etapa",
+    "days_one": "{{count}} día en la etapa",
+    "days_other": "{{count}} días en la etapa",
+    "industries": {
+      "construction": "Construcción",
+      "remodeling": "Remodelación",
+      "cleaning": "Limpieza",
+      "restaurant": "Restaurante",
+      "salon": "Salón"
+    },
+    "revenue_ranges": {
+      "lt_250k": "Menos de $250k",
+      "250k_500k": "$250k a $500k",
+      "500k_1m": "$500k a $1M",
+      "1m_3m": "$1M a $3M",
+      "gt_3m": "Más de $3M"
+    },
+    "margin_ranges": {
+      "lt_10": "Menos de 10%",
+      "10_20": "10% a 20%",
+      "20_30": "20% a 30%",
+      "gt_30": "Más de 30%"
+    },
+    "team_ranges": {
+      "1_5": "1 a 5 personas",
+      "6_15": "6 a 15 personas",
+      "16_50": "16 a 50 personas",
+      "gt_50": "Más de 50 personas"
+    },
+    "years_ranges": {
+      "lt_2": "Menos de 2 años",
+      "2_5": "2 a 5 años",
+      "5_10": "5 a 10 años",
+      "gt_10": "Más de 10 años"
+    },
+    "filters": {
+      "all_stages": "Todas las etapas",
+      "all_consultants": "Todos los consultores",
+      "all_bands": "Todas las bandas",
+      "all_industries": "Todos los rubros",
+      "all_revenues": "Todas las ventas",
+      "clear": "Quitar filtros",
+      "quick": {
+        "week": "Assessments esta semana",
+        "uncontacted": "Sin contactar hace más de 2 días",
+        "signed_month": "Entraron este mes"
+      }
+    },
+    "empty_title": "No hay leads con estos filtros",
+    "empty_body": "Quita algún filtro para ver más. Los leads nuevos llegan solos cuando alguien completa el assessment.",
+    "empty_all_title": "Todavía no llegó ningún assessment",
+    "empty_all_body": "Cuando un dueño complete el assessment en la web, aparecerá aquí como Evaluado.",
+    "column_empty": "Sin leads en esta etapa",
+    "actions": {
+      "schedule": "Agendar reunión",
+      "accept": "Aceptar",
+      "send_contract": "Enviar contrato",
+      "sign": "Marcar contrato firmado",
+      "view_program": "Ver programa",
+      "restore": "Reactivar lead",
+      "discard": "Descartar"
+    },
+    "move": {
+      "no_skip": "{{name}} no puede pasar a {{to}}: se avanza o se vuelve de a una etapa.",
+      "no_locked": "{{name}} ya está en programa: no se puede mover.",
+      "no_restore_only": "Un lead descartado solo se puede reactivar a Evaluado."
+    },
+    "t_moved": "{{name}} pasó a {{to}}.",
+    "undo": "Deshacer",
+    "t_error": "No se pudo guardar. Prueba de nuevo.",
+    "t_scheduled": "Abrimos tu link de reservas. {{name}} pasó a Reunión agendada.",
+    "t_discarded": "Descartaste {{name}}.",
+    "t_restored": "{{name}} volvió a Evaluado.",
+    "t_note": "Agregaste la nota.",
+    "t_signed": "{{name}} entró al programa con {{count}} tareas.",
+    "discard_title": "Descartar {{name}}",
+    "discard_body": "El lead queda en Descartados con el motivo. Puedes reactivarlo después.",
+    "discard_reason": "Motivo",
+    "discard_placeholder": "Por qué no sigue en el embudo",
+    "discard_confirm": "Descartar lead",
+    "cancel": "Cancelar",
+    "reason_required": "Escribe el motivo para descartar.",
+    "sign_title": "Marcar contrato firmado",
+    "sign_body": "Se crea el negocio con el día 1 en la fecha de firma y se generan sus tareas del catálogo Método 180, a cargo de las firmas de cada área y supervisadas por {{consultant}}.",
+    "sign_date": "Fecha de firma",
+    "sign_confirm": "Crear programa",
+    "sign_future": "La fecha no puede ser posterior a hoy.",
+    "detail": {
+      "close": "Cerrar",
+      "open_full": "Detalle del lead",
+      "contact": "Contacto",
+      "hispanic": "Dueño hispano",
+      "result_title": "Lo que vio el dueño en su resultado",
+      "headline": {
+        "high": "Tu negocio está listo para empezar a franquiciar",
+        "mid": "Tu negocio tiene una buena base para franquiciar",
+        "low": "Tu negocio puede franquiciar, con trabajo en varias áreas",
+        "track": "Ya estás en camino"
+      },
+      "not_eligible": "Todavía no es elegible para el programa",
+      "gaps": {
+        "years": "Menos de 2 años operando",
+        "revenue": "Ventas por debajo del mínimo del programa"
+      },
+      "blocks_title": "Las siete áreas",
+      "strengths": "Fortalezas",
+      "priorities": "Prioridades",
+      "know_how": "Lo que el dueño dice que hace mejor",
+      "business_title": "Datos del negocio",
+      "activity": "Actividad",
+      "margin": "Margen de ganancia",
+      "team": "Equipo",
+      "years": "Años operando",
+      "active_clients": "Clientes activos",
+      "yes": "Sí",
+      "no": "No",
+      "activity_title": "Actividad",
+      "note_placeholder": "Escribe una nota para el equipo",
+      "note_add": "Agregar nota",
+      "discard_reason": "Motivo: {{reason}}",
+      "not_found": "Este lead no existe o no es de tu oficina.",
+      "submitted_at": "Hizo el assessment el {{date}}",
+      "booking_from_office": "Se abrirá el link de la oficina porque {{name}} todavía no cargó el suyo."
+    },
+    "blocks": {
+      "model": "Modelo de negocio",
+      "operations": "Operaciones",
+      "finance": "Finanzas",
+      "technology": "Tecnología",
+      "marketing": "Marketing y ventas",
+      "legal": "Legal",
+      "team": "Equipo"
+    },
+    "block_status": {
+      "strong": "Fuerte",
+      "medium": "Media",
+      "weak": "Débil",
+      "unknown": "No lo sé"
+    },
+    "events": {
+      "submitted": "Completó el assessment",
+      "stage_changed": "{{actor}} lo pasó de {{from}} a {{to}}",
+      "discarded": "{{actor}} lo descartó",
+      "restored": "{{actor}} lo reactivó",
+      "note": "{{actor}} escribió una nota",
+      "contract_signed": "{{actor}} marcó el contrato firmado el {{date}}. Entró al programa."
+    },
+    "error_title": "No pudimos cargar el embudo.",
+    "retry": "Reintentar",
+    "network_filtered": "Mostrando solo {{name}}",
+    "network_all": "Ver toda la red"
   }
 }
