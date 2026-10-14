@@ -10,10 +10,13 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CatalogoRouteImport } from './routes/catalogo'
 import { Route as ClientesRouteImport } from './routes/clientes'
+import { Route as ConfiguracionRouteImport } from './routes/configuracion'
 import { Route as DocumentosRouteImport } from './routes/documentos'
 import { Route as ManualRouteImport } from './routes/manual'
 import { Route as NegocioRouteImport } from './routes/negocio'
+import { Route as NegociosRouteImport } from './routes/negocios'
 import { Route as NumerosRouteImport } from './routes/numeros'
 import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as ReporteRouteImport } from './routes/reporte'
@@ -25,9 +28,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CatalogoRoute = CatalogoRouteImport.update({
+  id: '/catalogo',
+  path: '/catalogo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ClientesRoute = ClientesRouteImport.update({
   id: '/clientes',
   path: '/clientes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConfiguracionRoute = ConfiguracionRouteImport.update({
+  id: '/configuracion',
+  path: '/configuracion',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DocumentosRoute = DocumentosRouteImport.update({
@@ -43,6 +56,11 @@ const ManualRoute = ManualRouteImport.update({
 const NegocioRoute = NegocioRouteImport.update({
   id: '/negocio',
   path: '/negocio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NegociosRoute = NegociosRouteImport.update({
+  id: '/negocios',
+  path: '/negocios',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NumerosRoute = NumerosRouteImport.update({
@@ -73,10 +91,13 @@ const TareasTaskIdRoute = TareasTaskIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/catalogo': typeof CatalogoRoute
   '/clientes': typeof ClientesRoute
+  '/configuracion': typeof ConfiguracionRoute
   '/documentos': typeof DocumentosRoute
   '/manual': typeof ManualRoute
   '/negocio': typeof NegocioRoute
+  '/negocios': typeof NegociosRoute
   '/numeros': typeof NumerosRoute
   '/perfil': typeof PerfilRoute
   '/reporte': typeof ReporteRoute
@@ -85,10 +106,13 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/catalogo': typeof CatalogoRoute
   '/clientes': typeof ClientesRoute
+  '/configuracion': typeof ConfiguracionRoute
   '/documentos': typeof DocumentosRoute
   '/manual': typeof ManualRoute
   '/negocio': typeof NegocioRoute
+  '/negocios': typeof NegociosRoute
   '/numeros': typeof NumerosRoute
   '/perfil': typeof PerfilRoute
   '/reporte': typeof ReporteRoute
@@ -98,10 +122,13 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/catalogo': typeof CatalogoRoute
   '/clientes': typeof ClientesRoute
+  '/configuracion': typeof ConfiguracionRoute
   '/documentos': typeof DocumentosRoute
   '/manual': typeof ManualRoute
   '/negocio': typeof NegocioRoute
+  '/negocios': typeof NegociosRoute
   '/numeros': typeof NumerosRoute
   '/perfil': typeof PerfilRoute
   '/reporte': typeof ReporteRoute
@@ -112,10 +139,13 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/catalogo'
     | '/clientes'
+    | '/configuracion'
     | '/documentos'
     | '/manual'
     | '/negocio'
+    | '/negocios'
     | '/numeros'
     | '/perfil'
     | '/reporte'
@@ -124,10 +154,13 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/catalogo'
     | '/clientes'
+    | '/configuracion'
     | '/documentos'
     | '/manual'
     | '/negocio'
+    | '/negocios'
     | '/numeros'
     | '/perfil'
     | '/reporte'
@@ -136,10 +169,13 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/catalogo'
     | '/clientes'
+    | '/configuracion'
     | '/documentos'
     | '/manual'
     | '/negocio'
+    | '/negocios'
     | '/numeros'
     | '/perfil'
     | '/reporte'
@@ -149,10 +185,13 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CatalogoRoute: typeof CatalogoRoute
   ClientesRoute: typeof ClientesRoute
+  ConfiguracionRoute: typeof ConfiguracionRoute
   DocumentosRoute: typeof DocumentosRoute
   ManualRoute: typeof ManualRoute
   NegocioRoute: typeof NegocioRoute
+  NegociosRoute: typeof NegociosRoute
   NumerosRoute: typeof NumerosRoute
   PerfilRoute: typeof PerfilRoute
   ReporteRoute: typeof ReporteRoute
@@ -169,11 +208,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/catalogo': {
+      id: '/catalogo'
+      path: '/catalogo'
+      fullPath: '/catalogo'
+      preLoaderRoute: typeof CatalogoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/clientes': {
       id: '/clientes'
       path: '/clientes'
       fullPath: '/clientes'
       preLoaderRoute: typeof ClientesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/configuracion': {
+      id: '/configuracion'
+      path: '/configuracion'
+      fullPath: '/configuracion'
+      preLoaderRoute: typeof ConfiguracionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/documentos': {
@@ -195,6 +248,13 @@ declare module '@tanstack/react-router' {
       path: '/negocio'
       fullPath: '/negocio'
       preLoaderRoute: typeof NegocioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/negocios': {
+      id: '/negocios'
+      path: '/negocios'
+      fullPath: '/negocios'
+      preLoaderRoute: typeof NegociosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/numeros': {
@@ -237,10 +297,13 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CatalogoRoute: CatalogoRoute,
   ClientesRoute: ClientesRoute,
+  ConfiguracionRoute: ConfiguracionRoute,
   DocumentosRoute: DocumentosRoute,
   ManualRoute: ManualRoute,
   NegocioRoute: NegocioRoute,
+  NegociosRoute: NegociosRoute,
   NumerosRoute: NumerosRoute,
   PerfilRoute: PerfilRoute,
   ReporteRoute: ReporteRoute,
