@@ -128,9 +128,9 @@
   --status-info-bg: oklch(0.96 0.025 245);
   --status-info-fg: oklch(0.42 0.11 250);
   --status-info-border: oklch(0.85 0.06 248);
-  --status-review-bg: oklch(0.96 0.025 295);
-  --status-review-fg: oklch(0.43 0.13 295);
-  --status-review-border: oklch(0.86 0.06 295);
+  --status-review-bg: oklch(0.95 0.02 240);
+  --status-review-fg: oklch(0.36 0.07 238);
+  --status-review-border: oklch(0.72 0.06 238);
   --status-warning-bg: oklch(0.97 0.04 85);
   --status-warning-fg: oklch(0.47 0.1 65);
   --status-warning-border: oklch(0.86 0.09 80);
@@ -178,9 +178,9 @@
   --status-info-bg: oklch(0.3 0.05 250);
   --status-info-fg: oklch(0.85 0.07 248);
   --status-info-border: oklch(0.42 0.08 250);
-  --status-review-bg: oklch(0.3 0.05 295);
-  --status-review-fg: oklch(0.85 0.07 295);
-  --status-review-border: oklch(0.42 0.08 295);
+  --status-review-bg: oklch(0.3 0.04 240);
+  --status-review-fg: oklch(0.88 0.04 240);
+  --status-review-border: oklch(0.5 0.06 240);
   --status-warning-bg: oklch(0.32 0.05 75);
   --status-warning-fg: oklch(0.88 0.1 85);
   --status-warning-border: oklch(0.45 0.08 75);
