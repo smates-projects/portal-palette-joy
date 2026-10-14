@@ -53,8 +53,8 @@ export const ownerNav: NavItem[] = [
 
 // Menu for the SM office team.
 export const smNav: NavItem[] = [
-  { to: "/embudo", key: "pipeline", icon: Filter },
   { to: "/", key: "home", icon: Home },
+  { to: "/embudo", key: "pipeline", icon: Filter },
   { to: "/tareas", key: "tasks", icon: ListChecks },
   { to: "/red", key: "network", icon: Network },
   { to: "/reporte", key: "report", icon: BarChart3 },
