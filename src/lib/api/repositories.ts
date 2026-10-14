@@ -1,6 +1,7 @@
 import type {
   AppNotification,
   Business,
+  Franchisability,
   NotificationChannel,
   NotificationKind,
   NotificationPreference,
@@ -31,6 +32,7 @@ export interface OrganizationsRepository {
 
 export interface BusinessesRepository {
   list(): Promise<Business[]>;
+  getFranchisability(businessId: Uuid): Promise<Franchisability>;
 }
 
 export interface UsersRepository {
@@ -71,6 +73,16 @@ export interface TasksRepository {
   listMeetings(): Promise<Meeting[]>;
   /** Deliverable versions of every task the current user can see. */
   listVersions(): Promise<TaskVersion[]>;
+  /** Open requests to the owner on visible tasks. */
+  listOpenOwnerRequests(): Promise<OwnerRequest[]>;
+  /** Owner only: submitted → accepted. */
+  approve(id: Uuid): Promise<TaskWithComputed>;
+  /** Owner only: submitted → changes_requested, with a required note. */
+  requestChanges(id: Uuid, note: string): Promise<TaskWithComputed>;
+  /** Owner only: answer a request by uploading a file (simulated), with an optional note. */
+  answerOwnerRequest(requestId: Uuid, input: { file_name: string; note: string }): Promise<OwnerRequest>;
+  /** Owner only: confirm a meeting proposed by a firm. */
+  confirmMeeting(meetingId: Uuid): Promise<Meeting>;
 }
 
 export interface NotificationsRepository {

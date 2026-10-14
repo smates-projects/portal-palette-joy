@@ -209,3 +209,87 @@ export function MeetingDialog(props: {
     </Dialog>
   );
 }
+
+/** Owner: request changes on a delivered version. The note is required. */
+export function RequestChangesDialog(props: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  firmName: string;
+  pending: boolean;
+  onSubmit: (note: string) => void;
+}) {
+  const { t } = useTranslation();
+  const [note, setNote] = useState("");
+  return (
+    <Dialog open={props.open} onOpenChange={(o) => { props.onOpenChange(o); if (!o) setNote(""); }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{t("owner.d_changes_title")}</DialogTitle>
+          <DialogDescription>{t("owner.d_changes_body", { firm: props.firmName })}</DialogDescription>
+        </DialogHeader>
+        <Field label={t("owner.d_changes_note")}>
+          <textarea rows={4} value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("owner.d_changes_placeholder")} className={textareaCls} />
+        </Field>
+        {!note.trim() && <p className="text-xs text-muted-foreground">{t("owner.d_changes_required")}</p>}
+        <DialogFooter>
+          <SecondaryButton onClick={() => props.onOpenChange(false)}>{t("taskDetail.d_cancel")}</SecondaryButton>
+          <PrimaryButton disabled={!note.trim() || props.pending} onClick={() => props.onSubmit(note.trim())}>
+            {t("owner.action_request_changes")}
+          </PrimaryButton>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Owner: answer a firm's request by uploading a file (simulated), with an optional note. */
+export function AnswerRequestDialog(props: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  question: string;
+  defaultFileName: string;
+  pending: boolean;
+  onSubmit: (v: { file_name: string; note: string }) => void;
+}) {
+  const { t } = useTranslation();
+  const [file, setFile] = useState<string | null>(null);
+  const [note, setNote] = useState("");
+  return (
+    <Dialog open={props.open} onOpenChange={(o) => { props.onOpenChange(o); if (!o) { setFile(null); setNote(""); } }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{t("owner.d_upload_title")}</DialogTitle>
+          <DialogDescription>{props.question}</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <span className="block text-sm font-medium">{t("owner.d_upload_file")}</span>
+            {file ? (
+              <div className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm">
+                <FileText className="h-4 w-4 text-muted-foreground" />
+                <span className="flex-1 truncate">{file}</span>
+                <button type="button" aria-label={t("taskDetail.d_remove_file")} onClick={() => setFile(null)} className="text-muted-foreground hover:text-foreground">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <SecondaryButton onClick={() => setFile(props.defaultFileName)}>
+                <Paperclip className="h-3.5 w-3.5" />
+                {t("taskDetail.d_attach")}
+              </SecondaryButton>
+            )}
+          </div>
+          <Field label={t("owner.d_upload_note")}>
+            <textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} className={textareaCls} />
+          </Field>
+        </div>
+        <DialogFooter>
+          <SecondaryButton onClick={() => props.onOpenChange(false)}>{t("taskDetail.d_cancel")}</SecondaryButton>
+          <PrimaryButton disabled={!file || props.pending} onClick={() => file && props.onSubmit({ file_name: file, note: note.trim() })}>
+            {t("owner.d_upload_send")}
+          </PrimaryButton>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

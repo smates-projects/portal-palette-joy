@@ -32,8 +32,8 @@ describe("task rules", () => {
 });
 
 describe("seed data", () => {
-  it("has 30 tasks and the required minimums", () => {
-    expect(all).toHaveLength(30);
+  it("has 45 tasks (30 + Vossler finance and technology) and the required minimums", () => {
+    expect(all).toHaveLength(45);
     expect(all.filter((t) => t.is_blocked).length).toBeGreaterThanOrEqual(2);
     expect(all.filter((t) => t.is_overdue).length).toBeGreaterThanOrEqual(2);
     expect(all.filter((t) => t.status === "changes_requested").length).toBeGreaterThanOrEqual(2);
@@ -51,9 +51,24 @@ describe("mock authorization", () => {
     const xyz = await api.tasks.list();
     expect(xyz.every((t) => t.organization_id === seed.ORG_XYZ)).toBe(true);
   });
-  it("owner and SM views are not available yet", async () => {
+  it("SM view is not available yet", async () => {
     const api = createMockApi();
-    await expect(api.session.setViewAs(seed.U_CARLA)).rejects.toThrow();
+    await expect(api.session.setViewAs(seed.U_MARYLIN)).rejects.toThrow();
+  });
+  it("the owner sees every task of her program and nothing from other businesses", async () => {
+    const api = createMockApi();
+    await api.session.setViewAs(seed.U_CARLA);
+    const mine = await api.tasks.list();
+    expect(mine).toHaveLength(25);
+    expect(mine.every((t) => t.business_id === seed.BIZ_VOSSLER)).toBe(true);
+  });
+  it("Vossler gets only the catalog B3/B4 tasks that apply, with names taken verbatim from the catalog", () => {
+    const codes = seed.tasks.filter((t) => t.business_id === seed.BIZ_VOSSLER && /^B[34]/.test(t.code)).map((t) => t.code);
+    expect(codes).not.toContain("B3-15");
+    expect(codes).not.toContain("B3-16");
+    expect(codes).toContain("B4-03");
+    const b301 = seed.tasks.find((t) => t.code === "B3-01")!;
+    expect(b301.name).toBe("Paquete financiero histórico depurado / Financial Data Room");
   });
 });
 
@@ -80,5 +95,31 @@ describe("task detail actions (partner firm)", () => {
   it("the firm cannot approve its own deliverable", async () => {
     const api = createMockApi();
     await expect(api.tasks.updateStatus(seed.TASK_B602_VOSSLER, "accepted")).rejects.toThrow();
+  });
+});
+
+describe("owner actions", () => {
+  const vossler = (code: string) => seed.tasks.find((t) => t.code === code && t.business_id === seed.BIZ_VOSSLER)!;
+  it("approving a delivered task marks it approved", async () => {
+    const api = createMockApi();
+    await api.session.setViewAs(seed.U_CARLA);
+    const t = await api.tasks.approve(vossler("B3-02").id);
+    expect(t.status).toBe("accepted");
+  });
+  it("requesting changes needs a note", async () => {
+    const api = createMockApi();
+    await api.session.setViewAs(seed.U_CARLA);
+    await expect(api.tasks.requestChanges(vossler("B4-04").id, "  ")).rejects.toThrow();
+    const t = await api.tasks.requestChanges(vossler("B4-04").id, "Falta la orden de garantía.");
+    expect(t.status).toBe("changes_requested");
+  });
+  it("the owner cannot start or deliver a task", async () => {
+    const api = createMockApi();
+    await api.session.setViewAs(seed.U_CARLA);
+    await expect(api.tasks.start(vossler("B4-06").id)).rejects.toThrow();
+  });
+  it("a firm cannot approve", async () => {
+    const api = createMockApi();
+    await expect(api.tasks.approve(vossler("B6-02").id)).rejects.toThrow();
   });
 });

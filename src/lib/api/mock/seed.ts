@@ -12,6 +12,8 @@ import type { ExternalCalendarEvent, NotificationKind,
   User,
 } from "../types";
 
+import catalogJson from "@/data/catalogo_metodo180.json";
+
 const uuid = (prefix: string, n: number) =>
   `${prefix}-0000-4000-8000-${String(n).padStart(12, "0")}`;
 
@@ -19,10 +21,14 @@ const uuid = (prefix: string, n: number) =>
 export const ORG_SM = uuid("0a000000", 1);
 export const ORG_PEREZ = uuid("0a000000", 2);
 export const ORG_XYZ = uuid("0a000000", 3);
+export const ORG_DELTA = uuid("0a000000", 4);
+export const ORG_TECNO = uuid("0a000000", 5);
 
 export const organizations: Organization[] = [
   { id: ORG_SM, name: "Strategic Mates", kind: "sm", area: null, specialty: null, city: "Orlando, FL", email: "hola@strategicmates.com", phone: null },
   { id: ORG_PEREZ, name: "Estudio Pérez Legal", kind: "partner_firm", area: "B6", specialty: "Derecho corporativo, licencias y contratos para franquicias en Florida", city: "Miami, FL", email: "contacto@estudioperez.legal", phone: "+1 305 555 0142" },
+  { id: ORG_DELTA, name: "Delta Contadores", kind: "partner_firm", area: "B3", specialty: "Contabilidad, finanzas y fiscal para pymes que se preparan para franquiciar", city: "Miami, FL", email: "hola@deltacontadores.com", phone: "+1 305 555 0171" },
+  { id: ORG_TECNO, name: "TecnoPyme", kind: "partner_firm", area: "B4", specialty: "CRM, órdenes de servicio y tableros para negocios de servicios", city: "Orlando, FL", email: "equipo@tecnopyme.io", phone: "+1 407 555 0123" },
   { id: ORG_XYZ, name: "Agencia XYZ", kind: "partner_firm", area: "B5", specialty: "Posicionamiento, SEO local y sitios de conversión para negocios de servicios", city: "Tampa, FL", email: "hola@agenciaxyz.com", phone: "+1 813 555 0198" },
 ];
 
@@ -41,6 +47,8 @@ export const U_DANIEL = uuid("0c000000", 4);
 export const U_ENYERMY = uuid("0c000000", 5);
 export const U_MARYLIN = uuid("0c000000", 6);
 export const U_NICOLAS = uuid("0c000000", 7);
+export const U_RODRIGO = uuid("0c000000", 30);
+export const U_MARIANA = uuid("0c000000", 31);
 
 export const users: User[] = [
   { id: U_JULIAN, full_name: "Julián Ferreyra", email: "julian@estudioperez.legal", role: "partner_firm", organization_id: ORG_PEREZ, business_id: null, title: "Abogado asociado", google_calendar_email: null },
@@ -50,14 +58,16 @@ export const users: User[] = [
   { id: U_CARLA, full_name: "Carla Méndez", email: "carla@vossler.com", role: "business_owner", organization_id: null, business_id: BIZ_VOSSLER, title: null, google_calendar_email: null },
   { id: U_DANIEL, full_name: "Daniel Ortiz", email: "daniel@prime10solutions.com", role: "business_owner", organization_id: null, business_id: BIZ_PRIME, title: null, google_calendar_email: null },
   { id: U_ENYERMY, full_name: "Enyermy Rivas", email: "enyermy@enyermyhair.com", role: "business_owner", organization_id: null, business_id: BIZ_ENYERMY, title: null, google_calendar_email: null },
+  { id: U_RODRIGO, full_name: "Rodrigo Salas", email: "rodrigo@deltacontadores.com", role: "partner_firm", organization_id: ORG_DELTA, business_id: null, title: "Contador socio", google_calendar_email: null },
+  { id: U_MARIANA, full_name: "Mariana Ruiz", email: "mariana@tecnopyme.io", role: "partner_firm", organization_id: ORG_TECNO, business_id: null, title: "Líder de implementación", google_calendar_email: null },
   { id: U_MARYLIN, full_name: "Marylin Boraei", email: "marylin@strategicmates.com", role: "sm_team", organization_id: ORG_SM, business_id: null, title: "Directora", google_calendar_email: null },
   { id: U_NICOLAS, full_name: "Nicolás García", email: "nicolas@strategicmates.com", role: "sm_team", organization_id: ORG_SM, business_id: null, title: "Consultor", google_calendar_email: null },
 ];
 
 export const businesses: Business[] = [
-  { id: BIZ_VOSSLER, name: "Vossler", industry: "Construcción residencial", city: "Orlando", state: "FL", owner_user_id: U_CARLA, program_start_date: "2026-08-02", program_day: 74 },
-  { id: BIZ_PRIME, name: "Prime 10 Solutions", industry: "Remodelaciones", city: "Tampa", state: "FL", owner_user_id: U_DANIEL, program_start_date: "2026-09-14", program_day: 31 },
-  { id: BIZ_ENYERMY, name: "Enyermy Hair Studio", industry: "Salón de belleza", city: "Miami", state: "FL", owner_user_id: U_ENYERMY, program_start_date: "2026-10-09", program_day: 6 },
+  { id: BIZ_VOSSLER, name: "Vossler", industry: "Construcción residencial", city: "Orlando", state: "FL", owner_user_id: U_CARLA, program_start_date: "2026-08-02", program_day: 74, franchisability_goal: null, required_task_codes: null },
+  { id: BIZ_PRIME, name: "Prime 10 Solutions", industry: "Remodelaciones", city: "Tampa", state: "FL", owner_user_id: U_DANIEL, program_start_date: "2026-09-14", program_day: 31, franchisability_goal: null, required_task_codes: null },
+  { id: BIZ_ENYERMY, name: "Enyermy Hair Studio", industry: "Salón de belleza", city: "Miami", state: "FL", owner_user_id: U_ENYERMY, program_start_date: "2026-10-09", program_day: 6, franchisability_goal: null, required_task_codes: null },
 ];
 
 // Official Método 180 catalog entries (code, name and criteria verbatim).
@@ -84,6 +94,30 @@ const catalog: CatalogItem[] = [
   { code: "B5-05", name: "Website / landing orientado a conversión", criteria: "Arquitectura, mensajes, CTA, formularios, tracking y ownership definidos; alcance acotado.", step: "implement", depends_on: "B5-01", org: ORG_XYZ, assignee: U_TOMAS },
 ];
 
+// B3 Finanzas and B4 Tecnología come straight from the official catalog file (name and acceptance verbatim).
+const fromCatalog = (code: string, step: TaskStep, org: string, assignee: string, depends_on?: string): CatalogItem => {
+  const e = (catalogJson as { code: string; name: string; acceptance: string }[]).find((x) => x.code === code);
+  if (!e) throw new Error(`catalog code not found: ${code}`);
+  return { code, name: e.name, criteria: e.acceptance, step, org, assignee, ...(depends_on ? { depends_on } : {}) };
+};
+catalog.push(
+  fromCatalog("B3-01", "survey", ORG_DELTA, U_RODRIGO),
+  fromCatalog("B3-02", "implement", ORG_DELTA, U_RODRIGO),
+  fromCatalog("B3-03", "design", ORG_DELTA, U_RODRIGO, "B3-01"),
+  fromCatalog("B3-04", "design", ORG_DELTA, U_RODRIGO, "B3-03"),
+  fromCatalog("B3-05", "design", ORG_DELTA, U_RODRIGO, "B3-04"),
+  fromCatalog("B3-06", "design", ORG_DELTA, U_RODRIGO, "B3-04"),
+  fromCatalog("B3-07", "design", ORG_DELTA, U_RODRIGO, "B3-04"),
+  fromCatalog("B3-08", "validate", ORG_DELTA, U_RODRIGO, "B3-05"),
+  fromCatalog("B3-11", "survey", ORG_DELTA, U_RODRIGO),
+  fromCatalog("B4-01", "survey", ORG_TECNO, U_MARIANA),
+  fromCatalog("B4-02", "implement", ORG_TECNO, U_MARIANA, "B4-01"),
+  fromCatalog("B4-03", "implement", ORG_TECNO, U_MARIANA, "B4-01"),
+  fromCatalog("B4-04", "implement", ORG_TECNO, U_MARIANA, "B4-01"),
+  fromCatalog("B4-06", "design", ORG_TECNO, U_MARIANA, "B4-02"),
+  fromCatalog("B4-08", "implement", ORG_TECNO, U_MARIANA),
+);
+
 type Plan = Record<string, { status: TaskStatus; start: string; due: string; version?: number }>;
 
 // Statuses follow each business's progress through the program (today = 2026-10-14).
@@ -99,6 +133,22 @@ const plans: Record<string, Plan> = {
     "B5-03": { status: "in_progress", start: "2026-10-01", due: "2026-10-30" },
     "B5-04": { status: "pending", start: "2026-10-26", due: "2026-11-27" },
     "B5-05": { status: "submitted", start: "2026-09-14", due: "2026-10-16", version: 1 },
+    // Construction business that keeps materials: B3-02 and B4-03 apply. B3-15/B3-16 wait for the new entity; B4-05 waits for reliable data.
+    "B3-01": { status: "accepted", start: "2026-08-10", due: "2026-09-11", version: 1 },
+    "B3-02": { status: "submitted", start: "2026-09-01", due: "2026-10-16", version: 1 },
+    "B3-03": { status: "in_progress", start: "2026-09-14", due: "2026-10-23" },
+    "B3-04": { status: "pending", start: "2026-10-26", due: "2026-11-27" },
+    "B3-05": { status: "pending", start: "2026-11-30", due: "2027-01-08" },
+    "B3-06": { status: "pending", start: "2026-11-30", due: "2026-12-23" },
+    "B3-07": { status: "pending", start: "2026-11-30", due: "2027-01-15" },
+    "B3-08": { status: "pending", start: "2027-01-11", due: "2027-01-22" },
+    "B3-11": { status: "accepted", start: "2026-08-10", due: "2026-09-04", version: 1 },
+    "B4-01": { status: "accepted", start: "2026-08-10", due: "2026-09-11", version: 1 },
+    "B4-02": { status: "in_progress", start: "2026-09-14", due: "2026-10-15" },
+    "B4-03": { status: "changes_requested", start: "2026-09-21", due: "2026-10-21", version: 1 },
+    "B4-04": { status: "submitted", start: "2026-09-21", due: "2026-10-23", version: 1 },
+    "B4-06": { status: "pending", start: "2026-10-19", due: "2026-11-20" },
+    "B4-08": { status: "in_progress", start: "2026-10-05", due: "2026-10-28" },
   },
   [BIZ_PRIME]: {
     "B6-01": { status: "changes_requested", start: "2026-09-29", due: "2026-10-16", version: 1 },
@@ -135,9 +185,10 @@ const taskId = (bizId: string, code: string) => {
 export const TASK_B602_VOSSLER = taskId(BIZ_VOSSLER, "B6-02");
 
 export const tasks: Task[] = businesses.flatMap((b) =>
-  catalog.map((c) => {
-    const p = plans[b.id]![c.code]!;
-    return {
+  catalog.flatMap((c) => {
+    const p = plans[b.id]![c.code];
+    if (!p) return [];
+    return [{
       id: taskId(b.id, c.code),
       code: c.code,
       name: c.name,
@@ -153,7 +204,7 @@ export const tasks: Task[] = businesses.flatMap((b) =>
       due_date: p.due,
       current_version: p.version ?? 0,
       updated_at: `${p.start}T14:00:00Z`,
-    };
+    }];
   }),
 );
 
@@ -290,3 +341,22 @@ export const notifications: { id: string; user_id: string; kind: NotificationKin
   { id: uuid("1f000000", 5), user_id: U_LUCIA, kind: "meeting_confirmed", task_id: TASK_B602_VOSSLER, actor_user_id: U_CARLA, created_at: "2026-09-08T14:00:00Z", read: true },
   { id: uuid("1f000000", 6), user_id: U_LUCIA, kind: "unblocked", task_id: TASK_B602_VOSSLER, actor_user_id: null, created_at: "2026-09-05T15:00:00Z", read: true },
 ];
+
+// Owner side for Vossler: requests from the new firms, a meeting to confirm, and what the owner was notified.
+const TASK_B302_VOSSLER = taskId(BIZ_VOSSLER, "B3-02");
+const TASK_B303_VOSSLER = taskId(BIZ_VOSSLER, "B3-03");
+const TASK_B402_VOSSLER = taskId(BIZ_VOSSLER, "B4-02");
+const TASK_B404_VOSSLER = taskId(BIZ_VOSSLER, "B4-04");
+const TASK_B505_VOSSLER = taskId(BIZ_VOSSLER, "B5-05");
+ownerRequests.push(
+  { id: uuid("1a000000", 910), task_id: TASK_B303_VOSSLER, requested_by_user_id: U_RODRIGO, question: "Estados de cuenta bancarios de enero 2024 a septiembre 2026, en PDF.", due_date: "2026-10-17", answer: null, status: "open", created_at: "2026-10-09T15:00:00Z", resolved_at: null },
+  { id: uuid("1a000000", 911), task_id: TASK_B402_VOSSLER, requested_by_user_id: U_MARIANA, question: "Exportación de clientes y trabajos de tu sistema actual (Excel o CSV).", due_date: "2026-10-15", answer: null, status: "open", created_at: "2026-10-10T13:30:00Z", resolved_at: null },
+);
+meetings.push({ id: uuid("1b000000", 910), task_id: TASK_B402_VOSSLER, proposed_by_user_id: U_MARIANA, topic: "Demo del CRM con tus etapas de venta", starts_at: "2026-10-16T18:00:00Z", duration_minutes: 45, status: "proposed" });
+notifications.push(
+  { id: uuid("1f000000", 20), user_id: U_CARLA, kind: "submitted_for_approval", task_id: TASK_B302_VOSSLER, actor_user_id: U_RODRIGO, created_at: "2026-10-13T20:10:00Z", read: false },
+  { id: uuid("1f000000", 21), user_id: U_CARLA, kind: "meeting_proposed", task_id: TASK_B402_VOSSLER, actor_user_id: U_MARIANA, created_at: "2026-10-13T16:00:00Z", read: false },
+  { id: uuid("1f000000", 22), user_id: U_CARLA, kind: "submitted_for_approval", task_id: TASK_B404_VOSSLER, actor_user_id: U_MARIANA, created_at: "2026-10-12T19:30:00Z", read: false },
+  { id: uuid("1f000000", 23), user_id: U_CARLA, kind: "submitted_for_approval", task_id: TASK_B602_VOSSLER, actor_user_id: U_LUCIA, created_at: "2026-10-12T19:05:00Z", read: true },
+  { id: uuid("1f000000", 24), user_id: U_CARLA, kind: "submitted_for_approval", task_id: TASK_B505_VOSSLER, actor_user_id: U_TOMAS, created_at: "2026-10-08T17:00:00Z", read: true },
+);

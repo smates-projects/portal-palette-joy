@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Lock } from "lucide-react";
 import { TODAY } from "@/config/app";
-import { useCurrentUser, useStartTask, useUnstartTask } from "@/lib/api/hooks";
+import { useApproveTask, useCurrentUser, useStartTask, useUnstartTask } from "@/lib/api/hooks";
 import type { TaskWithComputed, VisibleTaskStatus } from "@/lib/api/types";
 import { formatDate, formatRelativeDate } from "@/lib/format";
 import { BOARD_COLUMNS, resolveBoardMove } from "@/lib/tasks/board";
@@ -25,12 +25,15 @@ export function TaskBoard(props: {
   codeById: (id: string) => string;
   onOpen: (id: string) => void;
   onSubmit: (id: string) => void;
+  /** Owner: dropping on "Cambios pedidos" opens the request-changes dialog. */
+  onRequestChanges?: (id: string) => void;
 }) {
   const { t, i18n } = useTranslation();
   const lng = i18n.language;
   const me = useCurrentUser();
   const start = useStartTask();
   const unstart = useUnstartTask();
+  const approve = useApproveTask();
   const [dragId, setDragId] = useState<string | null>(null);
   const [over, setOver] = useState<VisibleTaskStatus | null>(null);
 
@@ -68,6 +71,9 @@ export function TaskBoard(props: {
           }),
         onError: fail,
       });
+    else if (move.action === "approve")
+      approve.mutate(task.id, { onSuccess: () => toast.success(t("owner.t_approved_short", { code: task.code })), onError: fail });
+    else if (move.action === "request_changes") props.onRequestChanges?.(task.id);
     else props.onSubmit(task.id);
   };
 

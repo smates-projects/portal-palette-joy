@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { ChevronsLeft, ChevronsRight, Search, Check, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { Logo } from "@/components/brand/Logo";
-import { partnerFirmNav } from "./nav";
+import { isNavActive, navFor } from "./nav";
 import { NotificationBell } from "./NotificationBell";
 import { cn } from "@/lib/utils";
 import { LANGUAGE_STORAGE_KEY, type Language } from "@/lib/i18n";
@@ -25,6 +25,9 @@ const initials = (name: string) =>
 function Rail({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
   const { t } = useTranslation();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const view = useRouterState({ select: (s) => (s.location.search as Record<string, unknown>)["view"] });
+  const { data: me } = useCurrentUser();
+  const items = navFor(me?.role);
   return (
     <aside
       className={cn(
@@ -37,18 +40,19 @@ function Rail({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => voi
         {!collapsed && (
           <div className="leading-tight">
             <div className="font-display text-sm font-semibold">{t("app.name")}</div>
-            <div className="text-[11px] text-sidebar-muted">{t("roles.partner_firm")}</div>
+            <div className="text-[11px] text-sidebar-muted">{t(`roles.${me?.role ?? "partner_firm"}`)}</div>
           </div>
         )}
       </div>
       <nav aria-label={t("nav.main")} className="flex-1 space-y-0.5 p-2">
-        {partnerFirmNav.map((item) => {
-          const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
+        {items.map((item) => {
+          const active = isNavActive(item, items, pathname, view);
           const Icon = item.icon;
           const link = (
             <Link
-              key={item.to}
+              key={item.key}
               to={item.to}
+              search={item.view ? { view: item.view } : {}}
               className={cn(
                 "relative flex h-9 items-center gap-3 rounded-md px-3 text-sm transition-colors",
                 active
@@ -63,7 +67,7 @@ function Rail({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => voi
             </Link>
           );
           return collapsed ? (
-            <Tooltip key={item.to}>
+            <Tooltip key={item.key}>
               <TooltipTrigger asChild>{link}</TooltipTrigger>
               <TooltipContent side="right">{t(`nav.${item.key}`)}</TooltipContent>
             </Tooltip>
@@ -126,27 +130,30 @@ function ViewAs() {
   const { data: me } = useCurrentUser();
   const { data: options } = useViewAsOptions();
   const setViewAs = useSetViewAs();
-  const firms = options?.filter((o) => o.enabled) ?? [];
-  const currentOrg = firms.find((o) => o.user.id === me?.id)?.organization;
+  const enabled = options?.filter((o) => o.enabled) ?? [];
+  const firms = enabled.filter((o) => o.user.role === "partner_firm");
+  const owners = enabled.filter((o) => o.user.role === "business_owner");
+  const label = (o: (typeof enabled)[number]) => o.organization?.name ?? `${o.user.full_name} (${o.business?.name ?? ""})`;
+  const currentOpt = enabled.find((o) => o.user.id === me?.id);
+  const pick = (o: (typeof enabled)[number]) =>
+    setViewAs.mutate(o.user.id, {
+      onSuccess: () => toast.success(t("topbar.switched", { name: label(o) })),
+      onError: () => toast.error(t("topbar.switch_error")),
+    });
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="flex h-8 min-w-60 items-center gap-2 rounded-md border border-border bg-surface px-2.5 text-sm hover:bg-muted">
         <Eye className="h-3.5 w-3.5 text-muted-foreground" />
         <span className="text-muted-foreground">{t("topbar.view_as")}:</span>
-        <span className="font-medium">{currentOrg?.name ?? "…"}</span>
+        <span className="font-medium">{currentOpt ? label(currentOpt) : "…"}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-72">
         <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{t("topbar.view_as_title")}</DropdownMenuLabel>
         {firms.map((o) => (
           <DropdownMenuItem
             key={o.user.id}
-            onSelect={() =>
-              setViewAs.mutate(o.user.id, {
-                onSuccess: () => toast.success(t("topbar.switched", { name: o.organization?.name })),
-                onError: () => toast.error(t("topbar.switch_error")),
-              })
-            }
+            onSelect={() => pick(o)}
             className="flex items-start gap-2"
           >
             <Check className={cn("mt-0.5 h-4 w-4", o.user.id === me?.id ? "opacity-100" : "opacity-0")} />
@@ -159,7 +166,18 @@ function ViewAs() {
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
-        {(["role_owner", "role_sm"] as const).map((k) => (
+        <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{t("topbar.role_owner")}</DropdownMenuLabel>
+        {owners.map((o) => (
+          <DropdownMenuItem key={o.user.id} onSelect={() => pick(o)} className="flex items-start gap-2">
+            <Check className={cn("mt-0.5 h-4 w-4", o.user.id === me?.id ? "opacity-100" : "opacity-0")} />
+            <div>
+              <div className="font-medium">{o.user.full_name}</div>
+              <div className="text-xs text-muted-foreground">{o.business?.name}</div>
+            </div>
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuSeparator />
+        {(["role_sm"] as const).map((k) => (
           <DropdownMenuItem key={k} disabled className="flex justify-between pl-8">
             <span>{t(`topbar.${k}`)}</span>
             <span className="rounded-[4px] border border-border px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -175,8 +193,10 @@ function ViewAs() {
 function TopBar() {
   const { t } = useTranslation();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const current = partnerFirmNav.find((n) => (n.to === "/" ? pathname === "/" : pathname.startsWith(n.to)));
+  const view = useRouterState({ select: (s) => (s.location.search as Record<string, unknown>)["view"] });
   const { data: me } = useCurrentUser();
+  const items = navFor(me?.role);
+  const current = items.find((n) => isNavActive(n, items, pathname, view));
   return (
     <header className="flex h-14 shrink-0 items-center gap-4 border-b border-border bg-surface px-6">
       <div className="min-w-0 flex-1 font-semibold">{current ? t(`pages.${current.key}.title`) : ""}</div>

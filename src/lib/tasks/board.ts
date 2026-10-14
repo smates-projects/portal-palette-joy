@@ -4,8 +4,8 @@ import type { TaskWithComputed, UserRole, VisibleTaskStatus } from "@/lib/api/ty
 export const BOARD_COLUMNS: VisibleTaskStatus[] = ["pending", "in_progress", "submitted", "changes_requested", "accepted"];
 
 export type BoardMove =
-  | { ok: true; action: "start" | "unstart" | "submit" }
-  | { ok: false; reason: "same" | "blocked" | "owner_only" | "already_submitted" | "already_accepted" | "start_first" | "no_going_back" };
+  | { ok: true; action: "start" | "unstart" | "submit" | "approve" | "request_changes" }
+  | { ok: false; reason: "same" | "blocked" | "owner_only" | "already_submitted" | "already_accepted" | "start_first" | "no_going_back" | "firm_only" };
 
 /** Decides what a drag from one column to another means for this role. Never changes data. */
 export function resolveBoardMove(task: TaskWithComputed, to: VisibleTaskStatus, role: UserRole): BoardMove {
@@ -16,8 +16,16 @@ export function resolveBoardMove(task: TaskWithComputed, to: VisibleTaskStatus, 
     if (to === "in_progress") return { ok: true, action: "start" };
     if (to === "submitted") return { ok: true, action: "submit" };
     if (to === "pending") return { ok: true, action: "unstart" };
+    if (to === "accepted") return { ok: true, action: "approve" };
+    if (to === "changes_requested") return { ok: true, action: "request_changes" };
   }
-  if ((to === "accepted" || to === "changes_requested") && role !== "business_owner") {
+  // The owner approves or requests changes; starting and delivering is the firm's job.
+  if (role === "business_owner") {
+    if (from === "accepted") return { ok: false, reason: "already_accepted" };
+    if (to === "pending" || to === "in_progress" || to === "submitted") return { ok: false, reason: "firm_only" };
+    return { ok: false, reason: "no_going_back" };
+  }
+  if (to === "accepted" || to === "changes_requested") {
     if (role !== "sm_team") return { ok: false, reason: from === "accepted" ? "already_accepted" : "owner_only" };
   }
   if (from === "accepted") return { ok: false, reason: "already_accepted" };

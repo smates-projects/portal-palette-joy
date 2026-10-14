@@ -11,7 +11,12 @@
     "collapse": "Collapse menu",
     "expand": "Expand menu",
     "main": "Main menu",
-    "report": "Report"
+    "report": "Report",
+    "calendar": "Calendar",
+    "manual": "My manual",
+    "documents": "Documents",
+    "numbers": "My numbers",
+    "business": "My business"
   },
   "topbar": {
     "search_placeholder": "Search tasks or clients",
@@ -68,6 +73,26 @@
     "report": {
       "title": "Report",
       "subtitle": "How is my work going?"
+    },
+    "calendar": {
+      "title": "Calendar",
+      "subtitle": "What's coming in my program?"
+    },
+    "manual": {
+      "title": "My manual",
+      "subtitle": "How is my business run?"
+    },
+    "documents": {
+      "title": "Documents",
+      "subtitle": "Where are my business documents?"
+    },
+    "numbers": {
+      "title": "My numbers",
+      "subtitle": "How are my business numbers doing?"
+    },
+    "business": {
+      "title": "My business",
+      "subtitle": "What does SM know about my business?"
     }
   },
   "meta": {
@@ -165,7 +190,8 @@
       "no_already_accepted": "{{code}} is already approved and can't be moved.",
       "no_start_first": "Start {{code}} first: move it to In progress before delivering it.",
       "no_no_going_back": "{{code}} can't go back to {{to}}.",
-      "t_unstarted": "{{code}} moved back to Not started"
+      "t_unstarted": "{{code}} moved back to Not started",
+      "no_firm_only": "Moving {{code}} to {{to}} is the firm's job. You approve or request changes when they deliver."
     },
     "roadmap": {
       "zoom": "Zoom",
@@ -448,5 +474,91 @@
     "pref_meeting_proposed": "Meeting proposed",
     "pref_meeting_confirmed": "Meeting confirmed",
     "pref_unblocked": "A task was unblocked"
+  },
+  "soon": {
+    "manual": "Here you'll see your business's operations manual as the firms write it and you approve it.",
+    "documents": "Here you'll have every document of your program in one place: approved deliverables, contracts and files you uploaded.",
+    "numbers": "Here you'll see your business's key numbers: sales, margin and the financial models your finance firm prepares.",
+    "business": "Here you'll see and update your business details: contact, industry, team and locations."
+  },
+  "firmWhat": {
+    "B1": "strategy",
+    "B2": "operations",
+    "B3": "finance and tax",
+    "B4": "technology",
+    "B5": "marketing",
+    "B6": "lawyers"
+  },
+  "owner": {
+    "for_role": "Business owner view",
+    "home_heading": "What's my move today?",
+    "tasks_heading": "How are my program's tasks going?",
+    "report_heading": "How is my program going?",
+    "firm_label": "{{name}} ({{what}})",
+    "your_move": "Your move",
+    "your_move_count_one": "{{count}} pending",
+    "your_move_count_other": "{{count}} pending",
+    "your_move_count": "{{count}} pending",
+    "your_move_empty": "Nothing pending. When a firm delivers something, asks you for a file or proposes a meeting, it will show here.",
+    "see_all": "See all ({{count}})",
+    "show_less": "See less",
+    "inbox_approve": "{{firm}} sent you something to approve",
+    "inbox_request": "{{name}} from {{firm}} asked you for a file",
+    "inbox_meeting": "{{name}} proposed a meeting on {{date}}",
+    "action_approve": "Approve deliverable",
+    "action_request_changes": "Request changes",
+    "action_upload": "Upload file",
+    "action_confirm_meeting": "Confirm meeting",
+    "program": "Your program",
+    "day_of": "day {{day}} of {{total}}",
+    "gate_diagnosis": "Diagnosis",
+    "gate_closing": "Closing",
+    "gate_diagnosis_done": "Done",
+    "gate_diagnosis_current": "In progress, days 1 to 15",
+    "gate_diagnosis_upcoming": "Days 1 to 15",
+    "gate_closing_done": "Done",
+    "gate_closing_current": "In progress, days 150 to 180",
+    "gate_closing_upcoming": "Starts on day 150",
+    "area_no_tasks": "No tasks yet",
+    "health_green": "On track",
+    "health_amber": "Due soon or waiting for your approval",
+    "health_red": "Something is overdue",
+    "health_grey": "Not applicable yet",
+    "fran_title": "Franchisability",
+    "fran_detail": "Approved program tasks",
+    "fran_goal": "Goal {{goal}}%",
+    "fran_ready": "Ready to franchise",
+    "fran_not_ready": "Not ready to franchise yet",
+    "fran_points_one": "{{count}} point to the goal",
+    "fran_points_other": "{{count}} points to the goal",
+    "fran_points": "{{count}} points to the goal",
+    "fran_missing_one": "{{count}} required task missing: {{codes}}",
+    "fran_missing_other": "{{count}} required tasks missing: {{codes}}",
+    "fran_missing": "{{count}} required tasks missing: {{codes}}",
+    "fran_rule": "To be ready you need to reach the goal and have every required task approved. SM sets the goal and the list.",
+    "note_pending": "{{firm}} hasn't started this task yet.",
+    "note_in_progress": "{{firm}} is working on this task.",
+    "note_changes_requested": "{{firm}} is preparing a new version with your changes.",
+    "note_blocked": "Waiting for {{code}} to be approved.",
+    "note_accepted": "You approved this deliverable on {{date}}.",
+    "next_submitted": "Review the latest version and approve it or request changes.",
+    "next_other": "Due {{date}}. Nothing for you to do here for now.",
+    "d_changes_title": "Request changes",
+    "d_changes_body": "Explain what {{firm}} needs to change. They'll see it next to the deliverable.",
+    "d_changes_note": "What needs to change",
+    "d_changes_placeholder": "Example: the truck insurance is missing.",
+    "d_changes_required": "The note is required.",
+    "d_upload_title": "Upload file",
+    "d_upload_file": "File",
+    "d_upload_note": "Note (optional)",
+    "d_upload_send": "Send file",
+    "t_approved": "You approved {{code}}. {{firm}} has been notified.",
+    "t_approved_short": "You approved {{code}}.",
+    "t_changes": "You requested changes on {{code}}. {{firm}} has been notified.",
+    "t_uploaded": "File sent. {{name}} can see it now.",
+    "t_meeting_confirmed": "Meeting confirmed. {{name}} has been notified.",
+    "error": "We couldn't load your home.",
+    "retry": "Load again",
+    "criteria_title": "This is what you need to review"
   }
 }

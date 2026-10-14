@@ -7,7 +7,8 @@ import {
 import { toast } from "sonner";
 import { TODAY } from "@/config/app";
 import {
-  useAddComment, useAddOwnerRequest, useBusinesses, useProposeMeeting, useSetOwnerRequestResolved, useStartTask,
+  useAddComment, useAddOwnerRequest, useAnswerOwnerRequest, useApproveTask, useBusinesses, useConfirmMeeting, useCurrentUser,
+  useOrganizations, useProposeMeeting, useRequestChanges, useSetOwnerRequestResolved, useStartTask,
   useSubmitVersion, useTaskDetail, useTasks, useUsers,
 } from "@/lib/api/hooks";
 import type { TaskComment, TaskEvent, User, VisibleTaskStatus } from "@/lib/api/types";
@@ -17,7 +18,10 @@ import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MentionInput, MentionText } from "./mentions";
-import { MeetingDialog, OwnerRequestDialog, PrimaryButton, SecondaryButton, SubmitDeliverableDialog } from "./dialogs";
+import {
+  AnswerRequestDialog, MeetingDialog, OwnerRequestDialog, PrimaryButton, RequestChangesDialog, SecondaryButton, SubmitDeliverableDialog,
+} from "./dialogs";
+import type { OwnerRequest } from "@/lib/api/types";
 
 export type DetailMode = "panel" | "page";
 
@@ -26,7 +30,7 @@ const AREA_BAR: Record<string, string> = {
 };
 
 /** The one task detail. Rendered inside the side panel or as the /tareas/:id page. */
-export function TaskDetail({ taskId, mode, onClose, openSubmit = false }: { taskId: string; mode: DetailMode; onClose?: () => void; openSubmit?: boolean }) {
+export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChanges = false }: { taskId: string; mode: DetailMode; onClose?: () => void; openSubmit?: boolean; openChanges?: boolean }) {
   const { t, i18n } = useTranslation();
   const lng = i18n.language;
   const navigate = useNavigate();
@@ -41,6 +45,15 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false }: { task
   const addRequest = useAddOwnerRequest();
   const setResolved = useSetOwnerRequestResolved();
   const propose = useProposeMeeting();
+  const me = useCurrentUser();
+  const orgsQ = useOrganizations();
+  const approve = useApproveTask();
+  const requestChanges = useRequestChanges();
+  const answer = useAnswerOwnerRequest();
+  const confirmMeeting = useConfirmMeeting();
+  const isOwner = me.data?.role === "business_owner";
+  const [changesOpen, setChangesOpen] = useState(openChanges);
+  const [answering, setAnswering] = useState<OwnerRequest | null>(null);
 
   const [submitOpen, setSubmitOpen] = useState(openSubmit);
   const [requestOpen, setRequestOpen] = useState(false);
@@ -144,10 +157,38 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false }: { task
   const status = task.status as VisibleTaskStatus;
 
   const fail = () => toast.error(t("taskDetail.t_error"));
+  const org = orgsQ.data?.find((o) => o.id === task.organization_id);
+  const firmName = org ? t("owner.firm_label", { name: org.name, what: t(`firmWhat.${org.area ?? "B1"}`) }) : "";
 
   // ----- Header: one primary action according to status -----
   let primary: ReactNode = null;
-  if (task.is_blocked && firstDep && (status === "pending" || status === "in_progress")) {
+  if (isOwner) {
+    primary =
+      status === "submitted" ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <PrimaryButton
+            disabled={approve.isPending}
+            onClick={() =>
+              approve.mutate(task.id, { onSuccess: () => toast.success(t("owner.t_approved", { code: task.code, firm: org?.name ?? "" })), onError: fail })
+            }
+          >
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            {t("owner.action_approve")}
+          </PrimaryButton>
+          <SecondaryButton onClick={() => setChangesOpen(true)}>{t("owner.action_request_changes")}</SecondaryButton>
+        </div>
+      ) : status === "accepted" ? (
+        <StateNote tone="success" icon={<CheckCircle2 className="h-4 w-4" />}>
+          {t("owner.note_accepted", { date: approvedEvent ? formatShortDate(approvedEvent.created_at.slice(0, 10), lng) : "" })}
+        </StateNote>
+      ) : (
+        <StateNote icon={task.is_blocked ? <Lock className="h-4 w-4" /> : <CalendarClock className="h-4 w-4" />}>
+          {task.is_blocked && firstDep
+            ? t("owner.note_blocked", { code: firstDep.code })
+            : t(`owner.note_${status}`, { firm: org?.name ?? "" })}
+        </StateNote>
+      );
+  } else if (task.is_blocked && firstDep && (status === "pending" || status === "in_progress")) {
     primary = (
       <div className="flex flex-wrap items-center gap-3">
         <PrimaryButton disabled>
@@ -187,8 +228,13 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false }: { task
     );
   }
 
-  const nextLine =
-    task.is_blocked && firstDep && (status === "pending" || status === "in_progress")
+  const nextLine = isOwner
+    ? status === "submitted"
+      ? t("owner.next_submitted")
+      : status === "accepted"
+        ? t("taskDetail.next_accepted")
+        : t("owner.next_other", { date: dueDate })
+    : task.is_blocked && firstDep && (status === "pending" || status === "in_progress")
       ? t("taskDetail.next_blocked", { name: ownerFirst, code: firstDep.code })
       : status === "pending"
         ? t("taskDetail.next_pending", { date: dueDate })
@@ -263,7 +309,7 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false }: { task
             {t("taskDetail.what_intro", { area: t(`areas.${task.area}`), step: t(`steps.${task.step}`).toLowerCase() })}
           </p>
           <div className="mt-3 rounded-md border border-accent bg-accent/50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-accent-foreground">{t("taskDetail.criteria_title")}</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-accent-foreground">{t(isOwner ? "owner.criteria_title" : "taskDetail.criteria_title")}</p>
             <p className="mt-1.5 text-sm leading-relaxed text-foreground">{task.acceptance_criteria}</p>
           </div>
         </Section>
@@ -327,7 +373,7 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false }: { task
         <Section
           id={`task-requests-${task.id}`}
           title={t("taskDetail.s_requests")}
-          action={<SecondaryButton onClick={() => setRequestOpen(true)}><Plus className="h-3.5 w-3.5" />{t("taskDetail.ask_owner")}</SecondaryButton>}
+          action={isOwner ? undefined : <SecondaryButton onClick={() => setRequestOpen(true)}><Plus className="h-3.5 w-3.5" />{t("taskDetail.ask_owner")}</SecondaryButton>}
         >
           {owner_requests.length === 0 ? (
             <Empty>{t("taskDetail.requests_empty")}</Empty>
@@ -363,9 +409,13 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false }: { task
                         </p>
                       )}
                     </div>
-                    <button onClick={() => toggle(!resolved)} className="h-7 shrink-0 rounded-md px-2 text-xs font-medium text-link hover:bg-muted">
-                      {resolved ? t("taskDetail.reopen") : t("taskDetail.mark_resolved")}
-                    </button>
+                    {isOwner ? (
+                      !resolved && <SecondaryButton onClick={() => setAnswering(r)}>{t("owner.action_upload")}</SecondaryButton>
+                    ) : (
+                      <button onClick={() => toggle(!resolved)} className="h-7 shrink-0 rounded-md px-2 text-xs font-medium text-link hover:bg-muted">
+                        {resolved ? t("taskDetail.reopen") : t("taskDetail.mark_resolved")}
+                      </button>
+                    )}
                   </li>
                 );
               })}
@@ -376,7 +426,7 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false }: { task
         {/* 5. Meetings */}
         <Section
           title={t("taskDetail.s_meetings")}
-          action={<SecondaryButton onClick={() => setMeetingOpen(true)}><Plus className="h-3.5 w-3.5" />{t("taskDetail.propose_meeting")}</SecondaryButton>}
+          action={isOwner ? undefined : <SecondaryButton onClick={() => setMeetingOpen(true)}><Plus className="h-3.5 w-3.5" />{t("taskDetail.propose_meeting")}</SecondaryButton>}
         >
           {meetings.length === 0 ? (
             <Empty>{t("taskDetail.meetings_empty", { name: ownerFirst })}</Empty>
@@ -393,7 +443,22 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false }: { task
                     {m.status === "confirmed" && (
                       <p className="mt-1 inline-flex items-center gap-1 text-xs text-link"><Video className="h-3 w-3" />{t("taskDetail.m_calendar")}</p>
                     )}
-                    {m.status === "proposed" && <p className="mt-1 text-xs text-muted-foreground">{t("taskDetail.m_proposed_hint", { name: ownerFirst })}</p>}
+                    {m.status === "proposed" && !isOwner && <p className="mt-1 text-xs text-muted-foreground">{t("taskDetail.m_proposed_hint", { name: ownerFirst })}</p>}
+                    {m.status === "proposed" && isOwner && m.proposed_by_user_id !== me.data?.id && (
+                      <div className="mt-2">
+                        <SecondaryButton
+                          onClick={() =>
+                            confirmMeeting.mutate(m.id, {
+                              onSuccess: () => toast.success(t("owner.t_meeting_confirmed", { name: firstName(userName(m.proposed_by_user_id)) })),
+                              onError: fail,
+                            })
+                          }
+                        >
+                          <CalendarCheck className="h-3.5 w-3.5" />
+                          {t("owner.action_confirm_meeting")}
+                        </SecondaryButton>
+                      </div>
+                    )}
                   </div>
                   <span
                     className={cn(
@@ -461,6 +526,32 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false }: { task
               },
               onError: fail,
             },
+          )
+        }
+      />
+      <RequestChangesDialog
+        open={changesOpen}
+        onOpenChange={setChangesOpen}
+        firmName={firmName}
+        pending={requestChanges.isPending}
+        onSubmit={(note) =>
+          requestChanges.mutate(
+            { id: task.id, note },
+            { onSuccess: () => { setChangesOpen(false); toast.success(t("owner.t_changes", { code: task.code, firm: org?.name ?? "" })); }, onError: fail },
+          )
+        }
+      />
+      <AnswerRequestDialog
+        open={!!answering}
+        onOpenChange={(o) => !o && setAnswering(null)}
+        question={answering?.question ?? ""}
+        defaultFileName={`${task.code}_${(business?.name ?? "").replace(/\s+/g, "_")}_respuesta.pdf`}
+        pending={answer.isPending}
+        onSubmit={(v) =>
+          answering &&
+          answer.mutate(
+            { requestId: answering.id, ...v },
+            { onSuccess: () => { setAnswering(null); toast.success(t("owner.t_uploaded", { name: firstName(userName(answering.requested_by_user_id)) })); }, onError: fail },
           )
         }
       />

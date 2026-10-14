@@ -3,6 +3,7 @@ import { nowIso } from "@/config/app";
 import type { ApiClient } from "../repositories";
 import { canTransition, withComputed } from "../computed";
 import { dueNotifications, taskRef } from "../notifications";
+import { computeFranchisability } from "../franchisability";
 import { NOTIFICATION_KINDS, type AppNotification, type NotificationPreference } from "../types";
 import type { Meeting, OwnerRequest, Task, TaskComment, TaskEvent, TaskVersion, User } from "../types";
 import * as seed from "./seed";
@@ -80,7 +81,8 @@ export function createMockApi(): ApiClient {
             actor_user_id: n.actor_user_id, actor_name: name(n.actor_user_id), created_at: n.created_at, read_at: n.read ? n.created_at : null,
           }));
         // Due-date reminders only for tasks the user works on (firm assignee).
-        const mine = u.role === "partner_firm" ? visible.filter((t) => t.organization_id === u.organization_id) : visible;
+        // Owners get no due reminders: their part is approving, answering and confirming.
+        const mine = u.role === "partner_firm" ? visible.filter((t) => t.organization_id === u.organization_id) : [];
         const due = dueNotifications(u.id, mine.map((t) => withComputed(t, db.tasks)), db.businesses).map((n) => ({
           ...n, read_at: dueRead.has(`${u.id}|${n.id}`) ? n.created_at : null,
         }));
@@ -95,7 +97,7 @@ export function createMockApi(): ApiClient {
       },
       markAllRead: async () => {
         notifs.filter((n) => n.user_id === currentUserId).forEach((n) => (n.read = true));
-        const due = dueNotifications(currentUserId, visibleTasks().map((t) => withComputed(t, db.tasks)), db.businesses);
+        const due = me().role !== "partner_firm" ? [] : dueNotifications(currentUserId, visibleTasks().map((t) => withComputed(t, db.tasks)), db.businesses);
         due.forEach((n) => dueRead.add(`${currentUserId}|${n.id}`));
         return delay(undefined);
       },
@@ -112,14 +114,14 @@ export function createMockApi(): ApiClient {
         delay([
           ...[seed.U_LUCIA, seed.U_TOMAS].map((id) => {
             const user = db.users.find((u) => u.id === id)!;
-            return { user, organization: db.orgs.find((o) => o.id === user.organization_id) ?? null, enabled: true };
+            return { user, organization: db.orgs.find((o) => o.id === user.organization_id) ?? null, business: null, enabled: true };
           }),
-          { user: db.users.find((u) => u.id === seed.U_CARLA)!, organization: null, enabled: false },
-          { user: db.users.find((u) => u.id === seed.U_MARYLIN)!, organization: db.orgs[0] ?? null, enabled: false },
+          { user: db.users.find((u) => u.id === seed.U_CARLA)!, organization: null, business: db.businesses.find((b) => b.id === seed.BIZ_VOSSLER) ?? null, enabled: true },
+          { user: db.users.find((u) => u.id === seed.U_MARYLIN)!, organization: db.orgs[0] ?? null, business: null, enabled: false },
         ]),
       setViewAs: async (userId) => {
         const target = db.users.find((u) => u.id === userId);
-        if (!target || target.role !== "partner_firm") throw new Error("not_available");
+        if (!target || target.role === "sm_team") throw new Error("not_available");
         currentUserId = userId;
         return delay(target);
       },
@@ -127,7 +129,13 @@ export function createMockApi(): ApiClient {
     organizations: {
       list: () => {
         const u = me();
-        return delay(u.role === "sm_team" ? db.orgs : db.orgs.filter((o) => o.id === u.organization_id));
+        if (u.role === "sm_team") return delay(db.orgs);
+        // Owners see the firms working on their program; firms see only their own.
+        if (u.role === "business_owner") {
+          const ids = new Set(visibleTasks().map((t) => t.organization_id));
+          return delay(db.orgs.filter((o) => ids.has(o.id)));
+        }
+        return delay(db.orgs.filter((o) => o.id === u.organization_id));
       },
       get: (id) => delay(db.orgs.find((o) => o.id === id) ?? null),
     },
@@ -135,6 +143,12 @@ export function createMockApi(): ApiClient {
       list: () => {
         const ids = new Set(visibleTasks().map((t) => t.business_id));
         return delay(db.businesses.filter((b) => ids.has(b.id)));
+      },
+      getFranchisability: async (businessId) => {
+        const u = me();
+        const b = db.businesses.find((x) => x.id === businessId);
+        if (!b || (u.role === "business_owner" && u.business_id !== b.id)) throw new Error("not_found");
+        return delay(computeFranchisability(b, db.tasks));
       },
     },
     users: {
@@ -230,6 +244,54 @@ export function createMockApi(): ApiClient {
         findTask(id);
         const m: Meeting = { id: newId(), task_id: id, proposed_by_user_id: currentUserId, topic: input.topic, starts_at: input.starts_at, duration_minutes: input.duration_minutes, status: "proposed" };
         db.meetings.push(m);
+        const ownerId = db.businesses.find((b) => b.id === findTask(id).business_id)?.owner_user_id;
+        if (ownerId && ownerId !== currentUserId) notify(ownerId, "meeting_proposed", id);
+        return delay(m);
+      },
+      listOpenOwnerRequests: () => {
+        const ids = new Set(visibleTasks().map((t) => t.id));
+        return delay(db.ownerRequests.filter((r) => ids.has(r.task_id) && r.status === "open"));
+      },
+      approve: async (id) => {
+        const t = findTask(id);
+        const wasBlocked = new Set(db.tasks.filter((x) => withComputed(x, db.tasks).is_blocked).map((x) => x.id));
+        transition(t, "accepted");
+        const v = db.versions.filter((x) => x.task_id === id).sort((a, b) => b.version - a.version)[0];
+        if (v) v.status = "accepted";
+        pushEvent(id, "approved", v?.version ?? null);
+        // Tell the firm of each task this approval unblocks.
+        for (const x of db.tasks) if (wasBlocked.has(x.id) && !withComputed(x, db.tasks).is_blocked) notify(x.assignee_user_id, "unblocked", x.id);
+        return delay(withComputed(t, db.tasks));
+      },
+      requestChanges: async (id, note) => {
+        if (!note.trim()) throw new Error("note_required");
+        const t = findTask(id);
+        transition(t, "changes_requested");
+        const c: TaskComment = { id: newId(), task_id: id, author_user_id: currentUserId, body: note.trim(), created_at: nowIso(), kind: "changes_requested", file_id: null };
+        db.comments.push(c);
+        const v = db.versions.filter((x) => x.task_id === id).sort((a, b) => b.version - a.version)[0];
+        if (v) { v.status = "changes_requested"; v.review_comment_id = c.id; }
+        db.events.push({ id: newId(), task_id: id, kind: "changes_requested", actor_user_id: currentUserId, version: v?.version ?? null, comment_id: c.id, created_at: nowIso() });
+        notify(t.assignee_user_id, "changes_requested", id);
+        return delay(withComputed(t, db.tasks));
+      },
+      answerOwnerRequest: async (requestId, input) => {
+        if (me().role !== "business_owner") throw new Error("owner_only");
+        const r = db.ownerRequests.find((x) => x.id === requestId);
+        if (!r) throw new Error("not_found");
+        findTask(r.task_id);
+        r.status = "resolved";
+        r.resolved_at = nowIso();
+        r.answer = input.note.trim() ? `${input.note.trim()} (${input.file_name})` : input.file_name;
+        return delay(r);
+      },
+      confirmMeeting: async (meetingId) => {
+        if (me().role !== "business_owner") throw new Error("owner_only");
+        const m = db.meetings.find((x) => x.id === meetingId);
+        if (!m || m.status !== "proposed") throw new Error("not_found");
+        findTask(m.task_id);
+        m.status = "confirmed";
+        notify(m.proposed_by_user_id, "meeting_confirmed", m.task_id);
         return delay(m);
       },
     },
