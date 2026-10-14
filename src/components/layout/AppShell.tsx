@@ -147,10 +147,10 @@ function ViewAs() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex h-8 min-w-60 items-center gap-2 rounded-md border border-border bg-surface px-2.5 text-sm hover:bg-muted">
+      <DropdownMenuTrigger className="flex h-8 min-w-0 max-w-[11rem] items-center gap-2 rounded-md border border-border bg-surface px-2.5 text-sm hover:bg-muted sm:max-w-none md:min-w-60">
         <Eye className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="text-muted-foreground">{t("topbar.view_as")}:</span>
-        <span className="font-medium">{currentOpt ? label(currentOpt) : "…"}</span>
+        <span className="hidden text-muted-foreground sm:inline">{t("topbar.view_as")}:</span>
+        <span className="truncate font-medium">{currentOpt ? label(currentOpt) : "…"}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-72">
         <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{t("topbar.view_as_title")}</DropdownMenuLabel>
@@ -204,8 +204,8 @@ function TopBar() {
   const items = navFor(me?.role);
   const current = items.find((n) => isNavActive(n, items, pathname, view));
   return (
-    <header className="flex h-14 shrink-0 items-center gap-4 border-b border-border bg-surface px-6">
-      <div className="min-w-0 flex-1 font-semibold">{current ? t(`pages.${current.key}.title`) : pathname === "/perfil" ? t("pages.profile.title") : ""}</div>
+    <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-surface px-3 sm:gap-4 sm:px-6">
+      <div className="min-w-0 flex-1 truncate font-semibold">{current ? t(`pages.${current.key}.title`) : pathname === "/perfil" ? t("pages.profile.title") : ""}</div>
       <label className="relative hidden w-72 md:block">
         <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <input

@@ -108,7 +108,7 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t(isOwner ? "owner.for_role" : isSm ? "sm.for_role" : "tasks.for_role")}</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight">{t(isOwner ? "owner.tasks_heading" : isSm ? "sm.tasks_heading" : "tasks.heading")}</h1>
         </div>
-        <div role="tablist" aria-label={t("tasks.views.label")} className="flex rounded-md border border-border bg-surface p-0.5">
+        <div role="tablist" aria-label={t("tasks.views.label")} className="flex max-w-full overflow-x-auto rounded-md border border-border bg-surface p-0.5">
           {VIEWS.map((v) => {
             const Icon = VIEW_ICONS[v];
             return (
@@ -331,7 +331,7 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
                 }}
               />
             ) : (
-              <table className="w-full min-w-[760px] text-sm">
+              <table className="w-full min-w-[900px] text-sm">
                 <thead className="sticky top-0 z-10 border-b border-border bg-muted text-left text-xs text-muted-foreground">
                   <tr>
                     {selectable && (
