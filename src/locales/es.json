@@ -180,6 +180,23 @@
       "m_short_diagnosis_end": "Fin Diagnóstico",
       "m_short_closing_start": "Inicio Cierre",
       "m_short_program_end": "Fin programa"
+    },
+    "calendar": {
+      "mode": "Vista del calendario",
+      "mode_month": "Mes",
+      "mode_week": "Semana",
+      "today": "Hoy",
+      "prev": "Anterior",
+      "next": "Siguiente",
+      "due": "Vence",
+      "more": "+{{count}} más",
+      "legend_due": "Vencimiento",
+      "legend_proposed": "Reunión propuesta",
+      "legend_confirmed": "Reunión confirmada",
+      "legend_google": "Google Calendar (no editable)",
+      "meeting_proposed": "Propuesta, falta confirmar",
+      "meeting_confirmed": "Confirmada",
+      "google_readonly": "De tu Google Calendar, no se puede editar aquí"
     }
   },
   "taskDetail": {

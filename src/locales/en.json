@@ -180,6 +180,23 @@
       "m_short_diagnosis_end": "Diagnosis ends",
       "m_short_closing_start": "Closing starts",
       "m_short_program_end": "Program ends"
+    },
+    "calendar": {
+      "mode": "Calendar view",
+      "mode_month": "Month",
+      "mode_week": "Week",
+      "today": "Today",
+      "prev": "Previous",
+      "next": "Next",
+      "due": "Due",
+      "more": "+{{count}} more",
+      "legend_due": "Due date",
+      "legend_proposed": "Proposed meeting",
+      "legend_confirmed": "Confirmed meeting",
+      "legend_google": "Google Calendar (read-only)",
+      "meeting_proposed": "Proposed, not confirmed yet",
+      "meeting_confirmed": "Confirmed",
+      "google_readonly": "From your Google Calendar, can't be edited here"
     }
   },
   "taskDetail": {
