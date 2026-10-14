@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { computeFranchisability } from "./franchisability";
 import type { Business, Task } from "./types";
 
-const biz = (over: Partial<Business> = {}) => ({ id: "b", franchisability_goal: null, required_task_codes: null, ...over }) as Business;
+const biz = (over: Partial<Business> = {}) => ({ id: "b", ...over }) as Business;
 const task = (code: string, status: string) => ({ business_id: "b", code, status }) as Task;
 
 describe("franchisability", () => {
@@ -16,14 +16,15 @@ describe("franchisability", () => {
     expect(f.franchisability_pct).toBe(50);
   });
   it("not ready if required tasks are missing even above the goal", () => {
-    const f = computeFranchisability(biz({ required_task_codes: ["B3-07"] }), [task("A", "accepted"), task("B3-07", "pending")]);
+    const ts = [task("A", "accepted"), task("B3-07", "pending")];
+    const f = computeFranchisability(biz(), ts, { goal: 85, required_task_codes: ["B3-07"] });
     expect(f.franchisability_pct).toBe(50);
     expect(f.missing_required).toEqual(["B3-07"]);
-    const g = computeFranchisability(biz({ franchisability_goal: 50, required_task_codes: ["B3-07"] }), [task("A", "accepted"), task("B3-07", "pending")]);
+    const g = computeFranchisability(biz(), ts, { goal: 50, required_task_codes: ["B3-07"] });
     expect(g.is_ready).toBe(false);
   });
   it("empty required list: reaching the goal is enough", () => {
-    const f = computeFranchisability(biz({ franchisability_goal: 50, required_task_codes: [] }), [task("A", "accepted"), task("B", "pending")]);
+    const f = computeFranchisability(biz(), [task("A", "accepted"), task("B", "pending")], { goal: 50, required_task_codes: [] });
     expect(f.is_ready).toBe(true);
   });
 });
