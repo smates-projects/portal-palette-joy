@@ -24,6 +24,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { TaskDetail } from "@/components/tasks/detail/TaskDetail";
 import { TaskBoard } from "@/components/tasks/TaskBoard";
+import { TaskRoadmap } from "@/components/tasks/TaskRoadmap";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const ALL = "__all";
@@ -100,7 +101,7 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
         </div>
       </div>
 
-      {view === "roadmap" || view === "calendar" ? (
+      {view === "calendar" ? (
         <EmptyState
           title={t("tasks.coming_soon_title", { view: t(`tasks.views.${view}`) })}
           body={t("tasks.coming_soon_body")}
@@ -187,7 +188,7 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
           )}
 
           {/* Table */}
-          <div className={cn("mt-3 min-h-0", view === "board" ? "flex flex-1 flex-col" : "overflow-auto rounded-md border border-border bg-surface")}>
+          <div className={cn("mt-3 min-h-0", view === "board" || view === "roadmap" ? "flex flex-1 flex-col" : "overflow-auto rounded-md border border-border bg-surface")}>
             {tasksQ.isError ? (
               <EmptyState
                 inline
@@ -217,6 +218,17 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
                 action={{
                   label: t("tasks.filters.clear"),
                   onClick: () => setSearch({ business: undefined, area: undefined, status: undefined, due: undefined, q: undefined }),
+                }}
+              />
+            ) : view === "roadmap" ? (
+              <TaskRoadmap
+                rows={rows}
+                allTasks={tasksQ.data ?? []}
+                businesses={bizQ.data ?? []}
+                selectedId={search.task}
+                onOpen={(id) => {
+                  setSubmitFor(null);
+                  void setSearch({ task: id });
                 }}
               />
             ) : view === "board" ? (
