@@ -8,3 +8,9 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+## Architecture rules
+- All data goes through `src/lib/api/` repositories (mock now, http later via `VITE_API_MODE`); components only use the TanStack Query hooks in `src/lib/api/hooks.ts`, never seed data. Why: the real backend is a separate Laravel API and must be swappable.
+- Blocked/overdue are computed in `src/lib/api/computed.ts`, never stored as statuses. Why: they depend on dependencies and the fixed TODAY in `src/config/app.ts`.
+- No UI text in components: all copy lives in `src/locales/{es,en}.json`. Why: bilingual app.
+- Routing is TanStack Router (file routes), not React Router. Why: fixed by the platform.
