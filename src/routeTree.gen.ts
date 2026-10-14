@@ -12,7 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as PerfilRouteImport } from './routes/perfil'
-import { Route as TareasRouteImport } from './routes/tareas'
+import { Route as TareasIndexRouteImport } from './routes/tareas.index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -29,9 +29,9 @@ const PerfilRoute = PerfilRouteImport.update({
   path: '/perfil',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TareasRoute = TareasRouteImport.update({
-  id: '/tareas',
-  path: '/tareas',
+const TareasIndexRoute = TareasIndexRouteImport.update({
+  id: '/tareas/',
+  path: '/tareas/',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -39,34 +39,34 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/clientes': typeof ClientesRoute
   '/perfil': typeof PerfilRoute
-  '/tareas': typeof TareasRoute
+  '/tareas/': typeof TareasIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/clientes': typeof ClientesRoute
   '/perfil': typeof PerfilRoute
-  '/tareas': typeof TareasRoute
+  '/tareas': typeof TareasIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/clientes': typeof ClientesRoute
   '/perfil': typeof PerfilRoute
-  '/tareas': typeof TareasRoute
+  '/tareas/': typeof TareasIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/clientes' | '/perfil' | '/tareas'
+  fullPaths: '/' | '/clientes' | '/perfil' | '/tareas/'
   fileRoutesByTo: FileRoutesByTo
   to: '/' | '/clientes' | '/perfil' | '/tareas'
-  id: '__root__' | '/' | '/clientes' | '/perfil' | '/tareas'
+  id: '__root__' | '/' | '/clientes' | '/perfil' | '/tareas/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ClientesRoute: typeof ClientesRoute
   PerfilRoute: typeof PerfilRoute
-  TareasRoute: typeof TareasRoute
+  TareasIndexRoute: typeof TareasIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -92,11 +92,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PerfilRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/tareas': {
-      id: '/tareas'
+    '/tareas/': {
+      id: '/tareas/'
       path: '/tareas'
-      fullPath: '/tareas'
-      preLoaderRoute: typeof TareasRouteImport
+      fullPath: '/tareas/'
+      preLoaderRoute: typeof TareasIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -106,7 +106,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ClientesRoute: ClientesRoute,
   PerfilRoute: PerfilRoute,
-  TareasRoute: TareasRoute,
+  TareasIndexRoute: TareasIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
