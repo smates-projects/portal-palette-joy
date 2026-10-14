@@ -205,7 +205,7 @@ function TopBar() {
   const current = items.find((n) => isNavActive(n, items, pathname, view));
   return (
     <header className="flex h-14 shrink-0 items-center gap-4 border-b border-border bg-surface px-6">
-      <div className="min-w-0 flex-1 font-semibold">{current ? t(`pages.${current.key}.title`) : ""}</div>
+      <div className="min-w-0 flex-1 font-semibold">{current ? t(`pages.${current.key}.title`) : pathname === "/perfil" ? t("pages.profile.title") : ""}</div>
       <label className="relative hidden w-72 md:block">
         <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <input
@@ -217,13 +217,25 @@ function TopBar() {
       <NotificationBell />
       <LanguageSwitch />
       <ViewAs />
-      <div
-        title={me?.full_name}
-        aria-label={t("topbar.account")}
-        className="flex h-8 w-8 items-center justify-center rounded-full bg-primary font-display text-xs font-semibold text-primary-foreground"
-      >
-        {me ? initials(me.full_name) : ""}
-      </div>
+      {me?.role === "sm_team" ? (
+        // SM has no "Mi perfil" in the menu: the avatar opens it (booking link lives there).
+        <Link
+          to="/perfil"
+          title={me.full_name}
+          aria-label={t("topbar.account")}
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-primary font-display text-xs font-semibold text-primary-foreground hover:bg-primary-hover"
+        >
+          {initials(me.full_name)}
+        </Link>
+      ) : (
+        <div
+          title={me?.full_name}
+          aria-label={t("topbar.account")}
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-primary font-display text-xs font-semibold text-primary-foreground"
+        >
+          {me ? initials(me.full_name) : ""}
+        </div>
+      )}
     </header>
   );
 }
