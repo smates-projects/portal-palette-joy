@@ -21,7 +21,8 @@ export function withComputed(task: Task, all: Task[], today: string = TODAY): Ta
 const TRANSITIONS: Record<UserRole, Partial<Record<TaskStatus, TaskStatus[]>>> = {
   partner_firm: {
     pending: ["in_progress"],
-    in_progress: ["submitted"],
+    // in_progress → pending lets the firm undo a start made by mistake.
+    in_progress: ["submitted", "pending"],
     changes_requested: ["submitted"],
   },
   business_owner: {
@@ -29,7 +30,8 @@ const TRANSITIONS: Record<UserRole, Partial<Record<TaskStatus, TaskStatus[]>>> =
   },
   sm_team: {
     pending: ["in_progress"],
-    in_progress: ["submitted"],
+    // in_progress → pending lets the firm undo a start made by mistake.
+    in_progress: ["submitted", "pending"],
     changes_requested: ["submitted"],
     submitted: ["accepted", "changes_requested"],
   },

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Lock } from "lucide-react";
 import { TODAY } from "@/config/app";
-import { useCurrentUser, useStartTask } from "@/lib/api/hooks";
+import { useCurrentUser, useStartTask, useUnstartTask } from "@/lib/api/hooks";
 import type { TaskWithComputed, VisibleTaskStatus } from "@/lib/api/types";
 import { formatDate, formatRelativeDate } from "@/lib/format";
 import { BOARD_COLUMNS, resolveBoardMove } from "@/lib/tasks/board";
@@ -30,6 +30,7 @@ export function TaskBoard(props: {
   const lng = i18n.language;
   const me = useCurrentUser();
   const start = useStartTask();
+  const unstart = useUnstartTask();
   const [dragId, setDragId] = useState<string | null>(null);
   const [over, setOver] = useState<VisibleTaskStatus | null>(null);
 
@@ -50,10 +51,22 @@ export function TaskBoard(props: {
         );
       return;
     }
+    const fail = () => toast.error(t("taskDetail.t_error"));
     if (move.action === "start")
       start.mutate(task.id, {
-        onSuccess: () => toast.success(t("taskDetail.t_started", { code: task.code })),
-        onError: () => toast.error(t("taskDetail.t_error")),
+        onSuccess: () =>
+          toast.success(t("taskDetail.t_started", { code: task.code }), {
+            action: { label: t("profile.undo"), onClick: () => unstart.mutate(task.id, { onError: fail }) },
+          }),
+        onError: fail,
+      });
+    else if (move.action === "unstart")
+      unstart.mutate(task.id, {
+        onSuccess: () =>
+          toast.success(t("tasks.board.t_unstarted", { code: task.code }), {
+            action: { label: t("profile.undo"), onClick: () => start.mutate(task.id, { onError: fail }) },
+          }),
+        onError: fail,
       });
     else props.onSubmit(task.id);
   };

@@ -14,6 +14,7 @@ describe("board drag rules for the partner firm", () => {
   it("only the owner requests changes", () => expect(resolveBoardMove(mk("submitted"), "changes_requested", firm)).toEqual({ ok: false, reason: "owner_only" }));
   it("pending cannot jump to delivered", () => expect(resolveBoardMove(mk("pending"), "submitted", firm)).toEqual({ ok: false, reason: "start_first" }));
   it("delivered cannot be pulled back", () => expect(resolveBoardMove(mk("submitted"), "in_progress", firm)).toEqual({ ok: false, reason: "already_submitted" }));
-  it("in progress cannot go back to not started", () => expect(resolveBoardMove(mk("in_progress"), "pending", firm)).toEqual({ ok: false, reason: "no_going_back" }));
+  it("in progress can go back to not started (undo a mistake)", () => expect(resolveBoardMove(mk("in_progress"), "pending", firm)).toEqual({ ok: true, action: "unstart" }));
+  it("changes requested cannot go back to not started", () => expect(resolveBoardMove(mk("changes_requested"), "pending", firm)).toEqual({ ok: false, reason: "no_going_back" }));
   it("approved never moves", () => expect(resolveBoardMove(mk("accepted"), "in_progress", firm)).toEqual({ ok: false, reason: "already_accepted" }));
 });
