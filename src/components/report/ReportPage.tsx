@@ -1,5 +1,4 @@
 import { useNavigate } from "@tanstack/react-router";
-import { TODAY } from "@/config/app";
 import { useTranslation } from "react-i18next";
 import { useBusinesses, useTasks, useVersions } from "@/lib/api/hooks";
 import type { VisibleTaskStatus } from "@/lib/api/types";
@@ -24,7 +23,6 @@ export function ReportPage() {
   const versionsQ = useVersions();
   const go = (search: TasksSearch) => void navigate({ to: "/tareas", search });
   const nf = (n: number) => new Intl.NumberFormat(i18n.language === "en" ? "en-US" : "es-AR", { maximumFractionDigits: 1 }).format(n);
-  const monthName = new Intl.DateTimeFormat(i18n.language === "en" ? "en-US" : "es-AR", { month: "long" }).format(new Date(`${TODAY}T12:00:00`));
 
   const header = (
     <>
@@ -188,30 +186,6 @@ export function ReportPage() {
         </div>
       </div>
 
-      {/* Billable this month */}
-      <section className="mt-4 rounded-md border border-border bg-surface p-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-sm font-semibold">{t("report.billable_title", { month: monthName })}</h2>
-          <span className="text-xs text-muted-foreground">{t("report.billable_note")}</span>
-        </div>
-        {r.approved_this_month_count === 0 ? (
-          <p className="mt-2 text-sm text-muted-foreground">{t("report.billable_none")}</p>
-        ) : (
-          <>
-            <Num onClick={() => go({ approved: "month" })} className="mt-2 text-3xl font-semibold">{r.approved_this_month_count}</Num>
-            <ul className="mt-3 grid gap-2 md:grid-cols-3">
-              {r.approved_this_month.map((g) => (
-                <li key={g.business.id} className="rounded-md border border-border p-3 text-sm">
-                  <button onClick={() => go({ approved: "month", business: g.business.id })} className="font-medium hover:underline">
-                    {g.business.name} · <span className="font-display tabular-nums">{g.tasks.length}</span>
-                  </button>
-                  <p className="mt-1 text-xs text-muted-foreground">{g.tasks.map((x) => x.code).join(", ")}</p>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-      </section>
     </div>
   );
 }

@@ -16,8 +16,6 @@ export interface FirmReport {
   /** Over approved tasks: days from last delivery to approval, and change rounds per task. null when none. */
   avg_days_to_approval: number | null;
   avg_change_rounds: number | null;
-  approved_this_month: { business: Business; tasks: TaskWithComputed[] }[];
-  approved_this_month_count: number;
 }
 
 const avg = (xs: number[]) => (xs.length ? Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10) / 10 : null);
@@ -26,7 +24,7 @@ export function buildFirmReport(
   tasks: TaskWithComputed[],
   versions: TaskVersion[],
   businesses: Business[],
-  today: string = TODAY,
+  _today: string = TODAY,
 ): FirmReport {
   const byId = new Map(tasks.map((t) => [t.id, t]));
   const total = tasks.length;
@@ -42,8 +40,6 @@ export function buildFirmReport(
     if (last && t.accepted_at) days.push(Math.max(0, daysBetween(last.slice(0, 10), t.accepted_at.slice(0, 10))));
   }
 
-  const month = today.slice(0, 7);
-  const approvedMonth = accepted.filter((t) => t.accepted_at?.slice(0, 7) === month);
 
   return {
     total,
@@ -68,9 +64,5 @@ export function buildFirmReport(
       .filter((c) => c.total > 0),
     avg_days_to_approval: avg(days),
     avg_change_rounds: avg(rounds),
-    approved_this_month: businesses
-      .map((business) => ({ business, tasks: approvedMonth.filter((t) => t.business_id === business.id) }))
-      .filter((g) => g.tasks.length > 0),
-    approved_this_month_count: approvedMonth.length,
   };
 }

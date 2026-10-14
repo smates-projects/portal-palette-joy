@@ -25,5 +25,4 @@ describe("firm report", () => {
   it("blocked tasks list the unapproved task that blocks them", () => expect(r.blocked[0]?.by.map((t) => t.code)).toEqual(["C"]));
   it("averages days from last delivery to approval", () => expect(r.avg_days_to_approval).toBe(3)); // 4 and 2
   it("averages change rounds over approved tasks", () => expect(r.avg_change_rounds).toBe(0.5));
-  it("approved this month counts only this calendar month", () => expect(r.approved_this_month_count).toBe(1));
 });
