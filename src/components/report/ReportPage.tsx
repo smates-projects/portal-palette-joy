@@ -1,4 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
+import { TODAY } from "@/config/app";
 import { useTranslation } from "react-i18next";
 import { useBusinesses, useTasks, useVersions } from "@/lib/api/hooks";
 import type { VisibleTaskStatus } from "@/lib/api/types";
@@ -23,7 +24,7 @@ export function ReportPage() {
   const versionsQ = useVersions();
   const go = (search: TasksSearch) => void navigate({ to: "/tareas", search });
   const nf = (n: number) => new Intl.NumberFormat(i18n.language === "en" ? "en-US" : "es-AR", { maximumFractionDigits: 1 }).format(n);
-  const monthName = new Intl.DateTimeFormat(i18n.language === "en" ? "en-US" : "es-AR", { month: "long" }).format(new Date());
+  const monthName = new Intl.DateTimeFormat(i18n.language === "en" ? "en-US" : "es-AR", { month: "long" }).format(new Date(`${TODAY}T12:00:00`));
 
   const header = (
     <>
