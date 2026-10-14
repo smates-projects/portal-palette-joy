@@ -51,6 +51,8 @@ export interface Business {
   owner_user_id: Uuid;
   program_start_date: IsoDate;
   program_day: number;
+  /** SM office that runs this program (phase 1: only SM Miami). Scope for the SM team. */
+  office_id: Uuid;
 }
 
 /** Readiness to franchise, computed by the data layer (as the backend will). */
@@ -74,6 +76,8 @@ export interface Task {
   business_id: Uuid;
   organization_id: Uuid;
   assignee_user_id: Uuid;
+  /** SM person who supervises the task. */
+  supervisor_user_id: Uuid;
   depends_on_task_ids: Uuid[];
   start_date: IsoDate;
   due_date: IsoDate;
@@ -104,7 +108,20 @@ export interface TaskVersion {
   review_comment_id: Uuid | null;
 }
 
-export type TaskEventKind = "assigned" | "started" | "submitted" | "changes_requested" | "approved";
+export type TaskEventKind =
+  | "assigned" | "started" | "submitted" | "changes_requested" | "approved"
+  | "reassigned" | "due_changed" | "step_changed" | "cancelled";
+
+/**
+ * A change SM made to a task. from/to: ISO date for due_date, step code for step,
+ * display name "Person (Firm)" for assignee; reason only for cancelled.
+ */
+export interface TaskChange {
+  field: "assignee" | "due_date" | "step" | "cancelled";
+  from: string | null;
+  to: string | null;
+  reason?: string | null;
+}
 
 export interface TaskEvent {
   id: Uuid;
@@ -114,6 +131,7 @@ export interface TaskEvent {
   version: number | null;
   comment_id: Uuid | null;
   created_at: IsoDateTime;
+  change?: TaskChange | null;
 }
 
 export interface TaskComment {
@@ -168,6 +186,7 @@ export const NOTIFICATION_KINDS = [
   "meeting_proposed",
   "meeting_confirmed",
   "unblocked",
+  "task_updated",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 export type NotificationChannel = "in_app" | "email";
@@ -186,6 +205,8 @@ export interface AppNotification {
   actor_name: string | null;
   created_at: IsoDateTime;
   read_at: IsoDateTime | null;
+  /** Only for task_updated: what SM changed. */
+  change?: TaskChange | null;
 }
 
 export interface NotificationPreference {
@@ -198,6 +219,16 @@ export interface NotificationPreference {
 export interface TaskWithComputed extends Task {
   is_blocked: boolean;
   is_overdue: boolean;
+  /** When the latest deliverable version was sent (null if never). Set by the data layer. */
+  last_submitted_at?: IsoDateTime | null;
+}
+
+/** What SM can edit on a task (never name or criteria: those come from the catalog). */
+export interface TaskPatch {
+  organization_id?: Uuid;
+  assignee_user_id?: Uuid;
+  due_date?: IsoDate;
+  step?: TaskStep;
 }
 
 export interface ViewAsOption {

@@ -65,9 +65,9 @@ export const users: User[] = [
 ];
 
 export const businesses: Business[] = [
-  { id: BIZ_VOSSLER, name: "Vossler", industry: "Construcción residencial", city: "Orlando", state: "FL", owner_user_id: U_CARLA, program_start_date: "2026-08-02", program_day: 74 },
-  { id: BIZ_PRIME, name: "Prime 10 Solutions", industry: "Remodelaciones", city: "Tampa", state: "FL", owner_user_id: U_DANIEL, program_start_date: "2026-09-14", program_day: 31 },
-  { id: BIZ_ENYERMY, name: "Enyermy Hair Studio", industry: "Salón de belleza", city: "Miami", state: "FL", owner_user_id: U_ENYERMY, program_start_date: "2026-10-09", program_day: 6 },
+  { id: BIZ_VOSSLER, name: "Vossler", industry: "Construcción residencial", city: "Orlando", state: "FL", owner_user_id: U_CARLA, program_start_date: "2026-08-02", program_day: 74, office_id: ORG_SM },
+  { id: BIZ_PRIME, name: "Prime 10 Solutions", industry: "Remodelaciones", city: "Tampa", state: "FL", owner_user_id: U_DANIEL, program_start_date: "2026-09-14", program_day: 31, office_id: ORG_SM },
+  { id: BIZ_ENYERMY, name: "Enyermy Hair Studio", industry: "Salón de belleza", city: "Miami", state: "FL", owner_user_id: U_ENYERMY, program_start_date: "2026-10-09", program_day: 6, office_id: ORG_SM },
 ];
 
 // Official Método 180 catalog entries (code, name and criteria verbatim).
@@ -182,6 +182,9 @@ const taskId = (bizId: string, code: string) => {
   return uuid("0d000000", n);
 };
 
+/** SM supervisor per business (sample assignment). */
+const supervisorOf: Record<string, string> = { [BIZ_VOSSLER]: U_NICOLAS, [BIZ_ENYERMY]: U_NICOLAS, [BIZ_PRIME]: U_MARYLIN };
+
 export const TASK_B602_VOSSLER = taskId(BIZ_VOSSLER, "B6-02");
 
 export const tasks: Task[] = businesses.flatMap((b) =>
@@ -199,6 +202,7 @@ export const tasks: Task[] = businesses.flatMap((b) =>
       business_id: b.id,
       organization_id: c.org,
       assignee_user_id: c.assignee,
+      supervisor_user_id: supervisorOf[b.id]!,
       depends_on_task_ids: c.depends_on ? [taskId(b.id, c.depends_on)] : [],
       start_date: p.start,
       due_date: p.due,
