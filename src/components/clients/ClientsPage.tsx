@@ -1,4 +1,5 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { TODAY } from "@/config/app";
 import { useBusinesses, useTasks, useUsers } from "@/lib/api/hooks";
@@ -11,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export function ClientsPage() {
   const { t, i18n } = useTranslation();
   const lng = i18n.language;
+  const navigate = useNavigate();
   const tasksQ = useTasks();
   const bizQ = useBusinesses();
   const usersQ = useUsers();
@@ -55,7 +57,6 @@ export function ClientsPage() {
           {bizQ.data!.map((b) => {
             const s = buildClientSummary(b.id, tasks);
             const owner = firstName(usersQ.data?.find((u) => u.id === b.owner_user_id)?.full_name ?? "");
-            const stuck = s.stuck.kind !== "none";
             return (
               <Link
                 key={b.id}
