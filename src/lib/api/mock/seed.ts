@@ -314,10 +314,10 @@ versions.push(
 );
 comments.push(
   { id: C_CHANGES, task_id: T, author_user_id: U_CARLA, kind: "changes_requested", file_id: null, created_at: "2026-10-01T13:42:00Z", body: "Lucía, gracias. Lo leí con mi contador y nos gusta la opción LLC, pero falta el acta constitutiva. Sin eso no puedo firmar nada. ¿La podés sumar?" },
-  { id: uuid("0f000000", 902), task_id: T, author_user_id: U_LUCIA, kind: "comment", file_id: null, created_at: "2026-10-01T15:10:00Z", body: "Tenés razón, Carla. No la tengo en el data room. Te dejo un pedido para que me la subas y la incorporo esta semana." },
-  { id: uuid("0f000000", 903), task_id: T, author_user_id: U_NICOLAS, kind: "comment", file_id: null, created_at: "2026-10-02T12:00:00Z", body: "Ojo que la fecha de entrega es el 9. Si el acta llega tarde, avisen así lo reprogramamos. @Marilyn Boraei para que lo tengas en el radar." },
+  { id: uuid("0f000000", 902), task_id: T, author_user_id: U_LUCIA, kind: "comment", file_id: null, created_at: "2026-10-01T15:10:00Z", body: "Tienes razón, Carla. No la tengo en el data room. Te dejo un pedido para que me la subas y la incorporo esta semana." },
+  { id: uuid("0f000000", 903), task_id: T, author_user_id: U_NICOLAS, kind: "comment", file_id: null, created_at: "2026-10-02T12:00:00Z", body: "Ojo que la fecha de entrega es el 9. Si el acta llega tarde, avisen para que lo reprogramamos. @Marilyn Boraei para que lo tengas en el radar." },
   { id: uuid("0f000000", 904), task_id: T, author_user_id: U_LUCIA, kind: "comment", file_id: null, created_at: "2026-10-12T19:06:00Z", body: "Listo, subí la v2. Propuse una llamada corta para repasar la sección 3 antes de que la apruebes, @Carla Méndez." },
-  { id: uuid("0f000000", 905), task_id: T, author_user_id: U_NICOLAS, kind: "comment", file_id: F_MEMO_V2, created_at: "2026-10-13T10:15:00Z", body: "@Lucía Pérez en la página 6 citás la sección 1362, pero creo que es la 1361. ¿Lo revisás?" },
+  { id: uuid("0f000000", 905), task_id: T, author_user_id: U_NICOLAS, kind: "comment", file_id: F_MEMO_V2, created_at: "2026-10-13T10:15:00Z", body: "@Lucía Pérez en la página 6 citas la sección 1362, pero creo que es la 1361. ¿Lo revisas?" },
   { id: uuid("0f000000", 906), task_id: T, author_user_id: U_LUCIA, kind: "comment", file_id: F_MEMO_V2, created_at: "2026-10-13T11:02:00Z", body: "Bien visto, @Nicolás García. Es la 1361; lo corrijo si Carla pide otra vuelta o en la versión final." },
 );
 events.push(
@@ -330,7 +330,7 @@ events.push(
 ownerRequests.push(
   { id: uuid("1a000000", 901), task_id: T, requested_by_user_id: U_LUCIA, question: "Necesito copia del acta constitutiva (Articles of Organization) de Vossler, con la última enmienda si la hay.", due_date: "2026-10-06", answer: "Ahí la subí. La enmienda de 2023 está en la última página del mismo PDF.", status: "resolved", created_at: "2026-10-01T15:12:00Z", resolved_at: "2026-10-07T21:30:00Z" },
   { id: uuid("1a000000", 902), task_id: TASK_B603_VOSSLER, requested_by_user_id: U_LUCIA, question: "Copia de la licencia de contratista estatal (CGC) vigente.", due_date: "2026-10-16", answer: null, status: "open", created_at: "2026-10-06T14:00:00Z", resolved_at: null },
-  { id: uuid("1a000000", 903), task_id: TASK_B603_VOSSLER, requested_by_user_id: U_LUCIA, question: "Lista de condados donde querés operar en los próximos dos años.", due_date: "2026-10-17", answer: null, status: "open", created_at: "2026-10-06T14:02:00Z", resolved_at: null },
+  { id: uuid("1a000000", 903), task_id: TASK_B603_VOSSLER, requested_by_user_id: U_LUCIA, question: "Lista de condados donde quieres operar en los próximos dos años.", due_date: "2026-10-17", answer: null, status: "open", created_at: "2026-10-06T14:02:00Z", resolved_at: null },
 );
 meetings.push(
   { id: uuid("1b000000", 901), task_id: T, proposed_by_user_id: U_LUCIA, topic: "Arranque: opciones de estructura societaria", starts_at: "2026-09-10T15:00:00Z", duration_minutes: 45, status: "confirmed" },
