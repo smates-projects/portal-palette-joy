@@ -2,6 +2,8 @@ import { TODAY } from "@/config/app";
 import { nowIso } from "@/config/app";
 import type { ApiClient } from "../repositories";
 import { canTransition, withComputed } from "../computed";
+import { dueNotifications, taskRef } from "../notifications";
+import { NOTIFICATION_KINDS, type AppNotification, type NotificationPreference } from "../types";
 import type { Meeting, OwnerRequest, Task, TaskComment, TaskEvent, TaskVersion, User } from "../types";
 import * as seed from "./seed";
 
@@ -30,6 +32,15 @@ export function createMockApi(): ApiClient {
     const ev = db.events.filter((e) => e.task_id === t.id && e.kind === "approved").map((e) => e.created_at).sort().at(-1);
     t.accepted_at = ev ?? t.updated_at;
   }
+  const notifs = structuredClone(seed.notifications);
+  const dueRead = new Set<string>(); // "userId|notificationId"
+  const prefs = new Map<string, NotificationPreference[]>();
+  const prefsOf = (userId: string) => {
+    if (!prefs.has(userId)) prefs.set(userId, NOTIFICATION_KINDS.map((kind) => ({ kind, in_app: true, email: false })));
+    return prefs.get(userId)!;
+  };
+  const notify = (user_id: string, kind: AppNotification["kind"], task_id: string) =>
+    notifs.push({ id: newId(), user_id, kind, task_id, actor_user_id: currentUserId, created_at: nowIso(), read: false });
   let currentUserId = seed.U_LUCIA;
 
   const me = (): User => db.users.find((u) => u.id === currentUserId)!;
@@ -56,6 +67,45 @@ export function createMockApi(): ApiClient {
     db.events.push({ id: newId(), task_id, kind, actor_user_id: currentUserId, version, comment_id: null, created_at: nowIso() });
 
   return {
+    notifications: {
+      list: () => {
+        const u = me();
+        const visible = visibleTasks();
+        const tasksById = new Map(db.tasks.map((t) => [t.id, t]));
+        const name = (id: string | null) => (id ? db.users.find((x) => x.id === id)?.full_name ?? null : null);
+        const stored: AppNotification[] = notifs
+          .filter((n) => n.user_id === u.id && tasksById.has(n.task_id))
+          .map((n) => ({
+            id: n.id, user_id: n.user_id, kind: n.kind, ...taskRef(tasksById.get(n.task_id)!, db.businesses),
+            actor_user_id: n.actor_user_id, actor_name: name(n.actor_user_id), created_at: n.created_at, read_at: n.read ? n.created_at : null,
+          }));
+        // Due-date reminders only for tasks the user works on (firm assignee).
+        const mine = u.role === "partner_firm" ? visible.filter((t) => t.organization_id === u.organization_id) : visible;
+        const due = dueNotifications(u.id, mine.map((t) => withComputed(t, db.tasks)), db.businesses).map((n) => ({
+          ...n, read_at: dueRead.has(`${u.id}|${n.id}`) ? n.created_at : null,
+        }));
+        const enabled = new Set(prefsOf(u.id).filter((p) => p.in_app).map((p) => p.kind));
+        return delay([...stored, ...due].filter((n) => enabled.has(n.kind)).sort((a, b) => b.created_at.localeCompare(a.created_at)));
+      },
+      markRead: async (id) => {
+        const n = notifs.find((x) => x.id === id && x.user_id === currentUserId);
+        if (n) n.read = true;
+        else dueRead.add(`${currentUserId}|${id}`);
+        return delay(undefined);
+      },
+      markAllRead: async () => {
+        notifs.filter((n) => n.user_id === currentUserId).forEach((n) => (n.read = true));
+        const due = dueNotifications(currentUserId, visibleTasks().map((t) => withComputed(t, db.tasks)), db.businesses);
+        due.forEach((n) => dueRead.add(`${currentUserId}|${n.id}`));
+        return delay(undefined);
+      },
+      getPreferences: () => delay(prefsOf(currentUserId)),
+      setPreference: async (kind, channel, enabled) => {
+        const p = prefsOf(currentUserId).find((x) => x.kind === kind)!;
+        p[channel] = enabled;
+        return delay(prefsOf(currentUserId));
+      },
+    },
     session: {
       getCurrentUser: () => delay(me()),
       getViewAsOptions: () =>
@@ -152,6 +202,8 @@ export function createMockApi(): ApiClient {
         };
         db.versions.push(v);
         pushEvent(id, "submitted", v.version);
+        const ownerId = db.businesses.find((b) => b.id === t.business_id)?.owner_user_id;
+        if (ownerId) notify(ownerId, "submitted_for_approval", id);
         return delay(v);
       },
       addComment: async (id, input) => {
