@@ -206,3 +206,15 @@
     font-variant-numeric: tabular-nums;
   }
 }
+
+/* Soft text crossfade when switching ES/EN. */
+@keyframes lang-fade-in {
+  from { opacity: 0.35; }
+  to { opacity: 1; }
+}
+@utility lang-fade {
+  animation: lang-fade-in 280ms ease-out;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}

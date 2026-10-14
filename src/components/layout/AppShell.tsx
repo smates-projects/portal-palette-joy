@@ -130,7 +130,7 @@ function ViewAs() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex h-8 items-center gap-2 rounded-md border border-border bg-surface px-2.5 text-sm hover:bg-muted">
+      <DropdownMenuTrigger className="flex h-8 min-w-60 items-center gap-2 rounded-md border border-border bg-surface px-2.5 text-sm hover:bg-muted">
         <Eye className="h-3.5 w-3.5 text-muted-foreground" />
         <span className="text-muted-foreground">{t("topbar.view_as")}:</span>
         <span className="font-medium">{currentOrg?.name ?? "…"}</span>
@@ -223,7 +223,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="flex h-screen overflow-hidden bg-background">
+      <div key={i18n.language} className="lang-fade flex h-screen overflow-hidden bg-background">
         <Rail collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} />
         <div className="flex min-w-0 flex-1 flex-col">
           <TopBar />
