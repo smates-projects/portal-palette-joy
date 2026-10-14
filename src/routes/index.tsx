@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { HomePage } from "@/components/home/HomePage";
 import { OwnerHomePage } from "@/components/home/OwnerHomePage";
+import { SmHomePage } from "@/components/home/SmHomePage";
 import { useCurrentUser } from "@/lib/api/hooks";
 import { tStatic } from "@/lib/i18n";
 
@@ -24,5 +25,6 @@ function HomeRoute() {
   const { task } = Route.useSearch();
   const me = useCurrentUser();
   if (me.data?.role === "business_owner") return <OwnerHomePage taskId={task} />;
+  if (me.data?.role === "sm_team") return <SmHomePage taskId={task} />;
   return <HomePage taskId={task} />;
 }
