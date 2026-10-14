@@ -470,7 +470,7 @@
     "blocked_title": "What is blocked",
     "blocked_none": "You have no blocked tasks.",
     "blocked_by": "Blocked by {{codes}}",
-    "avg_days": "Days from delivery to approval",
+    "avg_days": "Days from deliverable to approval",
     "avg_days_hint": "Average on approved tasks",
     "avg_rounds": "Change rounds",
     "avg_rounds_hint": "Average per approved task",
@@ -485,7 +485,7 @@
     "tab_all": "All",
     "mark_all": "Mark all as read",
     "empty_unread": "No unread notifications. When something changes in your tasks, you'll see it here.",
-    "empty_all": "No notifications yet. Due dates, change requests and meetings will show here.",
+    "empty_all": "No notifications yet. Due dates, requested changes and meetings will show here.",
     "error": "We couldn't load notifications.",
     "retry": "Load again",
     "prefs_title": "Notifications",
@@ -720,7 +720,7 @@
     "load_late": "Avg. delay",
     "load_approval": "Avg. approval",
     "load_empty": "No firm has tasks yet.",
-    "load_hint": "Delay: average days of overdue tasks. Approval: days from delivery until the owner approves.",
+    "load_hint": "Delay: average days of overdue tasks. Approval: days from deliverable until the owner approves.",
     "days_short": "{{value}} d"
   },
   "pipeline": {
