@@ -218,7 +218,7 @@ function FranchiseCell({ row }: { row: BusinessRow }) {
 
 function ReadyBadge() {
   const { t } = useTranslation();
-  return <span className="rounded-[4px] border border-success/40 bg-success/10 px-1.5 py-0.5 text-xs font-medium text-success">{t("office.biz.ready")}</span>;
+  return <span className="rounded-[4px] border border-status-success-border bg-status-success-bg px-1.5 py-0.5 text-xs font-medium text-status-success-fg">{t("office.biz.ready")}</span>;
 }
 
 function AreaDots({ row }: { row: BusinessRow }) {
