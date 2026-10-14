@@ -5,3 +5,6 @@ export const PROGRAM_LENGTH_DAYS = 180;
 export type ApiMode = "mock" | "http";
 export const API_MODE: ApiMode =
   (import.meta.env["VITE_API_MODE"] as ApiMode | undefined) === "http" ? "http" : "mock";
+
+/** Current timestamp anchored to the fixed demo day. */
+export const nowIso = () => `${TODAY}T${new Date().toISOString().slice(11)}`;

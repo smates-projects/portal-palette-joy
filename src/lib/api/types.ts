@@ -64,6 +64,14 @@ export interface Task {
   updated_at: IsoDateTime;
 }
 
+export interface TaskFile {
+  id: Uuid;
+  name: string;
+  size_kb: number;
+}
+
+export type VersionStatus = "submitted" | "changes_requested" | "accepted";
+
 export interface TaskVersion {
   id: Uuid;
   task_id: Uuid;
@@ -71,7 +79,22 @@ export interface TaskVersion {
   submitted_by_user_id: Uuid;
   submitted_at: IsoDateTime;
   note: string;
-  file_name: string;
+  files: TaskFile[];
+  status: VersionStatus;
+  /** Owner comment that requested changes on this version. */
+  review_comment_id: Uuid | null;
+}
+
+export type TaskEventKind = "assigned" | "started" | "submitted" | "changes_requested" | "approved";
+
+export interface TaskEvent {
+  id: Uuid;
+  task_id: Uuid;
+  kind: TaskEventKind;
+  actor_user_id: Uuid;
+  version: number | null;
+  comment_id: Uuid | null;
+  created_at: IsoDateTime;
 }
 
 export interface TaskComment {
@@ -81,6 +104,8 @@ export interface TaskComment {
   body: string;
   created_at: IsoDateTime;
   kind: "comment" | "changes_requested" | "approval";
+  /** Set when the comment is about a specific deliverable file. */
+  file_id: Uuid | null;
 }
 
 export interface OwnerRequest {
@@ -88,6 +113,7 @@ export interface OwnerRequest {
   task_id: Uuid;
   requested_by_user_id: Uuid;
   question: string;
+  due_date: IsoDate;
   answer: string | null;
   status: "open" | "resolved";
   created_at: IsoDateTime;
