@@ -12,6 +12,7 @@ import type {
   TaskComment,
   TaskEvent,
   TaskStatus,
+  TaskPatch,
   TaskVersion,
   TaskWithComputed,
   User,
@@ -58,7 +59,12 @@ export interface SubmitVersionInput {
 }
 
 export interface TasksRepository {
-  list(): Promise<TaskWithComputed[]>;
+  /** Visible tasks. Cancelled ones are left out unless include_cancelled. */
+  list(opts?: { include_cancelled?: boolean }): Promise<TaskWithComputed[]>;
+  /** SM only: reassign, change due date or step on one or many tasks. Logged and notified to the firm. */
+  update(ids: Uuid[], patch: TaskPatch): Promise<TaskWithComputed[]>;
+  /** SM only: cancel with a required reason. The task stays, as cancelled. */
+  cancel(ids: Uuid[], reason: string): Promise<TaskWithComputed[]>;
   get(id: Uuid): Promise<TaskDetail | null>;
   updateStatus(id: Uuid, status: TaskStatus): Promise<TaskWithComputed>;
   start(id: Uuid): Promise<TaskWithComputed>;

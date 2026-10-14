@@ -25,7 +25,7 @@ export const ORG_DELTA = uuid("0a000000", 4);
 export const ORG_TECNO = uuid("0a000000", 5);
 
 export const organizations: Organization[] = [
-  { id: ORG_SM, name: "Strategic Mates", kind: "sm", area: null, specialty: null, city: "Orlando, FL", email: "hola@strategicmates.com", phone: null },
+  { id: ORG_SM, name: "SM Miami", kind: "sm", area: null, specialty: null, city: "Orlando, FL", email: "hola@strategicmates.com", phone: null },
   { id: ORG_PEREZ, name: "Estudio Pérez Legal", kind: "partner_firm", area: "B6", specialty: "Derecho corporativo, licencias y contratos para franquicias en Florida", city: "Miami, FL", email: "contacto@estudioperez.legal", phone: "+1 305 555 0142" },
   { id: ORG_DELTA, name: "Delta Contadores", kind: "partner_firm", area: "B3", specialty: "Contabilidad, finanzas y fiscal para pymes que se preparan para franquiciar", city: "Miami, FL", email: "hola@deltacontadores.com", phone: "+1 305 555 0171" },
   { id: ORG_TECNO, name: "TecnoPyme", kind: "partner_firm", area: "B4", specialty: "CRM, órdenes de servicio y tableros para negocios de servicios", city: "Orlando, FL", email: "equipo@tecnopyme.io", phone: "+1 407 555 0123" },

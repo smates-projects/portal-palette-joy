@@ -5,7 +5,7 @@ import { canTransition, withComputed } from "../computed";
 import { dueNotifications, taskRef } from "../notifications";
 import { computeFranchisability } from "../franchisability";
 import { NOTIFICATION_KINDS, type AppNotification, type NotificationPreference } from "../types";
-import type { Meeting, OwnerRequest, Task, TaskComment, TaskEvent, TaskVersion, User } from "../types";
+import type { Meeting, OwnerRequest, Task, TaskChange, TaskComment, TaskEvent, TaskVersion, User } from "../types";
 import * as seed from "./seed";
 
 const delay = <T,>(v: T, ms = 120) => new Promise<T>((r) => setTimeout(() => r(structuredClone(v)), ms));
@@ -40,15 +40,19 @@ export function createMockApi(): ApiClient {
     if (!prefs.has(userId)) prefs.set(userId, NOTIFICATION_KINDS.map((kind) => ({ kind, in_app: true, email: false })));
     return prefs.get(userId)!;
   };
-  const notify = (user_id: string, kind: AppNotification["kind"], task_id: string) =>
-    notifs.push({ id: newId(), user_id, kind, task_id, actor_user_id: currentUserId, created_at: nowIso(), read: false });
+  const notify = (user_id: string, kind: AppNotification["kind"], task_id: string, change: TaskChange | null = null) =>
+    notifs.push({ id: newId(), user_id, kind, task_id, actor_user_id: currentUserId, created_at: nowIso(), read: false, change });
   let currentUserId = seed.U_LUCIA;
 
   const me = (): User => db.users.find((u) => u.id === currentUserId)!;
 
   const visibleTasks = (): Task[] => {
     const u = me();
-    if (u.role === "sm_team") return db.tasks;
+    // SM team: every program of its own office, never other offices.
+    if (u.role === "sm_team") {
+      const mine = new Set(db.businesses.filter((b) => b.office_id === u.organization_id).map((b) => b.id));
+      return db.tasks.filter((t) => mine.has(t.business_id));
+    }
     if (u.role === "business_owner") return db.tasks.filter((t) => t.business_id === u.business_id);
     return db.tasks.filter((t) => t.organization_id === u.organization_id);
   };
@@ -64,8 +68,24 @@ export function createMockApi(): ApiClient {
     t.accepted_at = to === "accepted" ? nowIso() : null;
     t.updated_at = nowIso();
   };
-  const pushEvent = (task_id: string, kind: TaskEvent["kind"], version: number | null = null) =>
-    db.events.push({ id: newId(), task_id, kind, actor_user_id: currentUserId, version, comment_id: null, created_at: nowIso() });
+  const pushEvent = (task_id: string, kind: TaskEvent["kind"], version: number | null = null, change: TaskChange | null = null) =>
+    db.events.push({ id: newId(), task_id, kind, actor_user_id: currentUserId, version, comment_id: null, created_at: nowIso(), change });
+  const lastSubmitted = (taskId: string) =>
+    db.versions.filter((v) => v.task_id === taskId).map((v) => v.submitted_at).sort().at(-1) ?? null;
+  const computed = (t: Task) => ({ ...withComputed(t, db.tasks), last_submitted_at: lastSubmitted(t.id) });
+  const personLabel = (userId: string) => {
+    const u = db.users.find((x) => x.id === userId);
+    const o = db.orgs.find((x) => x.id === u?.organization_id);
+    return u ? (o ? `${u.full_name} (${o.name})` : u.full_name) : "";
+  };
+  const smOnly = () => {
+    if (me().role !== "sm_team") throw new Error("sm_only");
+  };
+  /** Log the change on the task and tell the firm (old and new assignee on a reassignment). */
+  const recordChange = (t: Task, kind: TaskEvent["kind"], change: TaskChange, alsoNotify: string[] = []) => {
+    pushEvent(t.id, kind, null, change);
+    for (const uid of new Set([t.assignee_user_id, ...alsoNotify])) if (uid !== currentUserId) notify(uid, "task_updated", t.id, change);
+  };
 
   return {
     notifications: {
@@ -79,6 +99,7 @@ export function createMockApi(): ApiClient {
           .map((n) => ({
             id: n.id, user_id: n.user_id, kind: n.kind, ...taskRef(tasksById.get(n.task_id)!, db.businesses),
             actor_user_id: n.actor_user_id, actor_name: name(n.actor_user_id), created_at: n.created_at, read_at: n.read ? n.created_at : null,
+            change: n.change ?? null,
           }));
         // Due-date reminders only for tasks the user works on (firm assignee).
         // Owners get no due reminders: their part is approving, answering and confirming.
@@ -117,11 +138,11 @@ export function createMockApi(): ApiClient {
             return { user, organization: db.orgs.find((o) => o.id === user.organization_id) ?? null, business: null, enabled: true };
           }),
           { user: db.users.find((u) => u.id === seed.U_CARLA)!, organization: null, business: db.businesses.find((b) => b.id === seed.BIZ_VOSSLER) ?? null, enabled: true },
-          { user: db.users.find((u) => u.id === seed.U_MARYLIN)!, organization: db.orgs[0] ?? null, business: null, enabled: false },
+          { user: db.users.find((u) => u.id === seed.U_NICOLAS)!, organization: db.orgs.find((o) => o.id === seed.ORG_SM) ?? null, business: null, enabled: true },
         ]),
       setViewAs: async (userId) => {
         const target = db.users.find((u) => u.id === userId);
-        if (!target || target.role === "sm_team") throw new Error("not_available");
+        if (!target) throw new Error("not_available");
         currentUserId = userId;
         return delay(target);
       },
@@ -164,7 +185,51 @@ export function createMockApi(): ApiClient {
       },
     },
     tasks: {
-      list: () => delay(visibleTasks().map((t) => withComputed(t, db.tasks))),
+      list: (opts) =>
+        delay(visibleTasks().filter((t) => opts?.include_cancelled || t.status !== "cancelled").map(computed)),
+      update: async (ids, patch) => {
+        smOnly();
+        const changed = ids.map(findTask).map((t) => {
+          if (t.status === "cancelled") throw new Error("cancelled");
+          if (patch.assignee_user_id && patch.assignee_user_id !== t.assignee_user_id) {
+            const target = db.users.find((u) => u.id === patch.assignee_user_id);
+            const org = patch.organization_id ?? target?.organization_id;
+            if (!target || !org || target.organization_id !== org) throw new Error("invalid_assignee");
+            const prev = t.assignee_user_id;
+            const change: TaskChange = { field: "assignee", from: personLabel(prev), to: personLabel(target.id) };
+            t.assignee_user_id = target.id;
+            t.organization_id = org;
+            recordChange(t, "reassigned", change, [prev]);
+          }
+          if (patch.due_date && patch.due_date !== t.due_date) {
+            const change: TaskChange = { field: "due_date", from: t.due_date, to: patch.due_date };
+            t.due_date = patch.due_date;
+            if (t.start_date > t.due_date) t.start_date = t.due_date;
+            recordChange(t, "due_changed", change);
+          }
+          if (patch.step && patch.step !== t.step) {
+            const change: TaskChange = { field: "step", from: t.step, to: patch.step };
+            t.step = patch.step;
+            recordChange(t, "step_changed", change);
+          }
+          t.updated_at = nowIso();
+          return t;
+        });
+        return delay(changed.map(computed));
+      },
+      cancel: async (ids, reason) => {
+        smOnly();
+        if (!reason.trim()) throw new Error("reason_required");
+        const changed = ids.map(findTask).map((t) => {
+          if (t.status === "cancelled") return t;
+          const change: TaskChange = { field: "cancelled", from: t.status, to: "cancelled", reason: reason.trim() };
+          t.status = "cancelled";
+          t.updated_at = nowIso();
+          recordChange(t, "cancelled", change);
+          return t;
+        });
+        return delay(changed.map(computed));
+      },
       listVersions: () => {
         const ids = new Set(visibleTasks().map((t) => t.id));
         return delay(db.versions.filter((v) => ids.has(v.task_id)));
@@ -185,7 +250,7 @@ export function createMockApi(): ApiClient {
         const t = visibleTasks().find((x) => x.id === id);
         if (!t) return delay(null);
         return delay({
-          task: withComputed(t, db.tasks),
+          task: computed(t),
           versions: db.versions.filter((v) => v.task_id === id),
           comments: db.comments.filter((c) => c.task_id === id),
           owner_requests: db.ownerRequests.filter((r) => r.task_id === id),
