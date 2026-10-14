@@ -16,35 +16,19 @@ export const VISIBLE_STATUSES: VisibleTaskStatus[] = [
 ];
 const STEP_ORDER = ["survey", "design", "implement", "validate", "document"];
 
-export interface TasksSearch {
-  business?: string;
-  area?: string;
-  status?: string;
-  due?: string;
-  q?: string;
-  sort?: string;
-  dir?: string;
-  group?: string;
-  view?: string;
-  task?: string;
-}
+const SEARCH_KEYS = ["business", "area", "status", "due", "q", "sort", "dir", "group", "view", "task"] as const;
+export type TasksSearch = { [K in (typeof SEARCH_KEYS)[number]]?: string | undefined };
 
 const str = (v: unknown) => (typeof v === "string" && v !== "" ? v : undefined);
 
 /** Loose URL validation: unknown values are dropped rather than replaced. */
 export function validateTasksSearch(raw: Record<string, unknown>): TasksSearch {
-  return {
-    business: str(raw.business),
-    area: str(raw.area),
-    status: str(raw.status),
-    due: str(raw.due),
-    q: str(raw.q),
-    sort: str(raw.sort),
-    dir: str(raw.dir),
-    group: str(raw.group),
-    view: str(raw.view),
-    task: str(raw.task),
-  };
+  const out: TasksSearch = {};
+  for (const k of SEARCH_KEYS) {
+    const v = str(raw[k]);
+    if (v) out[k] = v;
+  }
+  return out;
 }
 
 const addDays = (iso: string, n: number) => {
