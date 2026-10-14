@@ -15,7 +15,10 @@ export const queryKeys = {
 export const useCurrentUser = () => useQuery({ queryKey: queryKeys.me, queryFn: api.session.getCurrentUser });
 export const useViewAsOptions = () =>
   useQuery({ queryKey: queryKeys.viewAs, queryFn: api.session.getViewAsOptions });
-export const useTasks = () => useQuery({ queryKey: queryKeys.tasks, queryFn: api.tasks.list });
+export const useTasks = () => useQuery({ queryKey: queryKeys.tasks, queryFn: () => api.tasks.list() });
+/** Includes cancelled tasks: only for the SM "Cancelada" filter. */
+export const useTasksWithCancelled = (enabled: boolean) =>
+  useQuery({ queryKey: ["tasks", "with-cancelled"], queryFn: () => api.tasks.list({ include_cancelled: true }), enabled });
 export const useUpcomingMeetings = () =>
   useQuery({ queryKey: queryKeys.meetings, queryFn: api.tasks.listUpcomingMeetings });
 export const useMeetings = () => useQuery({ queryKey: ["tasks", "meetings", "all"], queryFn: api.tasks.listMeetings });
@@ -88,3 +91,7 @@ export const useRequestChanges = () => useTaskMutation((v: { id: string; note: s
 export const useAnswerOwnerRequest = () =>
   useTaskMutation((v: { requestId: string; file_name: string; note: string }) => api.tasks.answerOwnerRequest(v.requestId, v));
 export const useConfirmMeeting = () => useTaskMutation((id: string) => api.tasks.confirmMeeting(id));
+
+export const useUpdateTasks = () =>
+  useTaskMutation((v: { ids: string[]; patch: import("./types").TaskPatch }) => api.tasks.update(v.ids, v.patch));
+export const useCancelTasks = () => useTaskMutation((v: { ids: string[]; reason: string }) => api.tasks.cancel(v.ids, v.reason));
