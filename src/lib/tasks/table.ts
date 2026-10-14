@@ -59,7 +59,7 @@ export interface TableContext {
   /** SM: only tasks this person supervises (unset = no supervisor filter). */
   supervisorId?: string | undefined;
   /** Every visible task, to know if a dependency is overdue (attention filter). */
-  all?: TaskWithComputed[];
+  all?: TaskWithComputed[] | undefined;
 }
 
 /** SM rule: a deliverable is stale when it waits for the owner's approval more than 3 days. */
