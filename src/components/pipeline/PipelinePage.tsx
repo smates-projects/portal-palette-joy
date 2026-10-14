@@ -23,6 +23,7 @@ import { LeadBoard, LeadTable } from "./LeadViews";
 import { LeadDetail } from "./LeadDetail";
 import { DiscardLeadDialog, SignContractDialog } from "./LeadDialogs";
 
+type SearchPatch = { [K in keyof LeadsSearch]?: LeadsSearch[K] | undefined };
 type MoveTarget = "evaluated" | "meeting" | "accepted" | "contract";
 const ALL = "__all";
 
@@ -37,8 +38,11 @@ export function PipelinePage({ search }: { search: LeadsSearch }) {
   const [discardFor, setDiscardFor] = useState<LeadWithComputed | null>(null);
   const [signFor, setSignFor] = useState<LeadWithComputed | null>(null);
 
-  const setSearch = (patch: Partial<LeadsSearch>) =>
-    void navigate({ to: "/embudo", search: (prev: LeadsSearch) => ({ ...prev, ...patch }), replace: true });
+  const setSearch = (patch: SearchPatch) => {
+    const next: Record<string, unknown> = { ...search, ...patch };
+    for (const k of Object.keys(next)) if (next[k] === undefined) delete next[k];
+    void navigate({ to: "/embudo", search: next as LeadsSearch, replace: true });
+  };
   const consultantName = (id: string) => usersQ.data?.find((u) => u.id === id)?.full_name ?? "";
   const consultants = (usersQ.data ?? []).filter((u) => u.role === "sm_team");
   const stageName = (s: LeadStage) => t(`pipeline.stages.${s}`);
@@ -117,7 +121,7 @@ export function PipelinePage({ search }: { search: LeadsSearch }) {
   const selected = all.find((l) => l.id === search.lead);
   const nf = new Intl.NumberFormat(i18n.language === "en" ? "en-US" : "es-AR");
 
-  const counter = (key: "week" | "uncontacted" | "contracts" | "signed_month", value: number, patch: Partial<LeadsSearch>, danger = false) => {
+  const counter = (key: "week" | "uncontacted" | "contracts" | "signed_month", value: number, patch: SearchPatch, danger = false) => {
     const active = key === "contracts" ? search.stage === "contract" && !search.quick : search.quick === key;
     return (
       <button
