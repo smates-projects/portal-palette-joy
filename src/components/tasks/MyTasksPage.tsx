@@ -303,7 +303,7 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
       )}
 
       <Sheet open={!!selected} onOpenChange={(open) => !open && setSearch({ task: undefined })}>
-        <SheetContent className="w-full overflow-y-auto p-0 sm:max-w-xl [&>button]:hidden">
+        <SheetContent className="w-full overflow-y-auto bg-surface p-0 sm:max-w-xl [&>button]:hidden">
           <SheetTitle className="sr-only">{selected?.name}</SheetTitle>
           <SheetDescription className="sr-only">{selected?.code}</SheetDescription>
           {selected && (
