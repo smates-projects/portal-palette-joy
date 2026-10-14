@@ -856,10 +856,10 @@
       "hispanic": "Hispanic owner",
       "result_title": "What the owner saw in their result",
       "headline": {
-        "high": "Your business is ready to start franchising",
-        "mid": "Your business has a good base to franchise",
-        "low": "Your business can franchise, with work in several areas",
-        "track": "You are on your way"
+        "high": "You are ready for Método 180.",
+        "mid": "You meet the Método 180 requirements and have a base to work on.",
+        "low": "You meet the Método 180 requirements and there is quite a bit to organize, which is exactly what the program works on.",
+        "track": "You are on your way."
       },
       "not_eligible": "Not eligible for the program yet",
       "gaps": {
@@ -887,19 +887,19 @@
       "booking_from_office": "The office link will open because {{name}} has not added one yet."
     },
     "blocks": {
-      "model": "Business model",
-      "operations": "Operations",
-      "finance": "Finance",
-      "technology": "Technology",
-      "marketing": "Marketing and sales",
-      "legal": "Legal",
-      "team": "Team"
+      "time_team": "Your time and your team",
+      "work_quality": "Your work and its quality",
+      "money": "Your business money",
+      "clients_sales": "Your clients and your sales",
+      "info_agreements": "Your information and your agreements",
+      "experience": "Your experience",
+      "vision": "The business you want to build"
     },
     "block_status": {
-      "strong": "Strong",
-      "medium": "Medium",
-      "weak": "Weak",
-      "unknown": "I don't know"
+      "strong": "Solid",
+      "medium": "Developing",
+      "weak": "To build",
+      "unknown": "To discover"
     },
     "events": {
       "submitted": "Completed the assessment",

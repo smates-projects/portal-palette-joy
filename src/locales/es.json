@@ -856,10 +856,10 @@
       "hispanic": "Dueño hispano",
       "result_title": "Lo que vio el dueño en su resultado",
       "headline": {
-        "high": "Tu negocio está listo para empezar a franquiciar",
-        "mid": "Tu negocio tiene una buena base para franquiciar",
-        "low": "Tu negocio puede franquiciar, con trabajo en varias áreas",
-        "track": "Ya estás en camino"
+        "high": "Estás preparado para el Método 180.",
+        "mid": "Cumples los requisitos del Método 180 y tienes una base sobre la que trabajar.",
+        "low": "Cumples los requisitos del Método 180 y hay bastante por ordenar, que es justamente lo que se trabaja en el programa.",
+        "track": "Ya estás en camino."
       },
       "not_eligible": "Todavía no es elegible para el programa",
       "gaps": {
@@ -887,19 +887,19 @@
       "booking_from_office": "Se abrirá el link de la oficina porque {{name}} todavía no cargó el suyo."
     },
     "blocks": {
-      "model": "Modelo de negocio",
-      "operations": "Operaciones",
-      "finance": "Finanzas",
-      "technology": "Tecnología",
-      "marketing": "Marketing y ventas",
-      "legal": "Legal",
-      "team": "Equipo"
+      "time_team": "Tu tiempo y tu equipo",
+      "work_quality": "Tus trabajos y la calidad",
+      "money": "El dinero de tu negocio",
+      "clients_sales": "Tus clientes y tus ventas",
+      "info_agreements": "Tu información y tus acuerdos",
+      "experience": "Tu experiencia",
+      "vision": "El negocio que quieres construir"
     },
     "block_status": {
-      "strong": "Fuerte",
-      "medium": "Media",
-      "weak": "Débil",
-      "unknown": "No lo sé"
+      "strong": "Sólida",
+      "medium": "En desarrollo",
+      "weak": "Por construir",
+      "unknown": "Por conocer"
     },
     "events": {
       "submitted": "Completó el assessment",
