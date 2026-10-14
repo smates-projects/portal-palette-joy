@@ -15,7 +15,7 @@ export function NotificationPreferences() {
       {
         onSuccess: () =>
           toast.success(t("notifications.prefs_saved"), {
-            action: { label: t("common.undo"), onClick: () => set.mutate({ kind, channel, enabled: !enabled }) },
+            action: { label: t("profile.undo"), onClick: () => set.mutate({ kind, channel, enabled: !enabled }) },
           }),
         onError: () => toast.error(t("notifications.prefs_error")),
       },
