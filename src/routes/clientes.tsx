@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PageHeader } from "@/components/layout/AppShell";
+import { ClientsPage } from "@/components/clients/ClientsPage";
 import { tStatic } from "@/lib/i18n";
 
 export const Route = createFileRoute("/clientes")({
@@ -9,7 +9,9 @@ export const Route = createFileRoute("/clientes")({
       { name: "description", content: tStatic("meta.clients") },
       { property: "og:title", content: `${tStatic("pages.clients.title")} · SM Platform` },
       { property: "og:description", content: tStatic("meta.clients") },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: () => <PageHeader pageKey="clients" />,
+  component: ClientsPage,
 });

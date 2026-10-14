@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PageHeader } from "@/components/layout/AppShell";
+import { ProfilePage } from "@/components/profile/ProfilePage";
 import { tStatic } from "@/lib/i18n";
 
 export const Route = createFileRoute("/perfil")({
@@ -9,7 +9,9 @@ export const Route = createFileRoute("/perfil")({
       { name: "description", content: tStatic("meta.profile") },
       { property: "og:title", content: `${tStatic("pages.profile.title")} · SM Platform` },
       { property: "og:description", content: tStatic("meta.profile") },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: () => <PageHeader pageKey="profile" />,
+  component: ProfilePage,
 });
