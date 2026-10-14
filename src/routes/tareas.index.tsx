@@ -3,7 +3,7 @@ import { MyTasksPage } from "@/components/tasks/MyTasksPage";
 import { tStatic } from "@/lib/i18n";
 import { validateTasksSearch } from "@/lib/tasks/table";
 
-export const Route = createFileRoute("/tareas")({
+export const Route = createFileRoute("/tareas/")({
   validateSearch: validateTasksSearch,
   head: () => ({
     meta: [
