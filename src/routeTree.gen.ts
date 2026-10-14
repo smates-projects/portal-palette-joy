@@ -11,6 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ClientesRouteImport } from './routes/clientes'
+import { Route as DocumentosRouteImport } from './routes/documentos'
+import { Route as ManualRouteImport } from './routes/manual'
+import { Route as NegocioRouteImport } from './routes/negocio'
+import { Route as NumerosRouteImport } from './routes/numeros'
 import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as ReporteRouteImport } from './routes/reporte'
 import { Route as TareasIndexRouteImport } from './routes/tareas.index'
@@ -24,6 +28,26 @@ const IndexRoute = IndexRouteImport.update({
 const ClientesRoute = ClientesRouteImport.update({
   id: '/clientes',
   path: '/clientes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocumentosRoute = DocumentosRouteImport.update({
+  id: '/documentos',
+  path: '/documentos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManualRoute = ManualRouteImport.update({
+  id: '/manual',
+  path: '/manual',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NegocioRoute = NegocioRouteImport.update({
+  id: '/negocio',
+  path: '/negocio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NumerosRoute = NumerosRouteImport.update({
+  id: '/numeros',
+  path: '/numeros',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PerfilRoute = PerfilRouteImport.update({
@@ -50,6 +74,10 @@ const TareasTaskIdRoute = TareasTaskIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/clientes': typeof ClientesRoute
+  '/documentos': typeof DocumentosRoute
+  '/manual': typeof ManualRoute
+  '/negocio': typeof NegocioRoute
+  '/numeros': typeof NumerosRoute
   '/perfil': typeof PerfilRoute
   '/reporte': typeof ReporteRoute
   '/tareas/$taskId': typeof TareasTaskIdRoute
@@ -58,6 +86,10 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/clientes': typeof ClientesRoute
+  '/documentos': typeof DocumentosRoute
+  '/manual': typeof ManualRoute
+  '/negocio': typeof NegocioRoute
+  '/numeros': typeof NumerosRoute
   '/perfil': typeof PerfilRoute
   '/reporte': typeof ReporteRoute
   '/tareas/$taskId': typeof TareasTaskIdRoute
@@ -67,6 +99,10 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/clientes': typeof ClientesRoute
+  '/documentos': typeof DocumentosRoute
+  '/manual': typeof ManualRoute
+  '/negocio': typeof NegocioRoute
+  '/numeros': typeof NumerosRoute
   '/perfil': typeof PerfilRoute
   '/reporte': typeof ReporteRoute
   '/tareas/$taskId': typeof TareasTaskIdRoute
@@ -75,13 +111,36 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/clientes' | '/perfil' | '/reporte' | '/tareas/$taskId' | '/tareas/'
+    | '/'
+    | '/clientes'
+    | '/documentos'
+    | '/manual'
+    | '/negocio'
+    | '/numeros'
+    | '/perfil'
+    | '/reporte'
+    | '/tareas/$taskId'
+    | '/tareas/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/clientes' | '/perfil' | '/reporte' | '/tareas/$taskId' | '/tareas'
+  to:
+    | '/'
+    | '/clientes'
+    | '/documentos'
+    | '/manual'
+    | '/negocio'
+    | '/numeros'
+    | '/perfil'
+    | '/reporte'
+    | '/tareas/$taskId'
+    | '/tareas'
   id:
     | '__root__'
     | '/'
     | '/clientes'
+    | '/documentos'
+    | '/manual'
+    | '/negocio'
+    | '/numeros'
     | '/perfil'
     | '/reporte'
     | '/tareas/$taskId'
@@ -91,6 +150,10 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ClientesRoute: typeof ClientesRoute
+  DocumentosRoute: typeof DocumentosRoute
+  ManualRoute: typeof ManualRoute
+  NegocioRoute: typeof NegocioRoute
+  NumerosRoute: typeof NumerosRoute
   PerfilRoute: typeof PerfilRoute
   ReporteRoute: typeof ReporteRoute
   TareasTaskIdRoute: typeof TareasTaskIdRoute
@@ -111,6 +174,34 @@ declare module '@tanstack/react-router' {
       path: '/clientes'
       fullPath: '/clientes'
       preLoaderRoute: typeof ClientesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/documentos': {
+      id: '/documentos'
+      path: '/documentos'
+      fullPath: '/documentos'
+      preLoaderRoute: typeof DocumentosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/manual': {
+      id: '/manual'
+      path: '/manual'
+      fullPath: '/manual'
+      preLoaderRoute: typeof ManualRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/negocio': {
+      id: '/negocio'
+      path: '/negocio'
+      fullPath: '/negocio'
+      preLoaderRoute: typeof NegocioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/numeros': {
+      id: '/numeros'
+      path: '/numeros'
+      fullPath: '/numeros'
+      preLoaderRoute: typeof NumerosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/perfil': {
@@ -147,6 +238,10 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ClientesRoute: ClientesRoute,
+  DocumentosRoute: DocumentosRoute,
+  ManualRoute: ManualRoute,
+  NegocioRoute: NegocioRoute,
+  NumerosRoute: NumerosRoute,
   PerfilRoute: PerfilRoute,
   ReporteRoute: ReporteRoute,
   TareasTaskIdRoute: TareasTaskIdRoute,

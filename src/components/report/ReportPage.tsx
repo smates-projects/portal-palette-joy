@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { useBusinesses, useTasks, useVersions } from "@/lib/api/hooks";
+import { useBusinesses, useCurrentUser, useTasks, useVersions } from "@/lib/api/hooks";
 import type { VisibleTaskStatus } from "@/lib/api/types";
 import { buildFirmReport } from "@/lib/tasks/report";
 import { VISIBLE_STATUSES, type TasksSearch } from "@/lib/tasks/table";
@@ -19,6 +19,7 @@ export function ReportPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const tasksQ = useTasks();
+  const isOwner = useCurrentUser().data?.role === "business_owner";
   const bizQ = useBusinesses();
   const versionsQ = useVersions();
   const go = (search: TasksSearch) => void navigate({ to: "/tareas", search });
@@ -26,8 +27,8 @@ export function ReportPage() {
 
   const header = (
     <>
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("tasks.for_role")}</p>
-      <h1 className="mt-1 text-2xl font-semibold tracking-tight">{t("report.heading")}</h1>
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t(isOwner ? "owner.for_role" : "tasks.for_role")}</p>
+      <h1 className="mt-1 text-2xl font-semibold tracking-tight">{t(isOwner ? "owner.report_heading" : "report.heading")}</h1>
     </>
   );
 

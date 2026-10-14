@@ -3,7 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { ArrowDown, ArrowUp, ArrowUpDown, CalendarDays, Columns3, GanttChart, Search, Table2, X } from "lucide-react";
 import { TODAY } from "@/config/app";
-import { useBusinesses, useTasks } from "@/lib/api/hooks";
+import { useBusinesses, useCurrentUser, useTasks } from "@/lib/api/hooks";
 import type { AreaCode, TaskWithComputed, VisibleTaskStatus } from "@/lib/api/types";
 import { formatDate, formatRelativeDate } from "@/lib/format";
 import {
@@ -41,7 +41,9 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
   const navigate = useNavigate({ from: "/tareas/" });
   const tasksQ = useTasks();
   const bizQ = useBusinesses();
+  const isOwner = useCurrentUser().data?.role === "business_owner";
   const [submitFor, setSubmitFor] = useState<string | null>(null);
+  const [changesFor, setChangesFor] = useState<string | null>(null);
 
   const setSearch = (patch: Partial<TasksSearch>, replace = false) =>
     navigate({ search: (prev: TasksSearch) => ({ ...prev, ...patch }), replace });
@@ -77,8 +79,8 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
     <div className="mx-auto flex h-full max-w-7xl flex-col px-6 py-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("tasks.for_role")}</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">{t("tasks.heading")}</h1>
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t(isOwner ? "owner.for_role" : "tasks.for_role")}</p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight">{t(isOwner ? "owner.tasks_heading" : "tasks.heading")}</h1>
         </div>
         <div role="tablist" aria-label={t("tasks.views.label")} className="flex rounded-md border border-border bg-surface p-0.5">
           {VIEWS.map((v) => {
@@ -221,6 +223,7 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
                 businessName={businessName}
                 onOpen={(id) => {
                   setSubmitFor(null);
+                  setChangesFor(null);
                   void setSearch({ task: id });
                 }}
               />
@@ -232,6 +235,7 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
                 selectedId={search.task}
                 onOpen={(id) => {
                   setSubmitFor(null);
+                  setChangesFor(null);
                   void setSearch({ task: id });
                 }}
               />
@@ -243,10 +247,15 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
                 codeById={codeById}
                 onOpen={(id) => {
                   setSubmitFor(null);
+                  setChangesFor(null);
                   void setSearch({ task: id });
                 }}
                 onSubmit={(id) => {
                   setSubmitFor(id);
+                  void setSearch({ task: id });
+                }}
+                onRequestChanges={(id) => {
+                  setChangesFor(id);
                   void setSearch({ task: id });
                 }}
               />
@@ -338,6 +347,7 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
       <Sheet open={!!selected} onOpenChange={(open) => {
           if (open) return;
           setSubmitFor(null);
+                  setChangesFor(null);
           void setSearch({ task: undefined });
         }}>
         <SheetContent className="w-full overflow-y-auto bg-surface p-0 sm:max-w-xl [&>button]:hidden">
@@ -345,10 +355,11 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
           <SheetDescription className="sr-only">{selected?.code}</SheetDescription>
           {selected && (
             <TaskDetail
-              key={selected.id + String(submitFor === selected.id)}
+              key={selected.id + String(submitFor === selected.id) + String(changesFor === selected.id)}
               taskId={selected.id}
               mode="panel"
               openSubmit={submitFor === selected.id}
+              openChanges={changesFor === selected.id}
               onClose={() => setSearch({ task: undefined })}
             />
           )}

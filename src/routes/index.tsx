@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { HomePage } from "@/components/home/HomePage";
+import { OwnerHomePage } from "@/components/home/OwnerHomePage";
+import { useCurrentUser } from "@/lib/api/hooks";
 import { tStatic } from "@/lib/i18n";
 
 export const Route = createFileRoute("/")({
@@ -20,5 +22,7 @@ export const Route = createFileRoute("/")({
 
 function HomeRoute() {
   const { task } = Route.useSearch();
+  const me = useCurrentUser();
+  if (me.data?.role === "business_owner") return <OwnerHomePage taskId={task} />;
   return <HomePage taskId={task} />;
 }

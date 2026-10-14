@@ -51,6 +51,19 @@ export interface Business {
   owner_user_id: Uuid;
   program_start_date: IsoDate;
   program_day: number;
+  /** Per-business overrides set by SM; null = use the default for all businesses. */
+  franchisability_goal: number | null;
+  required_task_codes: string[] | null;
+}
+
+/** Readiness to franchise, computed by the data layer (as the backend will). */
+export interface Franchisability {
+  business_id: Uuid;
+  franchisability_pct: number;
+  franchisability_goal: number;
+  required_task_codes: string[];
+  missing_required: string[];
+  is_ready: boolean;
 }
 
 export interface Task {
@@ -193,5 +206,7 @@ export interface TaskWithComputed extends Task {
 export interface ViewAsOption {
   user: User;
   organization: Organization | null;
+  /** For business owners: the business they own. */
+  business: Business | null;
   enabled: boolean;
 }

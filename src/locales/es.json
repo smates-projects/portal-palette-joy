@@ -11,7 +11,12 @@
     "collapse": "Contraer menú",
     "expand": "Expandir menú",
     "main": "Menú principal",
-    "report": "Reporte"
+    "report": "Reporte",
+    "calendar": "Calendario",
+    "manual": "Mi manual",
+    "documents": "Documentos",
+    "numbers": "Mis números",
+    "business": "Mi negocio"
   },
   "topbar": {
     "search_placeholder": "Buscar tareas o clientes",
@@ -68,6 +73,26 @@
     "report": {
       "title": "Reporte",
       "subtitle": "¿Cómo va mi trabajo?"
+    },
+    "calendar": {
+      "title": "Calendario",
+      "subtitle": "¿Qué viene en mi programa?"
+    },
+    "manual": {
+      "title": "Mi manual",
+      "subtitle": "¿Cómo se opera mi negocio?"
+    },
+    "documents": {
+      "title": "Documentos",
+      "subtitle": "¿Dónde están los documentos de mi negocio?"
+    },
+    "numbers": {
+      "title": "Mis números",
+      "subtitle": "¿Cómo van los números de mi negocio?"
+    },
+    "business": {
+      "title": "Mi negocio",
+      "subtitle": "¿Qué datos tiene SM de mi negocio?"
     }
   },
   "meta": {
@@ -165,7 +190,8 @@
       "no_already_accepted": "{{code}} ya está aprobada y no se puede mover.",
       "no_start_first": "Primero empezá {{code}}: pasala a En curso antes de entregarla.",
       "no_no_going_back": "{{code}} no puede volver a {{to}}.",
-      "t_unstarted": "{{code}} volvió a Por empezar"
+      "t_unstarted": "{{code}} volvió a Por empezar",
+      "no_firm_only": "Mover {{code}} a {{to}} le toca a la firma. Tú apruebas o pides cambios cuando te entregan."
     },
     "roadmap": {
       "zoom": "Zoom",
@@ -448,5 +474,90 @@
     "pref_meeting_proposed": "Reunión propuesta",
     "pref_meeting_confirmed": "Reunión confirmada",
     "pref_unblocked": "Se desbloqueó una tarea"
+  },
+  "soon": {
+    "manual": "Aquí verás el manual operativo de tu negocio a medida que las firmas lo escriban y tú lo apruebes.",
+    "documents": "Aquí tendrás todos los documentos de tu programa en un solo lugar: entregas aprobadas, contratos y archivos que subiste.",
+    "numbers": "Aquí verás los números clave de tu negocio: ventas, margen y los modelos financieros que prepara tu firma de finanzas.",
+    "business": "Aquí verás y podrás actualizar los datos de tu negocio: contacto, rubro, equipo y ubicaciones."
+  },
+  "firmWhat": {
+    "B1": "estrategia",
+    "B2": "operaciones",
+    "B3": "finanzas y fiscal",
+    "B4": "tecnología",
+    "B5": "marketing",
+    "B6": "abogados"
+  },
+  "owner": {
+    "for_role": "Vista para dueño del negocio",
+    "home_heading": "¿Qué me toca hoy?",
+    "tasks_heading": "¿Cómo van las tareas de mi programa?",
+    "report_heading": "¿Cómo va mi programa?",
+    "firm_label": "{{name}} ({{what}})",
+    "your_move": "Te toca a ti",
+    "your_move_count": "{{count}} pendientes",
+    "your_move_count_one": "{{count}} pendiente",
+    "your_move_count_other": "{{count}} pendientes",
+    "your_move_empty": "No tienes nada pendiente. Cuando una firma te entregue algo, te pida un archivo o proponga una reunión, aparecerá aquí.",
+    "see_all": "Ver todo ({{count}})",
+    "show_less": "Ver menos",
+    "inbox_approve": "{{firm}} te entregó algo para aprobar",
+    "inbox_request": "{{name}} de {{firm}} te pidió un archivo",
+    "inbox_meeting": "{{name}} propuso una reunión para el {{date}}",
+    "action_approve": "Aprobar entrega",
+    "action_request_changes": "Pedir cambios",
+    "action_upload": "Subir archivo",
+    "action_confirm_meeting": "Confirmar reunión",
+    "program": "Tu programa",
+    "day_of": "día {{day}} de {{total}}",
+    "gate_diagnosis": "Diagnóstico",
+    "gate_closing": "Cierre",
+    "gate_diagnosis_done": "Completado",
+    "gate_diagnosis_current": "En curso, días 1 a 15",
+    "gate_diagnosis_upcoming": "Días 1 a 15",
+    "gate_closing_done": "Completado",
+    "gate_closing_current": "En curso, días 150 a 180",
+    "gate_closing_upcoming": "Empieza el día 150",
+    "area_no_tasks": "Sin tareas todavía",
+    "health_green": "Al día",
+    "health_amber": "Vence pronto o espera tu aprobación",
+    "health_red": "Hay algo vencido",
+    "health_grey": "No aplica todavía",
+    "fran_title": "Franquiciabilidad",
+    "fran_detail": "Tareas aprobadas del programa",
+    "fran_goal": "Meta {{goal}}%",
+    "fran_ready": "Listo para franquiciar",
+    "fran_not_ready": "Todavía no está listo para franquiciar",
+    "fran_points": "Faltan {{count}} puntos para la meta",
+    "fran_points_one": "Falta {{count}} punto para la meta",
+    "fran_points_other": "Faltan {{count}} puntos para la meta",
+    "fran_missing_one": "Falta {{count}} obligatoria: {{codes}}",
+    "fran_missing_other": "Faltan {{count}} obligatorias: {{codes}}",
+    "fran_missing": "Faltan {{count}} obligatorias: {{codes}}",
+    "fran_rule": "Para estar listo necesitas llegar a la meta y tener aprobadas todas las tareas obligatorias. SM define la meta y la lista.",
+    "note_pending": "{{firm}} todavía no empezó esta tarea.",
+    "note_in_progress": "{{firm}} está trabajando en esta tarea.",
+    "note_changes_requested": "{{firm}} está preparando una nueva versión con tus cambios.",
+    "note_blocked": "Espera a que se apruebe {{code}}.",
+    "note_accepted": "Aprobaste esta entrega el {{date}}.",
+    "next_submitted": "Revisa la última versión y apruébala o pide cambios.",
+    "next_other": "Vence el {{date}}. Por ahora no tienes nada que hacer aquí.",
+    "d_changes_title": "Pedir cambios",
+    "d_changes_body": "Explica qué tiene que cambiar {{firm}}. Lo verán junto a la entrega.",
+    "d_changes_note": "Qué hay que cambiar",
+    "d_changes_placeholder": "Ejemplo: falta incluir los seguros de las camionetas.",
+    "d_changes_required": "La nota es obligatoria.",
+    "d_upload_title": "Subir archivo",
+    "d_upload_file": "Archivo",
+    "d_upload_note": "Nota (opcional)",
+    "d_upload_send": "Enviar archivo",
+    "t_approved": "Aprobaste la entrega de {{code}}. {{firm}} ya lo sabe.",
+    "t_approved_short": "Aprobaste la entrega de {{code}}.",
+    "t_changes": "Pediste cambios en {{code}}. {{firm}} ya lo sabe.",
+    "t_uploaded": "Archivo enviado. {{name}} ya lo puede ver.",
+    "t_meeting_confirmed": "Reunión confirmada. {{name}} ya lo sabe.",
+    "error": "No pudimos cargar tu inicio.",
+    "retry": "Cargar de nuevo"
   }
 }

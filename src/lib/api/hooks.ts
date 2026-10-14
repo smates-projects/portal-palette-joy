@@ -22,6 +22,9 @@ export const useMeetings = () => useQuery({ queryKey: ["tasks", "meetings", "all
 export const useCalendarEvents = () =>
   useQuery({ queryKey: [...queryKeys.users, "calendar-events"], queryFn: api.users.listCalendarEvents });
 export const useVersions = () => useQuery({ queryKey: ["tasks", "versions"], queryFn: api.tasks.listVersions });
+export const useFranchisability = (businessId: string | undefined) =>
+  useQuery({ queryKey: ["tasks", "franchisability", businessId], queryFn: () => api.businesses.getFranchisability(businessId!), enabled: !!businessId });
+export const useOpenOwnerRequests = () => useQuery({ queryKey: ["tasks", "owner-requests"], queryFn: api.tasks.listOpenOwnerRequests });
 export const useBusinesses = () => useQuery({ queryKey: queryKeys.businesses, queryFn: api.businesses.list });
 export const useUsers = () => useQuery({ queryKey: queryKeys.users, queryFn: api.users.list });
 export const useTaskDetail = (id: string) =>
@@ -79,3 +82,9 @@ export const useSetNotificationPreference = () =>
   useNotificationMutation((v: { kind: import("./types").NotificationKind; channel: import("./types").NotificationChannel; enabled: boolean }) =>
     api.notifications.setPreference(v.kind, v.channel, v.enabled),
   );
+
+export const useApproveTask = () => useTaskMutation((id: string) => api.tasks.approve(id));
+export const useRequestChanges = () => useTaskMutation((v: { id: string; note: string }) => api.tasks.requestChanges(v.id, v.note));
+export const useAnswerOwnerRequest = () =>
+  useTaskMutation((v: { requestId: string; file_name: string; note: string }) => api.tasks.answerOwnerRequest(v.requestId, v));
+export const useConfirmMeeting = () => useTaskMutation((id: string) => api.tasks.confirmMeeting(id));
