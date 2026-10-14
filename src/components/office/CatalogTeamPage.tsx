@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { firmName } from "./shared";
 
 export type CatalogTab = "catalog" | "firms" | "team";
-export interface CatalogSearch { tab?: CatalogTab; q?: string }
+export interface CatalogSearch { tab?: CatalogTab | undefined; q?: string | undefined }
 export const validateCatalogSearch = (raw: Record<string, unknown>): CatalogSearch => {
   const s: CatalogSearch = {};
   if (raw["tab"] === "firms" || raw["tab"] === "team") s.tab = raw["tab"];

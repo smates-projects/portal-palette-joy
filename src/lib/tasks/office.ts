@@ -73,10 +73,10 @@ export function buildBusinessRows(
 }
 
 export interface BusinessesSearch {
-  biz?: string;
-  consultant?: string;
-  health?: Health;
-  industry?: string;
+  biz?: string | undefined;
+  consultant?: string | undefined;
+  health?: Health | undefined;
+  industry?: string | undefined;
 }
 const HEALTHS: Health[] = ["red", "amber", "green", "grey"];
 export function validateBusinessesSearch(raw: Record<string, unknown>): BusinessesSearch {
