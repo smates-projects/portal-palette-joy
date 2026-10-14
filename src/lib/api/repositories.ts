@@ -1,5 +1,6 @@
 import type {
   Business,
+  ExternalCalendarEvent,
   Meeting,
   Organization,
   OwnerRequest,
@@ -32,6 +33,8 @@ export interface UsersRepository {
   list(): Promise<User[]>;
   /** Connect (with an account email) or disconnect (null) the current user's Google Calendar. */
   setGoogleCalendar(email: string | null): Promise<User>;
+  /** Current user's Google Calendar events; empty when not connected. */
+  listCalendarEvents(): Promise<ExternalCalendarEvent[]>;
 }
 
 export interface TaskDetail {
@@ -60,6 +63,8 @@ export interface TasksRepository {
   proposeMeeting(id: Uuid, input: { topic: string; starts_at: string; duration_minutes: number }): Promise<Meeting>;
   /** Upcoming (not cancelled) meetings on tasks the current user can see, soonest first. */
   listUpcomingMeetings(): Promise<Meeting[]>;
+  /** All non-cancelled meetings on tasks the current user can see. */
+  listMeetings(): Promise<Meeting[]>;
 }
 
 export interface ApiClient {

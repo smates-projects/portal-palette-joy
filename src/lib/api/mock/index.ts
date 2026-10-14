@@ -87,9 +87,17 @@ export function createMockApi(): ApiClient {
         u.google_calendar_email = email;
         return delay({ ...u });
       },
+      listCalendarEvents: () => {
+        const u = me();
+        return delay(u.google_calendar_email ? seed.calendarEvents.filter((e) => e.user_id === u.id) : []);
+      },
     },
     tasks: {
       list: () => delay(visibleTasks().map((t) => withComputed(t, db.tasks))),
+      listMeetings: () => {
+        const ids = new Set(visibleTasks().map((t) => t.id));
+        return delay(db.meetings.filter((m) => ids.has(m.task_id) && m.status !== "cancelled"));
+      },
       listUpcomingMeetings: () => {
         const ids = new Set(visibleTasks().map((t) => t.id));
         return delay(

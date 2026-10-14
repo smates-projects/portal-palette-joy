@@ -137,6 +137,15 @@ export interface Meeting {
   status: "proposed" | "confirmed" | "cancelled";
 }
 
+/** Event from the user's own Google Calendar (simulated). Read-only in the portal. */
+export interface ExternalCalendarEvent {
+  id: Uuid;
+  user_id: Uuid;
+  title: string;
+  starts_at: IsoDateTime;
+  duration_minutes: number;
+}
+
 export interface TaskWithComputed extends Task {
   is_blocked: boolean;
   is_overdue: boolean;

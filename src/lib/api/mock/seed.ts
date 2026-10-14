@@ -1,4 +1,4 @@
-import type {
+import type { ExternalCalendarEvent,
   Business,
   Meeting,
   Organization,
@@ -182,6 +182,15 @@ export const comments: TaskComment[] = [];
 export const events: TaskEvent[] = [];
 export const ownerRequests: OwnerRequest[] = [];
 export const meetings: Meeting[] = [];
+
+/** Simulated Google Calendar events of the users who connected it. */
+export const calendarEvents: ExternalCalendarEvent[] = [
+  { id: uuid("1e000000", 1), user_id: U_LUCIA, title: "Audiencia — caso Ramírez", starts_at: "2026-10-14T13:00:00Z", duration_minutes: 90 },
+  { id: uuid("1e000000", 2), user_id: U_LUCIA, title: "Almuerzo con socios del estudio", starts_at: "2026-10-15T16:30:00Z", duration_minutes: 60 },
+  { id: uuid("1e000000", 3), user_id: U_LUCIA, title: "Firma de escritura — cliente particular", starts_at: "2026-10-20T14:00:00Z", duration_minutes: 60 },
+  { id: uuid("1e000000", 4), user_id: U_LUCIA, title: "Dentista", starts_at: "2026-10-22T21:00:00Z", duration_minutes: 45 },
+  { id: uuid("1e000000", 5), user_id: U_LUCIA, title: "Capacitación Colegio de Abogados", starts_at: "2026-10-28T13:00:00Z", duration_minutes: 180 },
+];
 
 const changesText: Record<string, string> = {
   [TASK_B502_VOSSLER]:

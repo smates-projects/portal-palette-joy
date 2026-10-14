@@ -18,6 +18,9 @@ export const useViewAsOptions = () =>
 export const useTasks = () => useQuery({ queryKey: queryKeys.tasks, queryFn: api.tasks.list });
 export const useUpcomingMeetings = () =>
   useQuery({ queryKey: queryKeys.meetings, queryFn: api.tasks.listUpcomingMeetings });
+export const useMeetings = () => useQuery({ queryKey: ["tasks", "meetings", "all"], queryFn: api.tasks.listMeetings });
+export const useCalendarEvents = () =>
+  useQuery({ queryKey: [...queryKeys.users, "calendar-events"], queryFn: api.users.listCalendarEvents });
 export const useBusinesses = () => useQuery({ queryKey: queryKeys.businesses, queryFn: api.businesses.list });
 export const useUsers = () => useQuery({ queryKey: queryKeys.users, queryFn: api.users.list });
 export const useTaskDetail = (id: string) =>
