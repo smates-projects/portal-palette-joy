@@ -51,7 +51,6 @@ export interface Business {
   owner_user_id: Uuid;
   program_start_date: IsoDate;
   program_day: number;
-  /** Per-business overrides set by SM; null = use the default for all businesses. */
 }
 
 /** Readiness to franchise, computed by the data layer (as the backend will). */
