@@ -4,7 +4,7 @@ import { tStatic } from "@/lib/i18n";
 
 export const Route = createFileRoute("/")({
   validateSearch: (raw: Record<string, unknown>): { task?: string } =>
-    typeof raw.task === "string" && raw.task ? { task: raw.task } : {},
+    typeof raw["task"] === "string" && raw["task"] ? { task: raw["task"] } : {},
   head: () => ({
     meta: [
       { title: `${tStatic("pages.home.title")} · SM Platform` },

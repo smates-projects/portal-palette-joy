@@ -23,7 +23,7 @@ const CARD_TONE: Record<SummaryKey, string> = {
   waiting: "text-status-review-fg",
 };
 
-export function HomePage({ taskId }: { taskId?: string }) {
+export function HomePage({ taskId }: { taskId?: string | undefined }) {
   const { t, i18n } = useTranslation();
   const lng = i18n.language;
   const navigate = useNavigate();
