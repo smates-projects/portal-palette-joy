@@ -131,7 +131,7 @@ export const TASK_B602_VOSSLER = taskId(BIZ_VOSSLER, "B6-02");
 
 export const tasks: Task[] = businesses.flatMap((b) =>
   catalog.map((c) => {
-    const p = plans[b.id][c.code];
+    const p = plans[b.id]![c.code]!;
     return {
       id: taskId(b.id, c.code),
       code: c.code,
