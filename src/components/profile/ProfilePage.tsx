@@ -15,7 +15,8 @@ export function ProfilePage() {
 
   const me = meQ.data;
   const org = orgsQ.data?.find((o) => o.id === me?.organization_id);
-  const team = (usersQ.data ?? []).filter((u) => u.organization_id && u.organization_id === me?.organization_id);
+  const team = (usersQ.data ?? []).filter((u) => u.organization_id && u.organization_id === me?.organization_id)
+    .sort((a, b) => Number(b.id === me?.id) - Number(a.id === me?.id));
   const loading = meQ.isLoading || orgsQ.isLoading || usersQ.isLoading;
 
   const connect = () => {
