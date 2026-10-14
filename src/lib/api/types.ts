@@ -57,6 +57,19 @@ export interface Business {
   program_day: number;
   /** SM office that runs this program (phase 1: only SM Miami). Scope for the SM team. */
   office_id: Uuid;
+  /** SM consultant assigned to this business (inherited from the lead when the contract is signed). */
+  consultant_id: Uuid | null;
+}
+
+/** Business activity: changes made by the SM team (phase 1: consultant reassignment). */
+export interface BusinessEvent {
+  id: Uuid;
+  business_id: Uuid;
+  kind: "consultant_changed";
+  actor_user_id: Uuid;
+  from_user_id: Uuid | null;
+  to_user_id: Uuid;
+  created_at: string;
 }
 
 /** Readiness to franchise, computed by the data layer (as the backend will). */

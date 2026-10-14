@@ -69,9 +69,9 @@ export const users: User[] = [
 ];
 
 export const businesses: Business[] = [
-  { id: BIZ_VOSSLER, name: "Vossler", industry: "Construcción residencial", city: "Orlando", state: "FL", owner_user_id: U_CARLA, program_start_date: "2026-08-02", program_day: 74, office_id: ORG_SM },
-  { id: BIZ_PRIME, name: "Prime 10 Solutions", industry: "Remodelaciones", city: "Tampa", state: "FL", owner_user_id: U_DANIEL, program_start_date: "2026-09-14", program_day: 31, office_id: ORG_SM },
-  { id: BIZ_ENYERMY, name: "Enyermy Hair Studio", industry: "Salón de belleza", city: "Miami", state: "FL", owner_user_id: U_ENYERMY, program_start_date: "2026-10-09", program_day: 6, office_id: ORG_SM },
+  { id: BIZ_VOSSLER, name: "Vossler", industry: "Construcción residencial", city: "Orlando", state: "FL", owner_user_id: U_CARLA, program_start_date: "2026-08-02", program_day: 74, office_id: ORG_SM, consultant_id: U_NICOLAS },
+  { id: BIZ_PRIME, name: "Prime 10 Solutions", industry: "Remodelaciones", city: "Tampa", state: "FL", owner_user_id: U_DANIEL, program_start_date: "2026-09-14", program_day: 31, office_id: ORG_SM, consultant_id: U_MARYLIN },
+  { id: BIZ_ENYERMY, name: "Enyermy Hair Studio", industry: "Salón de belleza", city: "Miami", state: "FL", owner_user_id: U_ENYERMY, program_start_date: "2026-10-09", program_day: 6, office_id: ORG_SM, consultant_id: U_NICOLAS },
 ];
 
 // Official Método 180 catalog entries (code, name and criteria verbatim).
@@ -157,7 +157,7 @@ const plans: Record<string, Plan> = {
   [BIZ_PRIME]: {
     "B6-01": { status: "changes_requested", start: "2026-09-29", due: "2026-10-16", version: 1 },
     "B6-02": { status: "pending", start: "2026-10-19", due: "2026-11-13" },
-    "B6-03": { status: "in_progress", start: "2026-09-29", due: "2026-10-08" },
+    "B6-03": { status: "accepted", start: "2026-09-29", due: "2026-10-08", version: 1 },
     "B6-04": { status: "pending", start: "2026-11-16", due: "2026-12-18" },
     "B6-05": { status: "pending", start: "2026-10-26", due: "2026-11-20" },
     "B5-01": { status: "in_progress", start: "2026-09-29", due: "2026-10-15" },
@@ -172,7 +172,7 @@ const plans: Record<string, Plan> = {
     "B6-03": { status: "pending", start: "2026-10-26", due: "2026-11-20" },
     "B6-04": { status: "pending", start: "2026-11-30", due: "2027-01-08" },
     "B6-05": { status: "pending", start: "2026-11-09", due: "2026-12-11" },
-    "B5-01": { status: "in_progress", start: "2026-10-12", due: "2026-11-06" },
+    "B5-01": { status: "accepted", start: "2026-10-09", due: "2026-10-13", version: 1 },
     "B5-02": { status: "pending", start: "2026-10-26", due: "2026-11-20" },
     "B5-03": { status: "pending", start: "2026-11-16", due: "2026-12-18" },
     "B5-04": { status: "pending", start: "2026-11-23", due: "2026-12-23" },

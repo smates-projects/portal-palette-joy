@@ -936,14 +936,14 @@
       "count_other": "{{count}} businesses",
       "owner": "Owner: {{name}}",
       "approved_of": "{{accepted}} of {{total}}",
-      "franchise_value": "{{pct}}% of {{goal}}%",
+      "franchise_value": "{{pct}}% (expected {{expected}}%)",
       "missing_one": "{{count}} required task missing: {{codes}}",
       "missing_other": "{{count}} required tasks missing: {{codes}}",
       "missing_none": "Required tasks complete",
       "franchise_health": {
-        "green": "Ready to franchise",
-        "amber": "Keeping pace with the program",
-        "red": "Behind the program"
+        "green": "On pace with the program or ahead",
+        "amber": "Up to 10 points below expected",
+        "red": "More than 10 points below expected"
       },
       "no_consultant": "No consultant",
       "empty_title": "No businesses in the program yet",
@@ -958,7 +958,15 @@
       "see_tasks": "See tasks",
       "see_network": "See in Network",
       "close": "Close",
-      "location": "{{city}}, {{state}}"
+      "location": "{{city}}, {{state}}",
+      "ready": "Ready to franchise",
+      "consultant_label": "Assigned consultant",
+      "change_consultant": "Change consultant",
+      "consultant_changed": "Consultant changed to {{name}}",
+      "consultant_error": "Couldn't change the consultant. Try again.",
+      "activity_title": "Activity",
+      "activity_empty": "No changes on this business yet.",
+      "event_consultant_changed": "{{actor}} changed the consultant from {{from}} to {{to}}"
     },
     "cat": {
       "tab_catalog": "Catalog",

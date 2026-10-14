@@ -11,19 +11,22 @@ const mostFrequent = (ids: string[]) => {
   return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0] ?? null;
 };
 
-/** Consultant of a business = the SM person who supervises most of its tasks. */
-export const consultantOf = (businessId: string, tasks: TaskWithComputed[]) =>
-  mostFrequent(tasks.filter((t) => t.business_id === businessId).map((t) => t.supervisor_user_id));
+/** Points below the expected pace that still count as amber. */
+export const FRANCHISE_AMBER_MARGIN = 10;
 
-/**
- * Franchisability light: green when ready (goal reached and no required task missing);
- * amber when approved share keeps pace with program time (day/180 of the goal); red when behind.
- */
+/** Expected approved % today = program day / 180 x goal (rounded). */
+export const expectedFranchisePct = (programDay: number, goal: number) =>
+  Math.round((Math.min(Math.max(programDay, 0), PROGRAM_LENGTH) / PROGRAM_LENGTH) * goal);
+
+/** Franchisability light measures pace: green at or above expected, amber up to 10 points below, red beyond. */
 export function franchiseHealth(f: Franchisability, programDay: number): Exclude<Health, "grey"> {
-  if (f.is_ready) return "green";
-  const expected = (Math.min(programDay, PROGRAM_LENGTH) / PROGRAM_LENGTH) * f.franchisability_goal;
-  return f.franchisability_pct >= expected ? "amber" : "red";
+  const gap = expectedFranchisePct(programDay, f.franchisability_goal) - f.franchisability_pct;
+  return gap <= 0 ? "green" : gap <= FRANCHISE_AMBER_MARGIN ? "amber" : "red";
 }
+
+/** Area light for Negocios: an area with no tasks yet has nothing overdue, so it is green. Grey only when it does not apply. */
+export const businessAreaHealth = (tasks: TaskWithComputed[], versions: TaskVersion[], today = TODAY): Health =>
+  tasks.length === 0 ? "green" : areaHealth(tasks, versions, today);
 
 export interface BusinessRow {
   business: Business;
@@ -37,6 +40,7 @@ export interface BusinessRow {
   accepted_pct: number;
   franchise: Franchisability | null;
   franchise_health: Exclude<Health, "grey"> | null;
+  franchise_expected: number | null;
 }
 
 /** Negocios: one row per business, worst health first, then name. */
@@ -52,14 +56,14 @@ export function buildBusinessRows(
   return businesses
     .map((business) => {
       const mine = tasks.filter((t) => t.business_id === business.id);
-      const areas = AREAS.map((area) => ({ area, health: areaHealth(mine.filter((t) => t.area === area), versions, today) }));
+      const areas = AREAS.map((area) => ({ area, health: businessAreaHealth(mine.filter((t) => t.area === area), versions, today) }));
       const health = areas.reduce<Health>((w, c) => (SEVERITY[c.health] > SEVERITY[w] ? c.health : w), "grey");
       const accepted = mine.filter((t) => t.status === "accepted").length;
       const f = franchise.find((x) => x.business_id === business.id) ?? null;
       return {
         business,
         owner: user(business.owner_user_id),
-        consultant: user(consultantOf(business.id, tasks)),
+        consultant: user(business.consultant_id),
         areas,
         health,
         total: mine.length,
@@ -67,6 +71,7 @@ export function buildBusinessRows(
         accepted_pct: mine.length ? Math.round((accepted / mine.length) * 100) : 0,
         franchise: f,
         franchise_health: f ? franchiseHealth(f, business.program_day) : null,
+        franchise_expected: f ? expectedFranchisePct(business.program_day, f.franchisability_goal) : null,
       };
     })
     .sort((a, b) => SEVERITY[b.health] - SEVERITY[a.health] || a.business.name.localeCompare(b.business.name));
@@ -114,7 +119,7 @@ export function buildAreaCards(businessId: string, tasks: TaskWithComputed[], ve
     const orgId = mostFrequent(inArea.map((t) => t.organization_id));
     return {
       area,
-      health: areaHealth(inArea, versions, today),
+      health: businessAreaHealth(inArea, versions, today),
       firm: (orgId ? orgs.find((o) => o.id === orgId) : null) ?? firmForArea(area, orgs),
       open: inArea.filter((t) => t.status !== "accepted").length,
       overdue: inArea.filter((t) => t.is_overdue).length,
@@ -159,12 +164,12 @@ export interface TeamRow {
 }
 
 /** Equipo SM: people of the office, with the businesses they consult. */
-export function buildTeamRows(users: User[], officeId: string, tasks: TaskWithComputed[], businesses: Business[]): TeamRow[] {
+export function buildTeamRows(users: User[], officeId: string, _tasks: TaskWithComputed[], businesses: Business[]): TeamRow[] {
   return users
     .filter((u) => u.role === "sm_team" && u.organization_id === officeId)
     .map((user) => ({
       user,
-      supervises: businesses.filter((b) => consultantOf(b.id, tasks) === user.id),
+      supervises: businesses.filter((b) => b.consultant_id === user.id),
       has_booking_url: !!user.booking_url,
     }))
     .sort((a, b) => a.user.full_name.localeCompare(b.user.full_name));

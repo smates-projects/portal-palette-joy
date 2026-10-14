@@ -11,7 +11,7 @@ import * as seedLeads from "./seed-leads";
 import catalogJson from "@/data/catalogo_metodo180.json";
 import { generateProgramTasks, type CatalogEntry } from "../program";
 import { resolveLeadMove } from "@/lib/leads/pipeline";
-import type { AreaCode, Business, Lead, LeadEvent, LeadWithComputed } from "../types";
+import type { AreaCode, Business, BusinessEvent, Lead, LeadEvent, LeadWithComputed } from "../types";
 
 const delay = <T,>(v: T, ms = 120) => new Promise<T>((r) => setTimeout(() => r(structuredClone(v)), ms));
 const newId = () =>
@@ -33,6 +33,7 @@ export function createMockApi(): ApiClient {
     businesses: structuredClone(seed.businesses) as Business[],
     leads: structuredClone(seedLeads.leads) as Lead[],
     leadEvents: structuredClone(seedLeads.leadEvents) as LeadEvent[],
+    businessEvents: [] as BusinessEvent[],
   };
   // Approval date comes from the latest "approved" event.
   for (const t of db.tasks) {
@@ -211,6 +212,24 @@ export function createMockApi(): ApiClient {
         if (!b || (u.role === "business_owner" && u.business_id !== b.id)) throw new Error("not_found");
         return delay(computeFranchisability(b, db.tasks));
       },
+      listEvents: async (businessId) => {
+        const u = me();
+        const b = db.businesses.find((x) => x.id === businessId);
+        if (u.role !== "sm_team" || !b || b.office_id !== u.organization_id) throw new Error("not_found");
+        return delay(db.businessEvents.filter((e) => e.business_id === businessId).sort((a, c) => c.created_at.localeCompare(a.created_at)));
+      },
+      setConsultant: async (businessId, userId) => {
+        const u = me();
+        const b = db.businesses.find((x) => x.id === businessId);
+        if (u.role !== "sm_team" || !b || b.office_id !== u.organization_id) throw new Error("sm_only");
+        const target = db.users.find((x) => x.id === userId);
+        if (!target || target.role !== "sm_team" || target.organization_id !== b.office_id) throw new Error("invalid_consultant");
+        if (b.consultant_id !== userId) {
+          db.businessEvents.push({ id: newId(), business_id: b.id, kind: "consultant_changed", actor_user_id: u.id, from_user_id: b.consultant_id, to_user_id: userId, created_at: nowIso() });
+          b.consultant_id = userId;
+        }
+        return delay({ ...b });
+      },
     },
     users: {
       list: () => delay(db.users),
@@ -275,7 +294,7 @@ export function createMockApi(): ApiClient {
         db.users.push({ id: ownerId, full_name: l.contact.name, email: l.contact.email, role: "business_owner", organization_id: null, business_id: null, title: null, google_calendar_email: null, booking_url: null });
         const businessId = newId();
         const programDay = Math.round((Date.parse(`${TODAY}T12:00:00Z`) - Date.parse(`${signed_on}T12:00:00Z`)) / 86_400_000) + 1;
-        db.businesses.push({ id: businessId, name: l.business.name, industry: l.business.activity, city: l.contact.city, state: l.contact.state, owner_user_id: ownerId, program_start_date: signed_on, program_day: programDay, office_id: l.office_id });
+        db.businesses.push({ id: businessId, name: l.business.name, industry: l.business.activity, city: l.contact.city, state: l.contact.state, owner_user_id: ownerId, program_start_date: signed_on, program_day: programDay, office_id: l.office_id, consultant_id: l.consultant_user_id });
         db.users.find((u) => u.id === ownerId)!.business_id = businessId;
         const created = generateProgramTasks(catalogJson as CatalogEntry[], {
           business_id: businessId, industry: l.business.industry, start_date: signed_on, supervisor_user_id: l.consultant_user_id,

@@ -936,14 +936,14 @@
       "count_other": "{{count}} negocios",
       "owner": "Dueño: {{name}}",
       "approved_of": "{{accepted}} de {{total}}",
-      "franchise_value": "{{pct}}% de {{goal}}%",
+      "franchise_value": "{{pct}}% (esperado {{expected}}%)",
       "missing_one": "Falta {{count}} obligatoria: {{codes}}",
       "missing_other": "Faltan {{count}} obligatorias: {{codes}}",
       "missing_none": "Obligatorias completas",
       "franchise_health": {
-        "green": "Lista para franquiciar",
-        "amber": "Avanza al ritmo del programa",
-        "red": "Va atrasada contra el programa"
+        "green": "Al ritmo del programa o adelantado",
+        "amber": "Hasta 10 puntos por debajo de lo esperado",
+        "red": "Más de 10 puntos por debajo de lo esperado"
       },
       "no_consultant": "Sin consultor",
       "empty_title": "Todavía no hay negocios en el programa",
@@ -958,7 +958,15 @@
       "see_tasks": "Ver tareas",
       "see_network": "Ver en Red",
       "close": "Cerrar",
-      "location": "{{city}}, {{state}}"
+      "location": "{{city}}, {{state}}",
+      "ready": "Listo para franquiciar",
+      "consultant_label": "Consultor asignado",
+      "change_consultant": "Cambiar consultor",
+      "consultant_changed": "Consultor cambiado a {{name}}",
+      "consultant_error": "No se pudo cambiar el consultor. Inténtalo de nuevo.",
+      "activity_title": "Actividad",
+      "activity_empty": "Todavía no hay cambios en este negocio.",
+      "event_consultant_changed": "{{actor}} cambió el consultor de {{from}} a {{to}}"
     },
     "cat": {
       "tab_catalog": "Catálogo",
