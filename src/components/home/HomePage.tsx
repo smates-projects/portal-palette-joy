@@ -7,7 +7,7 @@ import { TODAY } from "@/config/app";
 import { useBusinesses, useStartTask, useTasks, useUpcomingMeetings } from "@/lib/api/hooks";
 import type { TaskWithComputed, VisibleTaskStatus } from "@/lib/api/types";
 import { formatDate, formatDateTime } from "@/lib/format";
-import { buildSummary, buildToday, nextDue, SUMMARY_FILTER, type SummaryKey } from "@/lib/tasks/home";
+import { buildProgress, buildSummary, buildToday, nextDue, SUMMARY_FILTER, type SummaryKey } from "@/lib/tasks/home";
 import { daysBetween } from "@/lib/tasks/table";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -15,13 +15,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { TaskDetail } from "@/components/tasks/detail/TaskDetail";
 
-const CARD_TONE: Record<SummaryKey, string> = {
-  overdue: "text-status-danger-fg",
-  today: "text-status-warning-fg",
-  week: "text-status-info-fg",
-  changes: "text-status-warning-fg",
-  waiting: "text-status-review-fg",
-};
+function Legend({ className, label }: { className: string; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className={cn("h-2 w-2 rounded-[1px]", className)} />
+      {label}
+    </span>
+  );
+}
+
 
 export function HomePage({ taskId }: { taskId?: string | undefined }) {
   const { t, i18n } = useTranslation();
@@ -96,6 +98,7 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
   const summary = buildSummary(tasks);
   const today = buildToday(tasks);
   const next = nextDue(tasks);
+  const progress = buildProgress(tasks, (id) => bizQ.data?.find((b) => b.id === id)?.program_day ?? 0);
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-8">
@@ -189,7 +192,61 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
             </section>
 
             {/* Próximas reuniones */}
-            <aside>
+            <aside className="space-y-8">
+              <section>
+                <div className="mb-3 flex items-baseline justify-between gap-2">
+                  <h2 className="text-sm font-semibold">{t("home.progress_title")}</h2>
+                  {!loading && (
+                    <span className="font-display text-xs tabular-nums text-muted-foreground">
+                      {t("home.progress_total", { done: progress.reduce((a, p) => a + p.accepted, 0), total: progress.reduce((a, p) => a + p.total, 0) })}
+                    </span>
+                  )}
+                </div>
+                {loading ? (
+                  <Skeleton className="h-32 rounded-md" />
+                ) : (
+                  <div className="divide-y divide-border rounded-md border border-border bg-surface">
+                    {progress.map((p) => {
+                      const pct = (n: number) => `${p.total ? (n / p.total) * 100 : 0}%`;
+                      const biz = bizQ.data?.find((b) => b.id === p.business_id);
+                      const tone = p.gap >= -5 ? "text-status-success-fg" : p.gap >= -15 ? "text-status-warning-fg" : "text-status-danger-fg";
+                      return (
+                        <Link key={p.business_id} to="/tareas" search={{ business: p.business_id }} className="block px-4 py-3 transition-colors hover:bg-accent/40">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <span className="truncate text-sm font-medium">{biz?.name}</span>
+                            <span className="shrink-0 font-display text-sm font-semibold tabular-nums">
+                              {p.accepted}<span className="text-muted-foreground">/{p.total}</span>
+                            </span>
+                          </div>
+                          <div
+                            className="relative mt-2 flex h-2 overflow-hidden rounded-[2px] bg-muted"
+                            role="img"
+                            aria-label={t("home.progress_aria", { done: p.accepted, submitted: p.submitted, active: p.in_progress, total: p.total })}
+                          >
+                            <span className="bg-gold" style={{ width: pct(p.accepted) }} />
+                            <span className="bg-status-review-border" style={{ width: pct(p.submitted) }} />
+                            <span className="bg-status-info-border" style={{ width: pct(p.in_progress) }} />
+                            <span className="absolute inset-y-[-2px] w-[2px] bg-foreground" style={{ left: `${p.expected * 100}%` }} title={t("home.progress_expected")} />
+                          </div>
+                          <div className="mt-1.5 flex justify-between gap-2 text-xs">
+                            <span className="text-muted-foreground tabular-nums">{t("home.progress_day", { day: biz?.program_day ?? 0 })}</span>
+                            <span className={cn("tabular-nums", tone)}>
+                              {p.gap >= -5 ? t("home.progress_on_track") : t("home.progress_behind", { count: Math.abs(p.gap) })}
+                            </span>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 px-4 py-2 text-[11px] text-muted-foreground">
+                      <Legend className="bg-gold" label={t("home.legend_accepted")} />
+                      <Legend className="bg-status-review-border" label={t("home.legend_submitted")} />
+                      <Legend className="bg-status-info-border" label={t("home.legend_active")} />
+                      <Legend className="h-2.5 w-[2px] bg-foreground" label={t("home.legend_expected")} />
+                    </div>
+                  </div>
+                )}
+              </section>
+              <section>
               <h2 className="mb-3 text-sm font-semibold">{t("home.meetings_title")}</h2>
               {meetingsQ.isLoading || loading ? (
                 <Skeleton className="h-24 rounded-md" />
@@ -230,6 +287,7 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
                   })}
                 </ul>
               )}
+              </section>
             </aside>
           </div>
         </>

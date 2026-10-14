@@ -277,6 +277,18 @@
     "meetings_empty": "No meetings scheduled. You can propose one from any task's detail.",
     "meetings_error": "We couldn't load meetings.",
     "meeting_proposed": "Proposed",
-    "meeting_confirmed": "Confirmed"
+    "meeting_confirmed": "Confirmed",
+    "progress_title": "Progress by business",
+    "progress_total": "{{done}} of {{total}} approved",
+    "progress_day": "Day {{day}} of 180",
+    "progress_on_track": "On track",
+    "progress_behind_one": "{{count}} point behind",
+    "progress_behind_other": "{{count}} points behind",
+    "progress_expected": "Where it should be given the program days",
+    "progress_aria": "{{done}} approved, {{submitted}} delivered, {{active}} in progress of {{total}}",
+    "legend_accepted": "Approved",
+    "legend_submitted": "Delivered",
+    "legend_active": "In progress",
+    "legend_expected": "Expected today"
   }
 }
