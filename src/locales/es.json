@@ -535,7 +535,7 @@
     "fran_missing_one": "Falta {{count}} obligatoria: {{codes}}",
     "fran_missing_other": "Faltan {{count}} obligatorias: {{codes}}",
     "fran_missing": "Faltan {{count}} obligatorias: {{codes}}",
-    "fran_rule": "Para estar listo necesitas llegar a la meta y tener aprobadas todas las tareas obligatorias. SM define la meta y la lista.",
+    "fran_rule": "Para estar listo necesitas llegar a la meta y tener aprobadas todas las tareas obligatorias. SM Global define la meta y la lista.",
     "note_pending": "{{firm}} todavía no empezó esta tarea.",
     "note_in_progress": "{{firm}} está trabajando en esta tarea.",
     "note_changes_requested": "{{firm}} está preparando una nueva versión con tus cambios.",
