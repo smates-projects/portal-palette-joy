@@ -23,6 +23,11 @@ export interface Organization {
   name: string;
   kind: "partner_firm" | "sm";
   area: AreaCode | null;
+  /** What the firm does, shown to owners and SM. */
+  specialty: string | null;
+  city: string | null;
+  email: string | null;
+  phone: string | null;
 }
 
 export interface User {
@@ -33,6 +38,8 @@ export interface User {
   organization_id: Uuid | null;
   business_id: Uuid | null;
   title: string | null;
+  /** Simulated Google Calendar link used to send meeting invites. */
+  google_calendar_email: string | null;
 }
 
 export interface Business {
