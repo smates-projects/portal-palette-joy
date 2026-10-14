@@ -277,6 +277,18 @@
     "meetings_empty": "No hay reuniones agendadas. Podés proponer una desde el detalle de cualquier tarea.",
     "meetings_error": "No pudimos cargar las reuniones.",
     "meeting_proposed": "Propuesta",
-    "meeting_confirmed": "Confirmada"
+    "meeting_confirmed": "Confirmada",
+    "progress_title": "Progreso por negocio",
+    "progress_total": "{{done}} de {{total}} aprobadas",
+    "progress_day": "Día {{day}} de 180",
+    "progress_on_track": "Al día",
+    "progress_behind_one": "{{count}} punto atrás",
+    "progress_behind_other": "{{count}} puntos atrás",
+    "progress_expected": "Dónde debería estar según los días del programa",
+    "progress_aria": "{{done}} aprobadas, {{submitted}} entregadas, {{active}} en curso de {{total}}",
+    "legend_accepted": "Aprobadas",
+    "legend_submitted": "Entregadas",
+    "legend_active": "En curso",
+    "legend_expected": "Esperado hoy"
   }
 }

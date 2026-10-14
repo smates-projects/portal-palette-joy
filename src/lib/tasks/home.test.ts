@@ -35,3 +35,14 @@ describe("para hoy", () => {
     expect(nextDue(tasks, T)?.code).toBe("E");
   });
 });
+
+import { buildProgress } from "./home";
+describe("progress", () => {
+  it("compares approved share with elapsed program days", () => {
+    const p = buildProgress(
+      [mk("X", "accepted", "2026-09-01", "v"), mk("Y", "submitted", "2026-10-20", "v"), mk("Z", "pending", "2026-11-01", "v"), mk("W", "in_progress", "2026-11-01", "v")],
+      () => 90,
+    )[0]!;
+    expect(p).toMatchObject({ total: 4, accepted: 1, submitted: 1, in_progress: 1, expected: 0.5, gap: -25 });
+  });
+});
