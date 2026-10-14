@@ -215,7 +215,7 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
                   onClick: () => setSearch({ business: undefined, area: undefined, status: undefined, due: undefined, q: undefined }),
                 }}
               />
-            ') : view === "calendar" ? (
+            ) : view === "calendar" ? (
               <TaskCalendar
                 rows={rows}
                 businessName={businessName}
