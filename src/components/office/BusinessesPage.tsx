@@ -1,7 +1,9 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
-import { useBusinesses, useFranchisabilityMany, useOrganizations, useTasks, useUsers, useVersions } from "@/lib/api/hooks";
+import { toast } from "sonner";
+import { useBusinessEvents, useBusinesses, useCurrentUser, useFranchisabilityMany, useOrganizations, useSetBusinessConsultant, useTasks, useUsers, useVersions } from "@/lib/api/hooks";
+import { formatDateTime } from "@/lib/format";
 import { buildAreaCards, buildBusinessRows, filterBusinessRows, type BusinessRow, type BusinessesSearch } from "@/lib/tasks/office";
 import type { Health } from "@/lib/tasks/owner";
 import { cn } from "@/lib/utils";
@@ -197,12 +199,13 @@ function ProgramBar({ day }: { day: number }) {
 function FranchiseCell({ row }: { row: BusinessRow }) {
   const { t } = useTranslation();
   const f = row.franchise;
-  if (!f || !row.franchise_health) return <span className="text-muted-foreground">—</span>;
+  if (!f || !row.franchise_health || row.franchise_expected === null) return <span className="text-muted-foreground">—</span>;
   return (
     <div title={t(`office.biz.franchise_health.${row.franchise_health}`)}>
-      <span className="flex items-center gap-1.5">
+      <span className="flex flex-wrap items-center gap-1.5">
         <span className={cn("h-2 w-2 rounded-full", DOT[row.franchise_health])} />
-        <span className="font-display font-semibold tabular-nums">{t("office.biz.franchise_value", { pct: f.franchisability_pct, goal: f.franchisability_goal })}</span>
+        <span className="font-display font-semibold tabular-nums">{t("office.biz.franchise_value", { pct: f.franchisability_pct, expected: row.franchise_expected })}</span>
+        {f.is_ready && <ReadyBadge />}
       </span>
       <span className={cn("block text-xs", f.missing_required.length ? TEXT.amber : "text-muted-foreground")}>
         {f.missing_required.length
@@ -211,6 +214,11 @@ function FranchiseCell({ row }: { row: BusinessRow }) {
       </span>
     </div>
   );
+}
+
+function ReadyBadge() {
+  const { t } = useTranslation();
+  return <span className="rounded-[4px] border border-success/40 bg-success/10 px-1.5 py-0.5 text-xs font-medium text-success">{t("office.biz.ready")}</span>;
 }
 
 function AreaDots({ row }: { row: BusinessRow }) {
@@ -249,7 +257,7 @@ function BusinessProfile({ row }: { row: BusinessRow }) {
             <span className="block text-xs text-muted-foreground">{t("office.biz.approved_of", { accepted: row.accepted, total: row.total })}</span>
           </div>
           <div className="col-span-2"><p className="text-xs text-muted-foreground">{t("office.biz.col_franchise")}</p><FranchiseCell row={row} /></div>
-          <div className="col-span-2"><p className="text-xs text-muted-foreground">{t("office.biz.col_consultant")}</p>{row.consultant?.full_name ?? t("office.biz.no_consultant")}</div>
+          <div className="col-span-2"><p className="text-xs text-muted-foreground">{t("office.biz.consultant_label")}</p><ConsultantPicker row={row} /></div>
         </div>
         <div className="mt-5 flex flex-wrap gap-2">
           <Button asChild size="sm"><Link to="/tareas" search={{ business: b.id, sup: "all" }}>{t("office.biz.see_tasks")}</Link></Button>
@@ -276,7 +284,67 @@ function BusinessProfile({ row }: { row: BusinessRow }) {
             </div>
           ))}
         </div>
+        <BusinessActivity businessId={b.id} />
       </div>
     </div>
+  );
+}
+
+function ConsultantPicker({ row }: { row: BusinessRow }) {
+  const { t } = useTranslation();
+  const me = useCurrentUser().data;
+  const users = useUsers().data ?? [];
+  const setConsultant = useSetBusinessConsultant();
+  const team = users.filter((u) => u.role === "sm_team" && u.organization_id === row.business.office_id);
+  if (me?.role !== "sm_team") return <>{row.consultant?.full_name ?? t("office.biz.no_consultant")}</>;
+  return (
+    <Select
+      value={row.business.consultant_id ?? undefined}
+      disabled={setConsultant.isPending}
+      onValueChange={(userId) =>
+        setConsultant.mutate(
+          { businessId: row.business.id, userId },
+          {
+            onSuccess: () => toast.success(t("office.biz.consultant_changed", { name: team.find((u) => u.id === userId)?.full_name ?? "" })),
+            onError: () => toast.error(t("office.biz.consultant_error")),
+          },
+        )
+      }
+    >
+      <SelectTrigger aria-label={t("office.biz.change_consultant")} className="mt-0.5 h-8 w-full max-w-60 bg-surface text-sm">
+        <SelectValue placeholder={t("office.biz.no_consultant")} />
+      </SelectTrigger>
+      <SelectContent>
+        {team.map((u) => <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>)}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function BusinessActivity({ businessId }: { businessId: string }) {
+  const { t, i18n } = useTranslation();
+  const eventsQ = useBusinessEvents(businessId);
+  const users = useUsers().data ?? [];
+  const name = (id: string | null) => (id ? users.find((u) => u.id === id)?.full_name : null) ?? t("office.biz.no_consultant");
+  return (
+    <section className="mt-6">
+      <h3 className="text-sm font-semibold">{t("office.biz.activity_title")}</h3>
+      {eventsQ.isLoading ? (
+        <Skeleton className="mt-3 h-10 w-full" />
+      ) : eventsQ.isError ? (
+        <p className="mt-2 text-sm text-muted-foreground">{t("tasks.error_title")} <button onClick={() => void eventsQ.refetch()} className="text-link hover:underline">{t("tasks.retry")}</button></p>
+      ) : !eventsQ.data?.length ? (
+        <p className="mt-2 text-sm text-muted-foreground">{t("office.biz.activity_empty")}</p>
+      ) : (
+        <ul className="mt-3 space-y-2">
+          {eventsQ.data.map((e) => (
+            <li key={e.id} className="text-sm">
+              {t("office.biz.event_consultant_changed", { actor: name(e.actor_user_id).split(" ")[0], from: name(e.from_user_id), to: name(e.to_user_id) })}
+              <span className="block text-xs text-muted-foreground">{formatDateTime(e.created_at, i18n.language)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
