@@ -161,6 +161,25 @@
       "no_start_first": "Start {{code}} first: move it to In progress before delivering it.",
       "no_no_going_back": "{{code}} can't go back to {{to}}.",
       "t_unstarted": "{{code}} moved back to Not started"
+    },
+    "roadmap": {
+      "zoom": "Zoom",
+      "zoom_week": "Week",
+      "zoom_month": "Month",
+      "zoom_program": "Program",
+      "task_col": "Business · area · task",
+      "today": "Today",
+      "legend_blocks": "Blocks",
+      "legend_input": "Recommended input",
+      "legend_blocked": "Blocked",
+      "legend_milestone": "Milestone",
+      "legend_today": "Today",
+      "m_diagnosis_end": "End of Diagnosis (day {{day}}) · {{date}}",
+      "m_closing_start": "Start of Closing (day {{day}}) · {{date}}",
+      "m_program_end": "End of program (day {{day}}) · {{date}}",
+      "m_short_diagnosis_end": "Diagnosis ends",
+      "m_short_closing_start": "Closing starts",
+      "m_short_program_end": "Program ends"
     }
   },
   "taskDetail": {

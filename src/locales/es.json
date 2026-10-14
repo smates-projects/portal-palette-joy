@@ -161,6 +161,25 @@
       "no_start_first": "Primero empezá {{code}}: pasala a En curso antes de entregarla.",
       "no_no_going_back": "{{code}} no puede volver a {{to}}.",
       "t_unstarted": "{{code}} volvió a Por empezar"
+    },
+    "roadmap": {
+      "zoom": "Zoom",
+      "zoom_week": "Semana",
+      "zoom_month": "Mes",
+      "zoom_program": "Programa",
+      "task_col": "Negocio · área · tarea",
+      "today": "Hoy",
+      "legend_blocks": "Bloquea",
+      "legend_input": "Insumo recomendado",
+      "legend_blocked": "Bloqueada",
+      "legend_milestone": "Hito",
+      "legend_today": "Hoy",
+      "m_diagnosis_end": "Fin de Diagnóstico (día {{day}}) · {{date}}",
+      "m_closing_start": "Inicio de Cierre (día {{day}}) · {{date}}",
+      "m_program_end": "Fin del programa (día {{day}}) · {{date}}",
+      "m_short_diagnosis_end": "Fin Diagnóstico",
+      "m_short_closing_start": "Inicio Cierre",
+      "m_short_program_end": "Fin programa"
     }
   },
   "taskDetail": {
