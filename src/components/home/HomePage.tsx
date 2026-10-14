@@ -110,37 +110,40 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
         </div>
       ) : (
         <>
-          {/* Summary cards */}
-          <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
-            {loading
-              ? Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-[104px] rounded-md" />)
-              : summary.map((c) => {
-                  const off = c.count === 0;
-                  return (
-                    <Link
-                      key={c.key}
-                      to="/tareas"
-                      search={SUMMARY_FILTER[c.key]}
-                      className={cn(
-                        "group rounded-md border border-border bg-surface p-4 transition-colors hover:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                        off && "bg-muted/40",
-                      )}
-                    >
-                      <p className={cn("text-xs font-medium", off ? "text-muted-foreground/70" : "text-muted-foreground")}>{t(`home.cards.${c.key}`)}</p>
-                      <p className={cn("mt-1 font-display text-3xl font-semibold tabular-nums", off ? "text-muted-foreground/50" : CARD_TONE[c.key])}>
+          {/* Summary strip: one bar, five counters */}
+          {loading ? (
+            <Skeleton className="mt-6 h-[76px] rounded-md" />
+          ) : (
+            <div className="mt-6 grid grid-cols-2 overflow-hidden rounded-md border border-border bg-surface sm:grid-cols-5 sm:divide-x sm:divide-border">
+              {summary.map((c) => {
+                const off = c.count === 0;
+                const alert = !off && c.key === "overdue";
+                return (
+                  <Link
+                    key={c.key}
+                    to="/tareas"
+                    search={SUMMARY_FILTER[c.key]}
+                    className={cn(
+                      "relative px-4 py-3 transition-colors hover:bg-accent/40 focus-visible:bg-accent/40 focus-visible:outline-none",
+                      alert && "before:absolute before:inset-x-0 before:top-0 before:h-[2px] before:bg-status-danger-fg",
+                    )}
+                  >
+                    <div className="flex items-baseline gap-2">
+                      <span className={cn("font-display text-2xl font-semibold tabular-nums", off ? "text-muted-foreground/40" : alert ? "text-status-danger-fg" : "text-foreground")}>
                         {c.count}
-                      </p>
-                      <p className={cn("mt-1 truncate text-xs", off ? "text-muted-foreground/60" : "text-muted-foreground")}>
-                        {off
-                          ? t("home.cards.none")
-                          : c.byBusiness.map((b) => t("home.cards.in_business", { count: b.count, name: bizName(b.business_id) })).join(", ")}
-                      </p>
-                    </Link>
-                  );
-                })}
-          </div>
+                      </span>
+                      <span className={cn("text-xs font-medium", off ? "text-muted-foreground/60" : "text-foreground")}>{t(`home.cards.${c.key}`)}</span>
+                    </div>
+                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                      {off ? t("home.cards.none") : c.byBusiness.map((b) => t("home.cards.in_business", { count: b.count, name: bizName(b.business_id) })).join(", ")}
+                    </p>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
 
-          <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
             {/* Para hoy */}
             <section>
               <h2 className="mb-3 text-sm font-semibold">{t("home.today_title")}</h2>
