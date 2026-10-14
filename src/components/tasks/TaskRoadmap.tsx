@@ -74,7 +74,10 @@ export function TaskRoadmap(props: {
       const month = d.slice(0, 7);
       const major =
         zoom !== "program" && month !== prevMonth
-          ? new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(date)
+          ? (() => {
+              const m = new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(date);
+              return m.charAt(0).toUpperCase() + m.slice(1);
+            })()
           : undefined;
       prevMonth = month;
       const label =
@@ -153,7 +156,7 @@ export function TaskRoadmap(props: {
             <div className="relative" style={{ width }}>
               {ticks.map((tk) => (
                 <div key={tk.x} className="absolute inset-y-0" style={{ left: tk.x }}>
-                  {tk.major && <span className="absolute top-1 left-1 whitespace-nowrap text-[11px] font-medium capitalize text-foreground">{tk.major}</span>}
+                  {tk.major && <span className="absolute top-1 left-1 whitespace-nowrap text-[11px] font-medium text-foreground">{tk.major}</span>}
                   <span className="absolute bottom-1.5 left-1 whitespace-nowrap font-display text-[11px] tabular-nums text-muted-foreground">{tk.label}</span>
                   <span className="absolute bottom-0 h-1.5 w-px bg-border" />
                 </div>
