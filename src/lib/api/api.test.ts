@@ -56,3 +56,29 @@ describe("mock authorization", () => {
     await expect(api.session.setViewAs(seed.U_CARLA)).rejects.toThrow();
   });
 });
+
+describe("task detail actions (partner firm)", () => {
+  const b601Enyermy = seed.tasks.find((t) => t.code === "B6-01" && t.business_id === seed.BIZ_ENYERMY)!;
+  const b602Enyermy = seed.tasks.find((t) => t.code === "B6-02" && t.business_id === seed.BIZ_ENYERMY)!;
+
+  it("submitting a deliverable creates a new 'submitted' version and moves the task to submitted", async () => {
+    const api = createMockApi();
+    const v = await api.tasks.submitVersion(b601Enyermy.id, { note: "", file_names: ["a.pdf"] });
+    expect(v.version).toBe(1);
+    expect(v.status).toBe("submitted");
+    const d = await api.tasks.get(b601Enyermy.id);
+    expect(d?.task.status).toBe("submitted");
+  });
+  it("a deliverable needs at least one file", async () => {
+    const api = createMockApi();
+    await expect(api.tasks.submitVersion(b601Enyermy.id, { note: "x", file_names: [] })).rejects.toThrow();
+  });
+  it("a blocked task cannot be started", async () => {
+    const api = createMockApi();
+    await expect(api.tasks.start(b602Enyermy.id)).rejects.toThrow();
+  });
+  it("the firm cannot approve its own deliverable", async () => {
+    const api = createMockApi();
+    await expect(api.tasks.updateStatus(seed.TASK_B602_VOSSLER, "accepted")).rejects.toThrow();
+  });
+});
