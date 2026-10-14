@@ -1,5 +1,8 @@
 {
-  "app": { "name": "SM Platform", "company": "Strategic Mates" },
+  "app": {
+    "name": "SM Platform",
+    "company": "Strategic Mates"
+  },
   "nav": {
     "home": "Home",
     "tasks": "My tasks",
@@ -46,10 +49,22 @@
     "overdue": "Overdue"
   },
   "pages": {
-    "home": { "title": "Home", "subtitle": "What do I need to move today?" },
-    "tasks": { "title": "My tasks", "subtitle": "Which tasks am I responsible for, and where do they stand?" },
-    "clients": { "title": "Clients", "subtitle": "Which businesses am I working for?" },
-    "profile": { "title": "My profile", "subtitle": "How do owners and the SM team see me?" }
+    "home": {
+      "title": "Home",
+      "subtitle": "What do I need to move today?"
+    },
+    "tasks": {
+      "title": "My tasks",
+      "subtitle": "Which tasks am I responsible for, and where do they stand?"
+    },
+    "clients": {
+      "title": "Clients",
+      "subtitle": "Which businesses am I working for?"
+    },
+    "profile": {
+      "title": "My profile",
+      "subtitle": "How do owners and the SM team see me?"
+    }
   },
   "meta": {
     "home": "Your work day in Método 180: what to move today.",
@@ -57,6 +72,80 @@
     "clients": "Businesses your firm works for.",
     "profile": "Your firm and user details."
   },
-  "notFound": { "title": "This page doesn't exist", "body": "Go back home to continue with your tasks.", "cta": "Go home" },
-  "error": { "title": "This page didn't load", "body": "Something went wrong on our side. Try again or go back home.", "retry": "Try again", "home": "Go home" }
+  "notFound": {
+    "title": "This page doesn't exist",
+    "body": "Go back home to continue with your tasks.",
+    "cta": "Go home"
+  },
+  "error": {
+    "title": "This page didn't load",
+    "body": "Something went wrong on our side. Try again or go back home.",
+    "retry": "Try again",
+    "home": "Go home"
+  },
+  "steps": {
+    "survey": "Survey",
+    "design": "Design",
+    "implement": "Implement",
+    "validate": "Validate",
+    "document": "Document"
+  },
+  "tasks": {
+    "heading": "What do I need to move?",
+    "for_role": "Partner firm view",
+    "count": "{{count}} tasks",
+    "count_one": "{{count}} task",
+    "count_other": "{{count}} tasks",
+    "overdue_count_one": "{{count}} overdue",
+    "overdue_count_other": "{{count}} overdue",
+    "views": {
+      "label": "View",
+      "table": "Table",
+      "board": "Board",
+      "roadmap": "Roadmap",
+      "calendar": "Calendar"
+    },
+    "coming_soon_title": "The {{view}} view is coming soon",
+    "coming_soon_body": "Meanwhile, use the Table view to see and sort your tasks.",
+    "back_to_table": "Back to the table",
+    "filters": {
+      "business": "Business",
+      "area": "Area",
+      "status": "Status",
+      "due": "Due",
+      "all_businesses": "All businesses",
+      "all_areas": "All areas",
+      "all_statuses": "All statuses",
+      "any_due": "Any date",
+      "overdue": "Overdue",
+      "today": "Today",
+      "week": "This week",
+      "month": "This month",
+      "search": "Search by code, task or business",
+      "clear": "Clear filters",
+      "group_by_business": "Group by business"
+    },
+    "columns": {
+      "code": "Code",
+      "name": "Task",
+      "business": "Business",
+      "area": "Area",
+      "step": "Step",
+      "due": "Due",
+      "status": "Status"
+    },
+    "sort_by": "Sort by {{column}}",
+    "blocked_by": "Blocked by {{codes}}",
+    "overdue_days_one": "Overdue by {{count}} day",
+    "overdue_days_other": "Overdue by {{count}} days",
+    "empty_title": "You don't have tasks assigned yet",
+    "empty_body": "When the SM team assigns you Método 180 tasks, they will appear here with their due date.",
+    "no_results_title": "No tasks match these filters",
+    "no_results_body": "Try removing a filter or changing the search.",
+    "error_title": "We couldn't load your tasks",
+    "error_body": "Check your connection and try again.",
+    "retry": "Load tasks again",
+    "panel_soon": "The full task detail comes in the next step.",
+    "close_panel": "Close panel"
+  }
 }

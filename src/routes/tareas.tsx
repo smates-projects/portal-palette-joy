@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PageHeader } from "@/components/layout/AppShell";
+import { MyTasksPage } from "@/components/tasks/MyTasksPage";
 import { tStatic } from "@/lib/i18n";
+import { validateTasksSearch } from "@/lib/tasks/table";
 
 export const Route = createFileRoute("/tareas")({
+  validateSearch: validateTasksSearch,
   head: () => ({
     meta: [
       { title: `${tStatic("pages.tasks.title")} · SM Platform` },
@@ -11,5 +13,10 @@ export const Route = createFileRoute("/tareas")({
       { property: "og:description", content: tStatic("meta.tasks") },
     ],
   }),
-  component: () => <PageHeader pageKey="tasks" />,
+  component: TasksRoute,
 });
+
+function TasksRoute() {
+  const search = Route.useSearch();
+  return <MyTasksPage search={search} />;
+}

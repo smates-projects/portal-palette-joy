@@ -14,6 +14,10 @@ if (!i18n.isInitialized) {
     fallbackLng: "es",
     interpolation: { escapeValue: false },
   });
+} else {
+  // Keep resources fresh when the module reloads in development.
+  i18n.addResourceBundle("es", "translation", es, true, true);
+  i18n.addResourceBundle("en", "translation", en, true, true);
 }
 
 /** Static lookup for route head(), which runs outside React. Uses Spanish (default). */

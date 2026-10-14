@@ -1,5 +1,8 @@
 {
-  "app": { "name": "SM Platform", "company": "Strategic Mates" },
+  "app": {
+    "name": "SM Platform",
+    "company": "Strategic Mates"
+  },
   "nav": {
     "home": "Inicio",
     "tasks": "Mis tareas",
@@ -46,10 +49,22 @@
     "overdue": "Vencida"
   },
   "pages": {
-    "home": { "title": "Inicio", "subtitle": "¿Qué tengo que mover hoy?" },
-    "tasks": { "title": "Mis tareas", "subtitle": "¿Qué tareas tengo a mi cargo y en qué estado están?" },
-    "clients": { "title": "Clientes", "subtitle": "¿Para qué negocios estoy trabajando?" },
-    "profile": { "title": "Mi perfil", "subtitle": "¿Cómo me ven los dueños y el equipo SM?" }
+    "home": {
+      "title": "Inicio",
+      "subtitle": "¿Qué tengo que mover hoy?"
+    },
+    "tasks": {
+      "title": "Mis tareas",
+      "subtitle": "¿Qué tareas tengo a mi cargo y en qué estado están?"
+    },
+    "clients": {
+      "title": "Clientes",
+      "subtitle": "¿Para qué negocios estoy trabajando?"
+    },
+    "profile": {
+      "title": "Mi perfil",
+      "subtitle": "¿Cómo me ven los dueños y el equipo SM?"
+    }
   },
   "meta": {
     "home": "Tu día de trabajo en el Método 180: qué mover hoy.",
@@ -57,6 +72,80 @@
     "clients": "Negocios para los que trabaja tu firma.",
     "profile": "Datos de tu firma y de tu usuario."
   },
-  "notFound": { "title": "Esta página no existe", "body": "Volvé al inicio para seguir con tus tareas.", "cta": "Ir al inicio" },
-  "error": { "title": "Esta página no cargó", "body": "Algo falló de nuestro lado. Probá de nuevo o volvé al inicio.", "retry": "Probar de nuevo", "home": "Ir al inicio" }
+  "notFound": {
+    "title": "Esta página no existe",
+    "body": "Volvé al inicio para seguir con tus tareas.",
+    "cta": "Ir al inicio"
+  },
+  "error": {
+    "title": "Esta página no cargó",
+    "body": "Algo falló de nuestro lado. Probá de nuevo o volvé al inicio.",
+    "retry": "Probar de nuevo",
+    "home": "Ir al inicio"
+  },
+  "steps": {
+    "survey": "Relevar",
+    "design": "Diseñar",
+    "implement": "Implementar",
+    "validate": "Validar",
+    "document": "Documentar"
+  },
+  "tasks": {
+    "heading": "¿Qué tengo que mover?",
+    "for_role": "Vista para firma aliada",
+    "count": "{{count}} tareas",
+    "count_one": "{{count}} tarea",
+    "count_other": "{{count}} tareas",
+    "overdue_count_one": "{{count}} vencida",
+    "overdue_count_other": "{{count}} vencidas",
+    "views": {
+      "label": "Vista",
+      "table": "Tabla",
+      "board": "Tablero",
+      "roadmap": "Roadmap",
+      "calendar": "Calendario"
+    },
+    "coming_soon_title": "La vista {{view}} llega pronto",
+    "coming_soon_body": "Mientras tanto, usá la vista Tabla para ver y ordenar tus tareas.",
+    "back_to_table": "Volver a la tabla",
+    "filters": {
+      "business": "Negocio",
+      "area": "Área",
+      "status": "Estado",
+      "due": "Vencimiento",
+      "all_businesses": "Todos los negocios",
+      "all_areas": "Todas las áreas",
+      "all_statuses": "Todos los estados",
+      "any_due": "Cualquier fecha",
+      "overdue": "Vencidas",
+      "today": "Hoy",
+      "week": "Esta semana",
+      "month": "Este mes",
+      "search": "Buscar por código, tarea o negocio",
+      "clear": "Limpiar filtros",
+      "group_by_business": "Agrupar por negocio"
+    },
+    "columns": {
+      "code": "Código",
+      "name": "Tarea",
+      "business": "Negocio",
+      "area": "Área",
+      "step": "Paso",
+      "due": "Vence",
+      "status": "Estado"
+    },
+    "sort_by": "Ordenar por {{column}}",
+    "blocked_by": "Bloqueada por {{codes}}",
+    "overdue_days_one": "Vencida hace {{count}} día",
+    "overdue_days_other": "Vencida hace {{count}} días",
+    "empty_title": "Todavía no tenés tareas asignadas",
+    "empty_body": "Cuando el equipo SM te asigne tareas del Método 180, van a aparecer acá con su fecha de vencimiento.",
+    "no_results_title": "Ninguna tarea coincide con estos filtros",
+    "no_results_body": "Probá quitar algún filtro o cambiar la búsqueda.",
+    "error_title": "No pudimos cargar tus tareas",
+    "error_body": "Revisá tu conexión y probá de nuevo.",
+    "retry": "Cargar tareas de nuevo",
+    "panel_soon": "El detalle completo de la tarea llega en el próximo paso.",
+    "close_panel": "Cerrar panel"
+  }
 }
