@@ -19,6 +19,7 @@ import { Route as NegocioRouteImport } from './routes/negocio'
 import { Route as NegociosRouteImport } from './routes/negocios'
 import { Route as NumerosRouteImport } from './routes/numeros'
 import { Route as PerfilRouteImport } from './routes/perfil'
+import { Route as RedRouteImport } from './routes/red'
 import { Route as ReporteRouteImport } from './routes/reporte'
 import { Route as TareasIndexRouteImport } from './routes/tareas.index'
 import { Route as TareasTaskIdRouteImport } from './routes/tareas.$taskId'
@@ -73,6 +74,11 @@ const PerfilRoute = PerfilRouteImport.update({
   path: '/perfil',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RedRoute = RedRouteImport.update({
+  id: '/red',
+  path: '/red',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReporteRoute = ReporteRouteImport.update({
   id: '/reporte',
   path: '/reporte',
@@ -100,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/negocios': typeof NegociosRoute
   '/numeros': typeof NumerosRoute
   '/perfil': typeof PerfilRoute
+  '/red': typeof RedRoute
   '/reporte': typeof ReporteRoute
   '/tareas/$taskId': typeof TareasTaskIdRoute
   '/tareas/': typeof TareasIndexRoute
@@ -115,6 +122,7 @@ export interface FileRoutesByTo {
   '/negocios': typeof NegociosRoute
   '/numeros': typeof NumerosRoute
   '/perfil': typeof PerfilRoute
+  '/red': typeof RedRoute
   '/reporte': typeof ReporteRoute
   '/tareas/$taskId': typeof TareasTaskIdRoute
   '/tareas': typeof TareasIndexRoute
@@ -131,6 +139,7 @@ export interface FileRoutesById {
   '/negocios': typeof NegociosRoute
   '/numeros': typeof NumerosRoute
   '/perfil': typeof PerfilRoute
+  '/red': typeof RedRoute
   '/reporte': typeof ReporteRoute
   '/tareas/$taskId': typeof TareasTaskIdRoute
   '/tareas/': typeof TareasIndexRoute
@@ -148,6 +157,7 @@ export interface FileRouteTypes {
     | '/negocios'
     | '/numeros'
     | '/perfil'
+    | '/red'
     | '/reporte'
     | '/tareas/$taskId'
     | '/tareas/'
@@ -163,6 +173,7 @@ export interface FileRouteTypes {
     | '/negocios'
     | '/numeros'
     | '/perfil'
+    | '/red'
     | '/reporte'
     | '/tareas/$taskId'
     | '/tareas'
@@ -178,6 +189,7 @@ export interface FileRouteTypes {
     | '/negocios'
     | '/numeros'
     | '/perfil'
+    | '/red'
     | '/reporte'
     | '/tareas/$taskId'
     | '/tareas/'
@@ -194,6 +206,7 @@ export interface RootRouteChildren {
   NegociosRoute: typeof NegociosRoute
   NumerosRoute: typeof NumerosRoute
   PerfilRoute: typeof PerfilRoute
+  RedRoute: typeof RedRoute
   ReporteRoute: typeof ReporteRoute
   TareasTaskIdRoute: typeof TareasTaskIdRoute
   TareasIndexRoute: typeof TareasIndexRoute
@@ -271,6 +284,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PerfilRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/red': {
+      id: '/red'
+      path: '/red'
+      fullPath: '/red'
+      preLoaderRoute: typeof RedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reporte': {
       id: '/reporte'
       path: '/reporte'
@@ -306,6 +326,7 @@ const rootRouteChildren: RootRouteChildren = {
   NegociosRoute: NegociosRoute,
   NumerosRoute: NumerosRoute,
   PerfilRoute: PerfilRoute,
+  RedRoute: RedRoute,
   ReporteRoute: ReporteRoute,
   TareasTaskIdRoute: TareasTaskIdRoute,
   TareasIndexRoute: TareasIndexRoute,
