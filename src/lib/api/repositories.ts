@@ -1,4 +1,38 @@
 import type {
+  AreaBottleneck,
+  BishopAgreement,
+  BishopPortfolio,
+  BusinessDocument,
+  BusinessProfile,
+  BusinessProfilePatch,
+  CatalogAdminItem,
+  CatalogChange,
+  CatalogItemInput,
+  ChecklistItem,
+  Contract,
+  FinancialSeries,
+  FranchiseDetail,
+  FranchiseReport,
+  FranchiseSummary,
+  FranchiseTask,
+  FranchiseeHome,
+  FranchisorSummary,
+  InviteMemberInput,
+  ManualOverview,
+  ManualVersion,
+  NetworkFunnel,
+  NetworkSummary,
+  OfficeDetail,
+  OfficeSummary,
+  OpportunityDetail,
+  BishopOpportunity,
+  PlatformRules,
+  PublishManualInput,
+  RulesChange,
+  StructureTree,
+  SubmitReportInput,
+  SupportTicket,
+  TeamMember,
   Lead,
   LeadEvent,
   LeadStage,
@@ -129,7 +163,117 @@ export interface NotificationsRepository {
   setPreference(kind: NotificationKind, channel: NotificationChannel, enabled: boolean): Promise<NotificationPreference[]>;
 }
 
+/** SM Global: the whole network. SM office team: only its own office. */
+export interface NetworkRepository {
+  /** SM Global only. */
+  getSummary(): Promise<NetworkSummary>;
+  /** SM Global: every office. SM team: only its own. */
+  listOffices(): Promise<OfficeSummary[]>;
+  getOffice(id: Uuid): Promise<OfficeDetail | null>;
+  /** SM Global only: global, offices, businesses, franchises, and the firms of each office. */
+  getStructure(): Promise<StructureTree>;
+  /** SM Global only: for each of the six areas, where the network is stuck. Most overdue first. */
+  listBottlenecks(): Promise<AreaBottleneck[]>;
+  /** SM Global only: leads by stage, overall and per office. */
+  getFunnel(): Promise<NetworkFunnel>;
+}
+
+/** Platform rules. Everyone reads them; only SM Global changes them, and every change is logged. */
+export interface RulesRepository {
+  get(): Promise<PlatformRules>;
+  update(patch: Partial<PlatformRules>, note?: string | null): Promise<PlatformRules>;
+  /** Newest first. SM Global only. */
+  listHistory(): Promise<RulesChange[]>;
+}
+
+/** Official Método 180 catalog. Everyone reads active entries; only SM Global edits. Edits apply to new programs only. */
+export interface CatalogRepository {
+  list(opts?: { include_archived?: boolean }): Promise<CatalogAdminItem[]>;
+  add(input: CatalogItemInput): Promise<CatalogAdminItem>;
+  update(code: string, patch: Partial<CatalogItemInput>, note?: string | null): Promise<CatalogAdminItem>;
+  archive(code: string, reason: string): Promise<CatalogAdminItem>;
+  restore(code: string): Promise<CatalogAdminItem>;
+  /** Newest first, one entry or all. SM Global only. */
+  listHistory(code?: string): Promise<CatalogChange[]>;
+}
+
+export interface FranchisesRepository {
+  /** Franchisor owner: its own units. SM: those of its office. SM Global: all. Franchisee: only its unit. */
+  list(franchisorBusinessId?: Uuid): Promise<FranchiseSummary[]>;
+  get(id: Uuid): Promise<FranchiseDetail | null>;
+  /** Franchisor owner: its own numbers (businessId optional). SM and SM Global: any franchisor in scope. */
+  getFranchisorSummary(businessId?: Uuid): Promise<FranchisorSummary>;
+  /** Reports of the units in scope, newest month first; a franchisee only gets its own. */
+  listReports(franchiseId?: Uuid): Promise<FranchiseReport[]>;
+  /** Franchisee only, own unit, a month that is due. Royalty and marketing fund are computed from gross sales. */
+  submitReport(franchiseId: Uuid, input: SubmitReportInput): Promise<FranchiseReport>;
+  /** Tickets from the franchises in scope, newest first. */
+  listTickets(): Promise<SupportTicket[]>;
+}
+
+export interface ManualRepository {
+  /** Owner: own manual. Franchisee: its franchisor manual (read). SM: office businesses. SM Global: any. */
+  get(businessId?: Uuid): Promise<ManualOverview>;
+  /** Franchisor owner only: publishes the next version; every franchise follows it and gets a task to read it. */
+  publish(businessId: Uuid, input: PublishManualInput): Promise<ManualVersion>;
+}
+
+export interface DocumentsRepository {
+  listDocuments(businessId?: Uuid): Promise<BusinessDocument[]>;
+  listContracts(businessId?: Uuid): Promise<Contract[]>;
+  /** Owner only: answers a requested document with a file (simulated). */
+  uploadDocument(documentId: Uuid, fileName: string): Promise<BusinessDocument>;
+}
+
+export interface FinancialsRepository {
+  /** Owner: own business. SM: office businesses. SM Global: any. Null if the business has no series yet. */
+  get(businessId?: Uuid): Promise<FinancialSeries | null>;
+}
+
+export interface BusinessProfileRepository {
+  get(businessId?: Uuid): Promise<BusinessProfile | null>;
+  /** Owner only, own business. */
+  update(patch: BusinessProfilePatch): Promise<BusinessProfile>;
+  listTeam(businessId?: Uuid): Promise<TeamMember[]>;
+  /** Owner only, own business: adds a person as invited. */
+  inviteMember(input: InviteMemberInput): Promise<TeamMember>;
+}
+
+/** Business Bishop: sees only his own portfolio, opportunities and agreements. */
+export interface BishopRepository {
+  getPortfolio(): Promise<BishopPortfolio>;
+  listOpportunities(): Promise<BishopOpportunity[]>;
+  getOpportunity(id: Uuid): Promise<OpportunityDetail | null>;
+  expressInterest(id: Uuid): Promise<BishopOpportunity>;
+  pass(id: Uuid): Promise<BishopOpportunity>;
+  /** Undo interest or pass. */
+  clearDecision(id: Uuid): Promise<BishopOpportunity>;
+  listAgreements(): Promise<BishopAgreement[]>;
+}
+
+/** Franchisee: sees only its own unit. */
+export interface FranchiseeRepository {
+  getHome(): Promise<FranchiseeHome>;
+  /** Standards (operating) or opening checklist (opening). */
+  listChecklist(): Promise<ChecklistItem[]>;
+  listTickets(): Promise<SupportTicket[]>;
+  createTicket(input: { subject: string; body: string }): Promise<SupportTicket>;
+  listTasks(): Promise<FranchiseTask[]>;
+  setTaskDone(taskId: Uuid, done: boolean): Promise<FranchiseTask>;
+  listTeam(): Promise<TeamMember[]>;
+}
+
 export interface ApiClient {
+  network: NetworkRepository;
+  rules: RulesRepository;
+  catalog: CatalogRepository;
+  franchises: FranchisesRepository;
+  manual: ManualRepository;
+  documents: DocumentsRepository;
+  financials: FinancialsRepository;
+  businessProfile: BusinessProfileRepository;
+  bishop: BishopRepository;
+  franchisee: FranchiseeRepository;
   notifications: NotificationsRepository;
   session: SessionRepository;
   organizations: OrganizationsRepository;

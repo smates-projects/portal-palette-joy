@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { useCurrentUser, useOrganizations } from "@/lib/api/hooks";
+import { useCurrentUser, useOrganizations, useRules } from "@/lib/api/hooks";
 import { DEFAULT_FRANCHISABILITY_RULES } from "@/lib/api/franchisability";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,7 +11,9 @@ export function SettingsPage() {
   const me = useCurrentUser().data;
   const orgsQ = useOrganizations();
   const office = orgsQ.data?.find((o) => o.kind === "sm" && o.id === me?.organization_id);
-  const rules = DEFAULT_FRANCHISABILITY_RULES;
+  // Live rules from the platform (SM Global edits them); the defaults only fill in while they load.
+  const live = useRules().data;
+  const rules = live ? { goal: live.franchisability_goal, required_task_codes: live.required_task_codes } : DEFAULT_FRANCHISABILITY_RULES;
   const Row = ({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) => (
     <div className="grid gap-1 px-4 py-3 sm:grid-cols-[220px_1fr]">
       <dt className="text-sm text-muted-foreground">{label}</dt>

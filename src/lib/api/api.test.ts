@@ -32,8 +32,9 @@ describe("task rules", () => {
 });
 
 describe("seed data", () => {
-  it("has 45 tasks (30 + Vossler finance and technology) and the required minimums", () => {
-    expect(all).toHaveLength(45);
+  it("has 111 tasks (66 in the three running programs + 45 approved ones of Bimbo Tacos) and the required minimums", () => {
+    expect(all).toHaveLength(111);
+    expect(all.filter((t) => t.business_id === seed.BIZ_BIMBO).every((t) => t.status === "accepted")).toBe(true);
     expect(all.filter((t) => t.is_blocked).length).toBeGreaterThanOrEqual(2);
     expect(all.filter((t) => t.is_overdue).length).toBeGreaterThanOrEqual(2);
     expect(all.filter((t) => t.status === "changes_requested").length).toBeGreaterThanOrEqual(2);
@@ -45,7 +46,9 @@ describe("mock authorization", () => {
   it("a firm only sees its own tasks and switching firm changes the view", async () => {
     const api = createMockApi();
     const perez = await api.tasks.list();
-    expect(perez).toHaveLength(15);
+    // Pérez does B6 for the three running programs (5 each) and did it for Bimbo Tacos too.
+    expect(perez).toHaveLength(seed.tasks.filter((t) => t.organization_id === seed.ORG_PEREZ).length);
+    expect(perez.filter((t) => t.business_id !== seed.BIZ_BIMBO)).toHaveLength(15);
     expect(perez.every((t) => t.organization_id === seed.ORG_PEREZ)).toBe(true);
     await api.session.setViewAs(seed.U_TOMAS);
     const xyz = await api.tasks.list();
@@ -60,7 +63,8 @@ describe("mock authorization", () => {
     const api = createMockApi();
     await api.session.setViewAs(seed.U_CARLA);
     const mine = await api.tasks.list();
-    expect(mine).toHaveLength(25);
+    expect(mine).toHaveLength(seed.tasks.filter((t) => t.business_id === seed.BIZ_VOSSLER).length);
+    expect(mine).toHaveLength(32);
     expect(mine.every((t) => t.business_id === seed.BIZ_VOSSLER)).toBe(true);
   });
   it("Vossler gets only the catalog B3/B4 tasks that apply, with names taken verbatim from the catalog", () => {

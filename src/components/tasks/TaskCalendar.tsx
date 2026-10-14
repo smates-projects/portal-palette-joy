@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight, Lock } from "lucide-react";
 import { TODAY } from "@/config/app";
+import { localeTag } from "@/lib/format";
 import { useCalendarEvents, useMeetings } from "@/lib/api/hooks";
 import type { TaskWithComputed, VisibleTaskStatus } from "@/lib/api/types";
 import { CAL_MODES, buildCalendarItems, monthGrid, shiftAnchor, weekDays, type CalItem, type CalMode } from "@/lib/tasks/calendar";
@@ -22,7 +23,7 @@ export function TaskCalendar(props: {
   onOpen: (id: string) => void;
 }) {
   const { t, i18n } = useTranslation();
-  const locale = i18n.language === "en" ? "en-US" : "es-AR";
+  const locale = localeTag(i18n.language);
   const [mode, setMode] = useState<CalMode>("month");
   const [anchor, setAnchor] = useState(TODAY);
   const meetingsQ = useMeetings();

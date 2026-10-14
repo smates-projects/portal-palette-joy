@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { GlobalCatalogPage } from "@/components/global/catalog/GlobalCatalogPage";
 import { CatalogTeamPage, validateCatalogSearch } from "@/components/office/CatalogTeamPage";
+import { useCurrentUser } from "@/lib/api/hooks";
 import { tStatic } from "@/lib/i18n";
 
 export const Route = createFileRoute("/catalogo")({
@@ -15,6 +17,9 @@ export const Route = createFileRoute("/catalogo")({
   }),
   validateSearch: validateCatalogSearch,
   component: function CatalogoRoute() {
-    return <CatalogTeamPage search={Route.useSearch()} />;
+    const search = Route.useSearch();
+    const role = useCurrentUser().data?.role;
+    // Only SM Global edits the catalog; an office reads it next to its firms and team.
+    return role === "sm_global" ? <GlobalCatalogPage /> : <CatalogTeamPage search={search} />;
   },
 });

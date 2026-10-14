@@ -79,14 +79,14 @@ export interface MatrixRow {
 const SEVERITY: Record<Health, number> = { grey: 0, green: 1, amber: 2, red: 3 };
 
 /** Business × area health, using the one area-health rule. */
-export function buildNetworkMatrix(tasks: TaskWithComputed[], versions: TaskVersion[], businesses: Business[], today = TODAY): MatrixRow[] {
+export function buildNetworkMatrix(tasks: TaskWithComputed[], versions: TaskVersion[], businesses: Business[], today = TODAY, amberDays?: number): MatrixRow[] {
   return businesses.map((business) => {
     const mine = tasks.filter((t) => t.business_id === business.id);
     const cells = AREAS.map((area) => {
       const inArea = mine.filter((t) => t.area === area);
       return {
         area,
-        health: areaHealth(inArea, versions, today),
+        health: areaHealth(inArea, versions, today, amberDays),
         open: inArea.filter((t) => t.status !== "accepted").length,
         overdue: inArea.filter((t) => t.is_overdue).length,
       };

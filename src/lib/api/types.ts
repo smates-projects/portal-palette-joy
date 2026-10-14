@@ -16,12 +16,22 @@ export type VisibleTaskStatus =
 export type HiddenTaskStatus = "proposed" | "excluded" | "with_third_party" | "cancelled";
 export type TaskStatus = VisibleTaskStatus | HiddenTaskStatus;
 
-export type UserRole = "partner_firm" | "business_owner" | "sm_team";
+/**
+ * sm_global: SM headquarters (sees the whole network). bishop: Business Bishop, an investor who funds a
+ * business ready to franchise in exchange for an equity share. franchisee: runs one franchise unit.
+ * The franchisor is not a role: it is a business_owner whose business has status "franchisor".
+ */
+export type UserRole = "partner_firm" | "business_owner" | "sm_team" | "sm_global" | "bishop" | "franchisee";
+
+export type OrganizationKind = "partner_firm" | "sm" | "sm_global" | "franchise";
+export type OfficeStatus = "opening" | "operating" | "paused";
+export type BusinessStatus = "in_program" | "franchisor";
 
 export interface Organization {
   id: Uuid;
   name: string;
-  kind: "partner_firm" | "sm";
+  /** sm = an SM office. A franchise unit is an Organization too (its id is the Franchise id). */
+  kind: OrganizationKind;
   area: AreaCode | null;
   /** What the firm does, shown to owners and SM. */
   specialty: string | null;
@@ -30,6 +40,14 @@ export interface Organization {
   phone: string | null;
   /** SM offices: booking link used when the assigned consultant has none. */
   default_booking_url?: string | null;
+  /** Partner firm: its SM office. SM office: SM Global. */
+  parent_id?: Uuid | null;
+  /** SM offices only. */
+  status?: OfficeStatus | null;
+  opened_at?: IsoDate | null;
+  manager_user_id?: Uuid | null;
+  /** Franchise units only: the franchisor business they belong to. */
+  franchisor_business_id?: Uuid | null;
 }
 
 export interface User {
@@ -53,6 +71,8 @@ export interface Business {
   city: string;
   state: string;
   owner_user_id: Uuid;
+  /** in_program: running the 180 days. franchisor: finished it and now franchises. */
+  status: BusinessStatus;
   program_start_date: IsoDate;
   program_day: number;
   /** SM office that runs this program (phase 1: only SM Miami). Scope for the SM team. */
@@ -256,7 +276,7 @@ export interface ViewAsOption {
   enabled: boolean;
 }
 
-/** Set only by SM Global, same for every program (like the catalog). Required list may be empty. */
+/** Franchisability part of the platform rules. Set only by SM Global, same for every program (like the catalog). Required list may be empty. */
 export interface FranchisabilityRules {
   goal: number;
   required_task_codes: string[];
@@ -337,3 +357,6 @@ export interface LeadEvent {
   /** contract_signed: signature date. */
   signed_on?: IsoDate | null;
 }
+
+export * from "./network-types";
+

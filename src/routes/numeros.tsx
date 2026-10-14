@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ComingSoonPage } from "@/components/soon/ComingSoonPage";
+import { OwnerNumbersPage } from "@/components/owner/numbers/OwnerNumbersPage";
 import { tStatic } from "@/lib/i18n";
 
 export const Route = createFileRoute("/numeros")({
@@ -13,5 +13,5 @@ export const Route = createFileRoute("/numeros")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: () => <ComingSoonPage pageKey="numbers" />,
+  component: OwnerNumbersPage,
 });

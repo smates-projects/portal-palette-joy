@@ -6,7 +6,7 @@ import { Lock } from "lucide-react";
 import { TODAY } from "@/config/app";
 import { useBusinesses, useStartTask, useTasks, useUpcomingMeetings } from "@/lib/api/hooks";
 import type { TaskWithComputed, VisibleTaskStatus } from "@/lib/api/types";
-import { formatDate, formatDateTime } from "@/lib/format";
+import { formatDate, formatDateTime, localeTag } from "@/lib/format";
 import { buildProgress, buildSummary, buildToday, nextDue, SUMMARY_FILTER, type SummaryKey } from "@/lib/tasks/home";
 import { daysBetween } from "@/lib/tasks/table";
 import { cn } from "@/lib/utils";
@@ -53,7 +53,7 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
 
   const whenText = (iso: string) => {
     const d = daysBetween(TODAY, iso);
-    const weekday = new Intl.DateTimeFormat(lng === "en" ? "en-US" : "es-AR", { weekday: "long" }).format(new Date(`${iso}T12:00:00`));
+    const weekday = new Intl.DateTimeFormat(localeTag(lng), { weekday: "long" }).format(new Date(`${iso}T12:00:00`));
     return d <= 6 ? t("home.when_weekday", { day: weekday }) : t("home.when_date", { date: formatDate(iso, lng) });
   };
 

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { localeTag } from "@/lib/format";
 import { useDiscardLead, useLeads, useMoveLead, useSignLeadContract, useUsers } from "@/lib/api/hooks";
 import { LEAD_STAGES, type LeadStage, type LeadWithComputed } from "@/lib/api/types";
 import {
@@ -119,7 +120,7 @@ export function PipelinePage({ search }: { search: LeadsSearch }) {
   const view = search.view ?? "board";
   const hasFilters = !!(search.stage || search.consultant || search.band || search.industry || search.revenue || search.quick);
   const selected = all.find((l) => l.id === search.lead);
-  const nf = new Intl.NumberFormat(i18n.language === "en" ? "en-US" : "es-AR");
+  const nf = new Intl.NumberFormat(localeTag(i18n.language));
 
   const counter = (key: "week" | "uncontacted" | "contracts" | "signed_month", value: number, patch: SearchPatch, danger = false) => {
     const active = key === "contracts" ? search.stage === "contract" && !search.quick : search.quick === key;

@@ -21,7 +21,20 @@
     "businesses": "Negocios",
     "catalog": "Catálogo y equipo",
     "settings": "Configuración",
-    "pipeline": "Embudo"
+    "pipeline": "Embudo",
+    "structure": "Estructura",
+    "offices": "Oficinas",
+    "global_pipeline": "Embudo",
+    "global_catalog": "Catálogo",
+    "rules": "Reglas",
+    "franchisor": "Mi franquiciadora",
+    "franchises": "Mis franquicias",
+    "portfolio": "Mi portafolio",
+    "opportunities": "Oportunidades",
+    "agreements": "Acuerdos",
+    "franchisee_manual": "Manual",
+    "payments": "Pagos y reportes",
+    "franchisee_business": "Mi negocio"
   },
   "topbar": {
     "search_placeholder": "Buscar tareas o clientes",
@@ -34,12 +47,21 @@
     "role_sm": "Equipo SM",
     "switched": "Ahora ves la plataforma como {{name}}",
     "switch_error": "No pudimos cambiar de usuario. Prueba de nuevo.",
-    "account": "Mi cuenta"
+    "account": "Mi cuenta",
+    "role_global": "SM Global",
+    "role_bishop": "Business Bishop",
+    "role_franchisee": "Franquiciado",
+    "role_small_business": "Small Business",
+    "franchisor": "franquiciadora"
   },
   "roles": {
     "partner_firm": "Firma aliada",
     "business_owner": "Dueño del negocio",
-    "sm_team": "Equipo SM"
+    "sm_team": "Equipo SM",
+    "sm_global": "SM Global",
+    "bishop": "Business Bishop",
+    "franchisee": "Franquiciado",
+    "franchisor": "Franquiciadora"
   },
   "areas": {
     "B1": "Estrategia",
@@ -119,6 +141,58 @@
     "pipeline": {
       "title": "Embudo",
       "subtitle": ""
+    },
+    "structure": {
+      "title": "Estructura",
+      "subtitle": "¿Cómo se organiza la red de SM?"
+    },
+    "offices": {
+      "title": "Oficinas",
+      "subtitle": "¿Cómo va cada oficina?"
+    },
+    "global_pipeline": {
+      "title": "Embudo",
+      "subtitle": "¿Cuántos negocios entran a la red y en qué etapa están?"
+    },
+    "global_catalog": {
+      "title": "Catálogo",
+      "subtitle": "¿Qué tareas tiene el Método 180?"
+    },
+    "rules": {
+      "title": "Reglas",
+      "subtitle": "¿Qué reglas usa toda la red?"
+    },
+    "franchisor": {
+      "title": "Mi franquiciadora",
+      "subtitle": "¿Qué manual reciben mis franquicias?"
+    },
+    "franchises": {
+      "title": "Mis franquicias",
+      "subtitle": "¿Cómo va cada una de mis franquicias?"
+    },
+    "portfolio": {
+      "title": "Mi portafolio",
+      "subtitle": "¿Cómo va mi inversión?"
+    },
+    "opportunities": {
+      "title": "Oportunidades",
+      "subtitle": "¿En qué negocio puedo invertir?"
+    },
+    "agreements": {
+      "title": "Acuerdos",
+      "subtitle": "¿Qué acuerdos tengo?"
+    },
+    "franchisee_manual": {
+      "title": "Manual",
+      "subtitle": "¿Cómo se hace cada cosa en mi local?"
+    },
+    "payments": {
+      "title": "Pagos y reportes",
+      "subtitle": "¿Qué reporté y qué debo pagar?"
+    },
+    "franchisee_business": {
+      "title": "Mi negocio",
+      "subtitle": "¿Qué datos tiene la franquiciadora de mi local?"
     }
   },
   "meta": {
@@ -213,7 +287,7 @@
       "col_accepted": "Aprobada",
       "empty_column": "Sin tareas aquí",
       "no_blocked": "{{code}} no puede empezar: está bloqueada por {{by}}.",
-      "no_owner_only": "Solo el dueño puede pasar {{code}} a {{to}}. Vos enviás la entrega; él aprueba o pide cambios.",
+      "no_owner_only": "Solo el dueño puede pasar {{code}} a {{to}}. Tú envías la entrega; él aprueba o pide cambios.",
       "no_already_submitted": "{{code}} ya está entregada. Espera a que el dueño la apruebe o pida cambios.",
       "no_already_accepted": "{{code}} ya está aprobada y no se puede mover.",
       "no_start_first": "Primero empieza {{code}}: pásala a En curso antes de entregarla.",
@@ -286,9 +360,9 @@
     "waiting_owner_one": "Esperando {{count}} cosa del dueño",
     "waiting_owner_other": "Esperando {{count}} cosas del dueño",
     "next_blocked": "Primero {{name}} tiene que aprobar {{code}}. Después vas a poder empezar.",
-    "next_pending": "Tenés que empezar la tarea. Vence el {{date}}.",
-    "next_in_progress": "Tenés que enviar la entrega antes del {{date}}.",
-    "next_changes": "{{name}} pidió cambios. Tenés que enviar una nueva versión antes del {{date}}.",
+    "next_pending": "Tienes que empezar la tarea. Vence el {{date}}.",
+    "next_in_progress": "Tienes que enviar la entrega antes del {{date}}.",
+    "next_changes": "{{name}} pidió cambios. Tienes que enviar una nueva versión antes del {{date}}.",
     "next_submitted": "{{name}} tiene que aprobar la entrega o pedir cambios.",
     "next_accepted": "No queda nada pendiente: la entrega está aprobada.",
     "s_what": "Qué hay que hacer",
@@ -386,7 +460,7 @@
     "when_weekday": "el {{day}}",
     "when_date": "el {{date}}",
     "meetings_title": "Próximas reuniones",
-    "meetings_empty": "No hay reuniones agendadas. Podés proponer una desde el detalle de cualquier tarea.",
+    "meetings_empty": "No hay reuniones agendadas. Puedes proponer una desde el detalle de cualquier tarea.",
     "meetings_error": "No pudimos cargar las reuniones.",
     "meeting_proposed": "Propuesta",
     "meeting_confirmed": "Confirmada",
@@ -416,7 +490,7 @@
     "stuck_changes": "{{name}} pidió cambios en {{code}}: te toca enviar nueva versión.",
     "stuck_none": "Nada trabado. Todo depende de tu firma.",
     "open_tasks": "Ver tareas de {{name}}",
-    "empty_title": "Todavía no trabajás para ningún negocio",
+    "empty_title": "Todavía no trabajas para ningún negocio",
     "empty_body": "Cuando SM te asigne tareas de un negocio, aparecerá aquí con su avance.",
     "error_title": "No pudimos cargar tus clientes",
     "retry": "Cargar clientes de nuevo"
@@ -425,12 +499,12 @@
     "heading": "¿Cómo me ven los dueños y el equipo SM?",
     "area": "Área {{area}}",
     "specialty": "Especialidad",
-    "no_specialty": "Sin especialidad cargada. Pedile al equipo SM que la complete.",
+    "no_specialty": "Sin especialidad cargada. Pídele al equipo SM que la complete.",
     "city": "Ciudad",
     "email": "Email",
     "phone": "Teléfono",
     "team_title": "Personas del equipo",
-    "team_empty": "Tu firma todavía no tiene más personas cargadas. Pedile al equipo SM que las sume.",
+    "team_empty": "Tu firma todavía no tiene más personas cargadas. Pídele al equipo SM que las sume.",
     "you": "(tú)",
     "cal_on_short": "Calendar conectado",
     "cal_off_short": "Sin Calendar",
@@ -1024,5 +1098,109 @@
       }
     },
     "firm_internal": "{{name}} (estrategia, equipo propio)"
+  },
+  "global": {
+    "for_role": "SM Global",
+    "home": {
+      "question": "¿Cómo va toda la red?",
+      "soon": "Aquí verás las oficinas, los programas, las franquicias y dónde se está trabando la red."
+    },
+    "structure": {
+      "question": "¿Cómo se organiza la red?",
+      "soon": "Aquí verás el árbol completo: SM Global, oficinas, negocios, franquicias y las firmas de cada oficina."
+    },
+    "offices": {
+      "question": "¿Cómo va cada oficina?",
+      "soon": "Aquí verás cada oficina con su responsable, sus negocios, sus firmas y su salud."
+    },
+    "office_detail": {
+      "question": "¿Cómo va esta oficina?",
+      "soon": "Aquí verás los negocios, las firmas y el equipo de la oficina."
+    },
+    "funnel": {
+      "question": "¿Cuántos negocios entran a la red?",
+      "soon": "Aquí verás los leads de todas las oficinas por etapa."
+    },
+    "catalog": {
+      "question": "¿Qué tareas tiene el Método 180?",
+      "soon": "Aquí agregarás, editarás y archivarás las tareas del catálogo, con su historial. Los cambios aplican a los programas nuevos."
+    },
+    "rules": {
+      "question": "¿Qué reglas usa toda la red?",
+      "soon": "Aquí cambiarás la meta de franquiciabilidad, las tareas obligatorias y los plazos de alerta, con su historial."
+    }
+  },
+  "owner_extra": {
+    "for_role": "Dueño del negocio",
+    "franchisor_home": {
+      "question": "¿Cómo va mi red de franquicias?",
+      "soon": "Aquí verás tus franquicias, las ventas del mes, las regalías y lo que necesita tu atención."
+    },
+    "franchisor": {
+      "question": "¿Qué manual reciben mis franquicias?",
+      "soon": "Aquí publicarás nuevas versiones de tu manual. Cada franquicia recibe el cambio y una tarea para leerlo."
+    },
+    "franchises": {
+      "question": "¿Cómo va cada una de mis franquicias?",
+      "soon": "Aquí verás cada franquicia con sus ventas, su cumplimiento de estándares y sus consultas."
+    },
+    "franchise_detail": {
+      "question": "¿Cómo va esta franquicia?",
+      "soon": "Aquí verás los reportes, los estándares, las consultas y el equipo de esta franquicia."
+    },
+    "manual": {
+      "question": "¿Cómo se opera mi negocio?",
+      "soon": "Aquí verás el manual operativo de tu negocio, sección por sección, con su avance y su estado."
+    },
+    "documents": {
+      "question": "¿Dónde están los documentos de mi negocio?",
+      "soon": "Aquí verás los documentos que te pedimos, los que ya recibimos y tus contratos con su estado de firma."
+    },
+    "numbers": {
+      "question": "¿Cómo van los números de mi negocio?",
+      "soon": "Aquí verás tus ventas, tu margen y tu caja mes a mes, y cómo cambiaron desde que empezó el programa."
+    },
+    "business": {
+      "question": "¿Qué datos tiene SM de mi negocio?",
+      "soon": "Aquí verás y actualizarás los datos de tu negocio y las personas de tu equipo."
+    }
+  },
+  "bishop": {
+    "for_role": "Business Bishop",
+    "portfolio": {
+      "question": "¿Cómo va mi inversión?",
+      "soon": "Aquí verás cuánto invertiste, cuánto ya recuperaste, tu participación actual y cuándo recuperarás todo."
+    },
+    "opportunities": {
+      "question": "¿En qué negocio puedo invertir?",
+      "soon": "Aquí verás los negocios que SM te presenta, con su avance y su proyección a cinco años."
+    },
+    "opportunity_detail": {
+      "question": "¿Me conviene este negocio?",
+      "soon": "Aquí verás la ficha del negocio, su proyección y los botones para mostrar interés o pasar."
+    },
+    "agreements": {
+      "question": "¿Qué acuerdos tengo?",
+      "soon": "Aquí verás tus acuerdos de participación y tus NDA, con su estado de firma."
+    }
+  },
+  "franchisee": {
+    "for_role": "Franquiciado",
+    "home": {
+      "question": "¿Qué tengo que hacer esta semana?",
+      "soon": "Aquí verás tus tareas, el próximo reporte de ventas, si hay una versión nueva del manual y tus consultas abiertas."
+    },
+    "manual": {
+      "question": "¿Cómo se hace cada cosa en mi local?",
+      "soon": "Aquí leerás el manual de tu franquiciadora, siempre en su versión vigente."
+    },
+    "payments": {
+      "question": "¿Qué reporté y qué debo pagar?",
+      "soon": "Aquí enviarás tu reporte de ventas cada mes y verás la regalía y el fondo de marketing que te corresponden."
+    },
+    "business": {
+      "question": "¿Qué datos tiene la franquiciadora de mi local?",
+      "soon": "Aquí verás los datos de tu local, tus estándares, tus consultas de soporte y tu equipo."
+    }
   }
 }

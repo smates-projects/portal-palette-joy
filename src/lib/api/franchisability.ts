@@ -1,4 +1,4 @@
-import type { Business, Franchisability, FranchisabilityRules, Task } from "./types";
+import type { Business, Franchisability, FranchisabilityRules, PlatformRules, Task } from "./types";
 
 /** Global rules: only SM Global sets them (like the catalog). Offices and owners only read them. */
 export const DEFAULT_FRANCHISABILITY_GOAL = 85;
@@ -6,6 +6,16 @@ export const DEFAULT_REQUIRED_TASK_CODES = ["B1-01", "B2-03", "B3-01", "B3-07", 
 export const DEFAULT_FRANCHISABILITY_RULES: FranchisabilityRules = {
   goal: DEFAULT_FRANCHISABILITY_GOAL,
   required_task_codes: DEFAULT_REQUIRED_TASK_CODES,
+};
+/** Defaults of the other platform rules (SM Global edits them in Reglas). */
+export const DEFAULT_AREA_AMBER_DAYS = 7;
+export const DEFAULT_AMBER_TOLERANCE_POINTS = 10;
+/** Seed values of the rules repository. Components read the live rules through useRules(), never this constant. */
+export const DEFAULT_PLATFORM_RULES: PlatformRules = {
+  franchisability_goal: DEFAULT_FRANCHISABILITY_GOAL,
+  required_task_codes: DEFAULT_REQUIRED_TASK_CODES,
+  area_amber_days: DEFAULT_AREA_AMBER_DAYS,
+  franchisability_amber_tolerance: DEFAULT_AMBER_TOLERANCE_POINTS,
 };
 /** Statuses that don't count toward the program total. */
 const EXCLUDED = new Set(["cancelled", "with_third_party", "excluded"]);

@@ -8,7 +8,7 @@ import { isNavActive, navFor } from "./nav";
 import { NotificationBell } from "./NotificationBell";
 import { cn } from "@/lib/utils";
 import { LANGUAGE_STORAGE_KEY, type Language } from "@/lib/i18n";
-import { useCurrentUser, useSetViewAs, useViewAsOptions } from "@/lib/api/hooks";
+import { useCurrentUser, useIsFranchisor, useSetViewAs, useViewAsOptions } from "@/lib/api/hooks";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,7 +27,8 @@ function Rail({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => voi
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const view = useRouterState({ select: (s) => (s.location.search as Record<string, unknown>)["view"] });
   const { data: me } = useCurrentUser();
-  const items = navFor(me?.role);
+  const franchisor = useIsFranchisor();
+  const items = navFor(me?.role, { franchisor });
   return (
     <aside
       className={cn(
@@ -40,7 +41,7 @@ function Rail({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => voi
         {!collapsed && (
           <div className="leading-tight">
             <div className="font-display text-sm font-semibold">{t("app.name")}</div>
-            <div className="text-[11px] text-sidebar-muted">{t(`roles.${me?.role ?? "partner_firm"}`)}</div>
+            <div className="text-[11px] text-sidebar-muted">{t(franchisor ? "roles.franchisor" : `roles.${me?.role ?? "partner_firm"}`)}</div>
           </div>
         )}
       </div>
@@ -134,10 +135,22 @@ function ViewAs() {
   const firms = enabled.filter((o) => o.user.role === "partner_firm");
   const owners = enabled.filter((o) => o.user.role === "business_owner");
   const smTeam = enabled.filter((o) => o.user.role === "sm_team");
-  const label = (o: (typeof enabled)[number]) =>
-    o.user.role === "sm_team"
-      ? `${o.user.full_name} (${o.organization?.name ?? ""})`
-      : o.organization?.name ?? `${o.user.full_name} (${o.business?.name ?? ""})`;
+  const smGlobal = enabled.filter((o) => o.user.role === "sm_global");
+  const bishops = enabled.filter((o) => o.user.role === "bishop");
+  const franchisees = enabled.filter((o) => o.user.role === "franchisee");
+  const label = (o: (typeof enabled)[number]) => {
+    switch (o.user.role) {
+      case "sm_team": return `${o.user.full_name} (${o.organization?.name ?? ""})`;
+      case "sm_global": return `${t("topbar.role_global")} (${o.user.full_name})`;
+      case "bishop": return `${t("topbar.role_bishop")} (${o.user.full_name})`;
+      case "franchisee": return `${t("topbar.role_franchisee")} (${o.user.full_name})`;
+      case "business_owner":
+        return o.business?.status === "franchisor"
+          ? `${t("topbar.role_small_business")} · ${o.business.name} (${t("topbar.franchisor")}, ${o.user.full_name})`
+          : o.organization?.name ?? `${o.user.full_name} (${o.business?.name ?? ""})`;
+      default: return o.organization?.name ?? `${o.user.full_name} (${o.business?.name ?? ""})`;
+    }
+  };
   const currentOpt = enabled.find((o) => o.user.id === me?.id);
   const pick = (o: (typeof enabled)[number]) =>
     setViewAs.mutate(o.user.id, {
@@ -176,13 +189,43 @@ function ViewAs() {
             <Check className={cn("mt-0.5 h-4 w-4", o.user.id === me?.id ? "opacity-100" : "opacity-0")} />
             <div>
               <div className="font-medium">{o.user.full_name}</div>
-              <div className="text-xs text-muted-foreground">{o.business?.name}</div>
+              <div className="text-xs text-muted-foreground">{o.business?.status === "franchisor" ? `${o.business.name} · ${t("topbar.franchisor")}` : o.business?.name}</div>
             </div>
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
         <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{t("topbar.role_sm")}</DropdownMenuLabel>
         {smTeam.map((o) => (
+          <DropdownMenuItem key={o.user.id} onSelect={() => pick(o)} className="flex items-start gap-2">
+            <Check className={cn("mt-0.5 h-4 w-4", o.user.id === me?.id ? "opacity-100" : "opacity-0")} />
+            <div>
+              <div className="font-medium">{o.user.full_name}</div>
+              <div className="text-xs text-muted-foreground">{o.organization?.name}</div>
+            </div>
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{t("topbar.role_global")}</DropdownMenuLabel>
+        {smGlobal.map((o) => (
+          <DropdownMenuItem key={o.user.id} onSelect={() => pick(o)} className="flex items-start gap-2">
+            <Check className={cn("mt-0.5 h-4 w-4", o.user.id === me?.id ? "opacity-100" : "opacity-0")} />
+            <div>
+              <div className="font-medium">{o.user.full_name}</div>
+              <div className="text-xs text-muted-foreground">{o.organization?.name}</div>
+            </div>
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{t("topbar.role_bishop")}</DropdownMenuLabel>
+        {bishops.map((o) => (
+          <DropdownMenuItem key={o.user.id} onSelect={() => pick(o)} className="flex items-start gap-2">
+            <Check className={cn("mt-0.5 h-4 w-4", o.user.id === me?.id ? "opacity-100" : "opacity-0")} />
+            <div className="font-medium">{o.user.full_name}</div>
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{t("topbar.role_franchisee")}</DropdownMenuLabel>
+        {franchisees.map((o) => (
           <DropdownMenuItem key={o.user.id} onSelect={() => pick(o)} className="flex items-start gap-2">
             <Check className={cn("mt-0.5 h-4 w-4", o.user.id === me?.id ? "opacity-100" : "opacity-0")} />
             <div>
@@ -201,7 +244,8 @@ function TopBar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const view = useRouterState({ select: (s) => (s.location.search as Record<string, unknown>)["view"] });
   const { data: me } = useCurrentUser();
-  const items = navFor(me?.role);
+  const franchisor = useIsFranchisor();
+  const items = navFor(me?.role, { franchisor });
   const current = items.find((n) => isNavActive(n, items, pathname, view));
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-surface px-3 sm:gap-4 sm:px-6">

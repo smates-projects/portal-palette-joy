@@ -1,5 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { formatNumber } from "@/lib/format";
 import { useBusinesses, useOrganizations, useTasks, useVersions } from "@/lib/api/hooks";
 import { AREAS, type Health } from "@/lib/tasks/owner";
 import { buildFirmLoad, buildNetworkCounters, buildNetworkMatrix, type NetworkCounters } from "@/lib/tasks/sm";
@@ -31,7 +32,7 @@ export function NetworkPage({ businessId }: { businessId?: string | undefined } 
   const orgsQ = useOrganizations();
   const versionsQ = useVersions();
   const go = (search: TasksSearch) => void navigate({ to: "/tareas", search: { ...search, sup: "all" } });
-  const nf = (n: number) => new Intl.NumberFormat(i18n.language === "en" ? "en-US" : "es-AR", { maximumFractionDigits: 1 }).format(n);
+  const nf = (n: number) => formatNumber(n, i18n.language, { maximumFractionDigits: 1 });
 
   const header = (
     <>

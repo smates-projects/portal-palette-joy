@@ -1,6 +1,7 @@
 import { TODAY } from "@/config/app";
 
-const localeTag = (lng: string) => (lng === "en" ? "en-US" : "es-AR");
+/** Spanish for US Hispanic users: es-US. Shared by every Intl formatter in the app. */
+export const localeTag = (lng: string) => (lng === "en" ? "en-US" : "es-US");
 const toDate = (iso: string) => new Date(iso.length === 10 ? `${iso}T12:00:00` : iso);
 
 export const formatDate = (iso: string, lng: string) =>
@@ -19,5 +20,8 @@ export const formatShortDate = (iso: string, lng: string) =>
 
 export const formatDateTime = (iso: string, lng: string) =>
   new Intl.DateTimeFormat(localeTag(lng), { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
+
+export const formatNumber = (n: number, lng: string, options?: Intl.NumberFormatOptions) =>
+  new Intl.NumberFormat(localeTag(lng), options).format(n);
 
 export const firstName = (fullName: string) => fullName.split(" ")[0] ?? fullName;

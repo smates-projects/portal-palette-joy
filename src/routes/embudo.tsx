@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { GlobalFunnelPage } from "@/components/global/funnel/GlobalFunnelPage";
 import { PipelinePage } from "@/components/pipeline/PipelinePage";
+import { useCurrentUser } from "@/lib/api/hooks";
 import { tStatic } from "@/lib/i18n";
 import { validateLeadsSearch } from "@/lib/leads/pipeline";
 
@@ -20,5 +22,7 @@ export const Route = createFileRoute("/embudo")({
 
 function PipelineRoute() {
   const search = Route.useSearch();
-  return <PipelinePage search={search} />;
+  const role = useCurrentUser().data?.role;
+  // SM Global sees the funnel of the whole network; an office sees its own leads.
+  return role === "sm_global" ? <GlobalFunnelPage /> : <PipelinePage search={search} />;
 }

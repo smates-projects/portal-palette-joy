@@ -5,7 +5,7 @@ import { Bell } from "lucide-react";
 import { nowIso } from "@/config/app";
 import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications } from "@/lib/api/hooks";
 import type { AppNotification, NotificationKind } from "@/lib/api/types";
-import { firstName, formatDateTime } from "@/lib/format";
+import { firstName, formatDateTime, localeTag } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { describeChange } from "@/lib/tasks/changes";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -39,7 +39,7 @@ export function NotificationBell() {
 
   const relative = (iso: string) => {
     const mins = Math.round((Date.parse(nowIso()) - Date.parse(iso)) / 60000);
-    const rtf = new Intl.RelativeTimeFormat(i18n.language === "en" ? "en-US" : "es-AR", { numeric: "auto" });
+    const rtf = new Intl.RelativeTimeFormat(localeTag(i18n.language), { numeric: "auto" });
     if (mins < 60) return rtf.format(-Math.max(1, mins), "minute");
     if (mins < 60 * 24) return rtf.format(-Math.round(mins / 60), "hour");
     return rtf.format(-Math.round(mins / 1440), "day");

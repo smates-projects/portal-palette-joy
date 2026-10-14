@@ -1,5 +1,6 @@
 import { TODAY } from "@/config/app";
 import type { AreaCode, Meeting, OwnerRequest, TaskVersion, TaskWithComputed } from "@/lib/api/types";
+import { DEFAULT_AREA_AMBER_DAYS } from "@/lib/api/franchisability";
 import { daysBetween } from "./table";
 
 export const AREAS: AreaCode[] = ["B1", "B2", "B3", "B4", "B5", "B6"];
@@ -41,15 +42,15 @@ export function buildOwnerInbox(
  * Area health (same rule everywhere): red if any task is overdue; amber if something is due within 7 days
  * or a deliverable has waited for the owner more than 7 days; green otherwise; grey if the area has no tasks.
  */
-export function areaHealth(tasks: TaskWithComputed[], versions: TaskVersion[], today = TODAY): Health {
+export function areaHealth(tasks: TaskWithComputed[], versions: TaskVersion[], today = TODAY, amberDays = DEFAULT_AREA_AMBER_DAYS): Health {
   // No tasks yet = nothing overdue: green. Grey only when the area does not apply (not tracked yet).
   if (tasks.length === 0) return "green";
   if (tasks.some((t) => t.is_overdue)) return "red";
-  const dueSoon = tasks.some((t) => t.status !== "accepted" && daysBetween(today, t.due_date) <= 7);
+  const dueSoon = tasks.some((t) => t.status !== "accepted" && daysBetween(today, t.due_date) <= amberDays);
   const waitingLong = tasks.some((t) => {
     if (t.status !== "submitted") return false;
     const last = versions.filter((v) => v.task_id === t.id).map((v) => v.submitted_at).sort().at(-1);
-    return !!last && daysBetween(last.slice(0, 10), today) > 7;
+    return !!last && daysBetween(last.slice(0, 10), today) > amberDays;
   });
   return dueSoon || waitingLong ? "amber" : "green";
 }
@@ -62,11 +63,11 @@ export interface AreaProgress {
   health: Health;
 }
 
-export function buildAreaProgress(tasks: TaskWithComputed[], versions: TaskVersion[], today = TODAY): AreaProgress[] {
+export function buildAreaProgress(tasks: TaskWithComputed[], versions: TaskVersion[], today = TODAY, amberDays = DEFAULT_AREA_AMBER_DAYS): AreaProgress[] {
   return AREAS.map((area) => {
     const mine = tasks.filter((t) => t.area === area);
     const accepted = mine.filter((t) => t.status === "accepted").length;
-    return { area, total: mine.length, accepted, pct: mine.length ? Math.round((accepted / mine.length) * 100) : 0, health: areaHealth(mine, versions, today) };
+    return { area, total: mine.length, accepted, pct: mine.length ? Math.round((accepted / mine.length) * 100) : 0, health: areaHealth(mine, versions, today, amberDays) };
   });
 }
 

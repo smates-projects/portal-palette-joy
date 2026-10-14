@@ -10,24 +10,40 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AcuerdosRouteImport } from './routes/acuerdos'
 import { Route as CatalogoRouteImport } from './routes/catalogo'
 import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as ConfiguracionRouteImport } from './routes/configuracion'
 import { Route as DocumentosRouteImport } from './routes/documentos'
 import { Route as EmbudoRouteImport } from './routes/embudo'
+import { Route as EstructuraRouteImport } from './routes/estructura'
+import { Route as FranquiciadoraRouteImport } from './routes/franquiciadora'
 import { Route as ManualRouteImport } from './routes/manual'
 import { Route as NegocioRouteImport } from './routes/negocio'
 import { Route as NegociosRouteImport } from './routes/negocios'
 import { Route as NumerosRouteImport } from './routes/numeros'
+import { Route as PagosRouteImport } from './routes/pagos'
 import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as RedRouteImport } from './routes/red'
+import { Route as ReglasRouteImport } from './routes/reglas'
 import { Route as ReporteRouteImport } from './routes/reporte'
+import { Route as FranquiciasIndexRouteImport } from './routes/franquicias.index'
+import { Route as FranquiciasFranchiseIdRouteImport } from './routes/franquicias.$franchiseId'
+import { Route as OficinasIndexRouteImport } from './routes/oficinas.index'
+import { Route as OficinasOfficeIdRouteImport } from './routes/oficinas.$officeId'
+import { Route as OportunidadesIndexRouteImport } from './routes/oportunidades.index'
+import { Route as OportunidadesOpportunityIdRouteImport } from './routes/oportunidades.$opportunityId'
 import { Route as TareasIndexRouteImport } from './routes/tareas.index'
 import { Route as TareasTaskIdRouteImport } from './routes/tareas.$taskId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AcuerdosRoute = AcuerdosRouteImport.update({
+  id: '/acuerdos',
+  path: '/acuerdos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CatalogoRoute = CatalogoRouteImport.update({
@@ -55,6 +71,16 @@ const EmbudoRoute = EmbudoRouteImport.update({
   path: '/embudo',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EstructuraRoute = EstructuraRouteImport.update({
+  id: '/estructura',
+  path: '/estructura',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FranquiciadoraRoute = FranquiciadoraRouteImport.update({
+  id: '/franquiciadora',
+  path: '/franquiciadora',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ManualRoute = ManualRouteImport.update({
   id: '/manual',
   path: '/manual',
@@ -75,6 +101,11 @@ const NumerosRoute = NumerosRouteImport.update({
   path: '/numeros',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PagosRoute = PagosRouteImport.update({
+  id: '/pagos',
+  path: '/pagos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PerfilRoute = PerfilRouteImport.update({
   id: '/perfil',
   path: '/perfil',
@@ -85,11 +116,47 @@ const RedRoute = RedRouteImport.update({
   path: '/red',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReglasRoute = ReglasRouteImport.update({
+  id: '/reglas',
+  path: '/reglas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReporteRoute = ReporteRouteImport.update({
   id: '/reporte',
   path: '/reporte',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FranquiciasIndexRoute = FranquiciasIndexRouteImport.update({
+  id: '/franquicias/',
+  path: '/franquicias/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FranquiciasFranchiseIdRoute = FranquiciasFranchiseIdRouteImport.update({
+  id: '/franquicias/$franchiseId',
+  path: '/franquicias/$franchiseId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OficinasIndexRoute = OficinasIndexRouteImport.update({
+  id: '/oficinas/',
+  path: '/oficinas/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OficinasOfficeIdRoute = OficinasOfficeIdRouteImport.update({
+  id: '/oficinas/$officeId',
+  path: '/oficinas/$officeId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OportunidadesIndexRoute = OportunidadesIndexRouteImport.update({
+  id: '/oportunidades/',
+  path: '/oportunidades/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OportunidadesOpportunityIdRoute =
+  OportunidadesOpportunityIdRouteImport.update({
+    id: '/oportunidades/$opportunityId',
+    path: '/oportunidades/$opportunityId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const TareasIndexRoute = TareasIndexRouteImport.update({
   id: '/tareas/',
   path: '/tareas/',
@@ -103,125 +170,202 @@ const TareasTaskIdRoute = TareasTaskIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/acuerdos': typeof AcuerdosRoute
   '/catalogo': typeof CatalogoRoute
   '/clientes': typeof ClientesRoute
   '/configuracion': typeof ConfiguracionRoute
   '/documentos': typeof DocumentosRoute
   '/embudo': typeof EmbudoRoute
+  '/estructura': typeof EstructuraRoute
+  '/franquiciadora': typeof FranquiciadoraRoute
   '/manual': typeof ManualRoute
   '/negocio': typeof NegocioRoute
   '/negocios': typeof NegociosRoute
   '/numeros': typeof NumerosRoute
+  '/pagos': typeof PagosRoute
   '/perfil': typeof PerfilRoute
   '/red': typeof RedRoute
+  '/reglas': typeof ReglasRoute
   '/reporte': typeof ReporteRoute
+  '/franquicias/$franchiseId': typeof FranquiciasFranchiseIdRoute
+  '/oficinas/$officeId': typeof OficinasOfficeIdRoute
+  '/oportunidades/$opportunityId': typeof OportunidadesOpportunityIdRoute
   '/tareas/$taskId': typeof TareasTaskIdRoute
+  '/franquicias/': typeof FranquiciasIndexRoute
+  '/oficinas/': typeof OficinasIndexRoute
+  '/oportunidades/': typeof OportunidadesIndexRoute
   '/tareas/': typeof TareasIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/acuerdos': typeof AcuerdosRoute
   '/catalogo': typeof CatalogoRoute
   '/clientes': typeof ClientesRoute
   '/configuracion': typeof ConfiguracionRoute
   '/documentos': typeof DocumentosRoute
   '/embudo': typeof EmbudoRoute
+  '/estructura': typeof EstructuraRoute
+  '/franquiciadora': typeof FranquiciadoraRoute
   '/manual': typeof ManualRoute
   '/negocio': typeof NegocioRoute
   '/negocios': typeof NegociosRoute
   '/numeros': typeof NumerosRoute
+  '/pagos': typeof PagosRoute
   '/perfil': typeof PerfilRoute
   '/red': typeof RedRoute
+  '/reglas': typeof ReglasRoute
   '/reporte': typeof ReporteRoute
+  '/franquicias/$franchiseId': typeof FranquiciasFranchiseIdRoute
+  '/oficinas/$officeId': typeof OficinasOfficeIdRoute
+  '/oportunidades/$opportunityId': typeof OportunidadesOpportunityIdRoute
   '/tareas/$taskId': typeof TareasTaskIdRoute
+  '/franquicias': typeof FranquiciasIndexRoute
+  '/oficinas': typeof OficinasIndexRoute
+  '/oportunidades': typeof OportunidadesIndexRoute
   '/tareas': typeof TareasIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/acuerdos': typeof AcuerdosRoute
   '/catalogo': typeof CatalogoRoute
   '/clientes': typeof ClientesRoute
   '/configuracion': typeof ConfiguracionRoute
   '/documentos': typeof DocumentosRoute
   '/embudo': typeof EmbudoRoute
+  '/estructura': typeof EstructuraRoute
+  '/franquiciadora': typeof FranquiciadoraRoute
   '/manual': typeof ManualRoute
   '/negocio': typeof NegocioRoute
   '/negocios': typeof NegociosRoute
   '/numeros': typeof NumerosRoute
+  '/pagos': typeof PagosRoute
   '/perfil': typeof PerfilRoute
   '/red': typeof RedRoute
+  '/reglas': typeof ReglasRoute
   '/reporte': typeof ReporteRoute
+  '/franquicias/$franchiseId': typeof FranquiciasFranchiseIdRoute
+  '/oficinas/$officeId': typeof OficinasOfficeIdRoute
+  '/oportunidades/$opportunityId': typeof OportunidadesOpportunityIdRoute
   '/tareas/$taskId': typeof TareasTaskIdRoute
+  '/franquicias/': typeof FranquiciasIndexRoute
+  '/oficinas/': typeof OficinasIndexRoute
+  '/oportunidades/': typeof OportunidadesIndexRoute
   '/tareas/': typeof TareasIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/acuerdos'
     | '/catalogo'
     | '/clientes'
     | '/configuracion'
     | '/documentos'
     | '/embudo'
+    | '/estructura'
+    | '/franquiciadora'
     | '/manual'
     | '/negocio'
     | '/negocios'
     | '/numeros'
+    | '/pagos'
     | '/perfil'
     | '/red'
+    | '/reglas'
     | '/reporte'
+    | '/franquicias/$franchiseId'
+    | '/oficinas/$officeId'
+    | '/oportunidades/$opportunityId'
     | '/tareas/$taskId'
+    | '/franquicias/'
+    | '/oficinas/'
+    | '/oportunidades/'
     | '/tareas/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/acuerdos'
     | '/catalogo'
     | '/clientes'
     | '/configuracion'
     | '/documentos'
     | '/embudo'
+    | '/estructura'
+    | '/franquiciadora'
     | '/manual'
     | '/negocio'
     | '/negocios'
     | '/numeros'
+    | '/pagos'
     | '/perfil'
     | '/red'
+    | '/reglas'
     | '/reporte'
+    | '/franquicias/$franchiseId'
+    | '/oficinas/$officeId'
+    | '/oportunidades/$opportunityId'
     | '/tareas/$taskId'
+    | '/franquicias'
+    | '/oficinas'
+    | '/oportunidades'
     | '/tareas'
   id:
     | '__root__'
     | '/'
+    | '/acuerdos'
     | '/catalogo'
     | '/clientes'
     | '/configuracion'
     | '/documentos'
     | '/embudo'
+    | '/estructura'
+    | '/franquiciadora'
     | '/manual'
     | '/negocio'
     | '/negocios'
     | '/numeros'
+    | '/pagos'
     | '/perfil'
     | '/red'
+    | '/reglas'
     | '/reporte'
+    | '/franquicias/$franchiseId'
+    | '/oficinas/$officeId'
+    | '/oportunidades/$opportunityId'
     | '/tareas/$taskId'
+    | '/franquicias/'
+    | '/oficinas/'
+    | '/oportunidades/'
     | '/tareas/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AcuerdosRoute: typeof AcuerdosRoute
   CatalogoRoute: typeof CatalogoRoute
   ClientesRoute: typeof ClientesRoute
   ConfiguracionRoute: typeof ConfiguracionRoute
   DocumentosRoute: typeof DocumentosRoute
   EmbudoRoute: typeof EmbudoRoute
+  EstructuraRoute: typeof EstructuraRoute
+  FranquiciadoraRoute: typeof FranquiciadoraRoute
   ManualRoute: typeof ManualRoute
   NegocioRoute: typeof NegocioRoute
   NegociosRoute: typeof NegociosRoute
   NumerosRoute: typeof NumerosRoute
+  PagosRoute: typeof PagosRoute
   PerfilRoute: typeof PerfilRoute
   RedRoute: typeof RedRoute
+  ReglasRoute: typeof ReglasRoute
   ReporteRoute: typeof ReporteRoute
+  FranquiciasFranchiseIdRoute: typeof FranquiciasFranchiseIdRoute
+  OficinasOfficeIdRoute: typeof OficinasOfficeIdRoute
+  OportunidadesOpportunityIdRoute: typeof OportunidadesOpportunityIdRoute
   TareasTaskIdRoute: typeof TareasTaskIdRoute
+  FranquiciasIndexRoute: typeof FranquiciasIndexRoute
+  OficinasIndexRoute: typeof OficinasIndexRoute
+  OportunidadesIndexRoute: typeof OportunidadesIndexRoute
   TareasIndexRoute: typeof TareasIndexRoute
 }
 
@@ -232,6 +376,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/acuerdos': {
+      id: '/acuerdos'
+      path: '/acuerdos'
+      fullPath: '/acuerdos'
+      preLoaderRoute: typeof AcuerdosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/catalogo': {
@@ -269,6 +420,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EmbudoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/estructura': {
+      id: '/estructura'
+      path: '/estructura'
+      fullPath: '/estructura'
+      preLoaderRoute: typeof EstructuraRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/franquiciadora': {
+      id: '/franquiciadora'
+      path: '/franquiciadora'
+      fullPath: '/franquiciadora'
+      preLoaderRoute: typeof FranquiciadoraRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/manual': {
       id: '/manual'
       path: '/manual'
@@ -297,6 +462,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NumerosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pagos': {
+      id: '/pagos'
+      path: '/pagos'
+      fullPath: '/pagos'
+      preLoaderRoute: typeof PagosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/perfil': {
       id: '/perfil'
       path: '/perfil'
@@ -311,11 +483,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RedRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reglas': {
+      id: '/reglas'
+      path: '/reglas'
+      fullPath: '/reglas'
+      preLoaderRoute: typeof ReglasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reporte': {
       id: '/reporte'
       path: '/reporte'
       fullPath: '/reporte'
       preLoaderRoute: typeof ReporteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/franquicias/': {
+      id: '/franquicias/'
+      path: '/franquicias'
+      fullPath: '/franquicias/'
+      preLoaderRoute: typeof FranquiciasIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/franquicias/$franchiseId': {
+      id: '/franquicias/$franchiseId'
+      path: '/franquicias/$franchiseId'
+      fullPath: '/franquicias/$franchiseId'
+      preLoaderRoute: typeof FranquiciasFranchiseIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/oficinas/': {
+      id: '/oficinas/'
+      path: '/oficinas'
+      fullPath: '/oficinas/'
+      preLoaderRoute: typeof OficinasIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/oficinas/$officeId': {
+      id: '/oficinas/$officeId'
+      path: '/oficinas/$officeId'
+      fullPath: '/oficinas/$officeId'
+      preLoaderRoute: typeof OficinasOfficeIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/oportunidades/': {
+      id: '/oportunidades/'
+      path: '/oportunidades'
+      fullPath: '/oportunidades/'
+      preLoaderRoute: typeof OportunidadesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/oportunidades/$opportunityId': {
+      id: '/oportunidades/$opportunityId'
+      path: '/oportunidades/$opportunityId'
+      fullPath: '/oportunidades/$opportunityId'
+      preLoaderRoute: typeof OportunidadesOpportunityIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/tareas/': {
@@ -337,19 +558,30 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AcuerdosRoute: AcuerdosRoute,
   CatalogoRoute: CatalogoRoute,
   ClientesRoute: ClientesRoute,
   ConfiguracionRoute: ConfiguracionRoute,
   DocumentosRoute: DocumentosRoute,
   EmbudoRoute: EmbudoRoute,
+  EstructuraRoute: EstructuraRoute,
+  FranquiciadoraRoute: FranquiciadoraRoute,
   ManualRoute: ManualRoute,
   NegocioRoute: NegocioRoute,
   NegociosRoute: NegociosRoute,
   NumerosRoute: NumerosRoute,
+  PagosRoute: PagosRoute,
   PerfilRoute: PerfilRoute,
   RedRoute: RedRoute,
+  ReglasRoute: ReglasRoute,
   ReporteRoute: ReporteRoute,
+  FranquiciasFranchiseIdRoute: FranquiciasFranchiseIdRoute,
+  OficinasOfficeIdRoute: OficinasOfficeIdRoute,
+  OportunidadesOpportunityIdRoute: OportunidadesOpportunityIdRoute,
   TareasTaskIdRoute: TareasTaskIdRoute,
+  FranquiciasIndexRoute: FranquiciasIndexRoute,
+  OficinasIndexRoute: OficinasIndexRoute,
+  OportunidadesIndexRoute: OportunidadesIndexRoute,
   TareasIndexRoute: TareasIndexRoute,
 }
 export const routeTree = rootRouteImport

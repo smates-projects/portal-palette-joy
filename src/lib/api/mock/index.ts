@@ -5,13 +5,16 @@ import { canTransition, withComputed } from "../computed";
 import { dueNotifications, taskRef } from "../notifications";
 import { computeFranchisability } from "../franchisability";
 import { NOTIFICATION_KINDS, type AppNotification, type NotificationPreference } from "../types";
-import type { Meeting, OwnerRequest, Task, TaskChange, TaskComment, TaskEvent, TaskVersion, User } from "../types";
+import type { Meeting, Organization, OwnerRequest, Task, TaskChange, TaskComment, TaskEvent, TaskVersion, User } from "../types";
 import * as seed from "./seed";
 import * as seedLeads from "./seed-leads";
+import * as seedNetwork from "./seed-network";
+import { createNetworkRepositories, type NetworkDb } from "./network";
 import catalogJson from "@/data/catalogo_metodo180.json";
-import { generateProgramTasks, type CatalogEntry } from "../program";
+import { DEFAULT_PLATFORM_RULES } from "../franchisability";
+import { AREA_BY_KEY, generateProgramTasks, type CatalogEntry } from "../program";
 import { resolveLeadMove } from "@/lib/leads/pipeline";
-import type { AreaCode, Business, BusinessEvent, Lead, LeadEvent, LeadWithComputed } from "../types";
+import type { AreaCode, Business, BusinessEvent, CatalogAdminItem, Lead, LeadEvent, LeadWithComputed } from "../types";
 
 const delay = <T,>(v: T, ms = 120) => new Promise<T>((r) => setTimeout(() => r(structuredClone(v)), ms));
 const newId = () =>
@@ -22,18 +25,44 @@ const newId = () =>
 /** In-memory backend; filters by current user to simulate API authorization. */
 export function createMockApi(): ApiClient {
   const db = {
-    tasks: structuredClone(seed.tasks) as Task[],
-    versions: structuredClone(seed.versions) as TaskVersion[],
+    tasks: structuredClone([...seed.tasks, ...seedNetwork.tasks]) as Task[],
+    versions: structuredClone([...seed.versions, ...seedNetwork.versions]) as TaskVersion[],
     comments: structuredClone(seed.comments) as TaskComment[],
-    events: structuredClone(seed.events) as TaskEvent[],
+    events: structuredClone([...seed.events, ...seedNetwork.events]) as TaskEvent[],
     ownerRequests: structuredClone(seed.ownerRequests) as OwnerRequest[],
     meetings: structuredClone(seed.meetings) as Meeting[],
-    users: structuredClone(seed.users) as User[],
-    orgs: seed.organizations,
-    businesses: structuredClone(seed.businesses) as Business[],
-    leads: structuredClone(seedLeads.leads) as Lead[],
-    leadEvents: structuredClone(seedLeads.leadEvents) as LeadEvent[],
+    users: structuredClone([...seed.users, ...seedNetwork.users]) as User[],
+    orgs: structuredClone([...seed.organizations, ...seedNetwork.organizations]) as Organization[],
+    businesses: structuredClone([...seed.businesses, ...seedNetwork.businesses]) as Business[],
+    leads: structuredClone([...seedLeads.leads, ...seedNetwork.leads]) as Lead[],
+    leadEvents: structuredClone([...seedLeads.leadEvents, ...seedNetwork.leadEvents]) as LeadEvent[],
     businessEvents: [] as BusinessEvent[],
+    // Network data (SM Global, franchises, manual, owner screens, Bishop). Read and written by ./network.
+    rules: structuredClone(DEFAULT_PLATFORM_RULES),
+    rulesHistory: [] as NetworkDb["rulesHistory"],
+    catalog: (catalogJson as (CatalogEntry & { owner: string; support: string })[]).map(
+      (e): CatalogAdminItem => ({
+        code: e.code, area: e.area, area_code: AREA_BY_KEY[e.area] ?? "B1", name: e.name, owner: e.owner, support: e.support, applies: e.applies,
+        priority: e.priority, acceptance: e.acceptance, start_day: e.start_day ?? null, due_day: e.due_day ?? null, archived: false, updated_at: "2026-01-15T12:00:00Z",
+      }),
+    ),
+    catalogHistory: [] as NetworkDb["catalogHistory"],
+    franchises: structuredClone(seedNetwork.franchises),
+    franchiseReports: structuredClone(seedNetwork.franchiseReports),
+    checklist: structuredClone(seedNetwork.checklist),
+    tickets: structuredClone(seedNetwork.tickets),
+    franchiseTasks: structuredClone(seedNetwork.franchiseTasks),
+    manualSections: structuredClone(seedNetwork.manualSections),
+    manualVersions: structuredClone(seedNetwork.manualVersions),
+    documents: structuredClone(seedNetwork.documents),
+    contracts: structuredClone(seedNetwork.contracts),
+    financials: structuredClone(seedNetwork.financials),
+    profiles: structuredClone(seedNetwork.profiles),
+    teamMembers: structuredClone(seedNetwork.teamMembers),
+    investments: structuredClone([seedNetwork.bishopInvestment]),
+    recovery: { [seedNetwork.bishopInvestment.id]: structuredClone(seedNetwork.recovery) },
+    opportunities: structuredClone(seedNetwork.opportunities),
+    agreements: structuredClone(seedNetwork.agreements),
   };
   // Approval date comes from the latest "approved" event.
   for (const t of db.tasks) {
@@ -56,6 +85,9 @@ export function createMockApi(): ApiClient {
 
   const visibleTasks = (): Task[] => {
     const u = me();
+    // SM Global reads the whole network; a Bishop and a franchisee have no program tasks.
+    if (u.role === "sm_global") return db.tasks;
+    if (u.role === "bishop" || u.role === "franchisee") return [];
     // SM team: every program of its own office, never other offices.
     if (u.role === "sm_team") {
       const mine = new Set(db.businesses.filter((b) => b.office_id === u.organization_id).map((b) => b.id));
@@ -121,9 +153,9 @@ export function createMockApi(): ApiClient {
     l.stage_entered_at = nowIso();
     l.last_contact_at = nowIso();
   };
-  /** Assignee firm per area: the office's firm for that area; B1 Estrategia is the office's own team (the consultant). */
+  /** Assignee firm per area: the office's own firm for that area; with none (SM Miami B1), the office's own team (the consultant). */
   const firmFor = (officeId: string, consultantId: string) => (area: AreaCode) => {
-    const firm = db.orgs.find((o) => o.kind === "partner_firm" && o.area === area);
+    const firm = db.orgs.find((o) => o.kind === "partner_firm" && o.area === area && o.parent_id === officeId);
     const person = firm && db.users.find((u) => u.organization_id === firm.id);
     return firm && person ? { organization_id: firm.id, assignee_user_id: person.id } : { organization_id: officeId, assignee_user_id: consultantId };
   };
@@ -180,6 +212,11 @@ export function createMockApi(): ApiClient {
           }),
           { user: db.users.find((u) => u.id === seed.U_CARLA)!, organization: null, business: db.businesses.find((b) => b.id === seed.BIZ_VOSSLER) ?? null, enabled: true },
           { user: db.users.find((u) => u.id === seed.U_NICOLAS)!, organization: db.orgs.find((o) => o.id === seed.ORG_SM) ?? null, business: null, enabled: true },
+          // New roles: SM Global, the franchisor (a business owner whose business is a franchisor), Business Bishop and a franchisee.
+          { user: db.users.find((u) => u.id === seed.U_MARYLIN)!, organization: db.orgs.find((o) => o.id === seed.ORG_GLOBAL) ?? null, business: null, enabled: true },
+          { user: db.users.find((u) => u.id === seed.U_RODRIGO_BIMBO)!, organization: null, business: db.businesses.find((b) => b.id === seed.BIZ_BIMBO) ?? null, enabled: true },
+          { user: db.users.find((u) => u.id === seedNetwork.U_JEFFERSON)!, organization: null, business: null, enabled: true },
+          { user: db.users.find((u) => u.id === seedNetwork.U_LUISA)!, organization: db.orgs.find((o) => o.id === seedNetwork.FRANCHISE_ORLANDO_SUR) ?? null, business: null, enabled: true },
         ]),
       setViewAs: async (userId) => {
         const target = db.users.find((u) => u.id === userId);
@@ -189,9 +226,14 @@ export function createMockApi(): ApiClient {
       },
     },
     organizations: {
-      list: () => {
+      list: async () => {
         const u = me();
-        if (u.role === "sm_team") return delay(db.orgs);
+        if (u.role === "sm_global") return delay(db.orgs);
+        // An office sees itself and its own firms, never other offices.
+        if (u.role === "sm_team") return delay(db.orgs.filter((o) => o.id === u.organization_id || o.parent_id === u.organization_id));
+        // A franchisee sees its own unit; a Bishop sees no organization.
+        if (u.role === "franchisee") return delay(db.orgs.filter((o) => o.id === u.organization_id));
+        if (u.role === "bishop") return delay([]);
         // Owners see the firms working on their program; firms see only their own.
         if (u.role === "business_owner") {
           const ids = new Set(visibleTasks().map((t) => t.organization_id));
@@ -202,15 +244,23 @@ export function createMockApi(): ApiClient {
       get: (id) => delay(db.orgs.find((o) => o.id === id) ?? null),
     },
     businesses: {
-      list: () => {
+      list: async () => {
+        const u = me();
+        if (u.role === "sm_global") return delay(db.businesses);
+        // Offices own their businesses, including franchisors whose program already ended (no tasks left to derive them from).
+        if (u.role === "sm_team") return delay(db.businesses.filter((b) => b.office_id === u.organization_id));
+        if (u.role === "business_owner") return delay(db.businesses.filter((b) => b.id === u.business_id));
         const ids = new Set(visibleTasks().map((t) => t.business_id));
         return delay(db.businesses.filter((b) => ids.has(b.id)));
       },
       getFranchisability: async (businessId) => {
         const u = me();
         const b = db.businesses.find((x) => x.id === businessId);
-        if (!b || (u.role === "business_owner" && u.business_id !== b.id)) throw new Error("not_found");
-        return delay(computeFranchisability(b, db.tasks));
+        if (!b || u.role === "bishop" || u.role === "franchisee") throw new Error("not_found");
+        if (u.role === "business_owner" && u.business_id !== b.id) throw new Error("not_found");
+        if (u.role === "sm_team" && b.office_id !== u.organization_id) throw new Error("not_found");
+        // Goal and required tasks come from the platform rules (SM Global edits them).
+        return delay(computeFranchisability(b, db.tasks, { goal: db.rules.franchisability_goal, required_task_codes: db.rules.required_task_codes }));
       },
       listEvents: async (businessId) => {
         const u = me();
@@ -232,7 +282,20 @@ export function createMockApi(): ApiClient {
       },
     },
     users: {
-      list: () => delay(db.users),
+      // Nobody sees people of another office; a Bishop or franchisee only sees themselves.
+      list: async () => {
+        const u = me();
+        if (u.role === "bishop" || u.role === "franchisee") return delay([u]);
+        const officeOfUser = (x: User): string | null => {
+          if (x.role === "sm_team") return x.organization_id;
+          if (x.role === "partner_firm") return db.orgs.find((o) => o.id === x.organization_id)?.parent_id ?? null;
+          if (x.role === "business_owner") return db.businesses.find((b) => b.id === x.business_id)?.office_id ?? null;
+          return null;
+        };
+        if (u.role === "sm_global") return delay(db.users);
+        const mine = officeOfUser(u);
+        return delay(db.users.filter((x) => x.role === "sm_global" || (x.role !== "bishop" && x.role !== "franchisee" && officeOfUser(x) === mine)));
+      },
       setGoogleCalendar: async (email) => {
         const u = me();
         u.google_calendar_email = email;
@@ -251,6 +314,7 @@ export function createMockApi(): ApiClient {
         return delay(u.google_calendar_email ? seed.calendarEvents.filter((e) => e.user_id === u.id) : []);
       },
     },
+    ...createNetworkRepositories({ db, me, newId, delay }),
     leads: {
       list: async () => delay(visibleLeads().map(withBooking)),
       get: async (id) => {
@@ -294,9 +358,10 @@ export function createMockApi(): ApiClient {
         db.users.push({ id: ownerId, full_name: l.contact.name, email: l.contact.email, role: "business_owner", organization_id: null, business_id: null, title: null, google_calendar_email: null, booking_url: null });
         const businessId = newId();
         const programDay = Math.round((Date.parse(`${TODAY}T12:00:00Z`) - Date.parse(`${signed_on}T12:00:00Z`)) / 86_400_000) + 1;
-        db.businesses.push({ id: businessId, name: l.business.name, industry: l.business.activity, city: l.contact.city, state: l.contact.state, owner_user_id: ownerId, program_start_date: signed_on, program_day: programDay, office_id: l.office_id, consultant_id: l.consultant_user_id });
+        db.businesses.push({ id: businessId, name: l.business.name, industry: l.business.activity, city: l.contact.city, state: l.contact.state, owner_user_id: ownerId, status: "in_program", program_start_date: signed_on, program_day: programDay, office_id: l.office_id, consultant_id: l.consultant_user_id });
         db.users.find((u) => u.id === ownerId)!.business_id = businessId;
-        const created = generateProgramTasks(catalogJson as CatalogEntry[], {
+        // The live catalog (SM Global edits it): changes reach new programs only, never tasks already generated.
+        const created = generateProgramTasks(db.catalog.filter((c) => !c.archived), {
           business_id: businessId, industry: l.business.industry, start_date: signed_on, supervisor_user_id: l.consultant_user_id,
           firmFor: firmFor(l.office_id, l.consultant_user_id), newId, now: nowIso(),
         });

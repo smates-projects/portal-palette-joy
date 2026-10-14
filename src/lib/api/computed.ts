@@ -35,6 +35,10 @@ const TRANSITIONS: Record<UserRole, Partial<Record<TaskStatus, TaskStatus[]>>> =
     changes_requested: ["submitted"],
     submitted: ["accepted", "changes_requested"],
   },
+  // These roles never work on program tasks.
+  sm_global: {},
+  bishop: {},
+  franchisee: {},
 };
 
 export function canTransition(role: UserRole, from: TaskStatus, to: TaskStatus): boolean {

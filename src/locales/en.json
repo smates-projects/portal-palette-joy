@@ -21,7 +21,20 @@
     "businesses": "Businesses",
     "catalog": "Catalog and team",
     "settings": "Settings",
-    "pipeline": "Pipeline"
+    "pipeline": "Pipeline",
+    "structure": "Structure",
+    "offices": "Offices",
+    "global_pipeline": "Pipeline",
+    "global_catalog": "Catalog",
+    "rules": "Rules",
+    "franchisor": "My franchisor",
+    "franchises": "My franchises",
+    "portfolio": "My portfolio",
+    "opportunities": "Opportunities",
+    "agreements": "Agreements",
+    "franchisee_manual": "Manual",
+    "payments": "Payments and reports",
+    "franchisee_business": "My business"
   },
   "topbar": {
     "search_placeholder": "Search tasks or clients",
@@ -34,12 +47,21 @@
     "role_sm": "SM team",
     "switched": "You are now viewing the platform as {{name}}",
     "switch_error": "We couldn't switch users. Please try again.",
-    "account": "My account"
+    "account": "My account",
+    "role_global": "SM Global",
+    "role_bishop": "Business Bishop",
+    "role_franchisee": "Franchisee",
+    "role_small_business": "Small Business",
+    "franchisor": "franchisor"
   },
   "roles": {
     "partner_firm": "Partner firm",
     "business_owner": "Business owner",
-    "sm_team": "SM team"
+    "sm_team": "SM team",
+    "sm_global": "SM Global",
+    "bishop": "Business Bishop",
+    "franchisee": "Franchisee",
+    "franchisor": "Franchisor"
   },
   "areas": {
     "B1": "Strategy",
@@ -119,6 +141,58 @@
     "pipeline": {
       "title": "Pipeline",
       "subtitle": ""
+    },
+    "structure": {
+      "title": "Structure",
+      "subtitle": "How is the SM network organized?"
+    },
+    "offices": {
+      "title": "Offices",
+      "subtitle": "How is each office doing?"
+    },
+    "global_pipeline": {
+      "title": "Pipeline",
+      "subtitle": "How many businesses enter the network and at which stage?"
+    },
+    "global_catalog": {
+      "title": "Catalog",
+      "subtitle": "Which tasks does Método 180 have?"
+    },
+    "rules": {
+      "title": "Rules",
+      "subtitle": "Which rules does the whole network use?"
+    },
+    "franchisor": {
+      "title": "My franchisor",
+      "subtitle": "Which manual do my franchises get?"
+    },
+    "franchises": {
+      "title": "My franchises",
+      "subtitle": "How is each of my franchises doing?"
+    },
+    "portfolio": {
+      "title": "My portfolio",
+      "subtitle": "How is my investment doing?"
+    },
+    "opportunities": {
+      "title": "Opportunities",
+      "subtitle": "Which business can I invest in?"
+    },
+    "agreements": {
+      "title": "Agreements",
+      "subtitle": "Which agreements do I have?"
+    },
+    "franchisee_manual": {
+      "title": "Manual",
+      "subtitle": "How is each thing done in my location?"
+    },
+    "payments": {
+      "title": "Payments and reports",
+      "subtitle": "What did I report and what do I owe?"
+    },
+    "franchisee_business": {
+      "title": "My business",
+      "subtitle": "What does the franchisor know about my location?"
     }
   },
   "meta": {
@@ -1024,5 +1098,109 @@
       }
     },
     "firm_internal": "{{name}} (strategy, own team)"
+  },
+  "global": {
+    "for_role": "SM Global",
+    "home": {
+      "question": "How is the whole network doing?",
+      "soon": "Here you will see the offices, programs, franchises and where the network is getting stuck."
+    },
+    "structure": {
+      "question": "How is the network organized?",
+      "soon": "Here you will see the full tree: SM Global, offices, businesses, franchises and the firms of each office."
+    },
+    "offices": {
+      "question": "How is each office doing?",
+      "soon": "Here you will see each office with its manager, businesses, firms and health."
+    },
+    "office_detail": {
+      "question": "How is this office doing?",
+      "soon": "Here you will see the businesses, firms and team of the office."
+    },
+    "funnel": {
+      "question": "How many businesses enter the network?",
+      "soon": "Here you will see the leads of every office by stage."
+    },
+    "catalog": {
+      "question": "Which tasks does Método 180 have?",
+      "soon": "Here you will add, edit and archive catalog tasks, with their history. Changes apply to new programs."
+    },
+    "rules": {
+      "question": "Which rules does the whole network use?",
+      "soon": "Here you will change the franchisability goal, the required tasks and the alert windows, with their history."
+    }
+  },
+  "owner_extra": {
+    "for_role": "Business owner",
+    "franchisor_home": {
+      "question": "How is my franchise network doing?",
+      "soon": "Here you will see your franchises, the month sales, royalties and what needs your attention."
+    },
+    "franchisor": {
+      "question": "Which manual do my franchises get?",
+      "soon": "Here you will publish new versions of your manual. Every franchise gets the change and a task to read it."
+    },
+    "franchises": {
+      "question": "How is each of my franchises doing?",
+      "soon": "Here you will see each franchise with its sales, standards compliance and support requests."
+    },
+    "franchise_detail": {
+      "question": "How is this franchise doing?",
+      "soon": "Here you will see the reports, standards, support requests and team of this franchise."
+    },
+    "manual": {
+      "question": "How is my business run?",
+      "soon": "Here you will see the operating manual of your business, section by section, with progress and status."
+    },
+    "documents": {
+      "question": "Where are my business documents?",
+      "soon": "Here you will see the documents we asked for, the ones we received and your contracts with their signing status."
+    },
+    "numbers": {
+      "question": "How are my business numbers doing?",
+      "soon": "Here you will see your sales, margin and cash month by month, and how they changed since the program started."
+    },
+    "business": {
+      "question": "What does SM know about my business?",
+      "soon": "Here you will see and update your business data and your team."
+    }
+  },
+  "bishop": {
+    "for_role": "Business Bishop",
+    "portfolio": {
+      "question": "How is my investment doing?",
+      "soon": "Here you will see how much you invested, how much you already recovered, your current share and when you will recover it all."
+    },
+    "opportunities": {
+      "question": "Which business can I invest in?",
+      "soon": "Here you will see the businesses SM presents to you, with their progress and five-year projection."
+    },
+    "opportunity_detail": {
+      "question": "Is this business right for me?",
+      "soon": "Here you will see the business sheet, its projection and the buttons to show interest or pass."
+    },
+    "agreements": {
+      "question": "Which agreements do I have?",
+      "soon": "Here you will see your equity agreements and NDAs, with their signing status."
+    }
+  },
+  "franchisee": {
+    "for_role": "Franchisee",
+    "home": {
+      "question": "What do I need to do this week?",
+      "soon": "Here you will see your tasks, the next sales report, whether there is a new manual version and your open requests."
+    },
+    "manual": {
+      "question": "How is each thing done in my location?",
+      "soon": "Here you will read your franchisor manual, always in its current version."
+    },
+    "payments": {
+      "question": "What did I report and what do I owe?",
+      "soon": "Here you will send your sales report each month and see the royalty and marketing fund you owe."
+    },
+    "business": {
+      "question": "What does the franchisor know about my location?",
+      "soon": "Here you will see your location data, your standards, your support requests and your team."
+    }
   }
 }

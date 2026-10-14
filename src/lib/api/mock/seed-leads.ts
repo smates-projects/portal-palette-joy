@@ -1,16 +1,16 @@
 // Sample leads for SM Miami (replaceable). They mimic what the external readiness assessment sends.
 import type { AssessmentBlock, BlockStatus, Lead, LeadEvent, LeadStage } from "../types";
 import { ASSESSMENT_BLOCKS } from "../types";
-import { BIZ_ENYERMY, BIZ_PRIME, BIZ_VOSSLER, ORG_SM, U_MARYLIN, U_NICOLAS } from "./seed";
+import { BIZ_ENYERMY, BIZ_PRIME, BIZ_VOSSLER, ORG_SM, U_CAMILA, U_NICOLAS } from "./seed";
 
-const uuid = (prefix: string, n: number) => `${prefix}-0000-4000-8000-${String(n).padStart(12, "0")}`;
-const at = (date: string, time = "15:00:00") => `${date}T${time}Z`;
-const blocks = (s: string): Lead["result"]["blocks"] => {
+export const uuid = (prefix: string, n: number) => `${prefix}-0000-4000-8000-${String(n).padStart(12, "0")}`;
+export const at = (date: string, time = "15:00:00") => `${date}T${time}Z`;
+export const blocks = (s: string): Lead["result"]["blocks"] => {
   const map: Record<string, BlockStatus> = { s: "strong", m: "medium", w: "weak", u: "unknown" };
   return ASSESSMENT_BLOCKS.map((key: AssessmentBlock, i) => ({ key, status: map[s[i]!]! }));
 };
 
-interface Spec {
+export interface LeadSpec {
   lead: Omit<Lead, "id" | "office_id" | "stage" | "stage_entered_at" | "submitted_at" | "discarded_from" | "discard_reason" | "last_contact_at"> & { discard_reason?: string };
   /** First entry: submission date. Then each stage reached, with its date. */
   path: [LeadStage | "submitted", string][];
@@ -18,7 +18,7 @@ interface Spec {
   notes?: [string, string][];
 }
 
-const specs: Spec[] = [
+const specs: LeadSpec[] = [
   {
     path: [["submitted", "2026-07-08"], ["meeting", "2026-07-10"], ["accepted", "2026-07-17"], ["contract", "2026-07-24"], ["in_program", "2026-08-02"]],
     lead: {
@@ -33,7 +33,7 @@ const specs: Spec[] = [
   {
     path: [["submitted", "2026-08-20"], ["meeting", "2026-08-24"], ["accepted", "2026-08-31"], ["contract", "2026-09-04"], ["in_program", "2026-09-14"]],
     lead: {
-      consultant_user_id: U_MARYLIN, business_id: BIZ_PRIME,
+      consultant_user_id: U_CAMILA, business_id: BIZ_PRIME,
       contact: { name: "Daniel Ortiz", email: "daniel@prime10solutions.com", phone: "+1 813 555 0133", city: "Tampa", state: "FL", hispanic_owner: true },
       business: { name: "Prime 10 Solutions", industry: "remodeling", activity: "Remodelaciones de cocinas y baños", revenue_range: "500k_1m", margin_range: "20_30", team_range: "6_15", years_range: "5_10", has_active_clients: true },
       result: { band: "mid", score: 74, eligible_program: true, eligibility_gaps: [], blocks: blocks("smmwmwm"),
@@ -57,7 +57,7 @@ const specs: Spec[] = [
     contacted: true,
     notes: [["2026-10-08", "Le mandé el contrato. Quiere revisarlo con su contador antes de firmar."]],
     lead: {
-      consultant_user_id: U_MARYLIN, business_id: null,
+      consultant_user_id: U_CAMILA, business_id: null,
       contact: { name: "Gabriela Fuentes", email: "gaby@brisaclean.com", phone: "+1 786 555 0144", city: "Kendall", state: "FL", hispanic_owner: true },
       business: { name: "Brisa Clean Services", industry: "cleaning", activity: "Limpieza de oficinas y casas", revenue_range: "500k_1m", margin_range: "10_20", team_range: "16_50", years_range: "5_10", has_active_clients: true },
       result: { band: "mid", score: 71, eligible_program: true, eligibility_gaps: [], blocks: blocks("msmmmwm"),
@@ -94,7 +94,7 @@ const specs: Spec[] = [
     path: [["submitted", "2026-10-05"], ["meeting", "2026-10-07"]],
     contacted: true,
     lead: {
-      consultant_user_id: U_MARYLIN, business_id: null,
+      consultant_user_id: U_CAMILA, business_id: null,
       contact: { name: "Yesenia Morales", email: "yesenia@glownails.com", phone: "+1 407 555 0176", city: "Kissimmee", state: "FL", hispanic_owner: true },
       business: { name: "Glow Nails & Spa", industry: "salon", activity: "Uñas y spa", revenue_range: "250k_500k", margin_range: "20_30", team_range: "6_15", years_range: "2_5", has_active_clients: true },
       result: { band: "mid", score: 62, eligible_program: true, eligibility_gaps: [], blocks: blocks("mmwmsww"),
@@ -116,7 +116,7 @@ const specs: Spec[] = [
   {
     path: [["submitted", "2026-10-13"]],
     lead: {
-      consultant_user_id: U_MARYLIN, business_id: null,
+      consultant_user_id: U_CAMILA, business_id: null,
       contact: { name: "Patricia Gómez", email: "patricia@limpiezatotal.com", phone: "+1 407 555 0158", city: "Orlando", state: "FL", hispanic_owner: true },
       business: { name: "Limpieza Total Orlando", industry: "cleaning", activity: "Limpieza de casas y Airbnb", revenue_range: "250k_500k", margin_range: "10_20", team_range: "6_15", years_range: "2_5", has_active_clients: true },
       result: { band: "mid", score: 63, eligible_program: true, eligibility_gaps: [], blocks: blocks("mmuuumu"),
@@ -127,7 +127,7 @@ const specs: Spec[] = [
   {
     path: [["submitted", "2026-10-12"]],
     lead: {
-      consultant_user_id: U_MARYLIN, business_id: null,
+      consultant_user_id: U_CAMILA, business_id: null,
       contact: { name: "Lucy Peña", email: "lucy@fondamamalucy.com", phone: "+1 305 555 0119", city: "Doral", state: "FL", hispanic_owner: true },
       business: { name: "La Fonda de Mamá Lucy", industry: "restaurant", activity: "Fonda de comida venezolana", revenue_range: "250k_500k", margin_range: "10_20", team_range: "6_15", years_range: "lt_2", has_active_clients: true },
       result: { band: "track", score: 58, eligible_program: false, eligibility_gaps: ["years"], blocks: blocks("mmwwmwm"),
@@ -160,39 +160,53 @@ const specs: Spec[] = [
   },
 ];
 
-export const leads: Lead[] = [];
-export const leadEvents: LeadEvent[] = [];
-let ev = 0;
+export interface LeadSeedOptions {
+  office_id: string;
+  lead_prefix: string;
+  event_prefix: string;
+}
 
-specs.forEach((s, i) => {
-  const id = uuid("0e000000", i + 1);
-  const [, submitted] = s.path[0]!;
-  const last = s.path.at(-1)!;
-  const stage: LeadStage = last[0] === "submitted" ? "evaluated" : last[0];
-  const { discard_reason, ...rest } = s.lead;
-  leadEvents.push({ id: uuid("0f000000", ++ev), lead_id: id, kind: "submitted", actor_user_id: null, created_at: at(submitted, "13:00:00"), from: null, to: "evaluated", body: null });
-  let prev: LeadStage = "evaluated";
-  for (const [to, date] of s.path.slice(1)) {
-    const st = to as LeadStage;
-    leadEvents.push({
-      id: uuid("0f000000", ++ev), lead_id: id, actor_user_id: s.lead.consultant_user_id, created_at: at(date), from: prev, to: st,
-      kind: st === "discarded" ? "discarded" : st === "in_program" ? "contract_signed" : "stage_changed",
-      body: st === "discarded" ? discard_reason ?? null : null, signed_on: st === "in_program" ? date : null,
+/** Turns specs into leads and their history. The same builder serves every office. */
+export function buildLeads(leadSpecs: LeadSpec[], opts: LeadSeedOptions): { leads: Lead[]; leadEvents: LeadEvent[] } {
+  const leads: Lead[] = [];
+  const leadEvents: LeadEvent[] = [];
+  let ev = 0;
+
+  leadSpecs.forEach((s, i) => {
+    const id = uuid(opts.lead_prefix, i + 1);
+    const [, submitted] = s.path[0]!;
+    const last = s.path.at(-1)!;
+    const stage: LeadStage = last[0] === "submitted" ? "evaluated" : last[0];
+    const { discard_reason, ...rest } = s.lead;
+    leadEvents.push({ id: uuid(opts.event_prefix, ++ev), lead_id: id, kind: "submitted", actor_user_id: null, created_at: at(submitted, "13:00:00"), from: null, to: "evaluated", body: null });
+    let prev: LeadStage = "evaluated";
+    for (const [to, date] of s.path.slice(1)) {
+      const st = to as LeadStage;
+      leadEvents.push({
+        id: uuid(opts.event_prefix, ++ev), lead_id: id, actor_user_id: s.lead.consultant_user_id, created_at: at(date), from: prev, to: st,
+        kind: st === "discarded" ? "discarded" : st === "in_program" ? "contract_signed" : "stage_changed",
+        body: st === "discarded" ? discard_reason ?? null : null, signed_on: st === "in_program" ? date : null,
+      });
+      prev = st;
+    }
+    for (const [date, body] of s.notes ?? [])
+      leadEvents.push({ id: uuid(opts.event_prefix, ++ev), lead_id: id, kind: "note", actor_user_id: s.lead.consultant_user_id, created_at: at(date, "17:00:00"), from: null, to: null, body });
+    const before = s.path.at(-2);
+    leads.push({
+      ...rest,
+      id,
+      office_id: opts.office_id,
+      stage,
+      discarded_from: stage === "discarded" && before && before[0] !== "submitted" ? (before[0] as Lead["discarded_from"]) : stage === "discarded" ? "evaluated" : null,
+      discard_reason: discard_reason ?? null,
+      submitted_at: at(submitted, "13:00:00"),
+      stage_entered_at: at(last[1], last[0] === "submitted" ? "13:00:00" : "15:00:00"),
+      last_contact_at: s.path.length > 1 || s.contacted ? at(last[1]) : null,
     });
-    prev = st;
-  }
-  for (const [date, body] of s.notes ?? [])
-    leadEvents.push({ id: uuid("0f000000", ++ev), lead_id: id, kind: "note", actor_user_id: s.lead.consultant_user_id, created_at: at(date, "17:00:00"), from: null, to: null, body });
-  const before = s.path.at(-2);
-  leads.push({
-    ...rest,
-    id,
-    office_id: ORG_SM,
-    stage,
-    discarded_from: stage === "discarded" && before && before[0] !== "submitted" ? (before[0] as Lead["discarded_from"]) : stage === "discarded" ? "evaluated" : null,
-    discard_reason: discard_reason ?? null,
-    submitted_at: at(submitted, "13:00:00"),
-    stage_entered_at: at(last[1], last[0] === "submitted" ? "13:00:00" : "15:00:00"),
-    last_contact_at: s.path.length > 1 || s.contacted ? at(last[1]) : null,
   });
-});
+  return { leads, leadEvents };
+}
+
+const miami = buildLeads(specs, { office_id: ORG_SM, lead_prefix: "0e000000", event_prefix: "0f000000" });
+export const leads: Lead[] = miami.leads;
+export const leadEvents: LeadEvent[] = miami.leadEvents;

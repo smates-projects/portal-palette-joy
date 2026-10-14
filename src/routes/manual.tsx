@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ComingSoonPage } from "@/components/soon/ComingSoonPage";
+import { FranchiseeManualPage } from "@/components/franchisee/manual/FranchiseeManualPage";
+import { OwnerManualPage } from "@/components/owner/manual/OwnerManualPage";
+import { useCurrentUser } from "@/lib/api/hooks";
 import { tStatic } from "@/lib/i18n";
 
 export const Route = createFileRoute("/manual")({
@@ -13,5 +15,11 @@ export const Route = createFileRoute("/manual")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: () => <ComingSoonPage pageKey="manual" />,
+  component: ManualRoute,
 });
+
+/** Owners (in program or franchisor) see their own manual; a franchisee reads its franchisor manual. */
+function ManualRoute() {
+  const role = useCurrentUser().data?.role;
+  return role === "franchisee" ? <FranchiseeManualPage /> : <OwnerManualPage />;
+}

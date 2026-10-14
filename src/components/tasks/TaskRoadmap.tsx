@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { TODAY } from "@/config/app";
 import type { AreaCode, Business, TaskWithComputed, VisibleTaskStatus } from "@/lib/api/types";
-import { formatDate } from "@/lib/format";
+import { formatDate, localeTag } from "@/lib/format";
 import {
   MILESTONE_DAYS,
   PX_PER_DAY,
@@ -43,7 +43,7 @@ export function TaskRoadmap(props: {
 }) {
   const { t, i18n } = useTranslation();
   const lng = i18n.language;
-  const locale = lng === "en" ? "en-US" : "es-AR";
+  const locale = localeTag(lng);
   const [zoom, setZoom] = useState<Zoom>("month");
   const scroller = useRef<HTMLDivElement>(null);
 

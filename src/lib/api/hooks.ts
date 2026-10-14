@@ -1,7 +1,14 @@
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./index";
-import { listCatalog } from "./catalog";
 import type { SubmitVersionInput } from "./repositories";
+import type {
+  BusinessProfilePatch,
+  CatalogItemInput,
+  InviteMemberInput,
+  PlatformRules,
+  PublishManualInput,
+  SubmitReportInput,
+} from "./types";
 
 export const queryKeys = {
   me: ["session", "me"] as const,
@@ -34,9 +41,16 @@ export const useFranchisabilityMany = (businessIds: string[]) =>
     queries: businessIds.map((id) => ({ queryKey: ["tasks", "franchisability", id], queryFn: () => api.businesses.getFranchisability(id) })),
     combine: (rs) => ({ data: rs.flatMap((r) => (r.data ? [r.data] : [])), isLoading: rs.some((r) => r.isLoading) }),
   });
-export const useCatalog = () => useQuery({ queryKey: ["catalog"], queryFn: listCatalog, staleTime: Infinity });
+/** Active catalog entries. SM Global admin screens use useCatalogAdmin (archived included). */
+export const useCatalog = () => useQuery({ queryKey: ["catalog", "active"], queryFn: () => api.catalog.list() });
 export const useOpenOwnerRequests = () => useQuery({ queryKey: ["tasks", "owner-requests"], queryFn: api.tasks.listOpenOwnerRequests });
 export const useBusinesses = () => useQuery({ queryKey: queryKeys.businesses, queryFn: api.businesses.list });
+/** True when the current user owns a business that already finished the program and franchises. Decides the owner menu and home. */
+export function useIsFranchisor(): boolean {
+  const me = useCurrentUser().data;
+  const businesses = useBusinesses().data;
+  return me?.role === "business_owner" && businesses?.find((b) => b.id === me.business_id)?.status === "franchisor";
+}
 export const useUsers = () => useQuery({ queryKey: queryKeys.users, queryFn: api.users.list });
 export const useTaskDetail = (id: string) =>
   useQuery({ queryKey: queryKeys.task(id), queryFn: () => api.tasks.get(id) });
@@ -142,3 +156,127 @@ export function useSetBusinessConsultant() {
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.businesses }),
   });
 }
+
+// =====================================================================================================
+// Network, franchises, manual, owner data, Business Bishop, franchisee, rules and catalog admin.
+// Each section is used by one feature folder (components/global, owner, bishop, franchisee).
+// =====================================================================================================
+
+/** Mutations of the network data refresh everything under the given key roots. */
+function useNetworkMutation<V, R>(fn: (v: V) => Promise<R>, roots: string[]) {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: fn, onSuccess: () => Promise.all(roots.map((r) => qc.invalidateQueries({ queryKey: [r] }))) });
+}
+
+// ---------- SM Global: network ----------
+/** NetworkSummary: counts of offices, programs, franchisors, franchises and last-month sales and royalties. */
+export const useNetworkSummary = () => useQuery({ queryKey: ["network", "summary"], queryFn: api.network.getSummary });
+/** OfficeSummary[]: { office, manager, stats }. SM Global gets every office, an SM team user only its own. */
+export const useOffices = () => useQuery({ queryKey: ["network", "offices"], queryFn: api.network.listOffices });
+/** OfficeDetail | null: summary plus businesses (with health), firms and team. */
+export const useOffice = (id: string | undefined) =>
+  useQuery({ queryKey: ["network", "offices", id], queryFn: () => api.network.getOffice(id!), enabled: !!id });
+/** StructureTree: { root, counts } with global > offices > businesses > franchises and firms under each office. */
+export const useStructure = () => useQuery({ queryKey: ["network", "structure"], queryFn: api.network.getStructure });
+/** AreaBottleneck[]: one row per area B1..B6, most overdue first, with the breakdown by office. */
+export const useBottlenecks = () => useQuery({ queryKey: ["network", "bottlenecks"], queryFn: api.network.listBottlenecks });
+/** NetworkFunnel: leads per stage, overall and by office. */
+export const useNetworkFunnel = () => useQuery({ queryKey: ["network", "funnel"], queryFn: api.network.getFunnel });
+
+// ---------- SM Global: rules and catalog admin ----------
+/** PlatformRules: franchisability goal, required task codes, area amber days, amber tolerance. Readable by everyone. */
+export const useRules = () => useQuery({ queryKey: ["rules"], queryFn: api.rules.get });
+/** RulesChange[]: history of rule changes, newest first (SM Global). */
+export const useRulesHistory = () => useQuery({ queryKey: ["rules", "history"], queryFn: api.rules.listHistory });
+export const useUpdateRules = () =>
+  useNetworkMutation((v: { patch: Partial<PlatformRules>; note?: string | null }) => api.rules.update(v.patch, v.note ?? null), ["rules", "tasks", "businesses", "network"]);
+/** CatalogAdminItem[] with archived entries (SM Global). */
+export const useCatalogAdmin = () => useQuery({ queryKey: ["catalog", "admin"], queryFn: () => api.catalog.list({ include_archived: true }) });
+/** CatalogChange[]: history of catalog edits, newest first; one code or all (SM Global). */
+export const useCatalogHistory = (code?: string) => useQuery({ queryKey: ["catalog", "history", code ?? "all"], queryFn: () => api.catalog.listHistory(code) });
+export const useAddCatalogItem = () => useNetworkMutation((input: CatalogItemInput) => api.catalog.add(input), ["catalog"]);
+export const useUpdateCatalogItem = () =>
+  useNetworkMutation((v: { code: string; patch: Partial<CatalogItemInput>; note?: string | null }) => api.catalog.update(v.code, v.patch, v.note ?? null), ["catalog"]);
+export const useArchiveCatalogItem = () => useNetworkMutation((v: { code: string; reason: string }) => api.catalog.archive(v.code, v.reason), ["catalog"]);
+export const useRestoreCatalogItem = () => useNetworkMutation((code: string) => api.catalog.restore(code), ["catalog"]);
+
+// ---------- Franchises ----------
+/** FranchiseSummary[]: units in scope with franchisee name, compliance %, open tickets and last report. */
+export const useFranchises = (franchisorBusinessId?: string) =>
+  useQuery({ queryKey: ["franchises", "list", franchisorBusinessId ?? "all"], queryFn: () => api.franchises.list(franchisorBusinessId) });
+/** FranchiseDetail | null: summary, franchisee, reports, checklist, tickets, tasks, team. */
+export const useFranchise = (id: string | undefined) =>
+  useQuery({ queryKey: ["franchises", "detail", id], queryFn: () => api.franchises.get(id!), enabled: !!id });
+/** FranchisorSummary: franchise counts, last-month sales, royalties and marketing fund, tickets, manual version. */
+export const useFranchisorSummary = (businessId?: string) =>
+  useQuery({ queryKey: ["franchises", "summary", businessId ?? "own"], queryFn: () => api.franchises.getFranchisorSummary(businessId) });
+/** FranchiseReport[]: monthly reports (sales, royalty 5%, marketing fund 3%, status due/submitted/paid), newest first. */
+export const useFranchiseReports = (franchiseId?: string) =>
+  useQuery({ queryKey: ["franchises", "reports", franchiseId ?? "all"], queryFn: () => api.franchises.listReports(franchiseId) });
+/** Franchisee submits a report: fees are computed from gross sales. */
+export const useSubmitFranchiseReport = () =>
+  useNetworkMutation((v: { franchiseId: string } & SubmitReportInput) => api.franchises.submitReport(v.franchiseId, { month: v.month, gross_sales: v.gross_sales }), ["franchises", "franchisee"]);
+/** SupportTicket[] of the franchises in scope (franchisor, SM). A franchisee uses useFranchiseeTickets. */
+export const useFranchiseTickets = () => useQuery({ queryKey: ["franchises", "tickets"], queryFn: api.franchises.listTickets });
+
+// ---------- Manual ----------
+/** ManualOverview: sections with % and status, versions (newest first), current version, completion %. */
+export const useManual = (businessId?: string) =>
+  useQuery({ queryKey: ["manual", businessId ?? "own"], queryFn: () => api.manual.get(businessId) });
+/** Franchisor publishes the next version; franchises follow it and get a task to read it. */
+export const usePublishManual = () =>
+  useNetworkMutation((v: { businessId: string } & PublishManualInput) => api.manual.publish(v.businessId, { note: v.note, section_ids: v.section_ids }), ["manual", "franchises", "franchisee"]);
+
+// ---------- Documents, numbers, business ----------
+/** BusinessDocument[]: requested / received / reviewed. Owner: own business. SM: pass a businessId or get all of its office. */
+export const useDocuments = (businessId?: string) =>
+  useQuery({ queryKey: ["documents", "files", businessId ?? "all"], queryFn: () => api.documents.listDocuments(businessId) });
+/** Contract[] with DocuSeal-like state (draft, sent, opened, signed, declined) and signers. */
+export const useContracts = (businessId?: string) =>
+  useQuery({ queryKey: ["documents", "contracts", businessId ?? "all"], queryFn: () => api.documents.listContracts(businessId) });
+export const useUploadDocument = () =>
+  useNetworkMutation((v: { documentId: string; fileName: string }) => api.documents.uploadDocument(v.documentId, v.fileName), ["documents"]);
+/** FinancialSeries | null: months, revenue, margin %, cash and the before/now table. */
+export const useFinancials = (businessId?: string) =>
+  useQuery({ queryKey: ["financials", businessId ?? "own"], queryFn: () => api.financials.get(businessId) });
+/** BusinessProfile | null: legal name, address, contact, years, employees. */
+export const useBusinessProfile = (businessId?: string) =>
+  useQuery({ queryKey: ["business-profile", "profile", businessId ?? "own"], queryFn: () => api.businessProfile.get(businessId) });
+export const useUpdateBusinessProfile = () =>
+  useNetworkMutation((patch: BusinessProfilePatch) => api.businessProfile.update(patch), ["business-profile"]);
+/** TeamMember[] of a business (active or invited). */
+export const useBusinessTeam = (businessId?: string) =>
+  useQuery({ queryKey: ["business-profile", "team", businessId ?? "own"], queryFn: () => api.businessProfile.listTeam(businessId) });
+export const useInviteTeamMember = () =>
+  useNetworkMutation((input: InviteMemberInput) => api.businessProfile.inviteMember(input), ["business-profile"]);
+
+// ---------- Business Bishop ----------
+/** BishopPortfolio: { investments (invested, recovered, current share %, payback month, monthly recovery series), totals }. */
+export const useBishopPortfolio = () => useQuery({ queryKey: ["bishop", "portfolio"], queryFn: api.bishop.getPortfolio });
+/** BishopOpportunity[]: businesses SM presents to the Bishop, with decision none/interested/passed. */
+export const useBishopOpportunities = () => useQuery({ queryKey: ["bishop", "opportunities"], queryFn: api.bishop.listOpportunities });
+/** OpportunityDetail | null: opportunity plus the five-year projection (franchises, revenue, result, Bishop, SM). */
+export const useBishopOpportunity = (id: string | undefined) =>
+  useQuery({ queryKey: ["bishop", "opportunities", id], queryFn: () => api.bishop.getOpportunity(id!), enabled: !!id });
+export const useExpressInterest = () => useNetworkMutation((id: string) => api.bishop.expressInterest(id), ["bishop"]);
+export const usePassOpportunity = () => useNetworkMutation((id: string) => api.bishop.pass(id), ["bishop"]);
+/** Undo interest or pass. */
+export const useClearOpportunityDecision = () => useNetworkMutation((id: string) => api.bishop.clearDecision(id), ["bishop"]);
+/** BishopAgreement[]: equity agreement, NDA, drafts. */
+export const useBishopAgreements = () => useQuery({ queryKey: ["bishop", "agreements"], queryFn: api.bishop.listAgreements });
+
+// ---------- Franchisee ----------
+/** FranchiseeHome: unit summary, franchisor, manual version and unread flag, compliance %, next report, open tasks. */
+export const useFranchiseeHome = () => useQuery({ queryKey: ["franchisee", "home"], queryFn: api.franchisee.getHome });
+/** ChecklistItem[]: standards (operating) or opening checklist (opening). */
+export const useFranchiseeChecklist = () => useQuery({ queryKey: ["franchisee", "checklist"], queryFn: api.franchisee.listChecklist });
+/** SupportTicket[] of the franchisee's unit, newest first. */
+export const useFranchiseeTickets = () => useQuery({ queryKey: ["franchisee", "tickets"], queryFn: api.franchisee.listTickets });
+export const useCreateTicket = () =>
+  useNetworkMutation((v: { subject: string; body: string }) => api.franchisee.createTicket(v), ["franchisee", "franchises"]);
+/** FranchiseTask[] of the franchisee's unit, soonest first. */
+export const useFranchiseeTasks = () => useQuery({ queryKey: ["franchisee", "tasks"], queryFn: api.franchisee.listTasks });
+export const useSetFranchiseeTaskDone = () =>
+  useNetworkMutation((v: { taskId: string; done: boolean }) => api.franchisee.setTaskDone(v.taskId, v.done), ["franchisee"]);
+/** TeamMember[] of the franchisee's unit. */
+export const useFranchiseeTeam = () => useQuery({ queryKey: ["franchisee", "team"], queryFn: api.franchisee.listTeam });

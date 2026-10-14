@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { formatNumber } from "@/lib/format";
 import { useBusinesses, useCurrentUser, useOrganizations, useTasks, useVersions } from "@/lib/api/hooks";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { VisibleTaskStatus } from "@/lib/api/types";
@@ -32,7 +33,7 @@ export function ReportPage() {
   const go = (search: TasksSearch) =>
     void navigate({ to: "/tareas", search: isSm ? { ...search, sup: "all", ...(firm ? { firm } : {}) } : search });
   const firms = (orgsQ.data ?? []).filter((o) => o.kind === "partner_firm" && (tasksQ.data ?? []).some((x) => x.organization_id === o.id));
-  const nf = (n: number) => new Intl.NumberFormat(i18n.language === "en" ? "en-US" : "es-AR", { maximumFractionDigits: 1 }).format(n);
+  const nf = (n: number) => formatNumber(n, i18n.language, { maximumFractionDigits: 1 });
 
   const header = (
     <>
