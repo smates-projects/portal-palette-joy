@@ -218,3 +218,12 @@
     animation: none;
   }
 }
+
+/* Roadmap: blocked tasks are hatched (pattern, not a gradient fill). */
+@utility bar-blocked {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 4px,
+    color-mix(in oklab, var(--status-danger-border) 80%, transparent) 4px 6px
+  );
+}
