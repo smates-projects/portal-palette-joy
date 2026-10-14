@@ -366,7 +366,6 @@ notifications.push(
 );
 
 // Sample SM change: Nicolás moved the due date of B4-02 at Vossler; the firm was told.
-const TASK_B402_VOSSLER = taskId(BIZ_VOSSLER, "B4-02");
 const SAMPLE_CHANGE: TaskChange = { field: "due_date", from: "2026-10-08", to: "2026-10-15" };
 events.push({ id: uuid("1c000000", 990), task_id: TASK_B402_VOSSLER, kind: "due_changed", actor_user_id: U_NICOLAS, version: null, comment_id: null, created_at: "2026-10-06T14:10:00Z", change: SAMPLE_CHANGE });
 notifications.push({ id: uuid("1f000000", 990), user_id: U_MARIANA, kind: "task_updated", task_id: TASK_B402_VOSSLER, actor_user_id: U_NICOLAS, created_at: "2026-10-06T14:10:00Z", read: true, change: SAMPLE_CHANGE });
