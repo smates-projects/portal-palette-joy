@@ -5,6 +5,7 @@ import type {
   LeadWithComputed,
   AppNotification,
   Business,
+  BusinessEvent,
   Franchisability,
   NotificationChannel,
   NotificationKind,
@@ -38,6 +39,10 @@ export interface OrganizationsRepository {
 export interface BusinessesRepository {
   list(): Promise<Business[]>;
   getFranchisability(businessId: Uuid): Promise<Franchisability>;
+  /** Business activity, newest first. SM only. */
+  listEvents(businessId: Uuid): Promise<BusinessEvent[]>;
+  /** SM only: change the assigned consultant (an SM person of the same office); logged in the activity. */
+  setConsultant(businessId: Uuid, userId: Uuid): Promise<Business>;
 }
 
 export interface UsersRepository {
