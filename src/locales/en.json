@@ -20,7 +20,8 @@
     "network": "Network",
     "businesses": "Businesses",
     "catalog": "Catalog and team",
-    "settings": "Settings"
+    "settings": "Settings",
+    "pipeline": "Pipeline"
   },
   "topbar": {
     "search_placeholder": "Search tasks or clients",
@@ -114,6 +115,10 @@
     "settings": {
       "title": "Settings",
       "subtitle": "How is the office set up?"
+    },
+    "pipeline": {
+      "title": "Pipeline",
+      "subtitle": ""
     }
   },
   "meta": {
@@ -122,7 +127,8 @@
     "clients": "Businesses your firm works for.",
     "profile": "Your firm and user details.",
     "report": "Your firm's progress and delivery pace.",
-    "network": "Health of the office's businesses and workload of its firms."
+    "network": "Health of the office's businesses and workload of its firms.",
+    "pipeline": "Who took the assessment, what they got and which stage they are in."
   },
   "notFound": {
     "title": "This page doesn't exist",
@@ -436,7 +442,17 @@
     "t_disconnected": "Google Calendar disconnected",
     "undo": "Undo",
     "error_title": "We couldn't load your profile",
-    "retry": "Load profile again"
+    "retry": "Load profile again",
+    "booking_title": "Your booking link",
+    "booking_body": "Opens when you tap \"Book meeting\" on one of your leads. It can be Google Calendar, Calendly or whatever you use.",
+    "booking_placeholder": "https://calendly.com/your-name",
+    "booking_save": "Save link",
+    "booking_clear": "Remove link",
+    "booking_default": "Until you add one, the office link is used: {{url}}",
+    "booking_current": "Now using: {{url}}",
+    "t_booking_saved": "Your booking link is saved.",
+    "t_booking_cleared": "You removed your link. The office link will be used.",
+    "booking_invalid": "Type a full link starting with https://"
   },
   "report": {
     "heading": "How is my work going?",
@@ -704,5 +720,198 @@
     "load_empty": "No firm has tasks yet.",
     "load_hint": "Delay: average days of overdue tasks. Approval: days from delivery until the owner approves.",
     "days_short": "{{value}} d"
+  },
+  "pipeline": {
+    "for_role": "SM team view",
+    "heading": "Who is coming in?",
+    "counters": {
+      "week": "assessments this week",
+      "uncontacted": "not contacted for over 2 days",
+      "contracts": "contracts to sign",
+      "signed_month": "joined the program this month",
+      "conversion": "Conversion this month",
+      "conversion_value": "{{pct}}% · {{signed}} of {{total}} assessments",
+      "conversion_none": "No assessments this month"
+    },
+    "view_board": "Board",
+    "view_table": "Table",
+    "stages": {
+      "evaluated": "Evaluated",
+      "meeting": "Meeting booked",
+      "accepted": "Accepted",
+      "contract": "Contract to sign",
+      "in_program": "In program",
+      "discarded": "Discarded"
+    },
+    "discarded_column": "Discarded ({{count}})",
+    "discarded_show": "Show discarded",
+    "discarded_hide": "Hide",
+    "bands": {
+      "high": "High",
+      "mid": "Mid",
+      "low": "Low",
+      "track": "On your way"
+    },
+    "band_label": "Band",
+    "score": "Score",
+    "consultant": "Consultant",
+    "city": "City",
+    "industry": "Industry",
+    "revenue": "Revenue",
+    "stage": "Stage",
+    "days_in_stage": "Days in stage",
+    "business": "Business",
+    "owner": "Owner",
+    "days": "{{count}} d in stage",
+    "days_one": "{{count}} day in stage",
+    "days_other": "{{count}} days in stage",
+    "industries": {
+      "construction": "Construction",
+      "remodeling": "Remodeling",
+      "cleaning": "Cleaning",
+      "restaurant": "Restaurant",
+      "salon": "Salon"
+    },
+    "revenue_ranges": {
+      "lt_250k": "Under $250k",
+      "250k_500k": "$250k to $500k",
+      "500k_1m": "$500k to $1M",
+      "1m_3m": "$1M to $3M",
+      "gt_3m": "Over $3M"
+    },
+    "margin_ranges": {
+      "lt_10": "Under 10%",
+      "10_20": "10% to 20%",
+      "20_30": "20% to 30%",
+      "gt_30": "Over 30%"
+    },
+    "team_ranges": {
+      "1_5": "1 to 5 people",
+      "6_15": "6 to 15 people",
+      "16_50": "16 to 50 people",
+      "gt_50": "Over 50 people"
+    },
+    "years_ranges": {
+      "lt_2": "Under 2 years",
+      "2_5": "2 to 5 years",
+      "5_10": "5 to 10 years",
+      "gt_10": "Over 10 years"
+    },
+    "filters": {
+      "all_stages": "All stages",
+      "all_consultants": "All consultants",
+      "all_bands": "All bands",
+      "all_industries": "All industries",
+      "all_revenues": "All revenue ranges",
+      "clear": "Clear filters",
+      "quick": {
+        "week": "Assessments this week",
+        "uncontacted": "Not contacted for over 2 days",
+        "signed_month": "Joined this month"
+      }
+    },
+    "empty_title": "No leads match these filters",
+    "empty_body": "Remove a filter to see more. New leads arrive on their own when someone completes the assessment.",
+    "empty_all_title": "No assessments yet",
+    "empty_all_body": "When an owner completes the assessment on the website, it shows up here as Evaluated.",
+    "column_empty": "No leads in this stage",
+    "actions": {
+      "schedule": "Book meeting",
+      "accept": "Accept",
+      "send_contract": "Send contract",
+      "sign": "Mark contract signed",
+      "view_program": "View program",
+      "restore": "Reactivate lead",
+      "discard": "Discard"
+    },
+    "move": {
+      "no_skip": "{{name}} cannot move to {{to}}: leads move one stage at a time.",
+      "no_locked": "{{name}} is already in the program and cannot be moved.",
+      "no_restore_only": "A discarded lead can only be reactivated to Evaluated."
+    },
+    "t_moved": "{{name}} moved to {{to}}.",
+    "undo": "Undo",
+    "t_error": "Could not save. Try again.",
+    "t_scheduled": "Your booking link is open. {{name}} moved to Meeting booked.",
+    "t_discarded": "You discarded {{name}}.",
+    "t_restored": "{{name}} is back in Evaluated.",
+    "t_note": "Note added.",
+    "t_signed": "{{name}} joined the program with {{count}} tasks.",
+    "discard_title": "Discard {{name}}",
+    "discard_body": "The lead moves to Discarded with the reason. You can reactivate it later.",
+    "discard_reason": "Reason",
+    "discard_placeholder": "Why it leaves the pipeline",
+    "discard_confirm": "Discard lead",
+    "cancel": "Cancel",
+    "reason_required": "Write the reason to discard.",
+    "sign_title": "Mark contract signed",
+    "sign_body": "The business is created with day 1 on the signature date and its Método 180 catalog tasks are generated, assigned to each area's firm and supervised by {{consultant}}.",
+    "sign_date": "Signature date",
+    "sign_confirm": "Create program",
+    "sign_future": "The date cannot be after today.",
+    "detail": {
+      "close": "Close",
+      "open_full": "Lead detail",
+      "contact": "Contact",
+      "hispanic": "Hispanic owner",
+      "result_title": "What the owner saw in their result",
+      "headline": {
+        "high": "Your business is ready to start franchising",
+        "mid": "Your business has a good base to franchise",
+        "low": "Your business can franchise, with work in several areas",
+        "track": "You are on your way"
+      },
+      "not_eligible": "Not eligible for the program yet",
+      "gaps": {
+        "years": "Less than 2 years in business",
+        "revenue": "Revenue below the program minimum"
+      },
+      "blocks_title": "The seven areas",
+      "strengths": "Strengths",
+      "priorities": "Priorities",
+      "know_how": "What the owner says they do best",
+      "business_title": "Business data",
+      "activity": "Activity",
+      "margin": "Profit margin",
+      "team": "Team",
+      "years": "Years in business",
+      "active_clients": "Active clients",
+      "yes": "Yes",
+      "no": "No",
+      "activity_title": "Activity",
+      "note_placeholder": "Write a note for the team",
+      "note_add": "Add note",
+      "discard_reason": "Reason: {{reason}}",
+      "not_found": "This lead does not exist or is not from your office.",
+      "submitted_at": "Took the assessment on {{date}}",
+      "booking_from_office": "The office link will open because {{name}} has not added one yet."
+    },
+    "blocks": {
+      "model": "Business model",
+      "operations": "Operations",
+      "finance": "Finance",
+      "technology": "Technology",
+      "marketing": "Marketing and sales",
+      "legal": "Legal",
+      "team": "Team"
+    },
+    "block_status": {
+      "strong": "Strong",
+      "medium": "Medium",
+      "weak": "Weak",
+      "unknown": "I don't know"
+    },
+    "events": {
+      "submitted": "Completed the assessment",
+      "stage_changed": "{{actor}} moved it from {{from}} to {{to}}",
+      "discarded": "{{actor}} discarded it",
+      "restored": "{{actor}} reactivated it",
+      "note": "{{actor}} wrote a note",
+      "contract_signed": "{{actor}} marked the contract signed on {{date}}. It joined the program."
+    },
+    "error_title": "We could not load the pipeline.",
+    "retry": "Retry",
+    "network_filtered": "Showing only {{name}}",
+    "network_all": "View the whole network"
   }
 }

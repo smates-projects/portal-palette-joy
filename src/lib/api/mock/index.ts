@@ -7,6 +7,11 @@ import { computeFranchisability } from "../franchisability";
 import { NOTIFICATION_KINDS, type AppNotification, type NotificationPreference } from "../types";
 import type { Meeting, OwnerRequest, Task, TaskChange, TaskComment, TaskEvent, TaskVersion, User } from "../types";
 import * as seed from "./seed";
+import * as seedLeads from "./seed-leads";
+import catalogJson from "@/data/catalogo_metodo180.json";
+import { generateProgramTasks, type CatalogEntry } from "../program";
+import { resolveLeadMove } from "@/lib/leads/pipeline";
+import type { AreaCode, Business, Lead, LeadEvent, LeadWithComputed } from "../types";
 
 const delay = <T,>(v: T, ms = 120) => new Promise<T>((r) => setTimeout(() => r(structuredClone(v)), ms));
 const newId = () =>
@@ -23,9 +28,11 @@ export function createMockApi(): ApiClient {
     events: structuredClone(seed.events) as TaskEvent[],
     ownerRequests: structuredClone(seed.ownerRequests) as OwnerRequest[],
     meetings: structuredClone(seed.meetings) as Meeting[],
-    users: seed.users,
+    users: structuredClone(seed.users) as User[],
     orgs: seed.organizations,
-    businesses: seed.businesses,
+    businesses: structuredClone(seed.businesses) as Business[],
+    leads: structuredClone(seedLeads.leads) as Lead[],
+    leadEvents: structuredClone(seedLeads.leadEvents) as LeadEvent[],
   };
   // Approval date comes from the latest "approved" event.
   for (const t of db.tasks) {
@@ -85,6 +92,39 @@ export function createMockApi(): ApiClient {
   const recordChange = (t: Task, kind: TaskEvent["kind"], change: TaskChange, alsoNotify: string[] = []) => {
     pushEvent(t.id, kind, null, change);
     for (const uid of new Set([t.assignee_user_id, ...alsoNotify])) if (uid !== currentUserId) notify(uid, "task_updated", t.id, change);
+  };
+
+  // ---------- Leads ----------
+  const visibleLeads = () => {
+    const u = me();
+    if (u.role !== "sm_team") throw new Error("sm_only");
+    return db.leads.filter((l) => l.office_id === u.organization_id);
+  };
+  const findLead = (id: string) => {
+    const l = visibleLeads().find((x) => x.id === id);
+    if (!l) throw new Error("not_found");
+    return l;
+  };
+  const withBooking = (l: Lead): LeadWithComputed => {
+    const consultant = db.users.find((u) => u.id === l.consultant_user_id);
+    const office = db.orgs.find((o) => o.id === l.office_id);
+    return { ...l, booking_url: consultant?.booking_url || office?.default_booking_url || "" };
+  };
+  const pushLeadEvent = (e: Omit<LeadEvent, "id" | "actor_user_id" | "created_at">) => {
+    const full: LeadEvent = { id: newId(), actor_user_id: currentUserId, created_at: nowIso(), ...e };
+    db.leadEvents.push(full);
+    return full;
+  };
+  const setStage = (l: Lead, to: Lead["stage"]) => {
+    l.stage = to;
+    l.stage_entered_at = nowIso();
+    l.last_contact_at = nowIso();
+  };
+  /** Assignee firm per area: the office's firm for that area; B1 Estrategia is the office's own team (the consultant). */
+  const firmFor = (officeId: string, consultantId: string) => (area: AreaCode) => {
+    const firm = db.orgs.find((o) => o.kind === "partner_firm" && o.area === area);
+    const person = firm && db.users.find((u) => u.organization_id === firm.id);
+    return firm && person ? { organization_id: firm.id, assignee_user_id: person.id } : { organization_id: officeId, assignee_user_id: consultantId };
   };
 
   return {
@@ -179,9 +219,73 @@ export function createMockApi(): ApiClient {
         u.google_calendar_email = email;
         return delay({ ...u });
       },
+      setBookingUrl: async (url) => {
+        const u = me();
+        if (u.role !== "sm_team") throw new Error("sm_only");
+        const clean = url?.trim() || null;
+        if (clean && !/^https?:\/\/\S+\.\S+/.test(clean)) throw new Error("invalid_url");
+        u.booking_url = clean;
+        return delay({ ...u });
+      },
       listCalendarEvents: () => {
         const u = me();
         return delay(u.google_calendar_email ? seed.calendarEvents.filter((e) => e.user_id === u.id) : []);
+      },
+    },
+    leads: {
+      list: () => delay(visibleLeads().map(withBooking)),
+      get: async (id) => {
+        const l = visibleLeads().find((x) => x.id === id);
+        if (!l) return delay(null);
+        return delay({ lead: withBooking(l), events: db.leadEvents.filter((e) => e.lead_id === id).sort((a, b) => a.created_at.localeCompare(b.created_at)) });
+      },
+      move: async (id, to) => {
+        const l = findLead(id);
+        const m = resolveLeadMove(l.stage, to);
+        if (!m.ok || (m.action !== "move" && m.action !== "restore")) throw new Error("invalid_transition");
+        const from = l.stage;
+        setStage(l, to);
+        if (m.action === "restore") { l.discarded_from = null; l.discard_reason = null; }
+        pushLeadEvent({ lead_id: id, kind: m.action === "restore" ? "restored" : "stage_changed", from, to, body: null });
+        return delay(withBooking(l));
+      },
+      discard: async (id, reason) => {
+        if (!reason.trim()) throw new Error("reason_required");
+        const l = findLead(id);
+        const m = resolveLeadMove(l.stage, "discarded");
+        if (!m.ok || l.stage === "discarded") throw new Error("invalid_transition");
+        const from = l.stage as Exclude<Lead["stage"], "discarded">;
+        setStage(l, "discarded");
+        l.discarded_from = from;
+        l.discard_reason = reason.trim();
+        pushLeadEvent({ lead_id: id, kind: "discarded", from, to: "discarded", body: reason.trim() });
+        return delay(withBooking(l));
+      },
+      addNote: async (id, body) => {
+        if (!body.trim()) throw new Error("note_required");
+        const l = findLead(id);
+        l.last_contact_at = nowIso();
+        return delay(pushLeadEvent({ lead_id: id, kind: "note", from: null, to: null, body: body.trim() }));
+      },
+      markContractSigned: async (id, signed_on) => {
+        const l = findLead(id);
+        if (l.stage !== "contract") throw new Error("invalid_transition");
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(signed_on) || signed_on > TODAY) throw new Error("invalid_date");
+        const ownerId = newId();
+        db.users.push({ id: ownerId, full_name: l.contact.name, email: l.contact.email, role: "business_owner", organization_id: null, business_id: null, title: null, google_calendar_email: null, booking_url: null });
+        const businessId = newId();
+        const programDay = Math.round((Date.parse(`${TODAY}T12:00:00Z`) - Date.parse(`${signed_on}T12:00:00Z`)) / 86_400_000) + 1;
+        db.businesses.push({ id: businessId, name: l.business.name, industry: l.business.activity, city: l.contact.city, state: l.contact.state, owner_user_id: ownerId, program_start_date: signed_on, program_day: programDay, office_id: l.office_id });
+        db.users.find((u) => u.id === ownerId)!.business_id = businessId;
+        db.tasks.push(...generateProgramTasks(catalogJson as CatalogEntry[], {
+          business_id: businessId, industry: l.business.industry, start_date: signed_on, supervisor_user_id: l.consultant_user_id,
+          firmFor: firmFor(l.office_id, l.consultant_user_id), newId, now: nowIso(),
+        }));
+        const from = l.stage;
+        setStage(l, "in_program");
+        l.business_id = businessId;
+        pushLeadEvent({ lead_id: id, kind: "contract_signed", from, to: "in_program", body: null, signed_on });
+        return delay({ lead: l, business_id: businessId });
       },
     },
     tasks: {

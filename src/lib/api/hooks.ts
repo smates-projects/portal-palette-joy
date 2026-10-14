@@ -95,3 +95,31 @@ export const useConfirmMeeting = () => useTaskMutation((id: string) => api.tasks
 export const useUpdateTasks = () =>
   useTaskMutation((v: { ids: string[]; patch: import("./types").TaskPatch }) => api.tasks.update(v.ids, v.patch));
 export const useCancelTasks = () => useTaskMutation((v: { ids: string[]; reason: string }) => api.tasks.cancel(v.ids, v.reason));
+
+// ---------- Pipeline (SM) ----------
+export const useLeads = () => useQuery({ queryKey: ["leads"], queryFn: api.leads.list });
+export const useLeadDetail = (id: string | undefined) =>
+  useQuery({ queryKey: ["leads", "detail", id], queryFn: () => api.leads.get(id!), enabled: !!id });
+function useLeadMutation<V, R>(fn: (v: V) => Promise<R>) {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: fn, onSuccess: () => qc.invalidateQueries({ queryKey: ["leads"] }) });
+}
+export const useMoveLead = () =>
+  useLeadMutation((v: { id: string; to: "evaluated" | "meeting" | "accepted" | "contract" }) => api.leads.move(v.id, v.to));
+export const useDiscardLead = () => useLeadMutation((v: { id: string; reason: string }) => api.leads.discard(v.id, v.reason));
+export const useAddLeadNote = () => useLeadMutation((v: { id: string; body: string }) => api.leads.addNote(v.id, v.body));
+/** Creates a business and its tasks: refresh everything. */
+export function useSignLeadContract() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: string; signed_on: string }) => api.leads.markContractSigned(v.id, v.signed_on),
+    onSuccess: () => qc.invalidateQueries(),
+  });
+}
+export function useSetBookingUrl() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (url: string | null) => api.users.setBookingUrl(url),
+    onSuccess: () => qc.invalidateQueries(),
+  });
+}

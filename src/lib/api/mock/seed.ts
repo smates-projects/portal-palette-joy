@@ -23,12 +23,14 @@ export const ORG_PEREZ = uuid("0a000000", 2);
 export const ORG_XYZ = uuid("0a000000", 3);
 export const ORG_DELTA = uuid("0a000000", 4);
 export const ORG_TECNO = uuid("0a000000", 5);
+export const ORG_OPSLAB = uuid("0a000000", 6);
 
 export const organizations: Organization[] = [
-  { id: ORG_SM, name: "SM Miami", kind: "sm", area: null, specialty: null, city: "Orlando, FL", email: "hola@strategicmates.com", phone: null },
+  { id: ORG_SM, name: "SM Miami", kind: "sm", area: null, specialty: null, city: "Orlando, FL", email: "hola@strategicmates.com", phone: null, default_booking_url: "https://strategicmates.com/MarilynBoraei" },
   { id: ORG_PEREZ, name: "Estudio Pérez Legal", kind: "partner_firm", area: "B6", specialty: "Derecho corporativo, licencias y contratos para franquicias en Florida", city: "Miami, FL", email: "contacto@estudioperez.legal", phone: "+1 305 555 0142" },
   { id: ORG_DELTA, name: "Delta Contadores", kind: "partner_firm", area: "B3", specialty: "Contabilidad, finanzas y fiscal para pymes que se preparan para franquiciar", city: "Miami, FL", email: "hola@deltacontadores.com", phone: "+1 305 555 0171" },
   { id: ORG_TECNO, name: "TecnoPyme", kind: "partner_firm", area: "B4", specialty: "CRM, órdenes de servicio y tableros para negocios de servicios", city: "Orlando, FL", email: "equipo@tecnopyme.io", phone: "+1 407 555 0123" },
+  { id: ORG_OPSLAB, name: "OpsLab Consulting", kind: "partner_firm", area: "B2", specialty: "Procesos, manuales operativos y estándares de servicio", city: "Miami, FL", email: "hola@opslab.co", phone: "+1 305 555 0165" },
   { id: ORG_XYZ, name: "Agencia XYZ", kind: "partner_firm", area: "B5", specialty: "Posicionamiento, SEO local y sitios de conversión para negocios de servicios", city: "Tampa, FL", email: "hola@agenciaxyz.com", phone: "+1 813 555 0198" },
 ];
 
@@ -49,19 +51,21 @@ export const U_MARYLIN = uuid("0c000000", 6);
 export const U_NICOLAS = uuid("0c000000", 7);
 export const U_RODRIGO = uuid("0c000000", 30);
 export const U_MARIANA = uuid("0c000000", 31);
+export const U_ANDRES = uuid("0c000000", 32);
 
 export const users: User[] = [
-  { id: U_JULIAN, full_name: "Julián Ferreyra", email: "julian@estudioperez.legal", role: "partner_firm", organization_id: ORG_PEREZ, business_id: null, title: "Abogado asociado", google_calendar_email: null },
-  { id: U_SOFIA, full_name: "Sofía Lagos", email: "sofia@agenciaxyz.com", role: "partner_firm", organization_id: ORG_XYZ, business_id: null, title: "Especialista SEO", google_calendar_email: null },
-  { id: U_LUCIA, full_name: "Lucía Pérez", email: "lucia@estudioperez.legal", role: "partner_firm", organization_id: ORG_PEREZ, business_id: null, title: "Socia", google_calendar_email: "lucia.perez@gmail.com" },
-  { id: U_TOMAS, full_name: "Tomás Herrera", email: "tomas@agenciaxyz.com", role: "partner_firm", organization_id: ORG_XYZ, business_id: null, title: "Director de cuentas", google_calendar_email: null },
-  { id: U_CARLA, full_name: "Carla Méndez", email: "carla@vossler.com", role: "business_owner", organization_id: null, business_id: BIZ_VOSSLER, title: null, google_calendar_email: null },
-  { id: U_DANIEL, full_name: "Daniel Ortiz", email: "daniel@prime10solutions.com", role: "business_owner", organization_id: null, business_id: BIZ_PRIME, title: null, google_calendar_email: null },
-  { id: U_ENYERMY, full_name: "Enyermy Rivas", email: "enyermy@enyermyhair.com", role: "business_owner", organization_id: null, business_id: BIZ_ENYERMY, title: null, google_calendar_email: null },
-  { id: U_RODRIGO, full_name: "Rodrigo Salas", email: "rodrigo@deltacontadores.com", role: "partner_firm", organization_id: ORG_DELTA, business_id: null, title: "Contador socio", google_calendar_email: null },
-  { id: U_MARIANA, full_name: "Mariana Ruiz", email: "mariana@tecnopyme.io", role: "partner_firm", organization_id: ORG_TECNO, business_id: null, title: "Líder de implementación", google_calendar_email: null },
-  { id: U_MARYLIN, full_name: "Marylin Boraei", email: "marylin@strategicmates.com", role: "sm_team", organization_id: ORG_SM, business_id: null, title: "Directora", google_calendar_email: null },
-  { id: U_NICOLAS, full_name: "Nicolás García", email: "nicolas@strategicmates.com", role: "sm_team", organization_id: ORG_SM, business_id: null, title: "Consultor", google_calendar_email: null },
+  { id: U_JULIAN, full_name: "Julián Ferreyra", email: "julian@estudioperez.legal", role: "partner_firm", organization_id: ORG_PEREZ, business_id: null, title: "Abogado asociado", google_calendar_email: null, booking_url: null },
+  { id: U_SOFIA, full_name: "Sofía Lagos", email: "sofia@agenciaxyz.com", role: "partner_firm", organization_id: ORG_XYZ, business_id: null, title: "Especialista SEO", google_calendar_email: null, booking_url: null },
+  { id: U_LUCIA, full_name: "Lucía Pérez", email: "lucia@estudioperez.legal", role: "partner_firm", organization_id: ORG_PEREZ, business_id: null, title: "Socia", google_calendar_email: "lucia.perez@gmail.com", booking_url: null },
+  { id: U_TOMAS, full_name: "Tomás Herrera", email: "tomas@agenciaxyz.com", role: "partner_firm", organization_id: ORG_XYZ, business_id: null, title: "Director de cuentas", google_calendar_email: null, booking_url: null },
+  { id: U_CARLA, full_name: "Carla Méndez", email: "carla@vossler.com", role: "business_owner", organization_id: null, business_id: BIZ_VOSSLER, title: null, google_calendar_email: null, booking_url: null },
+  { id: U_DANIEL, full_name: "Daniel Ortiz", email: "daniel@prime10solutions.com", role: "business_owner", organization_id: null, business_id: BIZ_PRIME, title: null, google_calendar_email: null, booking_url: null },
+  { id: U_ENYERMY, full_name: "Enyermy Rivas", email: "enyermy@enyermyhair.com", role: "business_owner", organization_id: null, business_id: BIZ_ENYERMY, title: null, google_calendar_email: null, booking_url: null },
+  { id: U_RODRIGO, full_name: "Rodrigo Salas", email: "rodrigo@deltacontadores.com", role: "partner_firm", organization_id: ORG_DELTA, business_id: null, title: "Contador socio", google_calendar_email: null, booking_url: null },
+  { id: U_MARIANA, full_name: "Mariana Ruiz", email: "mariana@tecnopyme.io", role: "partner_firm", organization_id: ORG_TECNO, business_id: null, title: "Líder de implementación", google_calendar_email: null, booking_url: null },
+  { id: U_ANDRES, full_name: "Andrés Molina", email: "andres@opslab.co", role: "partner_firm", organization_id: ORG_OPSLAB, business_id: null, title: "Consultor de operaciones", google_calendar_email: null, booking_url: null },
+  { id: U_MARYLIN, full_name: "Marilyn Boraei", email: "marilyn@strategicmates.com", role: "sm_team", organization_id: ORG_SM, business_id: null, title: "Directora", google_calendar_email: null, booking_url: null },
+  { id: U_NICOLAS, full_name: "Nicolás García", email: "nicolas@strategicmates.com", role: "sm_team", organization_id: ORG_SM, business_id: null, title: "Consultor", google_calendar_email: null, booking_url: null },
 ];
 
 export const businesses: Business[] = [
@@ -311,7 +315,7 @@ versions.push(
 comments.push(
   { id: C_CHANGES, task_id: T, author_user_id: U_CARLA, kind: "changes_requested", file_id: null, created_at: "2026-10-01T13:42:00Z", body: "Lucía, gracias. Lo leí con mi contador y nos gusta la opción LLC, pero falta el acta constitutiva. Sin eso no puedo firmar nada. ¿La podés sumar?" },
   { id: uuid("0f000000", 902), task_id: T, author_user_id: U_LUCIA, kind: "comment", file_id: null, created_at: "2026-10-01T15:10:00Z", body: "Tenés razón, Carla. No la tengo en el data room. Te dejo un pedido para que me la subas y la incorporo esta semana." },
-  { id: uuid("0f000000", 903), task_id: T, author_user_id: U_NICOLAS, kind: "comment", file_id: null, created_at: "2026-10-02T12:00:00Z", body: "Ojo que la fecha de entrega es el 9. Si el acta llega tarde, avisen así lo reprogramamos. @Marylin Boraei para que lo tengas en el radar." },
+  { id: uuid("0f000000", 903), task_id: T, author_user_id: U_NICOLAS, kind: "comment", file_id: null, created_at: "2026-10-02T12:00:00Z", body: "Ojo que la fecha de entrega es el 9. Si el acta llega tarde, avisen así lo reprogramamos. @Marilyn Boraei para que lo tengas en el radar." },
   { id: uuid("0f000000", 904), task_id: T, author_user_id: U_LUCIA, kind: "comment", file_id: null, created_at: "2026-10-12T19:06:00Z", body: "Listo, subí la v2. Propuse una llamada corta para repasar la sección 3 antes de que la apruebes, @Carla Méndez." },
   { id: uuid("0f000000", 905), task_id: T, author_user_id: U_NICOLAS, kind: "comment", file_id: F_MEMO_V2, created_at: "2026-10-13T10:15:00Z", body: "@Lucía Pérez en la página 6 citás la sección 1362, pero creo que es la 1361. ¿Lo revisás?" },
   { id: uuid("0f000000", 906), task_id: T, author_user_id: U_LUCIA, kind: "comment", file_id: F_MEMO_V2, created_at: "2026-10-13T11:02:00Z", body: "Bien visto, @Nicolás García. Es la 1361; lo corrijo si Carla pide otra vuelta o en la versión final." },
