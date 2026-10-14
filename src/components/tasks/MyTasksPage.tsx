@@ -21,7 +21,8 @@ import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
+import { TaskDetail } from "@/components/tasks/detail/TaskDetail";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const ALL = "__all";
@@ -34,7 +35,7 @@ const AREA_DOT: Record<AreaCode, string> = {
 
 export function MyTasksPage({ search }: { search: TasksSearch }) {
   const { t, i18n } = useTranslation();
-  const navigate = useNavigate({ from: "/tareas" });
+  const navigate = useNavigate({ from: "/tareas/" });
   const tasksQ = useTasks();
   const bizQ = useBusinesses();
 
@@ -302,15 +303,11 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
       )}
 
       <Sheet open={!!selected} onOpenChange={(open) => !open && setSearch({ task: undefined })}>
-        <SheetContent className="w-full sm:max-w-lg">
+        <SheetContent className="w-full overflow-y-auto p-0 sm:max-w-xl [&>button]:hidden">
+          <SheetTitle className="sr-only">{selected?.name}</SheetTitle>
+          <SheetDescription className="sr-only">{selected?.code}</SheetDescription>
           {selected && (
-            <SheetHeader>
-              <p className="font-display text-xs font-semibold text-muted-foreground">
-                {selected.code} · {businessName(selected.business_id)}
-              </p>
-              <SheetTitle className="text-lg leading-snug">{selected.name}</SheetTitle>
-              <SheetDescription>{t("tasks.panel_soon")}</SheetDescription>
-            </SheetHeader>
+            <TaskDetail taskId={selected.id} mode="panel" onClose={() => setSearch({ task: undefined })} />
           )}
         </SheetContent>
       </Sheet>
