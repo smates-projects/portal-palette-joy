@@ -299,7 +299,7 @@ function ConsultantPicker({ row }: { row: BusinessRow }) {
   if (me?.role !== "sm_team") return <>{row.consultant?.full_name ?? t("office.biz.no_consultant")}</>;
   return (
     <Select
-      value={row.business.consultant_id ?? undefined}
+      value={row.business.consultant_id ?? ""}
       disabled={setConsultant.isPending}
       onValueChange={(userId) =>
         setConsultant.mutate(
