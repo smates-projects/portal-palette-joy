@@ -69,7 +69,7 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-8">
+    <div className="mx-auto flex h-full max-w-7xl flex-col px-6 py-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("tasks.for_role")}</p>
@@ -184,7 +184,7 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
           )}
 
           {/* Table */}
-          <div className="mt-3 overflow-hidden rounded-md border border-border bg-surface">
+          <div className="mt-3 min-h-0 overflow-auto rounded-md border border-border bg-surface">
             {tasksQ.isError ? (
               <EmptyState
                 inline
@@ -218,7 +218,7 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
               />
             ) : (
               <table className="w-full text-sm">
-                <thead className="border-b border-border bg-muted/50 text-left text-xs text-muted-foreground">
+                <thead className="sticky top-0 z-10 border-b border-border bg-muted text-left text-xs text-muted-foreground">
                   <tr>
                     {COLUMNS.map((c) => {
                       const active = search.sort === c;
