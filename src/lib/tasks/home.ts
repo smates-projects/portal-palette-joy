@@ -72,3 +72,34 @@ export function nextDue(tasks: TaskWithComputed[], today = TODAY) {
       .sort((a, b) => a.due_date.localeCompare(b.due_date) || a.code.localeCompare(b.code))[0] ?? null
   );
 }
+
+export interface BusinessProgress {
+  business_id: string;
+  total: number;
+  accepted: number;
+  submitted: number;
+  in_progress: number;
+  /** Share of the 180 days already elapsed (0-1). */
+  expected: number;
+  /** Approved share minus expected share, in percentage points. */
+  gap: number;
+}
+
+/** Progress of the firm's own tasks per business, compared with time elapsed in the program. */
+export function buildProgress(tasks: TaskWithComputed[], programDay: (businessId: string) => number, length = 180): BusinessProgress[] {
+  const ids = [...new Set(tasks.map((t) => t.business_id))];
+  return ids.map((id) => {
+    const mine = tasks.filter((t) => t.business_id === id);
+    const accepted = mine.filter((t) => t.status === "accepted").length;
+    const expected = Math.min(1, Math.max(0, programDay(id) / length));
+    return {
+      business_id: id,
+      total: mine.length,
+      accepted,
+      submitted: mine.filter((t) => t.status === "submitted").length,
+      in_progress: mine.filter((t) => t.status === "in_progress" || t.status === "changes_requested").length,
+      expected,
+      gap: Math.round(((mine.length ? accepted / mine.length : 0) - expected) * 100),
+    };
+  });
+}
