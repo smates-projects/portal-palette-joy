@@ -24,6 +24,12 @@ export function createMockApi(): ApiClient {
     orgs: seed.organizations,
     businesses: seed.businesses,
   };
+  // Approval date comes from the latest "approved" event.
+  for (const t of db.tasks) {
+    if (t.status !== "accepted") continue;
+    const ev = db.events.filter((e) => e.task_id === t.id && e.kind === "approved").map((e) => e.created_at).sort().at(-1);
+    t.accepted_at = ev ?? t.updated_at;
+  }
   let currentUserId = seed.U_LUCIA;
 
   const me = (): User => db.users.find((u) => u.id === currentUserId)!;
@@ -43,6 +49,7 @@ export function createMockApi(): ApiClient {
     if (!canTransition(me().role, t.status, to)) throw new Error("invalid_transition");
     if (to !== "pending" && withComputed(t, db.tasks).is_blocked) throw new Error("blocked");
     t.status = to;
+    t.accepted_at = to === "accepted" ? nowIso() : null;
     t.updated_at = nowIso();
   };
   const pushEvent = (task_id: string, kind: TaskEvent["kind"], version: number | null = null) =>
@@ -94,6 +101,10 @@ export function createMockApi(): ApiClient {
     },
     tasks: {
       list: () => delay(visibleTasks().map((t) => withComputed(t, db.tasks))),
+      listVersions: () => {
+        const ids = new Set(visibleTasks().map((t) => t.id));
+        return delay(db.versions.filter((v) => ids.has(v.task_id)));
+      },
       listMeetings: () => {
         const ids = new Set(visibleTasks().map((t) => t.id));
         return delay(db.meetings.filter((m) => ids.has(m.task_id) && m.status !== "cancelled"));
