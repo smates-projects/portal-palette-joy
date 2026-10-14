@@ -123,7 +123,7 @@ const plans: Record<string, Plan> = {
 
 const bizIndex: Record<string, number> = { [BIZ_VOSSLER]: 1, [BIZ_PRIME]: 2, [BIZ_ENYERMY]: 3 };
 const taskId = (bizId: string, code: string) => {
-  const n = bizIndex[bizId] * 100 + catalog.findIndex((c) => c.code === code) + 1;
+  const n = bizIndex[bizId]! * 100 + catalog.findIndex((c) => c.code === code) + 1;
   return uuid("0d000000", n);
 };
 

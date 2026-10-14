@@ -34,7 +34,7 @@ export function createMockApi(): ApiClient {
             return { user, organization: db.orgs.find((o) => o.id === user.organization_id) ?? null, enabled: true };
           }),
           { user: db.users.find((u) => u.id === seed.U_CARLA)!, organization: null, enabled: false },
-          { user: db.users.find((u) => u.id === seed.U_MARYLIN)!, organization: db.orgs[0], enabled: false },
+          { user: db.users.find((u) => u.id === seed.U_MARYLIN)!, organization: db.orgs[0] ?? null, enabled: false },
         ]),
       setViewAs: async (userId) => {
         const target = db.users.find((u) => u.id === userId);

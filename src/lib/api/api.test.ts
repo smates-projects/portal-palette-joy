@@ -24,7 +24,7 @@ describe("task rules", () => {
     expect(isBlocked(b602, seed.tasks)).toBe(false);
   });
   it("overdue = due date passed and not accepted", () => {
-    const base = seed.tasks[0];
+    const base = seed.tasks[0]!;
     expect(isOverdue({ ...base, status: "in_progress", due_date: "2026-10-13" }, "2026-10-14")).toBe(true);
     expect(isOverdue({ ...base, status: "accepted", due_date: "2026-10-13" }, "2026-10-14")).toBe(false);
     expect(isOverdue({ ...base, status: "in_progress", due_date: "2026-10-14" }, "2026-10-14")).toBe(false);
