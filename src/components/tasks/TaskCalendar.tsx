@@ -51,7 +51,7 @@ export function TaskCalendar(props: {
           className={cn(base, "cursor-default border border-border bg-muted text-muted-foreground")}
         >
           <Lock className="h-2.5 w-2.5 shrink-0" />
-          <span className="tabular-nums">{time(it.at)}</span>
+          <span className="shrink-0 whitespace-nowrap tabular-nums">{time(it.at)}</span>
           <span className="truncate">{it.event.title}</span>
         </div>
       );
@@ -69,7 +69,7 @@ export function TaskCalendar(props: {
               : "border-primary bg-primary text-primary-foreground hover:brightness-110",
           )}
         >
-          <span className="tabular-nums">{time(it.at)}</span>
+          <span className="shrink-0 whitespace-nowrap tabular-nums">{time(it.at)}</span>
           <span className="truncate">{compact ? it.meeting.topic : `${it.meeting.topic} · ${it.task.code}`}</span>
         </button>
       );
@@ -85,7 +85,7 @@ export function TaskCalendar(props: {
           overdue ? "border-l-status-danger-fg" : DUE[it.task.status as VisibleTaskStatus],
         )}
       >
-        <span className="font-medium tabular-nums">{it.task.code}</span>
+        <span className="shrink-0 whitespace-nowrap font-medium tabular-nums">{it.task.code}</span>
         <span className="truncate text-muted-foreground">{compact ? props.businessName(it.task.business_id) : it.task.name}</span>
       </button>
     );
