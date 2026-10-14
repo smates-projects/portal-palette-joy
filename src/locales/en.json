@@ -16,7 +16,11 @@
     "manual": "My manual",
     "documents": "Documents",
     "numbers": "My numbers",
-    "business": "My business"
+    "business": "My business",
+    "network": "Network",
+    "businesses": "Businesses",
+    "catalog": "Catalog and team",
+    "settings": "Settings"
   },
   "topbar": {
     "search_placeholder": "Search tasks or clients",
@@ -51,7 +55,8 @@
     "changes_requested": "Changes requested",
     "accepted": "Approved",
     "blocked": "Blocked",
-    "overdue": "Overdue"
+    "overdue": "Overdue",
+    "cancelled": "Cancelled"
   },
   "pages": {
     "home": {
@@ -93,6 +98,22 @@
     "business": {
       "title": "My business",
       "subtitle": "What does SM know about my business?"
+    },
+    "network": {
+      "title": "Network",
+      "subtitle": "How is each business and each firm doing?"
+    },
+    "businesses": {
+      "title": "Businesses",
+      "subtitle": "Which businesses are in the program?"
+    },
+    "catalog": {
+      "title": "Catalog and team",
+      "subtitle": "Which tasks does Método 180 have and who does them?"
+    },
+    "settings": {
+      "title": "Settings",
+      "subtitle": "How is the office set up?"
     }
   },
   "meta": {
@@ -100,7 +121,8 @@
     "tasks": "Tasks assigned to your firm in Método 180.",
     "clients": "Businesses your firm works for.",
     "profile": "Your firm and user details.",
-    "report": "Your firm's progress and delivery pace."
+    "report": "Your firm's progress and delivery pace.",
+    "network": "Health of the office's businesses and workload of its firms."
   },
   "notFound": {
     "title": "This page doesn't exist",
@@ -473,13 +495,18 @@
     "pref_mentioned": "You were mentioned",
     "pref_meeting_proposed": "Meeting proposed",
     "pref_meeting_confirmed": "Meeting confirmed",
-    "pref_unblocked": "A task was unblocked"
+    "pref_unblocked": "A task was unblocked",
+    "kind_task_updated": "{{name}} changed a task",
+    "pref_task_updated": "SM changed one of your tasks"
   },
   "soon": {
     "manual": "Here you'll see your business's operations manual as the firms write it and you approve it.",
     "documents": "Here you'll have every document of your program in one place: approved deliverables, contracts and files you uploaded.",
     "numbers": "Here you'll see your business's key numbers: sales, margin and the financial models your finance firm prepares.",
-    "business": "Here you'll see and update your business details: contact, industry, team and locations."
+    "business": "Here you'll see and update your business details: contact, industry, team and locations.",
+    "businesses": "Here you'll see every business in the program with its day, progress, health by area and the firm for each area.",
+    "catalog": "Here you'll see the Método 180 catalog tasks and each firm's team. Only SM Global edits the catalog; the office reads it.",
+    "settings": "Here you'll set up the office details, its people and general preferences."
   },
   "firmWhat": {
     "B1": "strategy",
@@ -560,5 +587,122 @@
     "error": "We couldn't load your home.",
     "retry": "Load again",
     "criteria_title": "This is what you need to review"
+  },
+  "changes": {
+    "due_date": "{{name}} changed the due date from {{from}} to {{to}}",
+    "step": "{{name}} changed the step from {{from}} to {{to}}",
+    "assignee": "{{name}} reassigned the task from {{from}} to {{to}}",
+    "cancelled": "{{name}} cancelled the task"
+  },
+  "sm": {
+    "for_role": "SM team view",
+    "home_heading": "What needs attention today?",
+    "home_scope": "Tasks you supervise.",
+    "tasks_heading": "Which tasks are at risk?",
+    "report_heading": "How is the network doing?",
+    "network_heading": "How is each business and each firm doing?",
+    "in_business_one": "{{count}} at {{name}}",
+    "in_business_other": "{{count}} at {{name}}",
+    "cards": {
+      "due_today": "Due today",
+      "overdue": "Overdue",
+      "stale": "Deliverables unapproved for over 3 days",
+      "blocked": "Blocked",
+      "none": "Nothing for now"
+    },
+    "attention_title": "Needs attention",
+    "attention_count_one": "{{count}} task",
+    "attention_count_other": "{{count}} tasks",
+    "attention_empty": "Nothing needs attention. Overdue tasks, unapproved deliverables and long blocks will show here.",
+    "see_all": "See all ({{count}})",
+    "reason_stale_one": "Unapproved for {{count}} day",
+    "reason_stale_other": "Unapproved for {{count}} days",
+    "reason_long_block": "Blocked by {{codes}}, which is overdue",
+    "filter_scope": "Scope",
+    "scope_mine": "Ones I supervise",
+    "scope_all": "All of {{office}}",
+    "filter_firm": "Firm",
+    "all_firms": "All firms",
+    "chip_stale": "Unapproved for over 3 days",
+    "chip_attention": "Needs attention",
+    "selected_one": "{{count}} task selected",
+    "selected_other": "{{count}} tasks selected",
+    "bulk_assignee": "Reassign",
+    "bulk_due": "Change due date",
+    "bulk_step": "Change step",
+    "clear_selection": "Clear selection",
+    "select_all": "Select all",
+    "select_task": "Select {{code}}",
+    "action_edit": "Edit task",
+    "more_actions": "More actions",
+    "action_reassign": "Reassign",
+    "action_change_due": "Change date or step",
+    "action_cancel_task": "Cancel task",
+    "catalog_note": "Defined by SM Global in the Método 180 catalog",
+    "internal_label": "{{name}} (in-house team)",
+    "d_edit_title": "Edit {{code}}",
+    "d_edit_body": "You can change who does it, the due date and the step. Name and criteria are not edited here.",
+    "d_bulk_assignee_one": "Reassign {{count}} task",
+    "d_bulk_assignee_other": "Reassign {{count}} tasks",
+    "d_bulk_due_one": "Change the due date of {{count}} task",
+    "d_bulk_due_other": "Change the due date of {{count}} tasks",
+    "d_bulk_step_one": "Change the step of {{count}} task",
+    "d_bulk_step_other": "Change the step of {{count}} tasks",
+    "d_firm": "Firm",
+    "d_person": "Person",
+    "d_pick_person": "Pick a person",
+    "d_keep": "No change",
+    "d_due": "Due date",
+    "d_step": "Step",
+    "d_logged": "The change is logged in the task activity and the firm gets a notification.",
+    "d_save": "Save changes",
+    "t_updated_one": "Changes saved on {{code}}. The firm has been told.",
+    "t_updated_many": "Changes saved on {{count}} tasks. The firms have been told.",
+    "d_cancel_title_one": "Cancel {{code}}",
+    "d_cancel_title_many": "Cancel {{count}} tasks",
+    "d_cancel_body": "The task becomes Cancelled: it is not deleted and leaves the lists and progress.",
+    "d_cancel_reason": "Reason",
+    "d_cancel_placeholder": "E.g.: The business has no fleet, it doesn't apply.",
+    "d_cancel_required": "Write the reason to cancel.",
+    "d_keep_task": "Don't cancel",
+    "t_cancelled_one": "You cancelled {{code}}. The firm has been told.",
+    "t_cancelled_many": "You cancelled {{count}} tasks. The firms have been told.",
+    "note_cancelled": "{{name}} cancelled this task: “{{reason}}”",
+    "next_cancelled": "This task won't continue. It stays in the history.",
+    "next_line": "Done by {{person}}, from {{firm}}. Due {{date}}.",
+    "counters": {
+      "businesses_one": "business in program",
+      "businesses_other": "businesses in program",
+      "open_one": "open task",
+      "open_other": "open tasks",
+      "overdue_one": "overdue",
+      "overdue_other": "overdue",
+      "waiting_approval_one": "waiting for approval",
+      "waiting_approval_other": "waiting for approval",
+      "blocked_one": "blocked",
+      "blocked_other": "blocked"
+    },
+    "matrix_title": "Health by business and area",
+    "matrix_business": "Business",
+    "program_day": "day {{day}} of 180",
+    "matrix_hint": "Tap a cell to see its tasks.",
+    "cell_detail": "{{open}} open, {{overdue}} overdue",
+    "health": {
+      "red": "Something is overdue",
+      "amber": "Due this week or waiting for the owner",
+      "green": "On track",
+      "grey": "Doesn't apply"
+    },
+    "network_empty_title": "No businesses in the program yet",
+    "network_empty_body": "When a business signs its contract, it will show here with its six areas.",
+    "load_title": "Workload by firm",
+    "load_firm": "Firm",
+    "load_open": "Open",
+    "load_overdue": "Overdue",
+    "load_late": "Avg. delay",
+    "load_approval": "Avg. approval",
+    "load_empty": "No firm has tasks yet.",
+    "load_hint": "Delay: average days of overdue tasks. Approval: days from delivery until the owner approves.",
+    "days_short": "{{value}} d"
   }
 }

@@ -16,7 +16,11 @@
     "manual": "Mi manual",
     "documents": "Documentos",
     "numbers": "Mis números",
-    "business": "Mi negocio"
+    "business": "Mi negocio",
+    "network": "Red",
+    "businesses": "Negocios",
+    "catalog": "Catálogo y equipo",
+    "settings": "Configuración"
   },
   "topbar": {
     "search_placeholder": "Buscar tareas o clientes",
@@ -51,7 +55,8 @@
     "changes_requested": "Cambios pedidos",
     "accepted": "Aprobada",
     "blocked": "Bloqueada",
-    "overdue": "Vencida"
+    "overdue": "Vencida",
+    "cancelled": "Cancelada"
   },
   "pages": {
     "home": {
@@ -93,6 +98,22 @@
     "business": {
       "title": "Mi negocio",
       "subtitle": "¿Qué datos tiene SM de mi negocio?"
+    },
+    "network": {
+      "title": "Red",
+      "subtitle": "¿Cómo va cada negocio y cada firma?"
+    },
+    "businesses": {
+      "title": "Negocios",
+      "subtitle": "¿Qué negocios están en el programa?"
+    },
+    "catalog": {
+      "title": "Catálogo y equipo",
+      "subtitle": "¿Qué tareas tiene el Método 180 y quién las hace?"
+    },
+    "settings": {
+      "title": "Configuración",
+      "subtitle": "¿Cómo está configurada la oficina?"
     }
   },
   "meta": {
@@ -100,7 +121,8 @@
     "tasks": "Tareas asignadas a tu firma en el Método 180.",
     "clients": "Negocios para los que trabaja tu firma.",
     "profile": "Datos de tu firma y de tu usuario.",
-    "report": "Avance y ritmo de entregas de tu firma."
+    "report": "Avance y ritmo de entregas de tu firma.",
+    "network": "Salud de los negocios y carga de las firmas de la oficina."
   },
   "notFound": {
     "title": "Esta página no existe",
@@ -473,13 +495,18 @@
     "pref_mentioned": "Te mencionaron",
     "pref_meeting_proposed": "Reunión propuesta",
     "pref_meeting_confirmed": "Reunión confirmada",
-    "pref_unblocked": "Se desbloqueó una tarea"
+    "pref_unblocked": "Se desbloqueó una tarea",
+    "kind_task_updated": "{{name}} cambió una tarea",
+    "pref_task_updated": "SM cambió una tarea tuya"
   },
   "soon": {
     "manual": "Aquí verás el manual operativo de tu negocio a medida que las firmas lo escriban y tú lo apruebes.",
     "documents": "Aquí tendrás todos los documentos de tu programa en un solo lugar: entregas aprobadas, contratos y archivos que subiste.",
     "numbers": "Aquí verás los números clave de tu negocio: ventas, margen y los modelos financieros que prepara tu firma de finanzas.",
-    "business": "Aquí verás y podrás actualizar los datos de tu negocio: contacto, rubro, equipo y ubicaciones."
+    "business": "Aquí verás y podrás actualizar los datos de tu negocio: contacto, rubro, equipo y ubicaciones.",
+    "businesses": "Aquí verás cada negocio del programa con su día, su avance, su salud por área y la firma de cada área.",
+    "catalog": "Aquí verás las tareas del catálogo Método 180 y el equipo de cada firma. El catálogo lo edita solo SM Global; la oficina lo consulta.",
+    "settings": "Aquí vas a configurar los datos de la oficina, sus personas y las preferencias generales."
   },
   "firmWhat": {
     "B1": "estrategia",
@@ -560,5 +587,122 @@
     "error": "No pudimos cargar tu inicio.",
     "retry": "Cargar de nuevo",
     "criteria_title": "Esto es lo que tienes que revisar"
+  },
+  "changes": {
+    "due_date": "{{name}} cambió la fecha límite del {{from}} al {{to}}",
+    "step": "{{name}} cambió el paso de {{from}} a {{to}}",
+    "assignee": "{{name}} reasignó la tarea de {{from}} a {{to}}",
+    "cancelled": "{{name}} canceló la tarea"
+  },
+  "sm": {
+    "for_role": "Vista para equipo SM",
+    "home_heading": "¿Qué necesita atención hoy?",
+    "home_scope": "Tareas que supervisas.",
+    "tasks_heading": "¿Qué tareas están en riesgo?",
+    "report_heading": "¿Cómo va la red?",
+    "network_heading": "¿Cómo está cada negocio y cada firma?",
+    "in_business_one": "{{count}} en {{name}}",
+    "in_business_other": "{{count}} en {{name}}",
+    "cards": {
+      "due_today": "Vencen hoy",
+      "overdue": "Vencidas",
+      "stale": "Entregas sin aprobar hace más de 3 días",
+      "blocked": "Bloqueadas",
+      "none": "Nada por ahora"
+    },
+    "attention_title": "Necesita atención",
+    "attention_count_one": "{{count}} tarea",
+    "attention_count_other": "{{count}} tareas",
+    "attention_empty": "Nada necesita atención. Aquí verás tareas vencidas, entregas sin aprobar y bloqueos largos.",
+    "see_all": "Ver todo ({{count}})",
+    "reason_stale_one": "Sin aprobar hace {{count}} día",
+    "reason_stale_other": "Sin aprobar hace {{count}} días",
+    "reason_long_block": "Bloqueada por {{codes}}, que está vencida",
+    "filter_scope": "Alcance",
+    "scope_mine": "Las que superviso",
+    "scope_all": "Todas de {{office}}",
+    "filter_firm": "Firma",
+    "all_firms": "Todas las firmas",
+    "chip_stale": "Sin aprobar hace más de 3 días",
+    "chip_attention": "Necesita atención",
+    "selected_one": "{{count}} tarea seleccionada",
+    "selected_other": "{{count}} tareas seleccionadas",
+    "bulk_assignee": "Reasignar",
+    "bulk_due": "Cambiar fecha límite",
+    "bulk_step": "Cambiar paso",
+    "clear_selection": "Quitar selección",
+    "select_all": "Seleccionar todas",
+    "select_task": "Seleccionar {{code}}",
+    "action_edit": "Editar tarea",
+    "more_actions": "Más acciones",
+    "action_reassign": "Reasignar",
+    "action_change_due": "Cambiar fecha o paso",
+    "action_cancel_task": "Cancelar tarea",
+    "catalog_note": "Definido por SM Global en el catálogo Método 180",
+    "internal_label": "{{name}} (equipo propio)",
+    "d_edit_title": "Editar {{code}}",
+    "d_edit_body": "Puedes cambiar quién la hace, la fecha límite y el paso. El nombre y el criterio no se editan aquí.",
+    "d_bulk_assignee_one": "Reasignar {{count}} tarea",
+    "d_bulk_assignee_other": "Reasignar {{count}} tareas",
+    "d_bulk_due_one": "Cambiar la fecha límite de {{count}} tarea",
+    "d_bulk_due_other": "Cambiar la fecha límite de {{count}} tareas",
+    "d_bulk_step_one": "Cambiar el paso de {{count}} tarea",
+    "d_bulk_step_other": "Cambiar el paso de {{count}} tareas",
+    "d_firm": "Firma",
+    "d_person": "Persona",
+    "d_pick_person": "Elige una persona",
+    "d_keep": "Sin cambios",
+    "d_due": "Fecha límite",
+    "d_step": "Paso",
+    "d_logged": "El cambio queda en la actividad de la tarea y la firma recibe un aviso.",
+    "d_save": "Guardar cambios",
+    "t_updated_one": "Guardaste los cambios en {{code}}. La firma ya lo sabe.",
+    "t_updated_many": "Guardaste los cambios en {{count}} tareas. Las firmas ya lo saben.",
+    "d_cancel_title_one": "Cancelar {{code}}",
+    "d_cancel_title_many": "Cancelar {{count}} tareas",
+    "d_cancel_body": "La tarea queda como Cancelada: no se borra y sale de las listas y del avance.",
+    "d_cancel_reason": "Motivo",
+    "d_cancel_placeholder": "Ej.: El negocio no tiene flota propia, no aplica.",
+    "d_cancel_required": "Escribe el motivo para poder cancelar.",
+    "d_keep_task": "No cancelar",
+    "t_cancelled_one": "Cancelaste {{code}}. La firma ya lo sabe.",
+    "t_cancelled_many": "Cancelaste {{count}} tareas. Las firmas ya lo saben.",
+    "note_cancelled": "{{name}} canceló esta tarea: “{{reason}}”",
+    "next_cancelled": "Esta tarea no sigue. Queda en el historial.",
+    "next_line": "La hace {{person}}, de {{firm}}. Vence el {{date}}.",
+    "counters": {
+      "businesses_one": "negocio en programa",
+      "businesses_other": "negocios en programa",
+      "open_one": "tarea abierta",
+      "open_other": "tareas abiertas",
+      "overdue_one": "vencida",
+      "overdue_other": "vencidas",
+      "waiting_approval_one": "esperando aprobación",
+      "waiting_approval_other": "esperando aprobación",
+      "blocked_one": "bloqueada",
+      "blocked_other": "bloqueadas"
+    },
+    "matrix_title": "Salud por negocio y área",
+    "matrix_business": "Negocio",
+    "program_day": "día {{day}} de 180",
+    "matrix_hint": "Toca una celda para ver sus tareas.",
+    "cell_detail": "{{open}} abiertas, {{overdue}} vencidas",
+    "health": {
+      "red": "Hay algo vencido",
+      "amber": "Vence esta semana o espera al dueño",
+      "green": "Al día",
+      "grey": "No aplica"
+    },
+    "network_empty_title": "Todavía no hay negocios en el programa",
+    "network_empty_body": "Cuando un negocio firme su contrato, aparecerá aquí con sus seis áreas.",
+    "load_title": "Carga por firma",
+    "load_firm": "Firma",
+    "load_open": "Abiertas",
+    "load_overdue": "Vencidas",
+    "load_late": "Atraso prom.",
+    "load_approval": "Aprobación prom.",
+    "load_empty": "Ninguna firma tiene tareas todavía.",
+    "load_hint": "Atraso: días promedio de las tareas vencidas. Aprobación: días desde la entrega hasta que el dueño aprueba.",
+    "days_short": "{{value}} d"
   }
 }
