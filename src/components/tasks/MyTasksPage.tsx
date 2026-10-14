@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { ArrowDown, ArrowUp, ArrowUpDown, CalendarDays, Columns3, GanttChart, Search, Table2, X } from "lucide-react";
@@ -23,6 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { TaskDetail } from "@/components/tasks/detail/TaskDetail";
+import { TaskBoard } from "@/components/tasks/TaskBoard";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const ALL = "__all";
@@ -38,6 +39,7 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
   const navigate = useNavigate({ from: "/tareas/" });
   const tasksQ = useTasks();
   const bizQ = useBusinesses();
+  const [submitFor, setSubmitFor] = useState<string | null>(null);
 
   const setSearch = (patch: Partial<TasksSearch>, replace = false) =>
     navigate({ search: (prev: TasksSearch) => ({ ...prev, ...patch }), replace });
@@ -98,7 +100,7 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
         </div>
       </div>
 
-      {view !== "table" ? (
+      {view === "roadmap" || view === "calendar" ? (
         <EmptyState
           title={t("tasks.coming_soon_title", { view: t(`tasks.views.${view}`) })}
           body={t("tasks.coming_soon_body")}
@@ -185,7 +187,7 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
           )}
 
           {/* Table */}
-          <div className="mt-3 min-h-0 overflow-auto rounded-md border border-border bg-surface">
+          <div className={cn("mt-3 min-h-0", view === "board" ? "flex flex-1 flex-col" : "overflow-auto rounded-md border border-border bg-surface")}>
             {tasksQ.isError ? (
               <EmptyState
                 inline
@@ -215,6 +217,21 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
                 action={{
                   label: t("tasks.filters.clear"),
                   onClick: () => setSearch({ business: undefined, area: undefined, status: undefined, due: undefined, q: undefined }),
+                }}
+              />
+            ) : view === "board" ? (
+              <TaskBoard
+                rows={rows}
+                selectedId={search.task}
+                businessName={businessName}
+                codeById={codeById}
+                onOpen={(id) => {
+                  setSubmitFor(null);
+                  void setSearch({ task: id });
+                }}
+                onSubmit={(id) => {
+                  setSubmitFor(id);
+                  void setSearch({ task: id });
                 }}
               />
             ) : (
@@ -302,12 +319,22 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
         </>
       )}
 
-      <Sheet open={!!selected} onOpenChange={(open) => !open && setSearch({ task: undefined })}>
+      <Sheet open={!!selected} onOpenChange={(open) => {
+          if (open) return;
+          setSubmitFor(null);
+          void setSearch({ task: undefined });
+        }}>
         <SheetContent className="w-full overflow-y-auto bg-surface p-0 sm:max-w-xl [&>button]:hidden">
           <SheetTitle className="sr-only">{selected?.name}</SheetTitle>
           <SheetDescription className="sr-only">{selected?.code}</SheetDescription>
           {selected && (
-            <TaskDetail taskId={selected.id} mode="panel" onClose={() => setSearch({ task: undefined })} />
+            <TaskDetail
+              key={selected.id + String(submitFor === selected.id)}
+              taskId={selected.id}
+              mode="panel"
+              openSubmit={submitFor === selected.id}
+              onClose={() => setSearch({ task: undefined })}
+            />
           )}
         </SheetContent>
       </Sheet>

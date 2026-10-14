@@ -146,7 +146,21 @@
     "error_body": "Check your connection and try again.",
     "retry": "Load tasks again",
     "panel_soon": "The full task detail comes in the next step.",
-    "close_panel": "Close panel"
+    "close_panel": "Close panel",
+    "board": {
+      "col_pending": "Not started",
+      "col_in_progress": "In progress",
+      "col_submitted": "Delivered",
+      "col_changes_requested": "Changes requested",
+      "col_accepted": "Approved",
+      "empty_column": "No tasks here",
+      "no_blocked": "{{code}} can't start: it's blocked by {{by}}.",
+      "no_owner_only": "Only the owner can move {{code}} to {{to}}. You send the deliverable; they approve or request changes.",
+      "no_already_submitted": "{{code}} is already delivered. Wait for the owner to approve it or request changes.",
+      "no_already_accepted": "{{code}} is already approved and can't be moved.",
+      "no_start_first": "Start {{code}} first: move it to In progress before delivering it.",
+      "no_no_going_back": "{{code}} can't go back to {{to}}."
+    }
   },
   "taskDetail": {
     "open_full_page": "Open as full page",

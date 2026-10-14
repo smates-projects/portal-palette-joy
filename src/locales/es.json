@@ -146,7 +146,21 @@
     "error_body": "Revisá tu conexión y probá de nuevo.",
     "retry": "Cargar tareas de nuevo",
     "panel_soon": "El detalle completo de la tarea llega en el próximo paso.",
-    "close_panel": "Cerrar panel"
+    "close_panel": "Cerrar panel",
+    "board": {
+      "col_pending": "Por empezar",
+      "col_in_progress": "En curso",
+      "col_submitted": "Entregada",
+      "col_changes_requested": "Cambios pedidos",
+      "col_accepted": "Aprobada",
+      "empty_column": "Sin tareas acá",
+      "no_blocked": "{{code}} no puede empezar: está bloqueada por {{by}}.",
+      "no_owner_only": "Solo el dueño puede pasar {{code}} a {{to}}. Vos enviás la entrega; él aprueba o pide cambios.",
+      "no_already_submitted": "{{code}} ya está entregada. Esperá a que el dueño la apruebe o pida cambios.",
+      "no_already_accepted": "{{code}} ya está aprobada y no se puede mover.",
+      "no_start_first": "Primero empezá {{code}}: pasala a En curso antes de entregarla.",
+      "no_no_going_back": "{{code}} no puede volver a {{to}}."
+    }
   },
   "taskDetail": {
     "open_full_page": "Abrir como página completa",
