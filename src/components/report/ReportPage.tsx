@@ -55,6 +55,7 @@ export function ReportPage() {
       </div>
     );
 
+  const bizName = (id: string) => bizQ.data?.find((b) => b.id === id)?.name ?? "";
   const r = buildFirmReport(tasksQ.data ?? [], versionsQ.data ?? [], bizQ.data ?? []);
   if (r.total === 0)
     return (
@@ -86,7 +87,7 @@ export function ReportPage() {
 
       {/* Progress + counters */}
       <section className="mt-6 grid overflow-hidden rounded-md border border-border bg-surface md:grid-cols-[1.4fr_repeat(5,1fr)]">
-        <div className="border-b border-border p-4 md:border-b-0 md:border-r">
+        <div className="border-b border-t-2 border-border border-t-transparent p-4 md:border-b-0 md:border-r">
           <p className="text-xs text-muted-foreground">{t("report.progress")}</p>
           <Num onClick={() => go({ status: "accepted" })} className="mt-1 text-3xl font-semibold">{r.progress_pct}%</Num>
           <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
@@ -95,7 +96,7 @@ export function ReportPage() {
           <p className="mt-1.5 text-xs text-muted-foreground">{t("report.progress_detail", { accepted: r.accepted, total: r.total })}</p>
         </div>
         {counters.map((c) => (
-          <div key={c.key} className={cn("border-b border-border p-4 md:border-b-0 md:border-r last:border-r-0", c.danger && c.value > 0 && "border-t-2 border-t-status-danger-fg")}>
+          <div key={c.key} className={cn("border-b border-t-2 border-border border-t-transparent p-4 md:border-b-0 md:border-r last:border-r-0", c.danger && c.value > 0 && "border-t-2 border-t-status-danger-fg")}>
             <p className="text-xs text-muted-foreground">{t(`report.c_${c.key}`)}</p>
             <Num
               onClick={() => go(c.search)}
@@ -156,7 +157,7 @@ export function ReportPage() {
                 {r.blocked.map(({ task, by }) => (
                   <li key={task.id} className="py-2 text-sm">
                     <button onClick={() => go({ task: task.id, blocked: "1" })} className="text-left hover:underline">
-                      <span className="font-display font-medium tabular-nums">{task.code}</span> {task.name}
+                      <span className="font-display font-medium tabular-nums">{task.code}</span> {task.name} <span className="text-muted-foreground">· {bizName(task.business_id)}</span>
                     </button>
                     <p className="mt-0.5 text-xs text-status-danger-fg">
                       {t("report.blocked_by", { codes: by.map((d) => d.code).join(", ") })}
