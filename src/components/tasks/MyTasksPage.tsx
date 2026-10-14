@@ -63,9 +63,9 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
       : [{ key: "all", label: "", items: rows }];
 
   const toggleSort = (key: SortKey) => {
-    if (search.sort !== key) return setSearch({ sort: key, dir: "asc" });
-    if (search.dir !== "desc") return setSearch({ dir: "desc" });
-    setSearch({ sort: undefined, dir: undefined });
+    if (search.sort !== key) void setSearch({ sort: key, dir: "asc" });
+    else if (search.dir !== "desc") void setSearch({ dir: "desc" });
+    else void setSearch({ sort: undefined, dir: undefined });
   };
 
   return (
@@ -329,7 +329,7 @@ function Indicator({ children }: { children: ReactNode }) {
 
 function FilterSelect(props: {
   label: string;
-  value?: string;
+  value?: string | undefined;
   allLabel: string;
   options: { value: string; label: string }[];
   onChange: (v: string | undefined) => void;
