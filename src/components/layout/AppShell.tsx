@@ -147,7 +147,7 @@ function ViewAs() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex h-8 min-w-0 max-w-[11rem] items-center gap-2 rounded-md border border-border bg-surface px-2.5 text-sm hover:bg-muted sm:max-w-none md:min-w-60">
+      <DropdownMenuTrigger aria-label={`${t("topbar.view_as")}: ${currentOpt ? label(currentOpt) : ""}`} className="flex h-8 min-w-0 max-w-[11rem] items-center gap-2 rounded-md border border-border bg-surface px-2.5 text-sm hover:bg-muted sm:max-w-none md:min-w-60">
         <Eye className="h-3.5 w-3.5 text-muted-foreground" />
         <span className="hidden text-muted-foreground sm:inline">{t("topbar.view_as")}:</span>
         <span className="truncate font-medium">{currentOpt ? label(currentOpt) : "…"}</span>
