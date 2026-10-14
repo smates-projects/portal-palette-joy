@@ -3,6 +3,7 @@ import { NetworkPage } from "@/components/network/NetworkPage";
 import { tStatic } from "@/lib/i18n";
 
 export const Route = createFileRoute("/red")({
+  validateSearch: (raw: Record<string, unknown>): { biz?: string } => (typeof raw["biz"] === "string" && raw["biz"] ? { biz: raw["biz"] } : {}),
   head: () => ({
     meta: [
       { title: `${tStatic("pages.network.title")} · SM Platform` },
@@ -13,5 +14,10 @@ export const Route = createFileRoute("/red")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: NetworkPage,
+  component: RedRoute,
 });
+
+function RedRoute() {
+  const { biz } = Route.useSearch();
+  return <NetworkPage businessId={biz} />;
+}

@@ -65,7 +65,7 @@ export interface LeadsRepository {
   discard(id: Uuid, reason: string): Promise<LeadWithComputed>;
   addNote(id: Uuid, body: string): Promise<LeadEvent>;
   /** contract → in_program: creates the business (day 1 = signed_on) and its tasks from the catalog. */
-  markContractSigned(id: Uuid, signed_on: string): Promise<{ lead: Lead; business_id: Uuid }>;
+  markContractSigned(id: Uuid, signed_on: string): Promise<{ lead: Lead; business_id: Uuid; task_count: number }>;
 }
 
 export interface TaskDetail {

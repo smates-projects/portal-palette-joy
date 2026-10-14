@@ -8,6 +8,7 @@ import {
   Library,
   ListChecks,
   Network,
+  Filter,
   Settings,
   Store,
   TrendingUp,
@@ -19,10 +20,10 @@ import type { UserRole } from "@/lib/api/types";
 export type NavKey =
   | "home" | "tasks" | "clients" | "report" | "profile"
   | "calendar" | "manual" | "documents" | "numbers" | "business"
-  | "network" | "businesses" | "catalog" | "settings";
+  | "network" | "businesses" | "catalog" | "settings" | "pipeline";
 
 export interface NavItem {
-  to: "/" | "/tareas" | "/clientes" | "/reporte" | "/perfil" | "/manual" | "/documentos" | "/numeros" | "/negocio" | "/red" | "/negocios" | "/catalogo" | "/configuracion";
+  to: "/" | "/tareas" | "/clientes" | "/reporte" | "/perfil" | "/manual" | "/documentos" | "/numeros" | "/negocio" | "/red" | "/negocios" | "/catalogo" | "/configuracion" | "/embudo";
   key: NavKey;
   icon: LucideIcon;
   /** Only for "Calendario": Mis tareas opened in the calendar view. */
@@ -52,6 +53,7 @@ export const ownerNav: NavItem[] = [
 
 // Menu for the SM office team.
 export const smNav: NavItem[] = [
+  { to: "/embudo", key: "pipeline", icon: Filter },
   { to: "/", key: "home", icon: Home },
   { to: "/tareas", key: "tasks", icon: ListChecks },
   { to: "/red", key: "network", icon: Network },

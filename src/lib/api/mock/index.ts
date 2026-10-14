@@ -277,15 +277,16 @@ export function createMockApi(): ApiClient {
         const programDay = Math.round((Date.parse(`${TODAY}T12:00:00Z`) - Date.parse(`${signed_on}T12:00:00Z`)) / 86_400_000) + 1;
         db.businesses.push({ id: businessId, name: l.business.name, industry: l.business.activity, city: l.contact.city, state: l.contact.state, owner_user_id: ownerId, program_start_date: signed_on, program_day: programDay, office_id: l.office_id });
         db.users.find((u) => u.id === ownerId)!.business_id = businessId;
-        db.tasks.push(...generateProgramTasks(catalogJson as CatalogEntry[], {
+        const created = generateProgramTasks(catalogJson as CatalogEntry[], {
           business_id: businessId, industry: l.business.industry, start_date: signed_on, supervisor_user_id: l.consultant_user_id,
           firmFor: firmFor(l.office_id, l.consultant_user_id), newId, now: nowIso(),
-        }));
+        });
+        db.tasks.push(...created);
         const from = l.stage;
         setStage(l, "in_program");
         l.business_id = businessId;
         pushLeadEvent({ lead_id: id, kind: "contract_signed", from, to: "in_program", body: null, signed_on });
-        return delay({ lead: l, business_id: businessId });
+        return delay({ lead: l, business_id: businessId, task_count: created.length });
       },
     },
     tasks: {
