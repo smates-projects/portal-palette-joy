@@ -21,9 +21,9 @@ export const ORG_PEREZ = uuid("0a000000", 2);
 export const ORG_XYZ = uuid("0a000000", 3);
 
 export const organizations: Organization[] = [
-  { id: ORG_SM, name: "Strategic Mates", kind: "sm", area: null },
-  { id: ORG_PEREZ, name: "Estudio Pérez Legal", kind: "partner_firm", area: "B6" },
-  { id: ORG_XYZ, name: "Agencia XYZ", kind: "partner_firm", area: "B5" },
+  { id: ORG_SM, name: "Strategic Mates", kind: "sm", area: null, specialty: null, city: "Orlando, FL", email: "hola@strategicmates.com", phone: null },
+  { id: ORG_PEREZ, name: "Estudio Pérez Legal", kind: "partner_firm", area: "B6", specialty: "Derecho corporativo, licencias y contratos para franquicias en Florida", city: "Miami, FL", email: "contacto@estudioperez.legal", phone: "+1 305 555 0142" },
+  { id: ORG_XYZ, name: "Agencia XYZ", kind: "partner_firm", area: "B5", specialty: "Posicionamiento, SEO local y sitios de conversión para negocios de servicios", city: "Tampa, FL", email: "hola@agenciaxyz.com", phone: "+1 813 555 0198" },
 ];
 
 // Businesses
@@ -33,6 +33,8 @@ export const BIZ_ENYERMY = uuid("0b000000", 3);
 
 // Users
 export const U_LUCIA = uuid("0c000000", 1);
+export const U_JULIAN = uuid("0c000000", 20);
+export const U_SOFIA = uuid("0c000000", 21);
 export const U_TOMAS = uuid("0c000000", 2);
 export const U_CARLA = uuid("0c000000", 3);
 export const U_DANIEL = uuid("0c000000", 4);
@@ -41,13 +43,15 @@ export const U_MARYLIN = uuid("0c000000", 6);
 export const U_NICOLAS = uuid("0c000000", 7);
 
 export const users: User[] = [
-  { id: U_LUCIA, full_name: "Lucía Pérez", email: "lucia@estudioperez.legal", role: "partner_firm", organization_id: ORG_PEREZ, business_id: null, title: "Socia" },
-  { id: U_TOMAS, full_name: "Tomás Herrera", email: "tomas@agenciaxyz.com", role: "partner_firm", organization_id: ORG_XYZ, business_id: null, title: "Director de cuentas" },
-  { id: U_CARLA, full_name: "Carla Méndez", email: "carla@vossler.com", role: "business_owner", organization_id: null, business_id: BIZ_VOSSLER, title: null },
-  { id: U_DANIEL, full_name: "Daniel Ortiz", email: "daniel@prime10solutions.com", role: "business_owner", organization_id: null, business_id: BIZ_PRIME, title: null },
-  { id: U_ENYERMY, full_name: "Enyermy Rivas", email: "enyermy@enyermyhair.com", role: "business_owner", organization_id: null, business_id: BIZ_ENYERMY, title: null },
-  { id: U_MARYLIN, full_name: "Marylin Boraei", email: "marylin@strategicmates.com", role: "sm_team", organization_id: ORG_SM, business_id: null, title: "Directora" },
-  { id: U_NICOLAS, full_name: "Nicolás García", email: "nicolas@strategicmates.com", role: "sm_team", organization_id: ORG_SM, business_id: null, title: "Consultor" },
+  { id: U_JULIAN, full_name: "Julián Ferreyra", email: "julian@estudioperez.legal", role: "partner_firm", organization_id: ORG_PEREZ, business_id: null, title: "Abogado asociado", google_calendar_email: null },
+  { id: U_SOFIA, full_name: "Sofía Lagos", email: "sofia@agenciaxyz.com", role: "partner_firm", organization_id: ORG_XYZ, business_id: null, title: "Especialista SEO", google_calendar_email: null },
+  { id: U_LUCIA, full_name: "Lucía Pérez", email: "lucia@estudioperez.legal", role: "partner_firm", organization_id: ORG_PEREZ, business_id: null, title: "Socia", google_calendar_email: "lucia.perez@gmail.com" },
+  { id: U_TOMAS, full_name: "Tomás Herrera", email: "tomas@agenciaxyz.com", role: "partner_firm", organization_id: ORG_XYZ, business_id: null, title: "Director de cuentas", google_calendar_email: null },
+  { id: U_CARLA, full_name: "Carla Méndez", email: "carla@vossler.com", role: "business_owner", organization_id: null, business_id: BIZ_VOSSLER, title: null, google_calendar_email: null },
+  { id: U_DANIEL, full_name: "Daniel Ortiz", email: "daniel@prime10solutions.com", role: "business_owner", organization_id: null, business_id: BIZ_PRIME, title: null, google_calendar_email: null },
+  { id: U_ENYERMY, full_name: "Enyermy Rivas", email: "enyermy@enyermyhair.com", role: "business_owner", organization_id: null, business_id: BIZ_ENYERMY, title: null, google_calendar_email: null },
+  { id: U_MARYLIN, full_name: "Marylin Boraei", email: "marylin@strategicmates.com", role: "sm_team", organization_id: ORG_SM, business_id: null, title: "Directora", google_calendar_email: null },
+  { id: U_NICOLAS, full_name: "Nicolás García", email: "nicolas@strategicmates.com", role: "sm_team", organization_id: ORG_SM, business_id: null, title: "Consultor", google_calendar_email: null },
 ];
 
 export const businesses: Business[] = [

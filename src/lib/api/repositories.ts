@@ -30,6 +30,8 @@ export interface BusinessesRepository {
 
 export interface UsersRepository {
   list(): Promise<User[]>;
+  /** Connect (with an account email) or disconnect (null) the current user's Google Calendar. */
+  setGoogleCalendar(email: string | null): Promise<User>;
 }
 
 export interface TaskDetail {

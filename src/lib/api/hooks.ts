@@ -23,6 +23,16 @@ export const useUsers = () => useQuery({ queryKey: queryKeys.users, queryFn: api
 export const useTaskDetail = (id: string) =>
   useQuery({ queryKey: queryKeys.task(id), queryFn: () => api.tasks.get(id) });
 
+export const useOrganizations = () => useQuery({ queryKey: ["organizations"], queryFn: api.organizations.list });
+
+export function useSetGoogleCalendar() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (email: string | null) => api.users.setGoogleCalendar(email),
+    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: queryKeys.me }), qc.invalidateQueries({ queryKey: queryKeys.users })]),
+  });
+}
+
 export function useSetViewAs() {
   const qc = useQueryClient();
   return useMutation({

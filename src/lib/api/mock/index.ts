@@ -80,7 +80,14 @@ export function createMockApi(): ApiClient {
         return delay(db.businesses.filter((b) => ids.has(b.id)));
       },
     },
-    users: { list: () => delay(db.users) },
+    users: {
+      list: () => delay(db.users),
+      setGoogleCalendar: async (email) => {
+        const u = me();
+        u.google_calendar_email = email;
+        return delay({ ...u });
+      },
+    },
     tasks: {
       list: () => delay(visibleTasks().map((t) => withComputed(t, db.tasks))),
       listUpcomingMeetings: () => {
