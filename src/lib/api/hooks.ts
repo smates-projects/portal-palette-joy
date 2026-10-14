@@ -1,5 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./index";
+import { listCatalog } from "./catalog";
 import type { SubmitVersionInput } from "./repositories";
 
 export const queryKeys = {
@@ -27,6 +28,13 @@ export const useCalendarEvents = () =>
 export const useVersions = () => useQuery({ queryKey: ["tasks", "versions"], queryFn: api.tasks.listVersions });
 export const useFranchisability = (businessId: string | undefined) =>
   useQuery({ queryKey: ["tasks", "franchisability", businessId], queryFn: () => api.businesses.getFranchisability(businessId!), enabled: !!businessId });
+/** Franchisability of several businesses (Negocios). Shares cache with useFranchisability. */
+export const useFranchisabilityMany = (businessIds: string[]) =>
+  useQueries({
+    queries: businessIds.map((id) => ({ queryKey: ["tasks", "franchisability", id], queryFn: () => api.businesses.getFranchisability(id) })),
+    combine: (rs) => ({ data: rs.flatMap((r) => (r.data ? [r.data] : [])), isLoading: rs.some((r) => r.isLoading) }),
+  });
+export const useCatalog = () => useQuery({ queryKey: ["catalog"], queryFn: listCatalog, staleTime: Infinity });
 export const useOpenOwnerRequests = () => useQuery({ queryKey: ["tasks", "owner-requests"], queryFn: api.tasks.listOpenOwnerRequests });
 export const useBusinesses = () => useQuery({ queryKey: queryKeys.businesses, queryFn: api.businesses.list });
 export const useUsers = () => useQuery({ queryKey: queryKeys.users, queryFn: api.users.list });
