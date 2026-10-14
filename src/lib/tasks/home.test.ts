@@ -19,11 +19,11 @@ const tasks = [
 describe("home summary", () => {
   it("counts each card and groups by business", () => {
     const s = Object.fromEntries(buildSummary(tasks, T).map((c) => [c.key, c]));
-    expect(s.overdue!.count).toBe(2);
-    expect(s.overdue!.byBusiness).toEqual([{ business_id: "v", count: 2 }]);
-    expect(s.today!.count).toBe(1);
-    expect(s.changes!.count).toBe(1);
-    expect(s.waiting!.count).toBe(1);
+    expect(s['overdue']!.count).toBe(2);
+    expect(s['overdue']!.byBusiness).toEqual([{ business_id: "v", count: 2 }]);
+    expect(s['today']!.count).toBe(1);
+    expect(s['changes']!.count).toBe(1);
+    expect(s['waiting']!.count).toBe(1);
   });
 });
 
