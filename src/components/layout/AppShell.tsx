@@ -227,7 +227,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <Rail collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} />
         <div className="flex min-w-0 flex-1 flex-col">
           <TopBar />
-          <main className="flex-1 overflow-y-auto">{children}</main>
+          <main className="min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]">{children}</main>
         </div>
       </div>
     </TooltipProvider>
