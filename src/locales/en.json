@@ -1014,6 +1014,7 @@
         "green": "Green: all on track.",
         "grey": "Grey: the area doesn't apply to that business."
       }
-    }
+    },
+    "firm_internal": "{{name}} (strategy, own team)"
   }
 }

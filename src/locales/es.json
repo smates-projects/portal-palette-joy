@@ -1014,6 +1014,7 @@
         "green": "Verde: todo al día.",
         "grey": "Gris: el área no aplica a ese negocio."
       }
-    }
+    },
+    "firm_internal": "{{name}} (estrategia, equipo propio)"
   }
 }
