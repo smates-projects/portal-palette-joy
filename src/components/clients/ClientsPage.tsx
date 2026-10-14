@@ -104,16 +104,24 @@ export function ClientsPage() {
                       <span className="text-muted-foreground">{t("clients.next_none")}</span>
                     )}
                   </p>
-                  <p
-                    className={cn(
-                      "rounded-[4px] border px-2 py-1.5 text-xs",
-                      stuck
-                        ? "border-status-warning-border bg-status-warning-bg text-status-warning-fg"
-                        : "border-border bg-muted/40 text-muted-foreground",
-                    )}
-                  >
-                    {stuckText(s.stuck, owner)}
-                  </p>
+                  {s.stuck.kind !== "none" ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (s.stuck.kind !== "none") void navigate({ to: "/tareas", search: { business: b.id, task: s.stuck.task_id } });
+                      }}
+                      className="flex w-full items-center justify-between gap-2 rounded-[4px] border border-status-warning-border bg-status-warning-bg px-2 py-1.5 text-left text-xs text-status-warning-fg transition-[filter] hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <span>{stuckText(s.stuck, owner)}</span>
+                      <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+                    </button>
+                  ) : (
+                    <p className="rounded-[4px] border border-border bg-muted/40 px-2 py-1.5 text-xs text-muted-foreground">
+                      {stuckText(s.stuck, owner)}
+                    </p>
+                  )}
                 </div>
                 <span className="border-t border-border px-5 py-2.5 text-xs font-medium text-link group-hover:underline">
                   {t("clients.open_tasks", { name: b.name })}
