@@ -10,7 +10,8 @@
     "profile": "Mi perfil",
     "collapse": "Contraer menú",
     "expand": "Expandir menú",
-    "main": "Menú principal"
+    "main": "Menú principal",
+    "report": "Reporte"
   },
   "topbar": {
     "search_placeholder": "Buscar tareas o clientes",
@@ -64,13 +65,18 @@
     "profile": {
       "title": "Mi perfil",
       "subtitle": "¿Cómo me ven los dueños y el equipo SM?"
+    },
+    "report": {
+      "title": "Reporte",
+      "subtitle": "¿Cómo va mi trabajo?"
     }
   },
   "meta": {
     "home": "Tu día de trabajo en el Método 180: qué mover hoy.",
     "tasks": "Tareas asignadas a tu firma en el Método 180.",
     "clients": "Negocios para los que trabaja tu firma.",
-    "profile": "Datos de tu firma y de tu usuario."
+    "profile": "Datos de tu firma y de tu usuario.",
+    "report": "Avance y ritmo de entregas de tu firma."
   },
   "notFound": {
     "title": "Esta página no existe",
@@ -384,5 +390,31 @@
     "undo": "Deshacer",
     "error_title": "No pudimos cargar tu perfil",
     "retry": "Cargar perfil de nuevo"
+  },
+  "report": {
+    "heading": "¿Cómo va mi trabajo?",
+    "progress": "Avance",
+    "progress_detail": "{{accepted}} de {{total}} tareas aprobadas",
+    "c_pending": "Por empezar",
+    "c_in_progress": "En curso",
+    "c_waiting": "Esperando aprobación",
+    "c_overdue": "Vencidas",
+    "c_blocked": "Bloqueadas",
+    "by_client": "Avance por cliente",
+    "client_detail": "{{accepted}} de {{total}} aprobadas",
+    "blocked_title": "Qué está bloqueado",
+    "blocked_none": "No tienes tareas bloqueadas.",
+    "blocked_by": "Bloqueada por {{codes}}",
+    "avg_days": "Días de entrega a aprobación",
+    "avg_days_hint": "Promedio en tareas aprobadas",
+    "avg_rounds": "Rondas de cambios",
+    "avg_rounds_hint": "Promedio por tarea aprobada",
+    "billable_title": "Aprobadas y facturables en {{month}}",
+    "billable_note": "Solo informativo, no genera facturas.",
+    "billable_none": "Este mes todavía no tienes tareas aprobadas. Cuando un dueño apruebe una entrega, aparecerá aquí.",
+    "error_title": "No pudimos cargar el reporte.",
+    "retry": "Cargar el reporte de nuevo",
+    "empty_title": "Todavía no tienes tareas",
+    "empty_body": "Cuando SM te asigne tareas, aquí verás tu avance."
   }
 }
