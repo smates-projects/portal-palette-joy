@@ -1,0 +1,237 @@
+import { useEffect, useState, type ReactNode } from "react";
+import { Link, useRouterState } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
+import { Bell, ChevronsLeft, ChevronsRight, Search, Check, Eye } from "lucide-react";
+import { toast } from "sonner";
+import { Logo } from "@/components/brand/Logo";
+import { partnerFirmNav } from "./nav";
+import { cn } from "@/lib/utils";
+import { LANGUAGE_STORAGE_KEY, type Language } from "@/lib/i18n";
+import { useCurrentUser, useSetViewAs, useViewAsOptions } from "@/lib/api/hooks";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+const initials = (name: string) =>
+  name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
+
+function Rail({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
+  const { t } = useTranslation();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  return (
+    <aside
+      className={cn(
+        "flex shrink-0 flex-col bg-sidebar text-sidebar-foreground transition-[width] duration-200",
+        collapsed ? "w-16" : "w-60",
+      )}
+    >
+      <div className={cn("flex h-14 items-center gap-2.5 border-b border-sidebar-border", collapsed ? "justify-center px-0" : "px-4")}>
+        <Logo variant="isotype" className="h-8 w-8" />
+        {!collapsed && (
+          <div className="leading-tight">
+            <div className="font-display text-sm font-semibold">{t("app.name")}</div>
+            <div className="text-[11px] text-sidebar-muted">{t("roles.partner_firm")}</div>
+          </div>
+        )}
+      </div>
+      <nav aria-label={t("nav.main")} className="flex-1 space-y-0.5 p-2">
+        {partnerFirmNav.map((item) => {
+          const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
+          const Icon = item.icon;
+          const link = (
+            <Link
+              key={item.to}
+              to={item.to}
+              className={cn(
+                "relative flex h-9 items-center gap-3 rounded-md px-3 text-sm transition-colors",
+                active
+                  ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+                  : "text-sidebar-muted hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
+                collapsed && "justify-center px-0",
+              )}
+            >
+              {active && <span className="absolute inset-y-1.5 left-0 w-[3px] rounded-r bg-sidebar-indicator" />}
+              <Icon className="h-4 w-4 shrink-0" />
+              {!collapsed && <span>{t(`nav.${item.key}`)}</span>}
+            </Link>
+          );
+          return collapsed ? (
+            <Tooltip key={item.to}>
+              <TooltipTrigger asChild>{link}</TooltipTrigger>
+              <TooltipContent side="right">{t(`nav.${item.key}`)}</TooltipContent>
+            </Tooltip>
+          ) : (
+            link
+          );
+        })}
+      </nav>
+      <button
+        onClick={onToggle}
+        className={cn(
+          "m-2 flex h-9 items-center gap-3 rounded-md px-3 text-xs text-sidebar-muted hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
+          collapsed && "justify-center px-0",
+        )}
+        aria-label={collapsed ? t("nav.expand") : t("nav.collapse")}
+      >
+        {collapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
+        {!collapsed && t("nav.collapse")}
+      </button>
+    </aside>
+  );
+}
+
+function LanguageSwitch() {
+  const { t, i18n } = useTranslation();
+  const set = (lng: Language) => {
+    void i18n.changeLanguage(lng);
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, lng);
+    document.documentElement.lang = lng;
+  };
+  return (
+    <div role="group" aria-label={t("topbar.language")} className="flex h-8 items-center rounded-md border border-border bg-surface p-0.5">
+      {(["es", "en"] as const).map((lng) => (
+        <button
+          key={lng}
+          onClick={() => set(lng)}
+          aria-pressed={i18n.language === lng}
+          className={cn(
+            "h-full rounded-[4px] px-2 font-display text-xs font-semibold uppercase transition-colors",
+            i18n.language === lng ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          {lng}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ViewAs() {
+  const { t } = useTranslation();
+  const { data: me } = useCurrentUser();
+  const { data: options } = useViewAsOptions();
+  const setViewAs = useSetViewAs();
+  const firms = options?.filter((o) => o.enabled) ?? [];
+  const currentOrg = firms.find((o) => o.user.id === me?.id)?.organization;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger className="flex h-8 items-center gap-2 rounded-md border border-border bg-surface px-2.5 text-sm hover:bg-muted">
+        <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+        <span className="text-muted-foreground">{t("topbar.view_as")}:</span>
+        <span className="font-medium">{currentOrg?.name ?? "…"}</span>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-72">
+        <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{t("topbar.view_as_title")}</DropdownMenuLabel>
+        {firms.map((o) => (
+          <DropdownMenuItem
+            key={o.user.id}
+            onSelect={() =>
+              setViewAs.mutate(o.user.id, {
+                onSuccess: () => toast.success(t("topbar.switched", { name: o.organization?.name })),
+                onError: () => toast.error(t("topbar.switch_error")),
+              })
+            }
+            className="flex items-start gap-2"
+          >
+            <Check className={cn("mt-0.5 h-4 w-4", o.user.id === me?.id ? "opacity-100" : "opacity-0")} />
+            <div>
+              <div className="font-medium">{o.organization?.name}</div>
+              <div className="text-xs text-muted-foreground">
+                {o.user.full_name} · {o.organization?.area ? t(`areas.${o.organization.area}`) : ""}
+              </div>
+            </div>
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuSeparator />
+        {(["role_owner", "role_sm"] as const).map((k) => (
+          <DropdownMenuItem key={k} disabled className="flex justify-between pl-8">
+            <span>{t(`topbar.${k}`)}</span>
+            <span className="rounded-[4px] border border-border px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+              {t("topbar.coming_soon")}
+            </span>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function TopBar() {
+  const { t } = useTranslation();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const current = partnerFirmNav.find((n) => (n.to === "/" ? pathname === "/" : pathname.startsWith(n.to)));
+  const { data: me } = useCurrentUser();
+  return (
+    <header className="flex h-14 shrink-0 items-center gap-4 border-b border-border bg-surface px-6">
+      <div className="min-w-0 flex-1 font-semibold">{current ? t(`pages.${current.key}.title`) : ""}</div>
+      <label className="relative hidden w-72 md:block">
+        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <input
+          type="search"
+          placeholder={t("topbar.search_placeholder")}
+          className="h-8 w-full rounded-md border border-input bg-background pl-8 pr-3 text-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30"
+        />
+      </label>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button aria-label={t("topbar.notifications")} className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground">
+            <Bell className="h-4 w-4" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>{t("topbar.notifications_soon")}</TooltipContent>
+      </Tooltip>
+      <LanguageSwitch />
+      <ViewAs />
+      <div
+        title={me?.full_name}
+        aria-label={t("topbar.account")}
+        className="flex h-8 w-8 items-center justify-center rounded-full bg-primary font-display text-xs font-semibold text-primary-foreground"
+      >
+        {me ? initials(me.full_name) : ""}
+      </div>
+    </header>
+  );
+}
+
+export function AppShell({ children }: { children: ReactNode }) {
+  const { i18n } = useTranslation();
+  const [collapsed, setCollapsed] = useState(false);
+
+  // Restore saved language after hydration to avoid SSR mismatches.
+  useEffect(() => {
+    const saved = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    if (saved === "es" || saved === "en") {
+      void i18n.changeLanguage(saved);
+      document.documentElement.lang = saved;
+    }
+  }, [i18n]);
+
+  return (
+    <TooltipProvider delayDuration={200}>
+      <div className="flex h-screen overflow-hidden bg-background">
+        <Rail collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <TopBar />
+          <main className="flex-1 overflow-y-auto">{children}</main>
+        </div>
+      </div>
+    </TooltipProvider>
+  );
+}
+
+export function PageHeader({ pageKey }: { pageKey: "home" | "tasks" | "clients" | "profile" }) {
+  const { t } = useTranslation();
+  return (
+    <div className="mx-auto max-w-6xl px-6 py-8">
+      <h1 className="text-2xl font-semibold tracking-tight">{t(`pages.${pageKey}.title`)}</h1>
+      <p className="mt-1 text-sm text-muted-foreground">{t(`pages.${pageKey}.subtitle`)}</p>
+    </div>
+  );
+}

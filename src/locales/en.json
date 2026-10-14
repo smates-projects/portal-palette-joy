@@ -1,0 +1,62 @@
+{
+  "app": { "name": "SM Platform", "company": "Strategic Mates" },
+  "nav": {
+    "home": "Home",
+    "tasks": "My tasks",
+    "clients": "Clients",
+    "profile": "My profile",
+    "collapse": "Collapse menu",
+    "expand": "Expand menu",
+    "main": "Main menu"
+  },
+  "topbar": {
+    "search_placeholder": "Search tasks or clients",
+    "notifications": "Notifications",
+    "notifications_soon": "Notifications are coming soon",
+    "language": "Language",
+    "view_as": "View as",
+    "view_as_title": "View the platform as",
+    "coming_soon": "Coming soon",
+    "role_owner": "Business owner",
+    "role_sm": "SM team",
+    "switched": "You are now viewing the platform as {{name}}",
+    "switch_error": "We couldn't switch users. Please try again.",
+    "account": "My account"
+  },
+  "roles": {
+    "partner_firm": "Partner firm",
+    "business_owner": "Business owner",
+    "sm_team": "SM team"
+  },
+  "areas": {
+    "B1": "Strategy",
+    "B2": "Operations",
+    "B3": "Finance",
+    "B4": "Technology",
+    "B5": "Marketing and sales",
+    "B6": "Legal"
+  },
+  "status": {
+    "pending": "Not started",
+    "in_progress": "In progress",
+    "submitted": "Delivered, awaiting approval",
+    "changes_requested": "Changes requested",
+    "accepted": "Approved",
+    "blocked": "Blocked",
+    "overdue": "Overdue"
+  },
+  "pages": {
+    "home": { "title": "Home", "subtitle": "What do I need to move today?" },
+    "tasks": { "title": "My tasks", "subtitle": "Which tasks am I responsible for, and where do they stand?" },
+    "clients": { "title": "Clients", "subtitle": "Which businesses am I working for?" },
+    "profile": { "title": "My profile", "subtitle": "How do owners and the SM team see me?" }
+  },
+  "meta": {
+    "home": "Your work day in Método 180: what to move today.",
+    "tasks": "Tasks assigned to your firm in Método 180.",
+    "clients": "Businesses your firm works for.",
+    "profile": "Your firm and user details."
+  },
+  "notFound": { "title": "This page doesn't exist", "body": "Go back home to continue with your tasks.", "cta": "Go home" },
+  "error": { "title": "This page didn't load", "body": "Something went wrong on our side. Try again or go back home.", "retry": "Try again", "home": "Go home" }
+}

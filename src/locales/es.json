@@ -1,0 +1,62 @@
+{
+  "app": { "name": "SM Platform", "company": "Strategic Mates" },
+  "nav": {
+    "home": "Inicio",
+    "tasks": "Mis tareas",
+    "clients": "Clientes",
+    "profile": "Mi perfil",
+    "collapse": "Contraer menú",
+    "expand": "Expandir menú",
+    "main": "Menú principal"
+  },
+  "topbar": {
+    "search_placeholder": "Buscar tareas o clientes",
+    "notifications": "Notificaciones",
+    "notifications_soon": "Las notificaciones llegan pronto",
+    "language": "Idioma",
+    "view_as": "Ver como",
+    "view_as_title": "Ver la plataforma como",
+    "coming_soon": "Próximamente",
+    "role_owner": "Dueño del negocio",
+    "role_sm": "Equipo SM",
+    "switched": "Ahora ves la plataforma como {{name}}",
+    "switch_error": "No pudimos cambiar de usuario. Probá de nuevo.",
+    "account": "Mi cuenta"
+  },
+  "roles": {
+    "partner_firm": "Firma aliada",
+    "business_owner": "Dueño del negocio",
+    "sm_team": "Equipo SM"
+  },
+  "areas": {
+    "B1": "Estrategia",
+    "B2": "Operaciones",
+    "B3": "Finanzas",
+    "B4": "Tecnología",
+    "B5": "Marketing y ventas",
+    "B6": "Legal"
+  },
+  "status": {
+    "pending": "Por empezar",
+    "in_progress": "En curso",
+    "submitted": "Entregada, esperando aprobación",
+    "changes_requested": "Cambios pedidos",
+    "accepted": "Aprobada",
+    "blocked": "Bloqueada",
+    "overdue": "Vencida"
+  },
+  "pages": {
+    "home": { "title": "Inicio", "subtitle": "¿Qué tengo que mover hoy?" },
+    "tasks": { "title": "Mis tareas", "subtitle": "¿Qué tareas tengo a mi cargo y en qué estado están?" },
+    "clients": { "title": "Clientes", "subtitle": "¿Para qué negocios estoy trabajando?" },
+    "profile": { "title": "Mi perfil", "subtitle": "¿Cómo me ven los dueños y el equipo SM?" }
+  },
+  "meta": {
+    "home": "Tu día de trabajo en el Método 180: qué mover hoy.",
+    "tasks": "Tareas asignadas a tu firma en el Método 180.",
+    "clients": "Negocios para los que trabaja tu firma.",
+    "profile": "Datos de tu firma y de tu usuario."
+  },
+  "notFound": { "title": "Esta página no existe", "body": "Volvé al inicio para seguir con tus tareas.", "cta": "Ir al inicio" },
+  "error": { "title": "Esta página no cargó", "body": "Algo falló de nuestro lado. Probá de nuevo o volvé al inicio.", "retry": "Probar de nuevo", "home": "Ir al inicio" }
+}
