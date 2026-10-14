@@ -14,3 +14,6 @@
 - Blocked/overdue are computed in `src/lib/api/computed.ts`, never stored as statuses. Why: they depend on dependencies and the fixed TODAY in `src/config/app.ts`.
 - No UI text in components: all copy lives in `src/locales/{es,en}.json`. Why: bilingual app.
 - Routing is TanStack Router (file routes), not React Router. Why: fixed by the platform.
+- The menu per role lives in `src/components/layout/nav.ts` (`navFor(role)`); screens are shared across roles and branch on `useCurrentUser().role`. Why: owner and firm reuse Mis tareas, detail and Reporte.
+- Franchisability is computed in `src/lib/api/franchisability.ts` and returned by the businesses repository, never in components. Why: the Laravel backend will compute it the same way.
+- Seed tasks take name and acceptance from `src/data/catalogo_metodo180.json`, never typed by hand. Why: the catalog is official and only SM Global edits it.
