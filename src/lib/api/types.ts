@@ -52,8 +52,6 @@ export interface Business {
   program_start_date: IsoDate;
   program_day: number;
   /** Per-business overrides set by SM; null = use the default for all businesses. */
-  franchisability_goal: number | null;
-  required_task_codes: string[] | null;
 }
 
 /** Readiness to franchise, computed by the data layer (as the backend will). */
@@ -209,4 +207,10 @@ export interface ViewAsOption {
   /** For business owners: the business they own. */
   business: Business | null;
   enabled: boolean;
+}
+
+/** Set only by SM Global, same for every program (like the catalog). Required list may be empty. */
+export interface FranchisabilityRules {
+  goal: number;
+  required_task_codes: string[];
 }

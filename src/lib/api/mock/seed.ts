@@ -65,9 +65,9 @@ export const users: User[] = [
 ];
 
 export const businesses: Business[] = [
-  { id: BIZ_VOSSLER, name: "Vossler", industry: "Construcción residencial", city: "Orlando", state: "FL", owner_user_id: U_CARLA, program_start_date: "2026-08-02", program_day: 74, franchisability_goal: null, required_task_codes: null },
-  { id: BIZ_PRIME, name: "Prime 10 Solutions", industry: "Remodelaciones", city: "Tampa", state: "FL", owner_user_id: U_DANIEL, program_start_date: "2026-09-14", program_day: 31, franchisability_goal: null, required_task_codes: null },
-  { id: BIZ_ENYERMY, name: "Enyermy Hair Studio", industry: "Salón de belleza", city: "Miami", state: "FL", owner_user_id: U_ENYERMY, program_start_date: "2026-10-09", program_day: 6, franchisability_goal: null, required_task_codes: null },
+  { id: BIZ_VOSSLER, name: "Vossler", industry: "Construcción residencial", city: "Orlando", state: "FL", owner_user_id: U_CARLA, program_start_date: "2026-08-02", program_day: 74 },
+  { id: BIZ_PRIME, name: "Prime 10 Solutions", industry: "Remodelaciones", city: "Tampa", state: "FL", owner_user_id: U_DANIEL, program_start_date: "2026-09-14", program_day: 31 },
+  { id: BIZ_ENYERMY, name: "Enyermy Hair Studio", industry: "Salón de belleza", city: "Miami", state: "FL", owner_user_id: U_ENYERMY, program_start_date: "2026-10-09", program_day: 6 },
 ];
 
 // Official Método 180 catalog entries (code, name and criteria verbatim).
