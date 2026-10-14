@@ -148,6 +148,43 @@ export interface ExternalCalendarEvent {
   duration_minutes: number;
 }
 
+export const NOTIFICATION_KINDS = [
+  "due_today",
+  "due_tomorrow",
+  "overdue",
+  "submitted_for_approval",
+  "changes_requested",
+  "mentioned",
+  "meeting_proposed",
+  "meeting_confirmed",
+  "unblocked",
+] as const;
+export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
+export type NotificationChannel = "in_app" | "email";
+
+export interface AppNotification {
+  id: string;
+  user_id: Uuid;
+  kind: NotificationKind;
+  task_id: Uuid;
+  task_code: string;
+  task_name: string;
+  business_id: Uuid;
+  business_name: string;
+  /** Who caused it; null for date-generated ones. */
+  actor_user_id: Uuid | null;
+  actor_name: string | null;
+  created_at: IsoDateTime;
+  read_at: IsoDateTime | null;
+}
+
+export interface NotificationPreference {
+  kind: NotificationKind;
+  in_app: boolean;
+  /** Only stored for now: emails are not sent yet. */
+  email: boolean;
+}
+
 export interface TaskWithComputed extends Task {
   is_blocked: boolean;
   is_overdue: boolean;
