@@ -42,7 +42,8 @@ export function buildOwnerInbox(
  * or a deliverable has waited for the owner more than 7 days; green otherwise; grey if the area has no tasks.
  */
 export function areaHealth(tasks: TaskWithComputed[], versions: TaskVersion[], today = TODAY): Health {
-  if (tasks.length === 0) return "grey";
+  // No tasks yet = nothing overdue: green. Grey only when the area does not apply (not tracked yet).
+  if (tasks.length === 0) return "green";
   if (tasks.some((t) => t.is_overdue)) return "red";
   const dueSoon = tasks.some((t) => t.status !== "accepted" && daysBetween(today, t.due_date) <= 7);
   const waitingLong = tasks.some((t) => {
