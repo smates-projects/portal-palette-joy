@@ -59,7 +59,7 @@ export function TaskBoard(props: {
   };
 
   return (
-    <div className="grid min-h-0 flex-1 auto-cols-[minmax(240px,1fr)] grid-flow-col gap-3 overflow-x-auto pb-2">
+    <div className="grid min-h-0 flex-1 auto-cols-[minmax(188px,1fr)] grid-flow-col gap-3 overflow-x-auto pb-2">
       {BOARD_COLUMNS.map((col) => {
         const items = props.rows.filter((r) => r.status === col);
         return (
