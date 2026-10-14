@@ -233,7 +233,7 @@ export function createMockApi(): ApiClient {
       },
     },
     leads: {
-      list: () => delay(visibleLeads().map(withBooking)),
+      list: async () => delay(visibleLeads().map(withBooking)),
       get: async (id) => {
         const l = visibleLeads().find((x) => x.id === id);
         if (!l) return delay(null);

@@ -74,10 +74,10 @@ describe("leads repository", () => {
     expect(biz.program_start_date).toBe("2026-10-14");
     expect(biz.program_day).toBe(1);
     const tasks = (await api.tasks.list()).filter((t) => t.business_id === r.business_id);
-    // Cleaning business: the construction-only entry is left out.
-    expect(tasks).toHaveLength(47);
+    // Cleaning business: the 3 construction-only entries are left out.
+    expect(tasks).toHaveLength(45);
     expect(tasks.every((t) => t.supervisor_user_id === brisa.consultant_user_id)).toBe(true);
-    expect(r.task_count).toBe(47);
+    expect(r.task_count).toBe(45);
   });
 });
 
