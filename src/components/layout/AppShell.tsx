@@ -93,16 +93,24 @@ function LanguageSwitch() {
     localStorage.setItem(LANGUAGE_STORAGE_KEY, lng);
     document.documentElement.lang = lng;
   };
+  const isEn = i18n.language === "en";
   return (
-    <div role="group" aria-label={t("topbar.language")} className="flex h-8 items-center rounded-md border border-border bg-surface p-0.5">
+    <div role="group" aria-label={t("topbar.language")} className="relative grid h-8 grid-cols-2 items-center rounded-md border border-border bg-surface p-0.5">
+      <span
+        aria-hidden
+        className={cn(
+          "absolute inset-y-0.5 left-0.5 w-[calc(50%-2px)] rounded-[4px] bg-primary transition-transform duration-300 ease-out",
+          isEn && "translate-x-full",
+        )}
+      />
       {(["es", "en"] as const).map((lng) => (
         <button
           key={lng}
           onClick={() => set(lng)}
           aria-pressed={i18n.language === lng}
           className={cn(
-            "h-full rounded-[4px] px-2 font-display text-xs font-semibold uppercase transition-colors",
-            i18n.language === lng ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+            "relative z-10 h-full w-8 rounded-[4px] font-display text-xs font-semibold uppercase transition-colors duration-300",
+            i18n.language === lng ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground",
           )}
         >
           {lng}
