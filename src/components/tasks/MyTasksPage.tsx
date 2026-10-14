@@ -119,13 +119,15 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
                 className="h-8 w-full rounded-md border border-input bg-surface pl-8 pr-3 text-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30"
               />
             </label>
-            <FilterSelect
-              label={t("tasks.filters.business")}
-              value={search.business}
-              allLabel={t("tasks.filters.all_businesses")}
-              options={(bizQ.data ?? []).map((b) => ({ value: b.id, label: b.name }))}
-              onChange={(v) => setSearch({ business: v })}
-            />
+            {!isOwner && (
+              <FilterSelect
+                label={t("tasks.filters.business")}
+                value={search.business}
+                allLabel={t("tasks.filters.all_businesses")}
+                options={(bizQ.data ?? []).map((b) => ({ value: b.id, label: b.name }))}
+                onChange={(v) => setSearch({ business: v })}
+              />
+            )}
             <FilterSelect
               label={t("tasks.filters.area")}
               value={search.area}
@@ -156,7 +158,7 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
                 {t("tasks.filters.clear")}
               </button>
             )}
-            <label className="ml-auto flex h-8 cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+            {!isOwner && <label className="ml-auto flex h-8 cursor-pointer items-center gap-2 text-sm text-muted-foreground">
               <input
                 type="checkbox"
                 checked={search.group === "business"}
@@ -164,7 +166,7 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
                 className="h-3.5 w-3.5 accent-primary"
               />
               {t("tasks.filters.group_by_business")}
-            </label>
+            </label>}
           </div>
 
           {/* Totals */}

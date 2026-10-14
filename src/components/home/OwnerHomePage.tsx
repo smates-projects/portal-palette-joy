@@ -54,6 +54,11 @@ export function OwnerHomePage({ taskId }: { taskId?: string | undefined }) {
   const openTask = (id: string | undefined) => void navigate({ to: "/", search: id ? { task: id } : {}, replace: true });
   const userFirst = (id: string) => firstName(usersQ.data?.find((u) => u.id === id)?.full_name ?? "");
   const orgName = (id: string) => orgsQ.data?.find((o) => o.id === id)?.name ?? "";
+  /** Firm name always with what it does: "Delta Contadores (finanzas y fiscal)". */
+  const firmLabel = (id: string) => {
+    const o = orgsQ.data?.find((x) => x.id === id);
+    return o ? t("owner.firm_label", { name: o.name, what: t(`firmWhat.${o.area ?? "B1"}`) }) : "";
+  };
   const fail = () => toast.error(t("taskDetail.t_error"));
 
   const loading = tasksQ.isLoading || bizQ.isLoading || reqQ.isLoading || meetQ.isLoading || versionsQ.isLoading;
@@ -74,9 +79,9 @@ export function OwnerHomePage({ taskId }: { taskId?: string | undefined }) {
   const row = (it: InboxItem) => {
     const what =
       it.kind === "approve"
-        ? t("owner.inbox_approve", { firm: orgName(it.task.organization_id) })
+        ? t("owner.inbox_approve", { firm: firmLabel(it.task.organization_id) })
         : it.kind === "request"
-          ? t("owner.inbox_request", { name: userFirst(it.request.requested_by_user_id), firm: orgName(it.task.organization_id) })
+          ? t("owner.inbox_request", { name: userFirst(it.request.requested_by_user_id), firm: firmLabel(it.task.organization_id) })
           : t("owner.inbox_meeting", { name: userFirst(it.meeting.proposed_by_user_id), date: formatDateTime(it.meeting.starts_at, lng) });
     const detail = it.kind === "request" ? it.request.question : it.kind === "meeting" ? it.meeting.topic : it.task.name;
     const Icon = it.kind === "approve" ? PackageCheck : it.kind === "request" ? FileUp : CalendarCheck;

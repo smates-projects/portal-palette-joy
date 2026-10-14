@@ -558,6 +558,7 @@
     "t_uploaded": "File sent. {{name}} can see it now.",
     "t_meeting_confirmed": "Meeting confirmed. {{name}} has been notified.",
     "error": "We couldn't load your home.",
-    "retry": "Load again"
+    "retry": "Load again",
+    "criteria_title": "This is what you need to review"
   }
 }

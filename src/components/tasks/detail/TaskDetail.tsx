@@ -309,7 +309,7 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
             {t("taskDetail.what_intro", { area: t(`areas.${task.area}`), step: t(`steps.${task.step}`).toLowerCase() })}
           </p>
           <div className="mt-3 rounded-md border border-accent bg-accent/50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-accent-foreground">{t("taskDetail.criteria_title")}</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-accent-foreground">{t(isOwner ? "owner.criteria_title" : "taskDetail.criteria_title")}</p>
             <p className="mt-1.5 text-sm leading-relaxed text-foreground">{task.acceptance_criteria}</p>
           </div>
         </Section>

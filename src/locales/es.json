@@ -558,6 +558,7 @@
     "t_uploaded": "Archivo enviado. {{name}} ya lo puede ver.",
     "t_meeting_confirmed": "Reunión confirmada. {{name}} ya lo sabe.",
     "error": "No pudimos cargar tu inicio.",
-    "retry": "Cargar de nuevo"
+    "retry": "Cargar de nuevo",
+    "criteria_title": "Esto es lo que tienes que revisar"
   }
 }
