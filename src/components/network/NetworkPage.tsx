@@ -23,7 +23,7 @@ const COUNTERS: { key: keyof NetworkCounters; search: TasksSearch | null; danger
 ];
 
 /** Red: the whole office at a glance. Every number and cell opens Mis tareas over the whole office. */
-export function NetworkPage({ businessId }: { businessId?: string } = {}) {
+export function NetworkPage({ businessId }: { businessId?: string | undefined } = {}) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const tasksQ = useTasks();
