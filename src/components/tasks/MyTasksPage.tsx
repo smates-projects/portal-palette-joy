@@ -3,7 +3,8 @@ import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { ArrowDown, ArrowUp, ArrowUpDown, CalendarDays, Columns3, GanttChart, Search, Table2, X } from "lucide-react";
 import { TODAY } from "@/config/app";
-import { useBusinesses, useCurrentUser, useTasks } from "@/lib/api/hooks";
+import { useBusinesses, useCurrentUser, useOrganizations, useTasks, useTasksWithCancelled } from "@/lib/api/hooks";
+import { CancelTasksDialog, EditTasksDialog, type EditMode } from "@/components/tasks/sm/SmTaskActions";
 import type { AreaCode, TaskWithComputed, VisibleTaskStatus } from "@/lib/api/types";
 import { formatDate, formatRelativeDate } from "@/lib/format";
 import {
@@ -39,9 +40,17 @@ const AREA_DOT: Record<AreaCode, string> = {
 export function MyTasksPage({ search }: { search: TasksSearch }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate({ from: "/tareas/" });
-  const tasksQ = useTasks();
+  const me = useCurrentUser().data;
+  const isOwner = me?.role === "business_owner";
+  const isSm = me?.role === "sm_team";
+  const activeQ = useTasks();
+  const withCancelledQ = useTasksWithCancelled(isSm && search.status === "cancelled");
+  const tasksQ = isSm && search.status === "cancelled" ? withCancelledQ : activeQ;
   const bizQ = useBusinesses();
-  const isOwner = useCurrentUser().data?.role === "business_owner";
+  const orgsQ = useOrganizations();
+  // SM: selection for bulk edits (table view only).
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulk, setBulk] = useState<EditMode | "cancel" | null>(null);
   const [submitFor, setSubmitFor] = useState<string | null>(null);
   const [changesFor, setChangesFor] = useState<string | null>(null);
 
@@ -49,18 +58,35 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
     navigate({ search: (prev: TasksSearch) => ({ ...prev, ...patch }), replace });
 
   const businessName = (id: string) => bizQ.data?.find((b) => b.id === id)?.name ?? "";
-  const ctx = { businessName, statusLabel: (s: string) => t(`status.${s}`) };
+  // SM opens on the tasks they supervise; sup=all shows every task of their office.
+  const ctx = {
+    businessName,
+    statusLabel: (s: string) => t(`status.${s}`),
+    supervisorId: isSm && search.sup !== "all" ? me?.id : undefined,
+    all: activeQ.data,
+  };
   const view: TasksView = (VIEWS as readonly string[]).includes(search.view ?? "") ? (search.view as TasksView) : "table";
 
   const rows = useMemo(
     () => (tasksQ.data ? sortTasks(filterTasks(tasksQ.data, search, ctx), search, ctx) : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [tasksQ.data, bizQ.data, search],
+    [tasksQ.data, bizQ.data, search, isSm, me?.id],
   );
   const codeById = (id: string) => tasksQ.data?.find((x) => x.id === id)?.code ?? "";
   const overdueCount = rows.filter((r) => r.is_overdue).length;
   const selected = tasksQ.data?.find((x) => x.id === search.task);
-  const hasFilters = !!(search.business || search.area || search.status || search.due || search.blocked || search.q);
+  const hasFilters = !!(search.business || search.area || search.status || search.due || search.blocked || search.q || search.firm || search.stale || search.attention);
+  const clearFilters = { business: undefined, area: undefined, status: undefined, due: undefined, blocked: undefined, q: undefined, firm: undefined, stale: undefined, attention: undefined };
+  const selectedRows = rows.filter((r) => selectedIds.has(r.id));
+  const selectable = isSm && view === "table";
+  const toggleRow = (id: string) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const firms = (orgsQ.data ?? []).filter((o) => o.kind === "partner_firm");
 
   const groups: { key: string; label: string; items: TaskWithComputed[] }[] =
     search.group === "business"
@@ -79,8 +105,8 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
     <div className="mx-auto flex h-full max-w-7xl flex-col px-6 py-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t(isOwner ? "owner.for_role" : "tasks.for_role")}</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">{t(isOwner ? "owner.tasks_heading" : "tasks.heading")}</h1>
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t(isOwner ? "owner.for_role" : isSm ? "sm.for_role" : "tasks.for_role")}</p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight">{t(isOwner ? "owner.tasks_heading" : isSm ? "sm.tasks_heading" : "tasks.heading")}</h1>
         </div>
         <div role="tablist" aria-label={t("tasks.views.label")} className="flex rounded-md border border-border bg-surface p-0.5">
           {VIEWS.map((v) => {
@@ -119,6 +145,26 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
                 className="h-8 w-full rounded-md border border-input bg-surface pl-8 pr-3 text-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30"
               />
             </label>
+            {isSm && (
+              <Select value={search.sup === "all" ? "all" : "mine"} onValueChange={(v) => setSearch({ sup: v === "all" ? "all" : undefined })}>
+                <SelectTrigger aria-label={t("sm.filter_scope")} className={cn("h-8 w-auto min-w-44 gap-2 bg-surface text-sm", search.sup !== "all" && "border-ring")}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="mine">{t("sm.scope_mine")}</SelectItem>
+                  <SelectItem value="all">{t("sm.scope_all", { office: orgsQ.data?.find((o) => o.id === me?.organization_id)?.name ?? "" })}</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+            {isSm && (
+              <FilterSelect
+                label={t("sm.filter_firm")}
+                value={search.firm}
+                allLabel={t("sm.all_firms")}
+                options={firms.map((o) => ({ value: o.id, label: t("owner.firm_label", { name: o.name, what: t(`firmWhat.${o.area ?? "B1"}`) }) }))}
+                onChange={(v) => setSearch({ firm: v })}
+              />
+            )}
             {!isOwner && (
               <FilterSelect
                 label={t("tasks.filters.business")}
@@ -139,7 +185,7 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
               label={t("tasks.filters.status")}
               value={search.status}
               allLabel={t("tasks.filters.all_statuses")}
-              options={VISIBLE_STATUSES.map((s) => ({ value: s, label: t(`status.${s}`) }))}
+              options={[...VISIBLE_STATUSES, ...(isSm ? (["cancelled"] as const) : [])].map((s) => ({ value: s, label: t(`status.${s}`) }))}
               onChange={(v) => setSearch({ status: v })}
             />
             <FilterSelect
@@ -149,9 +195,17 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
               options={DUE_FILTERS.map((d) => ({ value: d, label: t(`tasks.filters.${d}`) }))}
               onChange={(v) => setSearch({ due: v })}
             />
+            {(["stale", "attention"] as const).map((k) =>
+              search[k] === "1" ? (
+                <button key={k} onClick={() => setSearch({ [k]: undefined })} className="flex h-8 items-center gap-1 rounded-md border border-ring bg-surface px-2 text-sm">
+                  {t(`sm.chip_${k}`)}
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              ) : null,
+            )}
             {hasFilters && (
               <button
-                onClick={() => setSearch({ business: undefined, area: undefined, status: undefined, due: undefined, blocked: undefined, q: undefined })}
+                onClick={() => setSearch(clearFilters)}
                 className="flex h-8 items-center gap-1 rounded-md px-2 text-sm text-link hover:bg-muted"
               >
                 <X className="h-3.5 w-3.5" />
@@ -186,6 +240,18 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
             </p>
           )}
 
+          {selectable && selectedRows.length > 0 && (
+            <div className="mt-3 flex flex-wrap items-center gap-2 rounded-md border border-ring bg-accent/50 px-3 py-2 text-sm">
+              <span className="font-medium">{t("sm.selected", { count: selectedRows.length })}</span>
+              <span className="mx-1 h-4 w-px bg-border" />
+              {(["assignee", "due", "step"] as const).map((m) => (
+                <button key={m} onClick={() => setBulk(m)} className="h-7 rounded-md border border-border bg-surface px-2.5 hover:bg-muted">{t(`sm.bulk_${m}`)}</button>
+              ))}
+              <button onClick={() => setBulk("cancel")} className="h-7 rounded-md border border-border bg-surface px-2.5 text-status-danger-fg hover:bg-muted">{t("sm.action_cancel_task")}</button>
+              <button onClick={() => setSelectedIds(new Set())} className="ml-auto text-link hover:underline">{t("sm.clear_selection")}</button>
+            </div>
+          )}
+
           {/* Table */}
           <div className={cn("mt-3 min-h-0", view === "board" || view === "roadmap" || view === "calendar" ? "flex flex-1 flex-col" : "overflow-auto rounded-md border border-border bg-surface")}>
             {tasksQ.isError ? (
@@ -216,7 +282,7 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
                 body={t("tasks.no_results_body")}
                 action={{
                   label: t("tasks.filters.clear"),
-                  onClick: () => setSearch({ business: undefined, area: undefined, status: undefined, due: undefined, blocked: undefined, q: undefined }),
+                  onClick: () => setSearch(clearFilters),
                 }}
               />
             ) : view === "calendar" ? (
@@ -265,6 +331,17 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
               <table className="w-full text-sm">
                 <thead className="sticky top-0 z-10 border-b border-border bg-muted text-left text-xs text-muted-foreground">
                   <tr>
+                    {selectable && (
+                      <th className="w-8 py-2 pl-4">
+                        <input
+                          type="checkbox"
+                          aria-label={t("sm.select_all")}
+                          checked={rows.length > 0 && rows.every((r) => selectedIds.has(r.id))}
+                          onChange={(e) => setSelectedIds(e.target.checked ? new Set(rows.filter((r) => r.status !== "cancelled").map((r) => r.id)) : new Set())}
+                          className="h-3.5 w-3.5 accent-primary"
+                        />
+                      </th>
+                    )}
                     {COLUMNS.map((c) => {
                       const active = search.sort === c;
                       const Icon = !active ? ArrowUpDown : search.dir === "desc" ? ArrowDown : ArrowUp;
@@ -287,7 +364,7 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
                   <tbody key={g.key} className="divide-y divide-border">
                     {g.label && (
                       <tr className="bg-muted/40">
-                        <td colSpan={COLUMNS.length} className="px-4 py-1.5 text-xs font-semibold text-foreground">
+                        <td colSpan={COLUMNS.length + (selectable ? 1 : 0)} className="px-4 py-1.5 text-xs font-semibold text-foreground">
                           {g.label} <span className="ml-1 font-display font-normal tabular-nums text-muted-foreground">{g.items.length}</span>
                         </td>
                       </tr>
@@ -303,6 +380,18 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
                           search.task === task.id && "bg-accent",
                         )}
                       >
+                        {selectable && (
+                          <td className="w-8 py-2.5 pl-4" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="checkbox"
+                              aria-label={t("sm.select_task", { code: task.code })}
+                              disabled={task.status === "cancelled"}
+                              checked={selectedIds.has(task.id)}
+                              onChange={() => toggleRow(task.id)}
+                              className="h-3.5 w-3.5 accent-primary"
+                            />
+                          </td>
+                        )}
                         <td className="whitespace-nowrap py-2.5 pl-4 pr-3 font-display text-xs font-semibold tabular-nums">{task.code}</td>
                         <td className="max-w-md px-3 py-2.5"><span className="line-clamp-1">{task.name}</span></td>
                         <td className="whitespace-nowrap px-3 py-2.5 text-muted-foreground">{businessName(task.business_id)}</td>
@@ -325,7 +414,7 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
                         </td>
                         <td className="px-3 py-2.5">
                           <div className="flex flex-wrap items-center gap-1.5">
-                            <StatusBadge status={task.status as VisibleTaskStatus} />
+                            <StatusBadge status={task.status === "cancelled" ? "cancelled" : (task.status as VisibleTaskStatus)} />
                             {task.is_blocked && (
                               <Indicator>
                                 {t("tasks.blocked_by", { codes: task.depends_on_task_ids.map(codeById).join(", ") })}
@@ -345,6 +434,11 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
           </div>
         </>
       )}
+
+      {bulk && bulk !== "cancel" && (
+        <EditTasksDialog open onOpenChange={(o) => !o && setBulk(null)} tasks={selectedRows} mode={bulk} onDone={() => setSelectedIds(new Set())} />
+      )}
+      <CancelTasksDialog open={bulk === "cancel"} onOpenChange={(o) => !o && setBulk(null)} tasks={selectedRows} onDone={() => setSelectedIds(new Set())} />
 
       <Sheet open={!!selected} onOpenChange={(open) => {
           if (open) return;
