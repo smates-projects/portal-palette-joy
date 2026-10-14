@@ -59,7 +59,6 @@ export const smNav: NavItem[] = [
   { to: "/red", key: "network", icon: Network },
   { to: "/reporte", key: "report", icon: BarChart3 },
   { to: "/negocios", key: "businesses", icon: Building2 },
-  { to: "/tareas", key: "calendar", icon: CalendarDays, view: "calendar" },
   { to: "/catalogo", key: "catalog", icon: Library },
   { to: "/configuracion", key: "settings", icon: Settings },
 ];
