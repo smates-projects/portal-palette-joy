@@ -58,7 +58,7 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
   const codeById = (id: string) => tasksQ.data?.find((x) => x.id === id)?.code ?? "";
   const overdueCount = rows.filter((r) => r.is_overdue).length;
   const selected = tasksQ.data?.find((x) => x.id === search.task);
-  const hasFilters = !!(search.business || search.area || search.status || search.due || search.blocked || search.approved || search.q);
+  const hasFilters = !!(search.business || search.area || search.status || search.due || search.blocked || search.q);
 
   const groups: { key: string; label: string; items: TaskWithComputed[] }[] =
     search.group === "business"
@@ -147,7 +147,7 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
             />
             {hasFilters && (
               <button
-                onClick={() => setSearch({ business: undefined, area: undefined, status: undefined, due: undefined, blocked: undefined, approved: undefined, q: undefined })}
+                onClick={() => setSearch({ business: undefined, area: undefined, status: undefined, due: undefined, blocked: undefined, q: undefined })}
                 className="flex h-8 items-center gap-1 rounded-md px-2 text-sm text-link hover:bg-muted"
               >
                 <X className="h-3.5 w-3.5" />
@@ -212,7 +212,7 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
                 body={t("tasks.no_results_body")}
                 action={{
                   label: t("tasks.filters.clear"),
-                  onClick: () => setSearch({ business: undefined, area: undefined, status: undefined, due: undefined, blocked: undefined, approved: undefined, q: undefined }),
+                  onClick: () => setSearch({ business: undefined, area: undefined, status: undefined, due: undefined, blocked: undefined, q: undefined }),
                 }}
               />
             ) : view === "calendar" ? (
