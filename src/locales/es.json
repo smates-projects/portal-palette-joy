@@ -219,7 +219,8 @@
       "no_start_first": "Primero empieza {{code}}: pásala a En curso antes de entregarla.",
       "no_no_going_back": "{{code}} no puede volver a {{to}}.",
       "t_unstarted": "{{code}} volvió a Por empezar",
-      "no_firm_only": "Mover {{code}} a {{to}} le toca a la firma. Tú apruebas o pides cambios cuando te entregan."
+      "no_firm_only": "Mover {{code}} a {{to}} le toca a la firma. Tú apruebas o pides cambios cuando te entregan.",
+      "keyboard_hint": "Shift + flecha mueve la tarjeta a la columna de al lado."
     },
     "roadmap": {
       "zoom": "Zoom",
@@ -256,7 +257,8 @@
       "meeting_proposed": "Propuesta, falta confirmar",
       "meeting_confirmed": "Confirmada",
       "google_readonly": "De tu Google Calendar, no se puede editar aquí"
-    }
+    },
+    "roadmap_desktop_hint": "El Roadmap se ve mejor en una pantalla más grande. Usa Tabla o Tablero desde el celular."
   },
   "taskDetail": {
     "open_full_page": "Abrir como página completa",
@@ -912,6 +914,7 @@
     "error_title": "No pudimos cargar el embudo.",
     "retry": "Reintentar",
     "network_filtered": "Mostrando solo {{name}}",
-    "network_all": "Ver toda la red"
+    "network_all": "Ver toda la red",
+    "keyboard_hint": "Shift + flecha mueve el lead a la etapa de al lado."
   }
 }

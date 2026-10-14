@@ -232,3 +232,14 @@
   scrollbar-width: none;
   &::-webkit-scrollbar { display: none; }
 }
+
+/* Visible keyboard focus everywhere (mouse clicks keep no ring). */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  tr:focus-visible {
+    outline-offset: -2px;
+  }
+}

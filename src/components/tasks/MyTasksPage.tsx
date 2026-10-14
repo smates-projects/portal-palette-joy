@@ -296,6 +296,8 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
                 }}
               />
             ) : view === "roadmap" ? (
+              <>
+              <p role="note" className="mb-2 rounded-md border border-status-info-border bg-status-info-bg px-3 py-2 text-sm text-status-info-fg md:hidden">{t("tasks.roadmap_desktop_hint")}</p>
               <TaskRoadmap
                 rows={rows}
                 allTasks={tasksQ.data ?? []}
@@ -307,6 +309,7 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
                   void setSearch({ task: id });
                 }}
               />
+              </>
             ) : view === "board" ? (
               <TaskBoard
                 rows={rows}
@@ -328,7 +331,7 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
                 }}
               />
             ) : (
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[760px] text-sm">
                 <thead className="sticky top-0 z-10 border-b border-border bg-muted text-left text-xs text-muted-foreground">
                   <tr>
                     {selectable && (

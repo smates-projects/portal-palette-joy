@@ -244,6 +244,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { i18n } = useTranslation();
   const [collapsed, setCollapsed] = useState(false);
 
+  // Small screens start with the rail collapsed so the work area keeps its width.
+  useEffect(() => {
+    if (window.matchMedia("(max-width: 767px)").matches) setCollapsed(true);
+  }, []);
+
   // Restore saved language after hydration to avoid SSR mismatches.
   useEffect(() => {
     const saved = localStorage.getItem(LANGUAGE_STORAGE_KEY);

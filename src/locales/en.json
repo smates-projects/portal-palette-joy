@@ -219,7 +219,8 @@
       "no_start_first": "Start {{code}} first: move it to In progress before delivering it.",
       "no_no_going_back": "{{code}} can't go back to {{to}}.",
       "t_unstarted": "{{code}} moved back to Not started",
-      "no_firm_only": "Moving {{code}} to {{to}} is the firm's job. You approve or request changes when they deliver."
+      "no_firm_only": "Moving {{code}} to {{to}} is the firm's job. You approve or request changes when they deliver.",
+      "keyboard_hint": "Shift + arrow moves the card to the next column."
     },
     "roadmap": {
       "zoom": "Zoom",
@@ -256,7 +257,8 @@
       "meeting_proposed": "Proposed, not confirmed yet",
       "meeting_confirmed": "Confirmed",
       "google_readonly": "From your Google Calendar, can't be edited here"
-    }
+    },
+    "roadmap_desktop_hint": "The Roadmap works best on a larger screen. Use Table or Board on your phone."
   },
   "taskDetail": {
     "open_full_page": "Open as full page",
@@ -912,6 +914,7 @@
     "error_title": "We could not load the pipeline.",
     "retry": "Retry",
     "network_filtered": "Showing only {{name}}",
-    "network_all": "View the whole network"
+    "network_all": "View the whole network",
+    "keyboard_hint": "Shift + arrow moves the lead to the next stage."
   }
 }
