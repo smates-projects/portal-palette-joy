@@ -1,0 +1,264 @@
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { X } from "lucide-react";
+import { TODAY } from "@/config/app";
+import { useBusinesses, useFranchisability, useOrganizations, useRules, useTasks, useUsers, useVersions } from "@/lib/api/hooks";
+import type { OfficeStatus } from "@/lib/api/types";
+import { formatDateTime } from "@/lib/format";
+import { expectedFranchisePct } from "@/lib/tasks/office";
+import { AREAS, type Health } from "@/lib/tasks/owner";
+import { buildNetworkMatrix } from "@/lib/tasks/sm";
+import { cn } from "@/lib/utils";
+import { DOT } from "@/components/office/shared";
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { MAX_HOME_ITEMS } from "./logic";
+
+const BADGE: Record<Health, string> = {
+  red: "bg-status-danger-bg text-status-danger-fg border-status-danger-border",
+  amber: "bg-status-warning-bg text-status-warning-fg border-status-warning-border",
+  green: "bg-status-success-bg text-status-success-fg border-status-success-border",
+  grey: "bg-status-neutral-bg text-status-neutral-fg border-status-neutral-border",
+};
+
+/** Business light as text with a visible border: the same words on every Global screen. */
+export function HealthBadge({ health }: { health: Health }) {
+  const { t } = useTranslation();
+  return (
+    <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap rounded-[4px] border px-1.5 py-0.5 text-xs font-medium leading-none", BADGE[health])}>
+      <span className={cn("h-1.5 w-1.5 rounded-full", DOT[health])} />
+      {t(`global.health.${health}`)}
+    </span>
+  );
+}
+
+const STATUS_BADGE: Record<OfficeStatus, string> = {
+  opening: "bg-status-info-bg text-status-info-fg border-status-info-border",
+  operating: "bg-status-success-bg text-status-success-fg border-status-success-border",
+  paused: "bg-status-neutral-bg text-status-neutral-fg border-status-neutral-border",
+};
+
+/** En apertura, Operando or Pausada. */
+export function OfficeStatusBadge({ status }: { status: OfficeStatus }) {
+  const { t } = useTranslation();
+  return (
+    <span className={cn("inline-flex items-center whitespace-nowrap rounded-[4px] border px-1.5 py-0.5 text-xs font-medium leading-none", STATUS_BADGE[status])}>
+      {t(`global.offices.status.${status}`)}
+    </span>
+  );
+}
+
+/** Screen heading: the role line and the question of the screen. */
+export function GlobalHeader({ question }: { question: string }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("global.for_role")}</p>
+      <h1 className="mt-1 text-2xl font-semibold tracking-tight">{question}</h1>
+    </>
+  );
+}
+
+export function ErrorBox({ onRetry }: { onRetry: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <div className="rounded-md border border-border bg-surface p-6 text-sm">
+      <p className="font-medium">{t("global.error_title")}</p>
+      <p className="mt-1 text-muted-foreground">{t("global.error_body")}</p>
+      <button onClick={onRetry} className="mt-3 text-link hover:underline">{t("global.retry")}</button>
+    </div>
+  );
+}
+
+export function EmptyBox({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="rounded-md border border-dashed border-border bg-surface p-8 text-sm">
+      <p className="font-medium">{title}</p>
+      <p className="mt-1 text-muted-foreground">{body}</p>
+    </div>
+  );
+}
+
+export const ListSkeleton = ({ rows = 4 }: { rows?: number }) => (
+  <div className="space-y-3">{Array.from({ length: rows }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-md" />)}</div>
+);
+
+/** A button the data layer cannot serve yet: disabled, with the reason in a tooltip. */
+export function DisabledAction({ label }: { label: string }) {
+  const { t } = useTranslation();
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span tabIndex={0} className="inline-flex">
+          <button
+            type="button"
+            disabled
+            className="inline-flex h-8 items-center justify-center rounded-md border border-border bg-surface px-3 text-sm font-medium text-foreground opacity-50"
+          >
+            {label}
+          </button>
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>{t("global.backend_pending")}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+/** Read-only summary of a business for SM Global. Global looks, it never edits tasks or leads. */
+export function BusinessSheet({ businessId, onClose }: { businessId: string | null; onClose: () => void }) {
+  const { t } = useTranslation();
+  const bizQ = useBusinesses();
+  const tasksQ = useTasks();
+  const versionsQ = useVersions();
+  const usersQ = useUsers();
+  const orgsQ = useOrganizations();
+  const rulesQ = useRules();
+  const fQ = useFranchisability(businessId ?? undefined);
+  const business = businessId ? bizQ.data?.find((b) => b.id === businessId) : undefined;
+  const loading = bizQ.isLoading || tasksQ.isLoading || versionsQ.isLoading || rulesQ.isLoading || fQ.isLoading;
+  const failed = bizQ.isError || tasksQ.isError || versionsQ.isError || rulesQ.isError;
+  const retry = () => { void bizQ.refetch(); void tasksQ.refetch(); void versionsQ.refetch(); void rulesQ.refetch(); };
+
+  const body = () => {
+    if (failed)
+      return <div className="p-6"><ErrorBox onRetry={retry} /></div>;
+    if (loading)
+      return <div className="space-y-4 p-6"><Skeleton className="h-8 w-2/3" /><Skeleton className="h-24" /><Skeleton className="h-32" /></div>;
+    if (!business)
+      return <p className="p-6 text-sm text-muted-foreground">{t("global.business.not_found")}</p>;
+
+    const tasks = (tasksQ.data ?? []).filter((x) => x.status !== "cancelled");
+    const row = buildNetworkMatrix(tasks, versionsQ.data ?? [], [business], TODAY, rulesQ.data?.area_amber_days)[0];
+    const f = fQ.data;
+    const inProgram = business.status === "in_program";
+    const person = (id: string | null) => (id ? usersQ.data?.find((u) => u.id === id)?.full_name : undefined);
+    const office = orgsQ.data?.find((o) => o.id === business.office_id)?.name ?? "";
+    const facts: { label: string; value: string }[] = [
+      { label: t("global.business.office"), value: office },
+      { label: t("global.business.owner"), value: person(business.owner_user_id) ?? t("global.business.none") },
+      { label: t("global.business.consultant"), value: person(business.consultant_id) ?? t("global.structure.no_consultant") },
+      { label: t("global.business.location"), value: `${business.city}, ${business.state}` },
+    ];
+
+    return (
+      <div className="flex min-h-full flex-col">
+        <header className="border-b border-border px-6 py-5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold leading-snug">{business.name}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {inProgram ? t("global.structure.day", { day: business.program_day }) : t("global.business.franchisor")}
+              </p>
+            </div>
+            <button onClick={onClose} aria-label={t("global.close")} className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          {inProgram && row && <div className="mt-3"><HealthBadge health={row.health} /></div>}
+          <p className="mt-3 rounded-[4px] border border-border bg-muted px-2 py-1 text-xs text-muted-foreground">{t("global.business.read_only")}</p>
+        </header>
+
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-3 border-b border-border px-6 py-4 text-sm">
+          {facts.map((x) => (
+            <div key={x.label}>
+              <dt className="text-xs text-muted-foreground">{x.label}</dt>
+              <dd className="mt-0.5 font-medium">{x.value}</dd>
+            </div>
+          ))}
+        </dl>
+
+        {inProgram && f && (
+          <section className="border-b border-border px-6 py-4">
+            <h3 className="text-sm font-semibold">{t("global.business.franchisability")}</h3>
+            <p className="mt-1 font-display text-sm font-semibold tabular-nums">
+              {t("global.structure.franchisability", { pct: f.franchisability_pct, expected: expectedFranchisePct(business.program_day, f.franchisability_goal) })}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {f.is_ready
+                ? t("global.business.ready")
+                : f.missing_required.length
+                  ? t("global.business.missing", { count: f.missing_required.length, codes: f.missing_required.join(", ") })
+                  : t("global.business.required_done")}
+            </p>
+          </section>
+        )}
+
+        {inProgram && row && (
+          <section className="px-6 py-4">
+            <h3 className="text-sm font-semibold">{t("global.business.areas")}</h3>
+            <ul className="mt-2 divide-y divide-border rounded-md border border-border">
+              {AREAS.map((area) => {
+                const cell = row.cells.find((c) => c.area === area);
+                return (
+                  <li key={area} className="flex items-center gap-3 px-3 py-2 text-sm">
+                    <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", DOT[cell?.health ?? "grey"])} />
+                    <span className="min-w-0 flex-1 truncate"><span className="font-display text-xs font-semibold">{area}</span> {t(`areas.${area}`)}</span>
+                    <span className="shrink-0 text-xs text-muted-foreground">{t("global.business.area_counts", { open: cell?.open ?? 0, overdue: cell?.overdue ?? 0 })}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <Sheet open={!!businessId} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent className="w-full overflow-y-auto bg-surface p-0 sm:max-w-md [&>button]:hidden">
+        <SheetTitle className="sr-only">{business?.name ?? t("global.business.title")}</SheetTitle>
+        <SheetDescription className="sr-only">{t("global.business.read_only")}</SheetDescription>
+        {businessId && body()}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+export interface HistoryEntry {
+  id: string;
+  /** ISO date time of the change. */
+  when: string;
+  author: string;
+  title: string;
+  /** One line per field changed: "Nombre: antes a ahora". */
+  lines: string[];
+  note: string | null;
+}
+
+/** Change history with date and author, newest first. Shows 5 and then "Ver todo". */
+export function HistoryList({ title, entries, empty }: { title: string; entries: HistoryEntry[]; empty: string }) {
+  const { t, i18n } = useTranslation();
+  const [all, setAll] = useState(false);
+  const shown = all ? entries : entries.slice(0, MAX_HOME_ITEMS);
+  return (
+    <section className="mt-6 rounded-md border border-border bg-surface">
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+        <h2 className="text-sm font-semibold">{title}</h2>
+        <span className="text-xs text-muted-foreground">{t("global.history.count", { count: entries.length })}</span>
+      </div>
+      {entries.length === 0 ? (
+        <p className="px-4 py-8 text-center text-sm text-muted-foreground">{empty}</p>
+      ) : (
+        <>
+          <ul className="divide-y divide-border">
+            {shown.map((e) => (
+              <li key={e.id} className="px-4 py-3 text-sm">
+                <p className="font-medium">{e.title}</p>
+                <p className="text-xs text-muted-foreground">{formatDateTime(e.when, i18n.language)} · {e.author}</p>
+                {e.lines.map((line) => <p key={line} className="mt-1 text-xs">{line}</p>)}
+                {e.note && <p className="mt-1 text-xs text-muted-foreground">{t("global.history.note", { note: e.note })}</p>}
+              </li>
+            ))}
+          </ul>
+          {entries.length > MAX_HOME_ITEMS && (
+            <button onClick={() => setAll((v) => !v)} className="block w-full border-t border-border px-4 py-2.5 text-left text-sm text-link hover:underline">
+              {all ? t("global.home.see_less") : t("sm.see_all", { count: entries.length })}
+            </button>
+          )}
+        </>
+      )}
+    </section>
+  );
+}

@@ -1,7 +1,130 @@
-import { ScreenPlaceholder } from "@/components/soon/ScreenPlaceholder";
+import { useState } from "react";
+import { Link } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
+import { useManual, useTasks } from "@/lib/api/hooks";
+import type { ManualSectionStatus, VisibleTaskStatus } from "@/lib/api/types";
+import { formatDate } from "@/lib/format";
+import { StatusBadge } from "@/components/StatusBadge";
+import { buildManualSections } from "../logic";
+import { EmptyState, ErrorState, LoadingState, PageHeader, Panel, ProgressBar, Stat, ToneBadge, type Tone } from "../shared";
 
-/** Placeholder: replace with the real screen. Manual of a business still in the program (route /manual for owners). Hooks: useManual. */
+const MAX_VERSIONS = 5;
+const SECTION_TONE: Record<ManualSectionStatus, Tone> = {
+  not_started: "neutral",
+  drafting: "info",
+  in_review: "review",
+  approved: "success",
+};
+
+/**
+ * Manual of the owner's own business. Each section shows what is real: the catalog tasks of this business that
+ * feed it. An approved task is already part of the manual, the others are pending. The data layer has no
+ * "approve section" action yet, so the section status is shown only.
+ */
 export function OwnerManualPage() {
-  return <ScreenPlaceholder ns="owner_extra" screen="manual" />;
-}
+  const { t, i18n } = useTranslation();
+  const lng = i18n.language;
+  const manualQ = useManual();
+  const tasksQ = useTasks();
+  const [showAllVersions, setShowAllVersions] = useState(false);
 
+  const manual = manualQ.data;
+  const views = manual ? buildManualSections(manual.sections, tasksQ.data ?? []) : [];
+  const versions = manual?.versions ?? [];
+  const shownVersions = showAllVersions ? versions : versions.slice(0, MAX_VERSIONS);
+
+  return (
+    <div className="mx-auto max-w-7xl px-6 py-8">
+      <PageHeader question={t("owner_extra.manual.question")} />
+
+      {manualQ.isError || tasksQ.isError ? (
+        <ErrorState onRetry={() => { void manualQ.refetch(); void tasksQ.refetch(); }} />
+      ) : manualQ.isLoading || tasksQ.isLoading ? (
+        <LoadingState rows={4} />
+      ) : !manual || manual.sections.length === 0 ? (
+        <EmptyState title={t("owner_extra.manual.empty_title")} hint={t("owner_extra.manual.empty_hint")} />
+      ) : (
+        <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_320px]">
+          <div className="min-w-0 space-y-4">
+            {views.map(({ section, tasks, included, ready }) => (
+              <Panel
+                key={section.id}
+                title={section.title}
+                aside={<ToneBadge tone={SECTION_TONE[section.status]}>{t(`owner_extra.manual.status_${section.status}`)}</ToneBadge>}
+              >
+                <div className="flex items-center gap-3 px-4 pb-3">
+                  <div className="flex-1">
+                    <ProgressBar pct={section.pct} label={t("owner_extra.manual.progress_label", { section: section.title })} />
+                  </div>
+                  <span className="font-display text-sm font-semibold tabular-nums">{section.pct}%</span>
+                </div>
+
+                {tasks.length === 0 ? (
+                  <p className="border-t border-border px-4 py-3 text-sm text-muted-foreground">{t("owner_extra.manual.no_tasks")}</p>
+                ) : (
+                  <>
+                    <p className="border-t border-border px-4 pt-3 text-xs text-muted-foreground">
+                      {t("owner_extra.manual.included_count", { included, total: tasks.length })}
+                    </p>
+                    <ul className="divide-y divide-border">
+                      {tasks.map((task) => (
+                        <li key={task.id} className="flex items-center gap-3 px-4 py-2.5">
+                          <div className="min-w-0 flex-1">
+                            <Link to="/tareas/$taskId" params={{ taskId: task.id }} className="text-sm hover:underline">
+                              <span className="font-display tabular-nums text-muted-foreground">{task.code}</span> · {task.name}
+                            </Link>
+                            <p className="text-xs text-muted-foreground">
+                              {task.status === "accepted" ? t("owner_extra.manual.task_included") : t("owner_extra.manual.task_pending")}
+                            </p>
+                          </div>
+                          <StatusBadge status={task.status as VisibleTaskStatus} />
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+
+                {ready && section.status !== "approved" && (
+                  <p className="border-t border-border px-4 py-3 text-sm">{t("owner_extra.manual.ready_hint")}</p>
+                )}
+              </Panel>
+            ))}
+          </div>
+
+          <aside className="h-fit space-y-4">
+            <Stat
+              label={t("owner_extra.manual.current_version")}
+              value={manual.current_version ?? t("owner_extra.manual.no_version")}
+              hint={t("owner_extra.manual.completion", { pct: manual.completion_pct })}
+            />
+            <Panel title={t("owner_extra.manual.history")}>
+              {versions.length === 0 ? (
+                <p className="border-t border-border px-4 py-3 text-sm text-muted-foreground">{t("owner_extra.manual.history_empty")}</p>
+              ) : (
+                <>
+                  <ul className="divide-y divide-border border-t border-border">
+                    {shownVersions.map((v) => (
+                      <li key={v.id} className="px-4 py-3">
+                        <p className="flex items-baseline justify-between gap-2">
+                          <span className="font-display text-sm font-semibold">{v.version}</span>
+                          <span className="text-xs text-muted-foreground">{formatDate(v.published_at, lng)}</span>
+                        </p>
+                        <p className="mt-0.5 text-sm">{v.note}</p>
+                        {v.section_titles.length > 0 && <p className="mt-0.5 text-xs text-muted-foreground">{v.section_titles.join(", ")}</p>}
+                      </li>
+                    ))}
+                  </ul>
+                  {versions.length > MAX_VERSIONS && (
+                    <button onClick={() => setShowAllVersions((x) => !x)} className="w-full border-t border-border px-4 py-2.5 text-left text-sm text-link hover:bg-muted">
+                      {showAllVersions ? t("owner_extra.common.show_less") : t("owner_extra.common.see_all", { count: versions.length })}
+                    </button>
+                  )}
+                </>
+              )}
+            </Panel>
+          </aside>
+        </div>
+      )}
+    </div>
+  );
+}

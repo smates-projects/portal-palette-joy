@@ -1,7 +1,85 @@
-import { ScreenPlaceholder } from "@/components/soon/ScreenPlaceholder";
+import { useTranslation } from "react-i18next";
+import { FileText } from "lucide-react";
+import { useBishopAgreements } from "@/lib/api/hooks";
+import type { AgreementState } from "@/lib/api/types";
+import { formatDate } from "@/lib/format";
+import { EmptyBlock, ErrorBlock, LoadingBlocks, Panel, Screen, secondaryButton, Tag, type Tone } from "@/components/bishop/ui";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-/** Placeholder: replace with the real screen. Acuerdos (route /acuerdos). Hooks: useBishopAgreements. */
+const STATE_TONE: Record<AgreementState, Tone> = { draft: "neutral", sent: "warning", signed: "success" };
+
+/** Agreements of the Bishop (equity agreement, NDA) with their signature status. */
 export function AgreementsPage() {
-  return <ScreenPlaceholder ns="bishop" screen="agreements" />;
-}
+  const { t, i18n } = useTranslation();
+  const lng = i18n.language;
+  const agreementsQ = useBishopAgreements();
 
+  if (agreementsQ.isError)
+    return (
+      <Screen ns="bishop" screen="agreements">
+        <ErrorBlock title={t("bishop.error")} retryLabel={t("bishop.retry")} onRetry={() => void agreementsQ.refetch()} />
+      </Screen>
+    );
+  if (agreementsQ.isLoading || !agreementsQ.data)
+    return (
+      <Screen ns="bishop" screen="agreements">
+        <LoadingBlocks rows={2} />
+      </Screen>
+    );
+  if (agreementsQ.data.length === 0)
+    return (
+      <Screen ns="bishop" screen="agreements">
+        <div className="mt-6"><EmptyBlock title={t("bishop.agreements.empty_title")} body={t("bishop.agreements.empty_body")} /></div>
+      </Screen>
+    );
+
+  return (
+    <Screen ns="bishop" screen="agreements">
+      <div className="mt-6">
+        <Panel>
+          <TooltipProvider delayDuration={150}>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px] text-left text-sm">
+                <thead className="bg-muted/50 text-xs text-muted-foreground">
+                  <tr>
+                    <th scope="col" className="px-4 py-2 font-medium">{t("bishop.agreements.col_agreement")}</th>
+                    <th scope="col" className="px-4 py-2 font-medium">{t("bishop.agreements.col_parties")}</th>
+                    <th scope="col" className="px-4 py-2 font-medium">{t("bishop.agreements.col_status")}</th>
+                    <th scope="col" className="px-4 py-2 font-medium">{t("bishop.agreements.col_date")}</th>
+                    <th scope="col" className="px-4 py-2 font-medium"><span className="sr-only">{t("bishop.agreements.col_document")}</span></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border border-t border-border">
+                  {agreementsQ.data.map((a) => (
+                    <tr key={a.id}>
+                      <td className="px-4 py-3 font-medium">{a.name}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{a.counterparties}</td>
+                      <td className="px-4 py-3"><Tag tone={STATE_TONE[a.state]}>{t(`bishop.agreements.state_${a.state}`)}</Tag></td>
+                      <td className="px-4 py-3 tabular-nums">
+                        {a.signed_at ? t("bishop.agreements.signed_on", { date: formatDate(a.signed_at, lng) }) : t("bishop.agreements.not_signed")}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {/* The data layer has no file for an agreement yet, so the button is always off. A disabled button
+                            gets no hover events, so the tooltip hangs from a focusable wrapper. */}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span tabIndex={0} className="inline-block rounded-md focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+                              <button disabled aria-label={t("bishop.agreements.open_document_for", { name: a.name })} className={secondaryButton}>
+                                <FileText className="mr-1.5 h-3.5 w-3.5" />{t("bishop.agreements.open_document")}
+                              </button>
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>{t("bishop.agreements.backend_needed")}</TooltipContent>
+                        </Tooltip>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </TooltipProvider>
+        </Panel>
+      </div>
+    </Screen>
+  );
+}

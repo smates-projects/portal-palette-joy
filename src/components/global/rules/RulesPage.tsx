@@ -1,7 +1,187 @@
-import { ScreenPlaceholder } from "@/components/soon/ScreenPlaceholder";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
+import { useCatalogAdmin, useRules, useRulesHistory, useUpdateRules, useUsers } from "@/lib/api/hooks";
+import type { PlatformRules } from "@/lib/api/network-types";
+import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PrimaryButton } from "@/components/tasks/detail/dialogs";
+import { ErrorBox, GlobalHeader, HistoryList, type HistoryEntry } from "../shared";
+import { formFromRules, rulesPatch, toggleCode, undoPatch, validateRules, type RulesForm } from "./form";
 
-/** Placeholder: replace with the real screen. Reglas with history. Hooks: useRules, useRulesHistory, useUpdateRules. */
+const inputCls =
+  "h-9 w-32 rounded-md border border-input bg-surface px-3 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30";
+
+/** Reglas de toda la red: only SM Global edits them. Offices and businesses only read them. */
 export function RulesPage() {
-  return <ScreenPlaceholder ns="global" screen="rules" />;
+  const { t } = useTranslation();
+  const rulesQ = useRules();
+  const historyQ = useRulesHistory();
+  const catalogQ = useCatalogAdmin();
+  const usersQ = useUsers();
+  const header = <GlobalHeader question={t("global.rules.question")} />;
+
+  if (rulesQ.isError || catalogQ.isError)
+    return (
+      <div className="mx-auto max-w-4xl px-6 py-8">
+        {header}
+        <div className="mt-6"><ErrorBox onRetry={() => { void rulesQ.refetch(); void catalogQ.refetch(); }} /></div>
+      </div>
+    );
+  if (rulesQ.isLoading || catalogQ.isLoading || !rulesQ.data)
+    return (
+      <div className="mx-auto max-w-4xl px-6 py-8">
+        {header}
+        <Skeleton className="mt-6 h-12 rounded-md" />
+        <div className="mt-4 space-y-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-md" />)}</div>
+      </div>
+    );
+
+  const authorName = (id: string) => usersQ.data?.find((u) => u.id === id)?.full_name ?? "";
+  const show = (field: keyof PlatformRules, value: unknown) =>
+    Array.isArray(value)
+      ? value.length ? value.join(", ") : t("global.rules.required_none")
+      : field === "franchisability_goal"
+        ? t("global.rules.percent", { value })
+        : field === "area_amber_days"
+          ? t("global.rules.days", { count: Number(value) })
+          : t("global.rules.points", { count: Number(value) });
+  const entries: HistoryEntry[] = (historyQ.data ?? []).map((c) => ({
+    id: c.id,
+    when: c.created_at,
+    author: authorName(c.actor_user_id),
+    title: t("global.rules.history_title"),
+    lines: c.changes.map((x) => t("global.history.change", { field: t(`global.rules.fields.${x.field}`), from: show(x.field, x.from), to: show(x.field, x.to) })),
+    note: c.note,
+  }));
+
+  return (
+    <div className="mx-auto max-w-4xl px-6 py-8">
+      {header}
+      <p className="mt-4 rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground">{t("global.rules.notice")}</p>
+      {/* Re-keyed by the stored rules so the form starts from what was just saved. */}
+      <RulesEditor key={JSON.stringify(rulesQ.data)} rules={rulesQ.data} catalog={catalogQ.data ?? []} />
+      {historyQ.isError ? (
+        <div className="mt-6"><ErrorBox onRetry={() => void historyQ.refetch()} /></div>
+      ) : (
+        <HistoryList title={t("global.rules.history_heading")} entries={entries} empty={t("global.rules.history_empty")} />
+      )}
+    </div>
+  );
 }
 
+function RulesEditor({ rules, catalog }: { rules: PlatformRules; catalog: { code: string; name: string; archived: boolean }[] }) {
+  const { t } = useTranslation();
+  const update = useUpdateRules();
+  const [form, setForm] = useState<RulesForm>(formFromRules(rules));
+  const [note, setNote] = useState("");
+  const [search, setSearch] = useState("");
+  const [tried, setTried] = useState(false);
+
+  const errors = tried ? validateRules(form) : {};
+  const patch = Object.keys(validateRules(form)).length === 0 ? rulesPatch(rules, form) : {};
+  const dirty = JSON.stringify(form) !== JSON.stringify(formFromRules(rules));
+  const setField = (key: "franchisability_goal" | "area_amber_days" | "franchisability_amber_tolerance", value: string) => setForm((f) => ({ ...f, [key]: value }));
+  const err = (key: keyof typeof errors) => (errors[key] ? t(`global.rules.error_${errors[key]}`) : null);
+
+  const needle = search.trim().toLowerCase();
+  const choices = catalog.filter((c) => !c.archived && (!needle || c.code.toLowerCase().includes(needle) || c.name.toLowerCase().includes(needle)));
+  const nameOf = (code: string) => catalog.find((c) => c.code === code);
+
+  const save = () => {
+    setTried(true);
+    if (Object.keys(validateRules(form)).length > 0) return;
+    if (Object.keys(patch).length === 0) return;
+    update.mutate({ patch, note: note.trim() || null }, {
+      onSuccess: () => {
+        toast.success(t("global.rules.t_saved"), {
+          action: { label: t("global.undo"), onClick: () => update.mutate({ patch: undoPatch(rules, patch) }, { onError: () => toast.error(t("global.t_error")) }) },
+        });
+      },
+      onError: () => toast.error(t("global.t_error")),
+    });
+  };
+
+  return (
+    <div className="mt-4 space-y-4">
+      {/* Franchisability goal */}
+      <section className="rounded-md border border-border bg-surface p-4">
+        <h2 className="text-sm font-semibold">{t("global.rules.goal_title")}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{t("global.rules.goal_hint")}</p>
+        <label className="mt-3 flex items-center gap-2 text-sm">
+          <input type="number" min={1} max={100} value={form.franchisability_goal} onChange={(e) => setField("franchisability_goal", e.target.value)} aria-label={t("global.rules.goal_title")} className={cn(inputCls, errors.franchisability_goal && "border-status-danger-fg")} />
+          <span>%</span>
+        </label>
+        {err("franchisability_goal") && <p className="mt-1 text-xs text-status-danger-fg">{err("franchisability_goal")}</p>}
+      </section>
+
+      {/* Required tasks, picked from the catalog (may be empty) */}
+      <section className="rounded-md border border-border bg-surface p-4">
+        <h2 className="text-sm font-semibold">{t("global.rules.required_title")}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{t("global.rules.required_hint")}</p>
+        {form.required_task_codes.length === 0 ? (
+          <p className="mt-3 rounded-[4px] border border-dashed border-border px-3 py-2 text-sm text-muted-foreground">{t("global.rules.required_none_hint")}</p>
+        ) : (
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {form.required_task_codes.map((code) => (
+              <li key={code} className="inline-flex items-center gap-2 rounded-[4px] border border-border bg-muted px-2 py-1 text-xs">
+                <span><span className="font-display font-semibold">{code}</span> {nameOf(code)?.name}</span>
+                <button onClick={() => setForm((f) => ({ ...f, required_task_codes: toggleCode(f.required_task_codes, code) }))} aria-label={t("global.rules.remove", { code })} className="text-link hover:underline">{t("global.rules.remove_short")}</button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={t("office.cat.search")}
+          aria-label={t("office.cat.search")}
+          className="mt-3 h-8 w-72 rounded-md border border-input bg-surface px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        />
+        <ul className="mt-2 max-h-64 divide-y divide-border overflow-y-auto rounded-md border border-border">
+          {choices.length === 0 ? (
+            <li className="px-3 py-4 text-center text-sm text-muted-foreground">{t("global.rules.required_empty_search")}</li>
+          ) : (
+            choices.map((c) => (
+              <li key={c.code}>
+                <label className="flex cursor-pointer items-center gap-3 px-3 py-2 text-sm hover:bg-muted/60">
+                  <input type="checkbox" checked={form.required_task_codes.includes(c.code)} onChange={() => setForm((f) => ({ ...f, required_task_codes: toggleCode(f.required_task_codes, c.code) }))} className="h-4 w-4 accent-primary" />
+                  <span className="w-12 shrink-0 font-display text-xs font-semibold tabular-nums">{c.code}</span>
+                  <span className="min-w-0 flex-1 truncate">{c.name}</span>
+                </label>
+              </li>
+            ))
+          )}
+        </ul>
+      </section>
+
+      {/* Traffic lights */}
+      <section className="rounded-md border border-border bg-surface p-4">
+        <h2 className="text-sm font-semibold">{t("global.rules.lights_title")}</h2>
+        <div className="mt-3 grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="block text-sm font-medium" htmlFor="rules-days">{t("global.rules.days_title")}</label>
+            <p className="mt-1 text-xs text-muted-foreground">{t("global.rules.days_hint")}</p>
+            <input id="rules-days" type="number" min={1} value={form.area_amber_days} onChange={(e) => setField("area_amber_days", e.target.value)} className={cn(inputCls, "mt-2", errors.area_amber_days && "border-status-danger-fg")} />
+            {err("area_amber_days") && <p className="mt-1 text-xs text-status-danger-fg">{err("area_amber_days")}</p>}
+          </div>
+          <div>
+            <label className="block text-sm font-medium" htmlFor="rules-tolerance">{t("global.rules.tolerance_title")}</label>
+            <p className="mt-1 text-xs text-muted-foreground">{t("global.rules.tolerance_hint")}</p>
+            <input id="rules-tolerance" type="number" min={0} max={100} value={form.franchisability_amber_tolerance} onChange={(e) => setField("franchisability_amber_tolerance", e.target.value)} className={cn(inputCls, "mt-2", errors.franchisability_amber_tolerance && "border-status-danger-fg")} />
+            {err("franchisability_amber_tolerance") && <p className="mt-1 text-xs text-status-danger-fg">{err("franchisability_amber_tolerance")}</p>}
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-md border border-border bg-surface p-4">
+        <label className="block text-sm font-medium" htmlFor="rules-note">{t("global.rules.note")}</label>
+        <input id="rules-note" value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("global.rules.note_placeholder")} className="mt-2 h-9 w-full rounded-md border border-input bg-surface px-3 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30" />
+        <div className="mt-4 flex items-center gap-3">
+          <PrimaryButton onClick={save} disabled={update.isPending || !dirty}>{t("global.save_changes")}</PrimaryButton>
+          {!dirty && <span className="text-xs text-muted-foreground">{t("global.rules.no_changes")}</span>}
+        </div>
+      </section>
+    </div>
+  );
+}
