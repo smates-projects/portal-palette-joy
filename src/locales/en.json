@@ -535,7 +535,7 @@
     "fran_missing_one": "{{count}} required task missing: {{codes}}",
     "fran_missing_other": "{{count}} required tasks missing: {{codes}}",
     "fran_missing": "{{count}} required tasks missing: {{codes}}",
-    "fran_rule": "To be ready you need to reach the goal and have every required task approved. SM sets the goal and the list.",
+    "fran_rule": "To be ready you need to reach the goal and have every required task approved. SM Global sets the goal and the list.",
     "note_pending": "{{firm}} hasn't started this task yet.",
     "note_in_progress": "{{firm}} is working on this task.",
     "note_changes_requested": "{{firm}} is preparing a new version with your changes.",
