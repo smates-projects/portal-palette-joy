@@ -234,7 +234,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 }
 
-export function PageHeader({ pageKey }: { pageKey: "home" | "tasks" | "clients" | "profile" }) {
+export function PageHeader({ pageKey }: { pageKey: "home" | "tasks" | "clients" | "report" | "profile" }) {
   const { t } = useTranslation();
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">

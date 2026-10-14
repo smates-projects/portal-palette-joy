@@ -65,6 +65,8 @@ export interface TasksRepository {
   listUpcomingMeetings(): Promise<Meeting[]>;
   /** All non-cancelled meetings on tasks the current user can see. */
   listMeetings(): Promise<Meeting[]>;
+  /** Deliverable versions of every task the current user can see. */
+  listVersions(): Promise<TaskVersion[]>;
 }
 
 export interface ApiClient {

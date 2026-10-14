@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as PerfilRouteImport } from './routes/perfil'
+import { Route as ReporteRouteImport } from './routes/reporte'
 import { Route as TareasIndexRouteImport } from './routes/tareas.index'
 import { Route as TareasTaskIdRouteImport } from './routes/tareas.$taskId'
 
@@ -30,6 +31,11 @@ const PerfilRoute = PerfilRouteImport.update({
   path: '/perfil',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReporteRoute = ReporteRouteImport.update({
+  id: '/reporte',
+  path: '/reporte',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TareasIndexRoute = TareasIndexRouteImport.update({
   id: '/tareas/',
   path: '/tareas/',
@@ -45,6 +51,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/clientes': typeof ClientesRoute
   '/perfil': typeof PerfilRoute
+  '/reporte': typeof ReporteRoute
   '/tareas/$taskId': typeof TareasTaskIdRoute
   '/tareas/': typeof TareasIndexRoute
 }
@@ -52,6 +59,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/clientes': typeof ClientesRoute
   '/perfil': typeof PerfilRoute
+  '/reporte': typeof ReporteRoute
   '/tareas/$taskId': typeof TareasTaskIdRoute
   '/tareas': typeof TareasIndexRoute
 }
@@ -60,22 +68,31 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/clientes': typeof ClientesRoute
   '/perfil': typeof PerfilRoute
+  '/reporte': typeof ReporteRoute
   '/tareas/$taskId': typeof TareasTaskIdRoute
   '/tareas/': typeof TareasIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/clientes' | '/perfil' | '/tareas/$taskId' | '/tareas/'
+  fullPaths:
+    '/' | '/clientes' | '/perfil' | '/reporte' | '/tareas/$taskId' | '/tareas/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/clientes' | '/perfil' | '/tareas/$taskId' | '/tareas'
+  to: '/' | '/clientes' | '/perfil' | '/reporte' | '/tareas/$taskId' | '/tareas'
   id:
-    '__root__' | '/' | '/clientes' | '/perfil' | '/tareas/$taskId' | '/tareas/'
+    | '__root__'
+    | '/'
+    | '/clientes'
+    | '/perfil'
+    | '/reporte'
+    | '/tareas/$taskId'
+    | '/tareas/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ClientesRoute: typeof ClientesRoute
   PerfilRoute: typeof PerfilRoute
+  ReporteRoute: typeof ReporteRoute
   TareasTaskIdRoute: typeof TareasTaskIdRoute
   TareasIndexRoute: typeof TareasIndexRoute
 }
@@ -103,6 +120,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PerfilRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reporte': {
+      id: '/reporte'
+      path: '/reporte'
+      fullPath: '/reporte'
+      preLoaderRoute: typeof ReporteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/tareas/': {
       id: '/tareas/'
       path: '/tareas'
@@ -124,6 +148,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ClientesRoute: ClientesRoute,
   PerfilRoute: PerfilRoute,
+  ReporteRoute: ReporteRoute,
   TareasTaskIdRoute: TareasTaskIdRoute,
   TareasIndexRoute: TareasIndexRoute,
 }

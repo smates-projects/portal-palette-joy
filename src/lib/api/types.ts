@@ -69,6 +69,8 @@ export interface Task {
   due_date: IsoDate;
   current_version: number;
   updated_at: IsoDateTime;
+  /** When the owner approved it (null/absent if not approved). */
+  accepted_at?: IsoDateTime | null;
 }
 
 export interface TaskFile {

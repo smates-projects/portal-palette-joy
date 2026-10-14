@@ -10,7 +10,8 @@
     "profile": "My profile",
     "collapse": "Collapse menu",
     "expand": "Expand menu",
-    "main": "Main menu"
+    "main": "Main menu",
+    "report": "Report"
   },
   "topbar": {
     "search_placeholder": "Search tasks or clients",
@@ -64,13 +65,18 @@
     "profile": {
       "title": "My profile",
       "subtitle": "How do owners and the SM team see me?"
+    },
+    "report": {
+      "title": "Report",
+      "subtitle": "How is my work going?"
     }
   },
   "meta": {
     "home": "Your work day in Método 180: what to move today.",
     "tasks": "Tasks assigned to your firm in Método 180.",
     "clients": "Businesses your firm works for.",
-    "profile": "Your firm and user details."
+    "profile": "Your firm and user details.",
+    "report": "Your firm's progress and delivery pace."
   },
   "notFound": {
     "title": "This page doesn't exist",
@@ -384,5 +390,31 @@
     "undo": "Undo",
     "error_title": "We couldn't load your profile",
     "retry": "Load profile again"
+  },
+  "report": {
+    "heading": "How is my work going?",
+    "progress": "Progress",
+    "progress_detail": "{{accepted}} of {{total}} tasks approved",
+    "c_pending": "Not started",
+    "c_in_progress": "In progress",
+    "c_waiting": "Awaiting approval",
+    "c_overdue": "Overdue",
+    "c_blocked": "Blocked",
+    "by_client": "Progress by client",
+    "client_detail": "{{accepted}} of {{total}} approved",
+    "blocked_title": "What is blocked",
+    "blocked_none": "You have no blocked tasks.",
+    "blocked_by": "Blocked by {{codes}}",
+    "avg_days": "Days from delivery to approval",
+    "avg_days_hint": "Average on approved tasks",
+    "avg_rounds": "Change rounds",
+    "avg_rounds_hint": "Average per approved task",
+    "billable_title": "Approved and billable in {{month}}",
+    "billable_note": "For information only, it doesn't create invoices.",
+    "billable_none": "No tasks approved yet this month. When an owner approves a deliverable, it will show here.",
+    "error_title": "We couldn't load the report.",
+    "retry": "Load the report again",
+    "empty_title": "You have no tasks yet",
+    "empty_body": "When SM assigns you tasks, your progress will show here."
   }
 }

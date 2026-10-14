@@ -16,7 +16,7 @@ export const VISIBLE_STATUSES: VisibleTaskStatus[] = [
 ];
 const STEP_ORDER = ["survey", "design", "implement", "validate", "document"];
 
-const SEARCH_KEYS = ["business", "area", "status", "due", "q", "sort", "dir", "group", "view", "task"] as const;
+const SEARCH_KEYS = ["business", "area", "status", "due", "blocked", "approved", "q", "sort", "dir", "group", "view", "task"] as const;
 export type TasksSearch = { [K in (typeof SEARCH_KEYS)[number]]?: string | undefined };
 
 const str = (v: unknown) => (typeof v === "string" && v !== "" ? v : undefined);
@@ -66,6 +66,8 @@ export function filterTasks(tasks: TaskWithComputed[], s: TasksSearch, ctx: Tabl
     if (s.status && t.status !== s.status) return false;
     if (s.due && (DUE_FILTERS as readonly string[]).includes(s.due) && !matchesDue(t, s.due as DueFilter, today))
       return false;
+    if (s.blocked === "1" && !t.is_blocked) return false;
+    if (s.approved === "month" && !(t.status === "accepted" && t.accepted_at?.slice(0, 7) === today.slice(0, 7))) return false;
     if (q && !`${t.code} ${t.name} ${ctx.businessName(t.business_id)}`.toLowerCase().includes(q)) return false;
     return true;
   });
