@@ -17,3 +17,5 @@
 - The menu per role lives in `src/components/layout/nav.ts` (`navFor(role)`); screens are shared across roles and branch on `useCurrentUser().role`. Why: owner and firm reuse Mis tareas, detail and Reporte.
 - Franchisability is computed in `src/lib/api/franchisability.ts` and returned by the businesses repository, never in components. Why: the Laravel backend will compute it the same way.
 - Seed tasks take name and acceptance from `src/data/catalogo_metodo180.json`, never typed by hand. Why: the catalog is official and only SM Global edits it.
+- SM edits (reassign, due date, step, cancel) go only through `tasks.update` / `tasks.cancel`, which log a `TaskEvent` with `change` and notify the firm (`task_updated`); sentences come from `src/lib/tasks/changes.ts`. Why: Activity and notifications must say the same thing.
+- SM scope = businesses whose `office_id` is the user's office; Mis tareas defaults to `supervisor_user_id = me` unless `sup=all`. Cancelled tasks are excluded from `tasks.list()` unless `include_cancelled`. Why: no cross-office data, and cancelled work never counts toward progress.

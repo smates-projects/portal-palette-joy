@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import {
-  ArrowLeft, CalendarCheck, CalendarClock, CheckCircle2, Circle, FileText, Lock, Maximize2, MessageSquare, PanelRight, Plus, Video, X,
+  ArrowLeft, Ban, CalendarCheck, MoreHorizontal, Pencil, CalendarClock, CheckCircle2, Circle, FileText, Lock, Maximize2, MessageSquare, PanelRight, Plus, Video, X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { TODAY } from "@/config/app";
@@ -16,6 +16,9 @@ import { firstName, formatDate, formatDateTime, formatShortDate } from "@/lib/fo
 import { daysBetween } from "@/lib/tasks/table";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/StatusBadge";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { CancelTasksDialog, EditTasksDialog } from "@/components/tasks/sm/SmTaskActions";
+import { describeChange } from "@/lib/tasks/changes";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MentionInput, MentionText } from "./mentions";
 import {
@@ -52,6 +55,10 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
   const answer = useAnswerOwnerRequest();
   const confirmMeeting = useConfirmMeeting();
   const isOwner = me.data?.role === "business_owner";
+  const isSm = me.data?.role === "sm_team";
+  const isFirm = me.data?.role === "partner_firm";
+  const [editOpen, setEditOpen] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
   const [changesOpen, setChangesOpen] = useState(openChanges);
   const [answering, setAnswering] = useState<OwnerRequest | null>(null);
 
@@ -162,7 +169,38 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
 
   // ----- Header: one primary action according to status -----
   let primary: ReactNode = null;
-  if (isOwner) {
+  const cancelled = task.status === "cancelled";
+  const cancelEvent = [...events].reverse().find((e) => e.kind === "cancelled");
+  if (cancelled) {
+    primary = (
+      <StateNote icon={<Ban className="h-4 w-4" />}>
+        {t("sm.note_cancelled", {
+          name: cancelEvent ? firstName(userName(cancelEvent.actor_user_id)) : "",
+          reason: cancelEvent?.change?.reason ?? "",
+        })}
+      </StateNote>
+    );
+  } else if (isSm) {
+    // SM runs execution: edit (reassign, due date, step) or cancel. Status moves stay with firm and owner.
+    primary = (
+      <div className="flex flex-wrap items-center gap-2">
+        <PrimaryButton onClick={() => setEditOpen(true)}>
+          <Pencil className="h-3.5 w-3.5" />
+          {t("sm.action_edit")}
+        </PrimaryButton>
+        <DropdownMenu>
+          <DropdownMenuTrigger aria-label={t("sm.more_actions")} className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-surface hover:bg-muted">
+            <MoreHorizontal className="h-4 w-4" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuItem onSelect={() => setEditOpen(true)}>{t("sm.action_reassign")}</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setEditOpen(true)}>{t("sm.action_change_due")}</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setCancelOpen(true)} className="text-status-danger-fg">{t("sm.action_cancel_task")}</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    );
+  } else if (isOwner) {
     primary =
       status === "submitted" ? (
         <div className="flex flex-wrap items-center gap-2">
@@ -228,7 +266,11 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
     );
   }
 
-  const nextLine = isOwner
+  const nextLine = cancelled
+    ? t("sm.next_cancelled")
+    : isSm
+      ? t("sm.next_line", { firm: firmName, person: userName(task.assignee_user_id), date: dueDate })
+      : isOwner
     ? status === "submitted"
       ? t("owner.next_submitted")
       : status === "accepted"
@@ -247,7 +289,7 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
               : t("taskDetail.next_accepted");
 
   const dueLabel =
-    status === "accepted"
+    status === "accepted" || cancelled
       ? null
       : dueDays < 0
         ? t("taskDetail.overdue_by", { count: -dueDays })
@@ -280,7 +322,7 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
           </p>
           <h2 className="mt-1.5 text-xl font-semibold leading-snug tracking-tight">{task.name}</h2>
           <div className="mt-3 flex flex-col items-start gap-1.5 text-sm">
-            <StatusBadge status={status} />
+            <StatusBadge status={cancelled ? "cancelled" : status} />
             {openRequests.length > 0 && (
               <button
                 type="button"
@@ -311,6 +353,7 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
           <div className="mt-3 rounded-md border border-accent bg-accent/50 p-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-accent-foreground">{t(isOwner ? "owner.criteria_title" : "taskDetail.criteria_title")}</p>
             <p className="mt-1.5 text-sm leading-relaxed text-foreground">{task.acceptance_criteria}</p>
+            {isSm && <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground"><Lock className="h-3 w-3" />{t("sm.catalog_note")}</p>}
           </div>
         </Section>
 
@@ -373,7 +416,7 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
         <Section
           id={`task-requests-${task.id}`}
           title={t("taskDetail.s_requests")}
-          action={isOwner ? undefined : <SecondaryButton onClick={() => setRequestOpen(true)}><Plus className="h-3.5 w-3.5" />{t("taskDetail.ask_owner")}</SecondaryButton>}
+          action={!isFirm || cancelled ? undefined : <SecondaryButton onClick={() => setRequestOpen(true)}><Plus className="h-3.5 w-3.5" />{t("taskDetail.ask_owner")}</SecondaryButton>}
         >
           {owner_requests.length === 0 ? (
             <Empty>{t("taskDetail.requests_empty")}</Empty>
@@ -411,7 +454,7 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
                     </div>
                     {isOwner ? (
                       !resolved && <SecondaryButton onClick={() => setAnswering(r)}>{t("owner.action_upload")}</SecondaryButton>
-                    ) : (
+                    ) : isSm ? null : (
                       <button onClick={() => toggle(!resolved)} className="h-7 shrink-0 rounded-md px-2 text-xs font-medium text-link hover:bg-muted">
                         {resolved ? t("taskDetail.reopen") : t("taskDetail.mark_resolved")}
                       </button>
@@ -426,7 +469,7 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
         {/* 5. Meetings */}
         <Section
           title={t("taskDetail.s_meetings")}
-          action={isOwner ? undefined : <SecondaryButton onClick={() => setMeetingOpen(true)}><Plus className="h-3.5 w-3.5" />{t("taskDetail.propose_meeting")}</SecondaryButton>}
+          action={!isFirm || cancelled ? undefined : <SecondaryButton onClick={() => setMeetingOpen(true)}><Plus className="h-3.5 w-3.5" />{t("taskDetail.propose_meeting")}</SecondaryButton>}
         >
           {meetings.length === 0 ? (
             <Empty>{t("taskDetail.meetings_empty", { name: ownerFirst })}</Empty>
@@ -507,6 +550,8 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
         </Section>
       </div>
 
+      {isSm && editOpen && <EditTasksDialog open onOpenChange={setEditOpen} tasks={[task]} mode="all" />}
+      {isSm && <CancelTasksDialog open={cancelOpen} onOpenChange={setCancelOpen} tasks={[task]} />}
       <SubmitDeliverableDialog
         open={submitOpen}
         onOpenChange={setSubmitOpen}
@@ -621,7 +666,22 @@ function VersionBadge({ status, ownerFirst }: { status: string; ownerFirst: stri
 function EventLine({ event, comments, userName, lng }: { event: TaskEvent; comments: TaskComment[]; userName: (id: string) => string; lng: string }) {
   const { t } = useTranslation();
   const name = userName(event.actor_user_id);
-  const key = { assigned: "e_assigned", started: "e_started", submitted: "e_submitted", changes_requested: "e_changes", approved: "e_approved" }[event.kind];
+  const { i18n } = useTranslation();
+  if (event.change) {
+    return (
+      <div>
+        <p className="text-sm">
+          {describeChange(event.change, firstName(name), t, i18n.language)}
+          <span className="ml-2 text-xs text-muted-foreground">{formatDateTime(event.created_at, lng)}</span>
+        </p>
+        {event.change.reason && (
+          <blockquote className="mt-1.5 rounded-md border-l-2 border-border bg-muted px-3 py-2 text-sm">“{event.change.reason}”</blockquote>
+        )}
+      </div>
+    );
+  }
+  const keys: Record<string, string> = { assigned: "e_assigned", started: "e_started", submitted: "e_submitted", changes_requested: "e_changes", approved: "e_approved" };
+  const key = keys[event.kind];
   const quote = event.comment_id ? comments.find((c) => c.id === event.comment_id) : null;
   return (
     <div>

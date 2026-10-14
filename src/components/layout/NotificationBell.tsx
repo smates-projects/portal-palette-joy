@@ -7,6 +7,7 @@ import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications 
 import type { AppNotification, NotificationKind } from "@/lib/api/types";
 import { firstName, formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { describeChange } from "@/lib/tasks/changes";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -21,6 +22,7 @@ const DOT: Record<NotificationKind, string> = {
   meeting_proposed: "bg-link",
   meeting_confirmed: "bg-primary",
   unblocked: "bg-status-success-fg",
+  task_updated: "bg-link",
 };
 
 export function NotificationBell() {
@@ -107,7 +109,9 @@ export function NotificationBell() {
                     <span className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", DOT[n.kind], n.read_at && "opacity-40")} />
                     <span className="min-w-0 flex-1">
                       <span className={cn("block text-sm", !n.read_at && "font-medium")}>
-                        {t(`notifications.kind_${n.kind}`, { name: n.actor_name ? firstName(n.actor_name) : "" })}
+                        {n.change
+                          ? describeChange(n.change, n.actor_name ? firstName(n.actor_name) : "", t, i18n.language)
+                          : t(`notifications.kind_${n.kind}`, { name: n.actor_name ? firstName(n.actor_name) : "" })}
                       </span>
                       <span className="block truncate text-xs text-muted-foreground">
                         <span className="font-display tabular-nums text-foreground">{n.task_code}</span> {n.task_name} · {n.business_name}

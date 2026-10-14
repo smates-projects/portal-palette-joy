@@ -5,7 +5,10 @@ import {
   CalendarDays,
   FileText,
   Home,
+  Library,
   ListChecks,
+  Network,
+  Settings,
   Store,
   TrendingUp,
   UserRound,
@@ -15,10 +18,11 @@ import type { UserRole } from "@/lib/api/types";
 
 export type NavKey =
   | "home" | "tasks" | "clients" | "report" | "profile"
-  | "calendar" | "manual" | "documents" | "numbers" | "business";
+  | "calendar" | "manual" | "documents" | "numbers" | "business"
+  | "network" | "businesses" | "catalog" | "settings";
 
 export interface NavItem {
-  to: "/" | "/tareas" | "/clientes" | "/reporte" | "/perfil" | "/manual" | "/documentos" | "/numeros" | "/negocio";
+  to: "/" | "/tareas" | "/clientes" | "/reporte" | "/perfil" | "/manual" | "/documentos" | "/numeros" | "/negocio" | "/red" | "/negocios" | "/catalogo" | "/configuracion";
   key: NavKey;
   icon: LucideIcon;
   /** Only for "Calendario": Mis tareas opened in the calendar view. */
@@ -46,7 +50,20 @@ export const ownerNav: NavItem[] = [
   { to: "/negocio", key: "business", icon: Store },
 ];
 
-export const navFor = (role: UserRole | undefined) => (role === "business_owner" ? ownerNav : partnerFirmNav);
+// Menu for the SM office team.
+export const smNav: NavItem[] = [
+  { to: "/", key: "home", icon: Home },
+  { to: "/tareas", key: "tasks", icon: ListChecks },
+  { to: "/red", key: "network", icon: Network },
+  { to: "/reporte", key: "report", icon: BarChart3 },
+  { to: "/negocios", key: "businesses", icon: Building2 },
+  { to: "/tareas", key: "calendar", icon: CalendarDays, view: "calendar" },
+  { to: "/catalogo", key: "catalog", icon: Library },
+  { to: "/configuracion", key: "settings", icon: Settings },
+];
+
+export const navFor = (role: UserRole | undefined) =>
+  role === "business_owner" ? ownerNav : role === "sm_team" ? smNav : partnerFirmNav;
 
 /** "Calendario" is active on Mis tareas in calendar view; "Mis tareas" on any other view. */
 export function isNavActive(item: NavItem, items: NavItem[], pathname: string, view: unknown) {

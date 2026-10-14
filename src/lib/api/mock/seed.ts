@@ -1,4 +1,4 @@
-import type { ExternalCalendarEvent, NotificationKind,
+import type { ExternalCalendarEvent, NotificationKind, TaskChange,
   Business,
   Meeting,
   Organization,
@@ -25,7 +25,7 @@ export const ORG_DELTA = uuid("0a000000", 4);
 export const ORG_TECNO = uuid("0a000000", 5);
 
 export const organizations: Organization[] = [
-  { id: ORG_SM, name: "Strategic Mates", kind: "sm", area: null, specialty: null, city: "Orlando, FL", email: "hola@strategicmates.com", phone: null },
+  { id: ORG_SM, name: "SM Miami", kind: "sm", area: null, specialty: null, city: "Orlando, FL", email: "hola@strategicmates.com", phone: null },
   { id: ORG_PEREZ, name: "Estudio Pérez Legal", kind: "partner_firm", area: "B6", specialty: "Derecho corporativo, licencias y contratos para franquicias en Florida", city: "Miami, FL", email: "contacto@estudioperez.legal", phone: "+1 305 555 0142" },
   { id: ORG_DELTA, name: "Delta Contadores", kind: "partner_firm", area: "B3", specialty: "Contabilidad, finanzas y fiscal para pymes que se preparan para franquiciar", city: "Miami, FL", email: "hola@deltacontadores.com", phone: "+1 305 555 0171" },
   { id: ORG_TECNO, name: "TecnoPyme", kind: "partner_firm", area: "B4", specialty: "CRM, órdenes de servicio y tableros para negocios de servicios", city: "Orlando, FL", email: "equipo@tecnopyme.io", phone: "+1 407 555 0123" },
@@ -65,9 +65,9 @@ export const users: User[] = [
 ];
 
 export const businesses: Business[] = [
-  { id: BIZ_VOSSLER, name: "Vossler", industry: "Construcción residencial", city: "Orlando", state: "FL", owner_user_id: U_CARLA, program_start_date: "2026-08-02", program_day: 74 },
-  { id: BIZ_PRIME, name: "Prime 10 Solutions", industry: "Remodelaciones", city: "Tampa", state: "FL", owner_user_id: U_DANIEL, program_start_date: "2026-09-14", program_day: 31 },
-  { id: BIZ_ENYERMY, name: "Enyermy Hair Studio", industry: "Salón de belleza", city: "Miami", state: "FL", owner_user_id: U_ENYERMY, program_start_date: "2026-10-09", program_day: 6 },
+  { id: BIZ_VOSSLER, name: "Vossler", industry: "Construcción residencial", city: "Orlando", state: "FL", owner_user_id: U_CARLA, program_start_date: "2026-08-02", program_day: 74, office_id: ORG_SM },
+  { id: BIZ_PRIME, name: "Prime 10 Solutions", industry: "Remodelaciones", city: "Tampa", state: "FL", owner_user_id: U_DANIEL, program_start_date: "2026-09-14", program_day: 31, office_id: ORG_SM },
+  { id: BIZ_ENYERMY, name: "Enyermy Hair Studio", industry: "Salón de belleza", city: "Miami", state: "FL", owner_user_id: U_ENYERMY, program_start_date: "2026-10-09", program_day: 6, office_id: ORG_SM },
 ];
 
 // Official Método 180 catalog entries (code, name and criteria verbatim).
@@ -182,6 +182,9 @@ const taskId = (bizId: string, code: string) => {
   return uuid("0d000000", n);
 };
 
+/** SM supervisor per business (sample assignment). */
+const supervisorOf: Record<string, string> = { [BIZ_VOSSLER]: U_NICOLAS, [BIZ_ENYERMY]: U_NICOLAS, [BIZ_PRIME]: U_MARYLIN };
+
 export const TASK_B602_VOSSLER = taskId(BIZ_VOSSLER, "B6-02");
 
 export const tasks: Task[] = businesses.flatMap((b) =>
@@ -199,6 +202,7 @@ export const tasks: Task[] = businesses.flatMap((b) =>
       business_id: b.id,
       organization_id: c.org,
       assignee_user_id: c.assignee,
+      supervisor_user_id: supervisorOf[b.id]!,
       depends_on_task_ids: c.depends_on ? [taskId(b.id, c.depends_on)] : [],
       start_date: p.start,
       due_date: p.due,
@@ -333,7 +337,7 @@ meetings.push(
 meetings.push({ id: uuid("1b000000", 903), task_id: TASK_B603_VOSSLER, proposed_by_user_id: U_CARLA, topic: "Licencia CGC y condados donde operar", starts_at: "2026-10-19T16:00:00Z", duration_minutes: 30, status: "proposed" });
 
 /** Stored (event-driven) notifications. Due-date ones are generated from TODAY, not stored. */
-export const notifications: { id: string; user_id: string; kind: NotificationKind; task_id: string; actor_user_id: string | null; created_at: string; read: boolean }[] = [
+export const notifications: { id: string; user_id: string; kind: NotificationKind; task_id: string; actor_user_id: string | null; created_at: string; read: boolean; change?: TaskChange | null }[] = [
   { id: uuid("1f000000", 1), user_id: U_LUCIA, kind: "mentioned", task_id: TASK_B603_VOSSLER, actor_user_id: U_CARLA, created_at: "2026-10-14T13:20:00Z", read: false },
   { id: uuid("1f000000", 2), user_id: U_LUCIA, kind: "meeting_proposed", task_id: TASK_B603_VOSSLER, actor_user_id: U_CARLA, created_at: "2026-10-14T12:05:00Z", read: false },
   { id: uuid("1f000000", 3), user_id: U_LUCIA, kind: "changes_requested", task_id: TASK_B601_PRIME, actor_user_id: U_DANIEL, created_at: "2026-10-13T16:40:00Z", read: false },
@@ -360,3 +364,8 @@ notifications.push(
   { id: uuid("1f000000", 23), user_id: U_CARLA, kind: "submitted_for_approval", task_id: TASK_B602_VOSSLER, actor_user_id: U_LUCIA, created_at: "2026-10-12T19:05:00Z", read: true },
   { id: uuid("1f000000", 24), user_id: U_CARLA, kind: "submitted_for_approval", task_id: TASK_B505_VOSSLER, actor_user_id: U_TOMAS, created_at: "2026-10-08T17:00:00Z", read: true },
 );
+
+// Sample SM change: Nicolás moved the due date of B4-02 at Vossler; the firm was told.
+const SAMPLE_CHANGE: TaskChange = { field: "due_date", from: "2026-10-08", to: "2026-10-15" };
+events.push({ id: uuid("1c000000", 990), task_id: TASK_B402_VOSSLER, kind: "due_changed", actor_user_id: U_NICOLAS, version: null, comment_id: null, created_at: "2026-10-06T14:10:00Z", change: SAMPLE_CHANGE });
+notifications.push({ id: uuid("1f000000", 990), user_id: U_MARIANA, kind: "task_updated", task_id: TASK_B402_VOSSLER, actor_user_id: U_NICOLAS, created_at: "2026-10-06T14:10:00Z", read: true, change: SAMPLE_CHANGE });

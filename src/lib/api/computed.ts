@@ -11,7 +11,7 @@ export function isBlocked(task: Task, all: Task[]): boolean {
 
 /** Overdue = due date passed and not accepted. Not a status. */
 export function isOverdue(task: Task, today: string = TODAY): boolean {
-  return task.status !== "accepted" && task.due_date < today;
+  return task.status !== "accepted" && task.status !== "cancelled" && task.due_date < today;
 }
 
 export function withComputed(task: Task, all: Task[], today: string = TODAY): TaskWithComputed {

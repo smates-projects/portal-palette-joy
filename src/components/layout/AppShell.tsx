@@ -133,7 +133,11 @@ function ViewAs() {
   const enabled = options?.filter((o) => o.enabled) ?? [];
   const firms = enabled.filter((o) => o.user.role === "partner_firm");
   const owners = enabled.filter((o) => o.user.role === "business_owner");
-  const label = (o: (typeof enabled)[number]) => o.organization?.name ?? `${o.user.full_name} (${o.business?.name ?? ""})`;
+  const smTeam = enabled.filter((o) => o.user.role === "sm_team");
+  const label = (o: (typeof enabled)[number]) =>
+    o.user.role === "sm_team"
+      ? `${o.user.full_name} (${o.organization?.name ?? ""})`
+      : o.organization?.name ?? `${o.user.full_name} (${o.business?.name ?? ""})`;
   const currentOpt = enabled.find((o) => o.user.id === me?.id);
   const pick = (o: (typeof enabled)[number]) =>
     setViewAs.mutate(o.user.id, {
@@ -177,12 +181,14 @@ function ViewAs() {
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
-        {(["role_sm"] as const).map((k) => (
-          <DropdownMenuItem key={k} disabled className="flex justify-between pl-8">
-            <span>{t(`topbar.${k}`)}</span>
-            <span className="rounded-[4px] border border-border px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-              {t("topbar.coming_soon")}
-            </span>
+        <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">{t("topbar.role_sm")}</DropdownMenuLabel>
+        {smTeam.map((o) => (
+          <DropdownMenuItem key={o.user.id} onSelect={() => pick(o)} className="flex items-start gap-2">
+            <Check className={cn("mt-0.5 h-4 w-4", o.user.id === me?.id ? "opacity-100" : "opacity-0")} />
+            <div>
+              <div className="font-medium">{o.user.full_name}</div>
+              <div className="text-xs text-muted-foreground">{o.organization?.name}</div>
+            </div>
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

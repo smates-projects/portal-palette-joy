@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { useBusinesses, useCurrentUser, useTasks, useVersions } from "@/lib/api/hooks";
+import { useBusinesses, useCurrentUser, useOrganizations, useTasks, useVersions } from "@/lib/api/hooks";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { VisibleTaskStatus } from "@/lib/api/types";
 import { buildFirmReport } from "@/lib/tasks/report";
 import { VISIBLE_STATUSES, type TasksSearch } from "@/lib/tasks/table";
@@ -19,16 +21,38 @@ export function ReportPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const tasksQ = useTasks();
-  const isOwner = useCurrentUser().data?.role === "business_owner";
+  const role = useCurrentUser().data?.role;
+  const isOwner = role === "business_owner";
+  const isSm = role === "sm_team";
+  const orgsQ = useOrganizations();
+  // SM sees the whole office and can narrow to one firm.
+  const [firm, setFirm] = useState<string | undefined>(undefined);
   const bizQ = useBusinesses();
   const versionsQ = useVersions();
-  const go = (search: TasksSearch) => void navigate({ to: "/tareas", search });
+  const go = (search: TasksSearch) =>
+    void navigate({ to: "/tareas", search: isSm ? { ...search, sup: "all", ...(firm ? { firm } : {}) } : search });
+  const firms = (orgsQ.data ?? []).filter((o) => o.kind === "partner_firm" && (tasksQ.data ?? []).some((x) => x.organization_id === o.id));
   const nf = (n: number) => new Intl.NumberFormat(i18n.language === "en" ? "en-US" : "es-AR", { maximumFractionDigits: 1 }).format(n);
 
   const header = (
     <>
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t(isOwner ? "owner.for_role" : "tasks.for_role")}</p>
-      <h1 className="mt-1 text-2xl font-semibold tracking-tight">{t(isOwner ? "owner.report_heading" : "report.heading")}</h1>
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t(isOwner ? "owner.for_role" : isSm ? "sm.for_role" : "tasks.for_role")}</p>
+      <div className="mt-1 flex flex-wrap items-end justify-between gap-3">
+        <h1 className="text-2xl font-semibold tracking-tight">{t(isOwner ? "owner.report_heading" : isSm ? "sm.report_heading" : "report.heading")}</h1>
+        {isSm && (
+          <Select value={firm ?? "__all"} onValueChange={(v) => setFirm(v === "__all" ? undefined : v)}>
+            <SelectTrigger aria-label={t("sm.filter_firm")} className={cn("h-8 w-auto min-w-48 gap-2 bg-surface text-sm", firm && "border-ring")}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all">{t("sm.all_firms")}</SelectItem>
+              {firms.map((o) => (
+                <SelectItem key={o.id} value={o.id}>{t("owner.firm_label", { name: o.name, what: t(`firmWhat.${o.area ?? "B1"}`) })}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </div>
     </>
   );
 
@@ -55,7 +79,8 @@ export function ReportPage() {
     );
 
   const bizName = (id: string) => bizQ.data?.find((b) => b.id === id)?.name ?? "";
-  const r = buildFirmReport(tasksQ.data ?? [], versionsQ.data ?? [], bizQ.data ?? []);
+  const scoped = (tasksQ.data ?? []).filter((x) => !firm || x.organization_id === firm);
+  const r = buildFirmReport(scoped, versionsQ.data ?? [], bizQ.data ?? []);
   if (r.total === 0)
     return (
       <div className="mx-auto max-w-7xl px-6 py-8">
