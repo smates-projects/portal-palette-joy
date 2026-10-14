@@ -1,3 +1,4 @@
+import { TODAY } from "@/config/app";
 import { nowIso } from "@/config/app";
 import type { ApiClient } from "../repositories";
 import { canTransition, withComputed } from "../computed";
@@ -82,6 +83,14 @@ export function createMockApi(): ApiClient {
     users: { list: () => delay(db.users) },
     tasks: {
       list: () => delay(visibleTasks().map((t) => withComputed(t, db.tasks))),
+      listUpcomingMeetings: () => {
+        const ids = new Set(visibleTasks().map((t) => t.id));
+        return delay(
+          db.meetings
+            .filter((m) => ids.has(m.task_id) && m.status !== "cancelled" && m.starts_at.slice(0, 10) >= TODAY)
+            .sort((a, b) => a.starts_at.localeCompare(b.starts_at)),
+        );
+      },
       get: async (id) => {
         const t = visibleTasks().find((x) => x.id === id);
         if (!t) return delay(null);
