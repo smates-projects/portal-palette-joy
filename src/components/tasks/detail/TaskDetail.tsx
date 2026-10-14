@@ -550,6 +550,8 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
         </Section>
       </div>
 
+      {isSm && editOpen && <EditTasksDialog open onOpenChange={setEditOpen} tasks={[task]} mode="all" />}
+      {isSm && <CancelTasksDialog open={cancelOpen} onOpenChange={setCancelOpen} tasks={[task]} />}
       <SubmitDeliverableDialog
         open={submitOpen}
         onOpenChange={setSubmitOpen}
