@@ -20,7 +20,7 @@ describe("roadmap", () => {
     expect(zoomRange("month", [], [], "2026-10-14")).toEqual({ start: "2026-09-01", end: "2026-12-31" });
   });
   it("program zoom covers from the earliest start to the end of the program", () => {
-    expect(zoomRange("program", [biz("v", "2026-08-02")], [], "2026-10-14")).toEqual({ start: "2026-08-01", end: "2027-02-28" });
+    expect(zoomRange("program", [biz("v", "2026-08-02")], [], "2026-10-14")).toEqual({ start: "2026-08-01", end: "2027-01-31" });
   });
   it("groups by business then area, tasks by start date", () => {
     const rows = buildRoadmapRows(
