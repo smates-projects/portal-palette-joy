@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { TODAY } from "@/config/app";
 import type { AreaCode, Business, TaskWithComputed, VisibleTaskStatus } from "@/lib/api/types";
@@ -45,8 +45,69 @@ export function TaskRoadmap(props: {
   const [zoom, setZoom] = useState<Zoom>("month");
   const scroller = useRef<HTMLDivElement>(null);
 
-  const ppd = PX_PER_DAY[zoom];
-  const range = useMemo(() => zoomRange(zoom, props.businesses, props.allTasks), [zoom, props.businesses, props.allTasks]);
+  const [scale, setScale] = useState(1);
+  const [pad, setPad] = useState({ before: 0, after: 0 });
+  const pendingScroll = useRef<number | null>(null);
+  const ppd = PX_PER_DAY[zoom] * scale;
+  const base = useMemo(() => zoomRange(zoom, props.businesses, props.allTasks), [zoom, props.businesses, props.allTasks]);
+  const range = useMemo(() => ({ start: addDays(base.start, -pad.before), end: addDays(base.end, pad.after) }), [base, pad]);
+  const pickZoom = (z: Zoom) => { setZoom(z); setScale(1); setPad({ before: 0, after: 0 }); };
+
+  // Apply scroll corrections after the timeline grows or rescales, so the view does not jump.
+  useLayoutEffect(() => {
+    const el = scroller.current;
+    if (el && pendingScroll.current !== null) { el.scrollLeft = pendingScroll.current; pendingScroll.current = null; }
+  });
+
+  // Endless timeline: extend it when scrolling near either edge.
+  const EXTEND = 90;
+  const onScroll = () => {
+    const el = scroller.current;
+    if (!el || pendingScroll.current !== null) return;
+    if (el.scrollLeft < 300) {
+      pendingScroll.current = el.scrollLeft + EXTEND * ppd;
+      setPad((p) => ({ ...p, before: p.before + EXTEND }));
+    } else if (el.scrollWidth - el.clientWidth - el.scrollLeft < 300) {
+      setPad((p) => ({ ...p, after: p.after + EXTEND }));
+    }
+  };
+
+  // Ctrl/Cmd + wheel (or trackpad pinch) zooms around the cursor.
+  const wheelRef = useRef<(e: WheelEvent) => void>(() => {});
+  wheelRef.current = (e: WheelEvent) => {
+    const el = scroller.current;
+    if (!el) return;
+    const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1);
+    const next = Math.min(4, Math.max(0.3, scale * Math.exp(-dy * 0.002)));
+    if (next === scale) return;
+    const px = e.clientX - el.getBoundingClientRect().left - LABEL_W;
+    const day = (el.scrollLeft + px) / ppd;
+    pendingScroll.current = Math.max(0, day * PX_PER_DAY[zoom] * next - px);
+    setScale(next);
+  };
+  useEffect(() => {
+    const el = scroller.current;
+    if (!el) return;
+    const h = (e: WheelEvent) => { if (e.ctrlKey || e.metaKey) { e.preventDefault(); wheelRef.current(e); } };
+    el.addEventListener("wheel", h, { passive: false });
+    return () => el.removeEventListener("wheel", h);
+  });
+
+  // Drag the empty timeline to pan (scrollbars are hidden).
+  const drag = useRef<{ x: number; y: number; l: number; t: number } | null>(null);
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0 || (e.target as HTMLElement).closest("button,a")) return;
+    const el = scroller.current!;
+    drag.current = { x: e.clientX, y: e.clientY, l: el.scrollLeft, t: el.scrollTop };
+    el.setPointerCapture(e.pointerId);
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    const d = drag.current, el = scroller.current;
+    if (!d || !el) return;
+    el.scrollLeft = d.l - (e.clientX - d.x);
+    el.scrollTop = d.t - (e.clientY - d.y);
+  };
+  const endDrag = () => { drag.current = null; };
   const days = daysBetween(range.start, range.end) + 1;
   const width = days * ppd;
   const x = (iso: string) => daysBetween(range.start, iso) * ppd;
@@ -58,7 +119,7 @@ export function TaskRoadmap(props: {
     const el = scroller.current;
     if (el) el.scrollLeft = Math.max(0, x(TODAY) - (el.clientWidth - LABEL_W) / 3);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [zoom, range.start]);
+  }, [zoom]);
 
   // Header ticks: days (week), Mondays (month), first of month (program). Top line marks month changes.
   const ticks = useMemo(() => {
@@ -127,7 +188,7 @@ export function TaskRoadmap(props: {
               key={z}
               role="radio"
               aria-checked={zoom === z}
-              onClick={() => setZoom(z)}
+              onClick={() => pickZoom(z)}
               className={cn(
                 "h-7 rounded-[4px] px-2.5 text-xs transition-colors",
                 zoom === z ? "bg-accent font-medium text-accent-foreground" : "text-muted-foreground hover:text-foreground",
@@ -146,7 +207,7 @@ export function TaskRoadmap(props: {
         </div>
       </div>
 
-      <div ref={scroller} className="relative min-h-0 flex-1 overflow-auto rounded-md border border-border bg-surface">
+      <div ref={scroller} onScroll={onScroll} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerCancel={endDrag} className="scrollbar-none relative min-h-0 flex-1 cursor-grab overflow-auto rounded-md active:cursor-grabbing border border-border bg-surface">
         <div className="relative" style={{ width: LABEL_W + width, height: HEAD_H + height }}>
           {/* Header */}
           <div className="sticky top-0 z-20 flex border-b border-border bg-muted" style={{ height: HEAD_H, width: LABEL_W + width }}>
