@@ -13,3 +13,11 @@ export function formatRelativeDate(iso: string, lng: string, today: string = TOD
 
 export const formatUsd = (amount: number, lng: string) =>
   new Intl.NumberFormat(localeTag(lng), { style: "currency", currency: "USD" }).format(amount);
+
+export const formatShortDate = (iso: string, lng: string) =>
+  new Intl.DateTimeFormat(localeTag(lng), { day: "numeric", month: "short" }).format(toDate(iso));
+
+export const formatDateTime = (iso: string, lng: string) =>
+  new Intl.DateTimeFormat(localeTag(lng), { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
+
+export const firstName = (fullName: string) => fullName.split(" ")[0] ?? fullName;
