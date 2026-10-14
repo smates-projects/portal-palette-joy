@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Bell } from "lucide-react";
+import { nowIso } from "@/config/app";
 import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications } from "@/lib/api/hooks";
 import type { AppNotification, NotificationKind } from "@/lib/api/types";
 import { firstName, formatDateTime } from "@/lib/format";
@@ -35,7 +36,7 @@ export function NotificationBell() {
   const list = tab === "unread" ? unread : all;
 
   const relative = (iso: string) => {
-    const mins = Math.round((Date.parse(`2026-10-14T19:00:00Z`) - Date.parse(iso)) / 60000);
+    const mins = Math.round((Date.parse(nowIso()) - Date.parse(iso)) / 60000);
     const rtf = new Intl.RelativeTimeFormat(i18n.language === "en" ? "en-US" : "es-AR", { numeric: "auto" });
     if (mins < 60) return rtf.format(-Math.max(1, mins), "minute");
     if (mins < 60 * 24) return rtf.format(-Math.round(mins / 60), "hour");

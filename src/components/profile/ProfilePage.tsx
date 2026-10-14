@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { NotificationPreferences } from "@/components/profile/NotificationPreferences";
 import { CalendarDays, Mail, MapPin, Phone } from "lucide-react";
 import { useCurrentUser, useOrganizations, useSetGoogleCalendar, useUsers } from "@/lib/api/hooks";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -131,6 +132,8 @@ export function ProfilePage() {
             </div>
             <p className="mt-3 text-xs text-muted-foreground">{t("profile.cal_note")}</p>
           </section>
+
+          <NotificationPreferences />
         </div>
       )}
     </div>

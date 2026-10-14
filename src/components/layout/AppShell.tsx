@@ -1,10 +1,11 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { Bell, ChevronsLeft, ChevronsRight, Search, Check, Eye } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, Search, Check, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { Logo } from "@/components/brand/Logo";
 import { partnerFirmNav } from "./nav";
+import { NotificationBell } from "./NotificationBell";
 import { cn } from "@/lib/utils";
 import { LANGUAGE_STORAGE_KEY, type Language } from "@/lib/i18n";
 import { useCurrentUser, useSetViewAs, useViewAsOptions } from "@/lib/api/hooks";
@@ -187,14 +188,7 @@ function TopBar() {
           className="h-8 w-full rounded-md border border-input bg-background pl-8 pr-3 text-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30"
         />
       </label>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button aria-label={t("topbar.notifications")} className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground">
-            <Bell className="h-4 w-4" />
-          </button>
-        </TooltipTrigger>
-        <TooltipContent>{t("topbar.notifications_soon")}</TooltipContent>
-      </Tooltip>
+      <NotificationBell />
       <LanguageSwitch />
       <ViewAs />
       <div

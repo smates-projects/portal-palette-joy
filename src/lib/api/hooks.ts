@@ -49,7 +49,7 @@ export function useSetViewAs() {
 /** Task mutations refresh both the list and every detail (status, blocked flags). */
 function useTaskMutation<V, R>(fn: (vars: V) => Promise<R>) {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: fn, onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.tasks }) });
+  return useMutation({ mutationFn: fn, onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: queryKeys.tasks }), qc.invalidateQueries({ queryKey: ["notifications"] })]) });
 }
 
 export const useStartTask = () => useTaskMutation((id: string) => api.tasks.start(id));
