@@ -227,3 +227,8 @@
     color-mix(in oklab, var(--status-danger-border) 80%, transparent) 4px 6px
   );
 }
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
