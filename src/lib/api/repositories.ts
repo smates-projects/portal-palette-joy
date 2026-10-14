@@ -4,6 +4,7 @@ import type {
   Organization,
   OwnerRequest,
   TaskComment,
+  TaskEvent,
   TaskStatus,
   TaskVersion,
   TaskWithComputed,
@@ -37,12 +38,24 @@ export interface TaskDetail {
   comments: TaskComment[];
   owner_requests: OwnerRequest[];
   meetings: Meeting[];
+  events: TaskEvent[];
+}
+
+export interface SubmitVersionInput {
+  note: string;
+  file_names: string[];
 }
 
 export interface TasksRepository {
   list(): Promise<TaskWithComputed[]>;
   get(id: Uuid): Promise<TaskDetail | null>;
   updateStatus(id: Uuid, status: TaskStatus): Promise<TaskWithComputed>;
+  start(id: Uuid): Promise<TaskWithComputed>;
+  submitVersion(id: Uuid, input: SubmitVersionInput): Promise<TaskVersion>;
+  addComment(id: Uuid, input: { body: string; file_id: Uuid | null }): Promise<TaskComment>;
+  addOwnerRequest(id: Uuid, input: { question: string; due_date: string }): Promise<OwnerRequest>;
+  setOwnerRequestResolved(requestId: Uuid, resolved: boolean): Promise<OwnerRequest>;
+  proposeMeeting(id: Uuid, input: { topic: string; starts_at: string; duration_minutes: number }): Promise<Meeting>;
 }
 
 export interface ApiClient {
