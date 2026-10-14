@@ -32,6 +32,8 @@ const AREA_DOT: Record<AreaCode, string> = {
   B1: "bg-area-b1", B2: "bg-area-b2", B3: "bg-area-b3", B4: "bg-area-b4", B5: "bg-area-b5", B6: "bg-area-b6",
 };
 
+const PPD_LIMITS: Record<Zoom, [number, number]> = { week: [32, 90], month: [8, 28], program: [2, 12] };
+
 export function TaskRoadmap(props: {
   rows: TaskWithComputed[];
   allTasks: TaskWithComputed[];
@@ -51,6 +53,14 @@ export function TaskRoadmap(props: {
   const ppd = PX_PER_DAY[zoom] * scale;
   const base = useMemo(() => zoomRange(zoom, props.businesses, props.allTasks), [zoom, props.businesses, props.allTasks]);
   const range = useMemo(() => ({ start: addDays(base.start, -pad.before), end: addDays(base.end, pad.after) }), [base, pad]);
+  // Pan limits: two weeks before the first task, two weeks after the last one.
+  const bounds = useMemo(() => {
+    const starts = props.allTasks.map((t) => t.start_date).sort();
+    const ends = props.allTasks.map((t) => t.due_date).sort();
+    const lo = addDays(starts[0] ?? base.start, -14);
+    const hi = addDays(ends.at(-1) ?? base.end, 14);
+    return { maxBefore: Math.max(0, daysBetween(lo, base.start)), maxAfter: Math.max(0, daysBetween(base.end, hi)) };
+  }, [props.allTasks, base]);
   const pickZoom = (z: Zoom) => { setZoom(z); setScale(1); setPad({ before: 0, after: 0 }); };
 
   // Apply scroll corrections after the timeline grows or rescales, so the view does not jump.
@@ -64,11 +74,13 @@ export function TaskRoadmap(props: {
   const onScroll = () => {
     const el = scroller.current;
     if (!el || pendingScroll.current !== null) return;
-    if (el.scrollLeft < 300) {
-      pendingScroll.current = el.scrollLeft + EXTEND * ppd;
-      setPad((p) => ({ ...p, before: p.before + EXTEND }));
-    } else if (el.scrollWidth - el.clientWidth - el.scrollLeft < 300) {
-      setPad((p) => ({ ...p, after: p.after + EXTEND }));
+    if (el.scrollLeft < 300 && pad.before < bounds.maxBefore) {
+      const add = Math.min(EXTEND, bounds.maxBefore - pad.before);
+      pendingScroll.current = el.scrollLeft + add * ppd;
+      setPad((p) => ({ ...p, before: p.before + add }));
+    } else if (el.scrollWidth - el.clientWidth - el.scrollLeft < 300 && pad.after < bounds.maxAfter) {
+      const add = Math.min(EXTEND, bounds.maxAfter - pad.after);
+      setPad((p) => ({ ...p, after: p.after + add }));
     }
   };
 
@@ -78,7 +90,10 @@ export function TaskRoadmap(props: {
     const el = scroller.current;
     if (!el) return;
     const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1);
-    const next = Math.min(4, Math.max(0.3, scale * Math.exp(-dy * 0.002)));
+    // Limits keep header labels readable: never overlapping, never absurdly wide.
+    const [minPpd, maxPpd] = PPD_LIMITS[zoom];
+    const b = PX_PER_DAY[zoom];
+    const next = Math.min(maxPpd / b, Math.max(minPpd / b, scale * Math.exp(-dy * 0.002)));
     if (next === scale) return;
     const px = e.clientX - el.getBoundingClientRect().left - LABEL_W;
     const day = (el.scrollLeft + px) / ppd;
