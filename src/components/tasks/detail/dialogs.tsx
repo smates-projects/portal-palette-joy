@@ -87,7 +87,7 @@ export function SubmitDeliverableDialog(props: {
         )}
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <span className="text-sm font-medium">{t("taskDetail.d_files")}</span>
+            <span className="block text-sm font-medium">{t("taskDetail.d_files")}</span>
             {files.map((f, i) => (
               <div key={f} className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm">
                 <FileText className="h-4 w-4 text-muted-foreground" />
