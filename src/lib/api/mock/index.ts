@@ -11,7 +11,7 @@ import * as seedLeads from "./seed-leads";
 import catalogJson from "@/data/catalogo_metodo180.json";
 import { generateProgramTasks, type CatalogEntry } from "../program";
 import { resolveLeadMove } from "@/lib/leads/pipeline";
-import type { AreaCode, Business, Lead, LeadEvent, LeadWithComputed } from "../types";
+import type { AreaCode, Business, BusinessEvent, Lead, LeadEvent, LeadWithComputed } from "../types";
 
 const delay = <T,>(v: T, ms = 120) => new Promise<T>((r) => setTimeout(() => r(structuredClone(v)), ms));
 const newId = () =>

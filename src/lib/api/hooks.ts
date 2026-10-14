@@ -131,3 +131,14 @@ export function useSetBookingUrl() {
     onSuccess: () => qc.invalidateQueries(),
   });
 }
+
+export const useBusinessEvents = (businessId: string) =>
+  useQuery({ queryKey: [...queryKeys.businesses, "events", businessId], queryFn: () => api.businesses.listEvents(businessId) });
+
+export function useSetBusinessConsultant() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ businessId, userId }: { businessId: string; userId: string }) => api.businesses.setConsultant(businessId, userId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.businesses }),
+  });
+}
