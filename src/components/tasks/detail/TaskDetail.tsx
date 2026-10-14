@@ -233,17 +233,25 @@ export function TaskDetail({ taskId, mode, onClose }: { taskId: string; mode: De
             <span>{t(`steps.${task.step}`)}</span>
           </p>
           <h2 className="mt-1.5 text-xl font-semibold leading-snug tracking-tight">{task.name}</h2>
-          <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+          <div className="mt-3 flex flex-col items-start gap-1.5 text-sm">
             <StatusBadge status={status} />
+            {openRequests.length > 0 && (
+              <button
+                type="button"
+                onClick={() =>
+                  document
+                    .getElementById(`task-requests-${task.id}`)
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                }
+                className="inline-flex items-center rounded-[4px] border border-status-warning-border bg-status-warning-bg px-1.5 py-0.5 text-xs font-medium text-status-warning-fg transition-colors hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {t("taskDetail.waiting_owner", { count: openRequests.length })}
+              </button>
+            )}
             <span className={cn("tabular-nums", task.is_overdue ? "text-status-danger-fg" : "text-muted-foreground")} title={formatDate(task.due_date, lng)}>
               {t("taskDetail.due", { date: dueDate })}
               {dueLabel && ` · ${dueLabel}`}
             </span>
-            {openRequests.length > 0 && (
-              <span className="inline-flex items-center rounded-[4px] border border-status-warning-border bg-status-warning-bg px-1.5 py-0.5 text-xs font-medium text-status-warning-fg">
-                {t("taskDetail.waiting_owner", { count: openRequests.length })}
-              </span>
-            )}
           </div>
           <div className="mt-4">{primary}</div>
           <p className="mt-3 text-sm text-foreground">{nextLine}</p>
@@ -317,6 +325,7 @@ export function TaskDetail({ taskId, mode, onClose }: { taskId: string; mode: De
 
         {/* 4. Requests to the owner */}
         <Section
+          id={`task-requests-${task.id}`}
           title={t("taskDetail.s_requests")}
           action={<SecondaryButton onClick={() => setRequestOpen(true)}><Plus className="h-3.5 w-3.5" />{t("taskDetail.ask_owner")}</SecondaryButton>}
         >
@@ -475,9 +484,9 @@ export function TaskDetail({ taskId, mode, onClose }: { taskId: string; mode: De
   );
 }
 
-function Section({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) {
+function Section({ id, title, action, children }: { id?: string; title: string; action?: ReactNode; children: ReactNode }) {
   return (
-    <section>
+    <section id={id} className="scroll-mt-4">
       <div className="mb-3 flex items-center justify-between gap-2">
         <h3 className="text-sm font-semibold">{title}</h3>
         {action}
