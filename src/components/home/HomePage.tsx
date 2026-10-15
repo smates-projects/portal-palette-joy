@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ClipboardList, Lock, Target } from "lucide-react";
+import { CalendarDays, ChevronDown, Plus, ChevronLeft, ChevronRight, ChevronUp, ClipboardList, Lock, Target } from "lucide-react";
 import { TODAY } from "@/config/app";
 import { useBusinesses, useStartTask, useTasks, useUpcomingMeetings } from "@/lib/api/hooks";
 import type { TaskWithComputed, VisibleTaskStatus } from "@/lib/api/types";
@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
+import { AddEventDialog } from "@/components/home/AddEventDialog";
 import { TaskDetail } from "@/components/tasks/detail/TaskDetail";
 
 const GROUPS: TodayReason[] = ["overdue", "today", "changes", "week"];
@@ -47,6 +48,7 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
   const [closed, setClosed] = useState<Partial<Record<TodayReason, boolean>>>({});
   const [weekStart, setWeekStart] = useState(() => addDays(TODAY, -3));
   const [day, setDay] = useState(TODAY);
+  const [addOpen, setAddOpen] = useState(false);
   const week = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const meetings = meetingsQ.data ?? [];
   const dayMeetings = meetings.filter((m) => m.starts_at.slice(0, 10) === day);
@@ -269,6 +271,9 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
                   <span className="ml-auto text-xs font-normal capitalize text-muted-foreground">
                     {new Intl.DateTimeFormat(locale, { month: "long" }).format(new Date(`${weekStart}T12:00:00`))}
                   </span>
+                  <button onClick={() => setAddOpen(true)} aria-label={t("home.add_event")} title={t("home.add_event")} className="rounded p-1 text-primary hover:bg-accent">
+                    <Plus className="h-4 w-4" />
+                  </button>
                 </h2>
                 <div className="flex items-center gap-1">
                   <button aria-label="‹" onClick={() => setWeekStart(addDays(weekStart, -7))} className="rounded p-1 hover:bg-accent">
@@ -316,7 +321,7 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
                       return (
                         <button
                           key={m.id}
-                          onClick={() => openTask(m.task_id)}
+                          onClick={() => void navigate({ to: "/tareas", search: { view: "calendar" } })}
                           className="w-full rounded-lg bg-muted p-4 text-left transition-colors hover:bg-accent"
                         >
                           <div className="flex items-start justify-between gap-2">
@@ -384,10 +389,19 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
                         </Link>
                       );
                     })}
+                    {/* Sample bar above 70%, only to preview the color */}
+                    <div className="-mx-2 flex items-center gap-4 px-2 py-1">
+                      <p className="min-w-0 flex-1 truncate text-sm font-medium text-muted-foreground">{t("home.progress_sample")}</p>
+                      <div className="relative h-1.5 w-20 shrink-0 overflow-hidden rounded-full bg-muted">
+                        <span className="absolute inset-y-0 left-0 rounded-full bg-progress-high" style={{ width: "70%" }} />
+                      </div>
+                      <span className="w-10 shrink-0 text-right font-display text-sm font-semibold tabular-nums">70%</span>
+                    </div>
                   </div>
                 )}
               </section>
             </aside>
+            <AddEventDialog open={addOpen} onOpenChange={setAddOpen} day={day} tasks={tasks} bizName={bizName} />
           </div>
         </>
       )}
