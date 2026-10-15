@@ -67,6 +67,14 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
     return t("home.due_in", { count: d });
   };
 
+  const dueSub = (task: TaskWithComputed) => {
+    const d = daysBetween(TODAY, task.due_date);
+    if (d < 0) return t("home.due_sub_ago", { count: -d });
+    if (d === 0) return t("home.due_sub_today");
+    if (d === 1) return t("home.due_sub_tomorrow");
+    return t("home.due_sub_in", { count: d });
+  };
+
   const whenText = (iso: string) => {
     const d = daysBetween(TODAY, iso);
     const weekday = new Intl.DateTimeFormat(lng === "en" ? "en-US" : "es-AR", { weekday: "long" }).format(new Date(`${iso}T12:00:00`));
@@ -201,10 +209,11 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
                         </button>
                         {open && (
                           <div className="mt-2">
-                            <div className="grid grid-cols-[minmax(0,1fr)_auto_110px] gap-3 border-b border-border px-1 py-2 text-xs text-muted-foreground">
+                            <div className="grid grid-cols-[minmax(0,1fr)_auto_96px_auto] gap-3 border-b border-border px-1 py-2 text-xs text-muted-foreground">
                               <span>{t("home.col_task")}</span>
                               <span className="hidden sm:block">{t("home.col_status")}</span>
                               <span className="text-right">{t("home.col_due")}</span>
+                              <span className="hidden sm:block" />
                             </div>
                             <ul className="divide-y divide-border border-b border-border">
                               {rows.map(({ task }) => (
@@ -214,7 +223,7 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
                                   tabIndex={0}
                                   onClick={() => openTask(task.id)}
                                   onKeyDown={(e) => e.key === "Enter" && openTask(task.id)}
-                                  className="grid cursor-pointer grid-cols-[minmax(0,1fr)_auto_110px] items-center gap-3 px-1 py-3 transition-colors hover:bg-accent/40 focus-visible:bg-accent/40 focus-visible:outline-none"
+                                  className="grid cursor-pointer grid-cols-[minmax(0,1fr)_auto_96px_auto] items-center gap-3 px-1 py-3 transition-colors hover:bg-accent/40 focus-visible:bg-accent/40 focus-visible:outline-none"
                                 >
                                   <div className="flex min-w-0 items-center gap-3">
                                     <span className={cn("h-2.5 w-2.5 shrink-0 rounded-[2px]", DOTC[g])} />
@@ -229,16 +238,16 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
                                       </p>
                                     </div>
                                   </div>
-                                  <div className="hidden items-center gap-2 sm:flex">
+                                  <div className="hidden items-center sm:flex">
                                     <StatusBadge status={task.status as VisibleTaskStatus} />
-                                    {action(task)}
                                   </div>
-                                  <span
-                                    className={cn("text-right text-sm tabular-nums", (task.is_overdue || g === "today") && "text-status-danger-fg")}
-                                    title={formatDate(task.due_date, lng)}
-                                  >
-                                    {dueText(task)}
-                                  </span>
+                                  <div className="text-right" title={formatDate(task.due_date, lng)}>
+                                    <p className={cn("text-sm font-medium", (task.is_overdue || g === "today") && "text-status-danger-fg")}>
+                                      {t(task.is_overdue ? "home.due_label_overdue" : "home.due_label_due")}
+                                    </p>
+                                    <p className="text-[11px] leading-tight tabular-nums text-muted-foreground">{dueSub(task)}</p>
+                                  </div>
+                                  <div className="hidden justify-end sm:flex">{action(task)}</div>
                                 </li>
                               ))}
                             </ul>
