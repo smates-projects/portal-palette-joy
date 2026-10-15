@@ -6,8 +6,8 @@ type BadgeKind = VisibleTaskStatus | "cancelled" | "blocked" | "overdue";
 
 const styles: Record<BadgeKind, string> = {
   pending: "bg-status-neutral-bg text-status-neutral-fg border-status-neutral-border",
-  in_progress: "bg-status-info-bg text-status-info-fg border-status-info-border",
-  submitted: "bg-status-review-bg text-status-review-fg border-status-review-border",
+  in_progress: "bg-status-info-bg text-status-info-fg border-status-info-border font-bold",
+  submitted: "bg-status-review-bg text-status-review-fg border-status-review-border font-bold",
   changes_requested: "bg-status-warning-bg text-status-warning-fg border-status-warning-border",
   accepted: "bg-status-success-bg text-status-success-fg border-status-success-border",
   cancelled: "bg-status-neutral-bg text-muted-foreground border-status-neutral-border line-through",
