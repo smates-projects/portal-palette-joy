@@ -146,14 +146,17 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
             </div>
           )}
 
-          <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
-            {/* Para hoy */}
-            <section>
-              <h2 className="mb-3 text-sm font-semibold">{t("home.today_title")}</h2>
+          <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+            {/* Para hoy, grouped by urgency */}
+            <section className="rounded-xl border border-border bg-surface p-5">
+              <h2 className="mb-4 flex items-center gap-2 text-base font-semibold">
+                <ClipboardList className="h-4 w-4 text-primary" />
+                {t("home.today_title")}
+              </h2>
               {loading ? (
-                <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-14 rounded-md" />)}</div>
+                <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10 rounded-md" />)}</div>
               ) : today.length === 0 ? (
-                <div className="rounded-md border border-dashed border-border bg-surface p-6 text-sm">
+                <div className="rounded-lg border border-dashed border-border p-6 text-sm">
                   <p className="font-medium">{t("home.empty_title")}</p>
                   <p className="mt-1 text-muted-foreground">
                     {next
@@ -162,40 +165,166 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
                   </p>
                 </div>
               ) : (
-                <ul className="divide-y divide-border overflow-hidden rounded-md border border-border bg-surface">
-                  {today.map(({ task }) => (
-                    <li
-                      key={task.id}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => openTask(task.id)}
-                      onKeyDown={(e) => e.key === "Enter" && openTask(task.id)}
-                      className="flex cursor-pointer items-center gap-3 px-4 py-3 transition-colors hover:bg-accent/40 focus-visible:bg-accent/40 focus-visible:outline-none"
-                    >
-                      <span className="w-12 shrink-0 font-display text-xs font-semibold tabular-nums">{task.code}</span>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm">{task.name}</p>
-                        <p className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-                          <span>{bizName(task.business_id)}</span>
-                          <span>·</span>
-                          <span className={cn("tabular-nums", task.is_overdue && "text-status-danger-fg")} title={formatDate(task.due_date, lng)}>
-                            {dueText(task)}
+                <div className="space-y-5">
+                  {GROUPS.map((g) => {
+                    const rows = today.filter((r) => r.reason === g);
+                    if (!rows.length) return null;
+                    const open = !closed[g];
+                    return (
+                      <div key={g}>
+                        <button
+                          onClick={() => setClosed((c) => ({ ...c, [g]: open }))}
+                          aria-expanded={open}
+                          className="flex items-center gap-2 text-xs"
+                        >
+                          {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          <span className={cn("rounded-[4px] border px-2 py-1 font-display font-semibold uppercase tracking-wide", PILL[g])}>
+                            {t(`home.cards.${g}`)}
                           </span>
-                        </p>
+                          <span className="text-muted-foreground">· {t("home.group_count", { count: rows.length })}</span>
+                        </button>
+                        {open && (
+                          <div className="mt-2">
+                            <div className="grid grid-cols-[minmax(0,1fr)_auto_110px] gap-3 border-b border-border px-1 py-2 text-xs text-muted-foreground">
+                              <span>{t("home.col_task")}</span>
+                              <span className="hidden sm:block">{t("home.col_status")}</span>
+                              <span className="text-right">{t("home.col_due")}</span>
+                            </div>
+                            <ul className="divide-y divide-border">
+                              {rows.map(({ task }) => (
+                                <li
+                                  key={task.id}
+                                  role="button"
+                                  tabIndex={0}
+                                  onClick={() => openTask(task.id)}
+                                  onKeyDown={(e) => e.key === "Enter" && openTask(task.id)}
+                                  className="grid cursor-pointer grid-cols-[minmax(0,1fr)_auto_110px] items-center gap-3 px-1 py-3 transition-colors hover:bg-accent/40 focus-visible:bg-accent/40 focus-visible:outline-none"
+                                >
+                                  <div className="flex min-w-0 items-center gap-3">
+                                    <span className={cn("h-2.5 w-2.5 shrink-0 rounded-[2px]", DOTC[g])} />
+                                    <div className="min-w-0">
+                                      <p className="truncate text-sm">
+                                        <span className="mr-2 font-display text-xs font-semibold tabular-nums">{task.code}</span>
+                                        {task.name}
+                                      </p>
+                                      <p className="mt-0.5 flex items-center gap-2 truncate text-xs text-muted-foreground">
+                                        {bizName(task.business_id)}
+                                        <span className="sm:hidden">{action(task)}</span>
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="hidden items-center gap-2 sm:flex">
+                                    <StatusBadge status={task.status as VisibleTaskStatus} />
+                                    {action(task)}
+                                  </div>
+                                  <span
+                                    className={cn("text-right text-sm tabular-nums", (task.is_overdue || g === "today") && "text-status-danger-fg")}
+                                    title={formatDate(task.due_date, lng)}
+                                  >
+                                    {dueText(task)}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
-                      <StatusBadge status={task.status as VisibleTaskStatus} className="hidden sm:inline-flex" />
-                      {action(task)}
-                    </li>
-                  ))}
-                </ul>
+                    );
+                  })}
+                </div>
               )}
             </section>
 
-            {/* Próximas reuniones */}
-            <aside className="space-y-8">
-              <section>
-                <div className="mb-3 flex items-baseline justify-between gap-2">
-                  <h2 className="text-sm font-semibold">{t("home.progress_title")}</h2>
+            <aside className="space-y-6">
+              {/* Agenda: week strip + meetings of the chosen day */}
+              <section className="rounded-xl border border-border bg-surface p-5">
+                <h2 className="mb-4 flex items-center gap-2 text-base font-semibold">
+                  <CalendarDays className="h-4 w-4 text-primary" />
+                  {t("home.calendar_title")}
+                  <span className="ml-auto text-xs font-normal capitalize text-muted-foreground">
+                    {new Intl.DateTimeFormat(locale, { month: "long" }).format(new Date(`${weekStart}T12:00:00`))}
+                  </span>
+                </h2>
+                <div className="flex items-center gap-1">
+                  <button aria-label="‹" onClick={() => setWeekStart(addDays(weekStart, -7))} className="rounded p-1 hover:bg-accent">
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <div className="grid flex-1 grid-cols-7 gap-1">
+                    {week.map((d) => {
+                      const sel = d === day;
+                      const has = meetings.some((m) => m.starts_at.slice(0, 10) === d);
+                      const dt = new Date(`${d}T12:00:00`);
+                      return (
+                        <button
+                          key={d}
+                          onClick={() => setDay(d)}
+                          className={cn(
+                            "flex flex-col items-center rounded-lg py-1.5 transition-colors",
+                            sel ? "bg-primary text-primary-foreground" : "hover:bg-accent",
+                          )}
+                        >
+                          <span className={cn("text-[10px] capitalize", sel ? "opacity-80" : "text-muted-foreground")}>
+                            {new Intl.DateTimeFormat(locale, { weekday: "short" }).format(dt)}
+                          </span>
+                          <span className="font-display text-sm font-semibold tabular-nums">{d.slice(8)}</span>
+                          <span className={cn("mt-0.5 h-1 w-1 rounded-full", has ? (sel ? "bg-gold-light" : "bg-gold") : "bg-transparent")} />
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <button aria-label="›" onClick={() => setWeekStart(addDays(weekStart, 7))} className="rounded p-1 hover:bg-accent">
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="mt-4 space-y-2">
+                  {meetingsQ.isLoading || loading ? (
+                    <Skeleton className="h-20 rounded-lg" />
+                  ) : meetingsQ.isError ? (
+                    <p className="text-sm text-muted-foreground">{t("home.meetings_error")}</p>
+                  ) : meetings.length === 0 ? (
+                    <p className="rounded-lg bg-muted p-4 text-sm text-muted-foreground">{t("home.meetings_empty")}</p>
+                  ) : dayMeetings.length === 0 ? (
+                    <p className="rounded-lg bg-muted p-4 text-sm text-muted-foreground">{t("home.day_empty")}</p>
+                  ) : (
+                    dayMeetings.map((m) => {
+                      const task = tasks.find((x) => x.id === m.task_id);
+                      return (
+                        <button
+                          key={m.id}
+                          onClick={() => openTask(m.task_id)}
+                          className="w-full rounded-lg bg-muted p-4 text-left transition-colors hover:bg-accent"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="text-sm font-semibold">{m.topic}</p>
+                            <span
+                              className={cn(
+                                "shrink-0 rounded-[4px] border px-1.5 py-0.5 text-[11px] font-medium",
+                                m.status === "confirmed"
+                                  ? "border-status-success-border bg-status-success-bg text-status-success-fg"
+                                  : "border-status-warning-border bg-status-warning-bg text-status-warning-fg",
+                              )}
+                            >
+                              {t(`home.meeting_${m.status}`)}
+                            </span>
+                          </div>
+                          <p className="mt-1 font-display text-xs tabular-nums text-muted-foreground">{formatDateTime(m.starts_at, lng)}</p>
+                          <p className="mt-2 inline-block max-w-full truncate rounded-md border border-border bg-surface px-2 py-1 text-xs">
+                            {task ? `${bizName(task.business_id)} · ${task.code}` : ""}
+                          </p>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </section>
+
+              {/* Progress per business */}
+              <section className="rounded-xl border border-border bg-surface p-5">
+                <div className="mb-4 flex items-baseline justify-between gap-2">
+                  <h2 className="flex items-center gap-2 text-base font-semibold">
+                    <Target className="h-4 w-4 text-primary" />
+                    {t("home.progress_title")}
+                  </h2>
                   {!loading && (
                     <span className="font-display text-xs tabular-nums text-muted-foreground">
                       {t("home.progress_total", { done: progress.reduce((a, p) => a + p.accepted, 0), total: progress.reduce((a, p) => a + p.total, 0) })}
@@ -205,88 +334,33 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
                 {loading ? (
                   <Skeleton className="h-32 rounded-md" />
                 ) : (
-                  <div className="divide-y divide-border rounded-md border border-border bg-surface">
+                  <div className="space-y-4">
                     {progress.map((p) => {
-                      const pct = (n: number) => `${p.total ? (n / p.total) * 100 : 0}%`;
                       const biz = bizQ.data?.find((b) => b.id === p.business_id);
+                      const share = p.total ? Math.round((p.accepted / p.total) * 100) : 0;
                       const tone = p.gap >= -5 ? "text-status-success-fg" : p.gap >= -15 ? "text-status-warning-fg" : "text-status-danger-fg";
                       return (
-                        <Link key={p.business_id} to="/tareas" search={{ business: p.business_id }} className="block px-4 py-3 transition-colors hover:bg-accent/40">
-                          <div className="flex items-baseline justify-between gap-2">
-                            <span className="truncate text-sm font-medium">{biz?.name}</span>
-                            <span className="shrink-0 font-display text-sm font-semibold tabular-nums">
-                              {p.accepted}<span className="text-muted-foreground">/{p.total}</span>
-                            </span>
+                        <Link key={p.business_id} to="/tareas" search={{ business: p.business_id }} className="-mx-2 flex items-center gap-4 rounded-md px-2 py-1 transition-colors hover:bg-accent/40">
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium">{biz?.name}</p>
+                            <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                              {t("home.progress_day", { day: biz?.program_day ?? 0 })} ·{" "}
+                              <span className={tone}>{p.gap >= -5 ? t("home.progress_on_track") : t("home.progress_behind", { count: Math.abs(p.gap) })}</span>
+                            </p>
                           </div>
                           <div
-                            className="relative mt-2 flex h-2 overflow-hidden rounded-[2px] bg-muted"
+                            className="relative h-1.5 w-20 shrink-0 overflow-hidden rounded-full bg-muted"
                             role="img"
                             aria-label={t("home.progress_aria", { done: p.accepted, submitted: p.submitted, active: p.in_progress, total: p.total })}
                           >
-                            <span className="bg-gold" style={{ width: pct(p.accepted) }} />
-                            <span className="bg-status-review-border" style={{ width: pct(p.submitted) }} />
-                            <span className="bg-status-info-border" style={{ width: pct(p.in_progress) }} />
-                            <span className="absolute inset-y-[-2px] w-[2px] bg-foreground" style={{ left: `${p.expected * 100}%` }} title={t("home.progress_expected")} />
+                            <span className="absolute inset-y-0 left-0 rounded-full bg-gold" style={{ width: `${share}%` }} />
                           </div>
-                          <div className="mt-1.5 flex justify-between gap-2 text-xs">
-                            <span className="text-muted-foreground tabular-nums">{t("home.progress_day", { day: biz?.program_day ?? 0 })}</span>
-                            <span className={cn("tabular-nums", tone)}>
-                              {p.gap >= -5 ? t("home.progress_on_track") : t("home.progress_behind", { count: Math.abs(p.gap) })}
-                            </span>
-                          </div>
+                          <span className="w-10 shrink-0 text-right font-display text-sm font-semibold tabular-nums">{share}%</span>
                         </Link>
                       );
                     })}
-                    <div className="flex flex-wrap gap-x-3 gap-y-1 px-4 py-2 text-[11px] text-muted-foreground">
-                      <Legend className="bg-gold" label={t("home.legend_accepted")} />
-                      <Legend className="bg-status-review-border" label={t("home.legend_submitted")} />
-                      <Legend className="bg-status-info-border" label={t("home.legend_active")} />
-                      <Legend className="h-2.5 w-[2px] bg-foreground" label={t("home.legend_expected")} />
-                    </div>
                   </div>
                 )}
-              </section>
-              <section>
-              <h2 className="mb-3 text-sm font-semibold">{t("home.meetings_title")}</h2>
-              {meetingsQ.isLoading || loading ? (
-                <Skeleton className="h-24 rounded-md" />
-              ) : meetingsQ.isError ? (
-                <p className="text-sm text-muted-foreground">{t("home.meetings_error")}</p>
-              ) : (meetingsQ.data ?? []).length === 0 ? (
-                <p className="rounded-md border border-dashed border-border bg-surface p-4 text-sm text-muted-foreground">{t("home.meetings_empty")}</p>
-              ) : (
-                <ul className="space-y-2">
-                  {meetingsQ.data!.map((m) => {
-                    const task = tasks.find((x) => x.id === m.task_id);
-                    return (
-                      <li key={m.id}>
-                        <button
-                          onClick={() => openTask(m.task_id)}
-                          className="w-full rounded-md border border-border bg-surface p-3 text-left transition-colors hover:border-ring"
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="font-display text-xs font-semibold tabular-nums">{formatDateTime(m.starts_at, lng)}</span>
-                            <span
-                              className={cn(
-                                "rounded-[4px] border px-1.5 py-0.5 text-[11px] font-medium",
-                                m.status === "confirmed"
-                                  ? "border-status-success-border bg-status-success-bg text-status-success-fg"
-                                  : "border-status-warning-border bg-status-warning-bg text-status-warning-fg",
-                              )}
-                            >
-                              {t(`home.meeting_${m.status}`)}
-                            </span>
-                          </div>
-                          <p className="mt-1.5 text-sm">{m.topic}</p>
-                          <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                            {task ? `${bizName(task.business_id)} · ${task.code} ${task.name}` : ""}
-                          </p>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
               </section>
             </aside>
           </div>
