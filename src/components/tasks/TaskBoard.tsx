@@ -9,6 +9,7 @@ import { formatDate, formatRelativeDate } from "@/lib/format";
 import { BOARD_COLUMNS, resolveBoardMove } from "@/lib/tasks/board";
 import { daysBetween } from "@/lib/tasks/table";
 import { cn } from "@/lib/utils";
+import { StatusBadge } from "@/components/StatusBadge";
 
 const COLUMN_BAR: Record<VisibleTaskStatus, string> = {
   pending: "bg-badge-todo",
@@ -160,7 +161,8 @@ export function TaskBoard(props: {
                   <div className="mt-1.5 flex items-center justify-between gap-2 text-xs text-muted-foreground">
                     <span className="truncate">{props.businessName(task.business_id)}</span>
                     {task.is_blocked && task.status !== "accepted" && (
-                      <span className="inline-flex shrink-0 items-center gap-1 text-status-danger-fg">
+                      <span className="inline-flex shrink-0 items-center gap-1.5 text-status-danger-fg">
+                        <StatusBadge status="blocked" className="text-[10px]" />
                         <Lock className="h-3 w-3" />
                         {task.depends_on_task_ids.map(props.codeById).join(", ")}
                       </span>
