@@ -1230,7 +1230,20 @@
         "operating": "Operando"
       },
       "empty_search_title": "Ningún nombre coincide con \"{{q}}\"",
-      "empty_search_body": "Prueba con otro nombre."
+      "empty_search_body": "Prueba con otro nombre.",
+      "view_list": "Lista",
+      "view_diagram": "Diagrama",
+      "diagram": {
+        "kind_office": "Oficina",
+        "kind_business": "Negocio",
+        "kind_franchise": "Franquicia",
+        "businesses_one": "{{count}} negocio",
+        "businesses_other": "{{count}} negocios",
+        "firms_one": "{{count}} firma aliada",
+        "firms_other": "{{count}} firmas aliadas",
+        "missing_firm": "Falta firma en {{areas}}",
+        "card_label": "{{name}}: {{health}}"
+      }
     },
     "offices": {
       "question": "¿Cómo está la red de oficinas SM?",

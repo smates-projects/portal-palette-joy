@@ -5,21 +5,34 @@ import { ChevronDown, ChevronRight, Search } from "lucide-react";
 import { useStructure } from "@/lib/api/hooks";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { expandableIds, filterTree, buildStructureView, type TreeNode } from "../logic";
+import { buildDiagramTree, buildStructureView, collapsibleIds, diagramSearch, expandableIds, filterTree, type DiagramNode, type TreeNode } from "../logic";
 import { BusinessSheet, EmptyBox, ErrorBox, GlobalHeader, HealthBadge } from "../shared";
+import { StructureDiagram } from "./StructureDiagram";
 
 const INDENT_PX = 20;
 
-/** Estructura: SM Global, its offices, the businesses in the program, the franchises and the partner firms of each office. */
-export function StructurePage() {
+export interface StructureSearch {
+  /** Only the diagram is written in the URL; the list is the default. */
+  view?: "diagram";
+}
+
+/**
+ * Estructura: SM Global, its offices, the businesses in the program, the franchises and the partner firms of each office,
+ * as a collapsible list or as an org chart diagram (`?view=diagram`).
+ */
+export function StructurePage({ search }: { search: StructureSearch }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const structureQ = useStructure();
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState<Set<string> | null>(null);
+  // Diagram: everything is open until the user collapses a card.
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [businessId, setBusinessId] = useState<string | null>(null);
+  const mode: "list" | "diagram" = search.view === "diagram" ? "diagram" : "list";
 
   const view: TreeNode | null = structureQ.data ? buildStructureView(structureQ.data, (key, options) => String(t(key, options ?? {}))) : null;
+  const diagram: DiagramNode | null = structureQ.data ? buildDiagramTree(structureQ.data) : null;
 
   const header = <GlobalHeader question={t("global.structure.question")} />;
   if (structureQ.isError)
@@ -29,7 +42,7 @@ export function StructurePage() {
         <div className="mt-6"><ErrorBox onRetry={() => void structureQ.refetch()} /></div>
       </div>
     );
-  if (!view)
+  if (!view || !diagram)
     return (
       <div className="mx-auto max-w-5xl px-6 py-8">
         {header}
@@ -49,7 +62,17 @@ export function StructurePage() {
     return next;
   });
 
-  const openNode = (node: TreeNode) => {
+  const diagramIds = collapsibleIds(diagram);
+  const diagramAllOpen = diagramIds.every((id) => !collapsed.has(id));
+  const { matches, ancestors } = diagramSearch(diagram, query);
+  const toggleCard = (id: string) => setCollapsed((prev) => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+  const setMode = (next: "list" | "diagram") => void navigate({ to: "/estructura", search: next === "diagram" ? { view: "diagram" } : {}, replace: true });
+
+  const openNode = (node: Pick<TreeNode, "id" | "kind">) => {
     if (node.kind === "office") void navigate({ to: "/oficinas/$officeId", params: { officeId: node.id } });
     else if (node.kind === "business") setBusinessId(node.id);
   };
@@ -85,10 +108,22 @@ export function StructurePage() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-8">
+    <div className={cn("mx-auto px-6 py-8", mode === "diagram" ? "max-w-[1440px]" : "max-w-5xl")}>
       {header}
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
+        <div className="inline-flex rounded-md border border-border bg-surface p-0.5">
+          {(["list", "diagram"] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => setMode(m)}
+              aria-pressed={mode === m}
+              className={cn("rounded-[4px] px-3 py-1 text-sm", mode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}
+            >
+              {t(`global.structure.view_${m}`)}
+            </button>
+          ))}
+        </div>
         <label className="relative">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -100,16 +135,22 @@ export function StructurePage() {
           />
         </label>
         <button
-          onClick={() => setExpanded(allOpen ? new Set([view.id]) : new Set(allIds))}
-          disabled={searching}
+          onClick={() => (mode === "diagram" ? setCollapsed(diagramAllOpen ? new Set(diagramIds) : new Set()) : setExpanded(allOpen ? new Set([view.id]) : new Set(allIds)))}
+          disabled={mode === "list" && searching}
           className="inline-flex h-8 items-center rounded-md border border-border bg-surface px-3 text-sm font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {allOpen ? t("global.structure.collapse_all") : t("global.structure.expand_all")}
+          {(mode === "diagram" ? diagramAllOpen : allOpen) ? t("global.structure.collapse_all") : t("global.structure.expand_all")}
         </button>
       </div>
 
       <div className="mt-4">
-        {!shown ? (
+        {mode === "diagram" ? (
+          searching && matches.size === 0 ? (
+            <EmptyBox title={t("global.structure.empty_search_title", { q: query })} body={t("global.structure.empty_search_body")} />
+          ) : (
+            <StructureDiagram root={diagram} collapsed={collapsed} forcedOpen={ancestors} matches={matches} onToggle={toggleCard} onOpen={openNode} />
+          )
+        ) : !shown ? (
           <EmptyBox title={t("global.structure.empty_search_title", { q: query })} body={t("global.structure.empty_search_body")} />
         ) : (
           <ul role="tree" aria-label={t("global.structure.question")} className="overflow-hidden rounded-md border border-border bg-surface [&>li>div:first-child]:bg-muted/50 [&_li:last-child>div]:border-b-0">

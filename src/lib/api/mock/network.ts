@@ -10,7 +10,7 @@ import { buildNetworkMatrix } from "@/lib/tasks/sm";
 import { areaHealth, AREAS } from "@/lib/tasks/owner";
 import { withComputed } from "../computed";
 import { computeFranchisability } from "../franchisability";
-import { computeOfficeChecklist } from "../office-checklist";
+import { computeOfficeChecklist, missingFirmAreas } from "../office-checklist";
 import { AREA_BY_KEY, addDaysIso } from "../program";
 import { MANUAL_SECTION_TITLES, manualSectionContent } from "./seed-manual";
 import type {
@@ -337,9 +337,9 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
             id: b.id, kind: "business", name: b.name,
             health: inProgram ? rows.find((r) => r.business.id === b.id)?.health ?? "grey" : null,
             franchisability: inProgram ? { value: f.franchisability_pct, expected: expectedFranchisePct(b.program_day, f.franchisability_goal) } : null,
-            detail: { kind: "business", status: b.status, program_day: inProgram ? b.program_day : null, consultant_name: consultantName(b) },
+            detail: { kind: "business", status: b.status, program_day: inProgram ? b.program_day : null, consultant_name: consultantName(b), owner_name: db.users.find((u) => u.id === b.owner_user_id)?.full_name ?? null },
             children: db.franchises.filter((x) => x.franchisor_business_id === b.id).map((x): StructureNode => ({
-              id: x.id, kind: "franchise", name: x.name, health: null, franchisability: null, detail: { kind: "franchise", status: x.status }, children: [],
+              id: x.id, kind: "franchise", name: x.name, health: null, franchisability: null, detail: { kind: "franchise", status: x.status, city: `${x.city}, ${x.state}` }, children: [],
             })),
           };
         });
@@ -361,6 +361,9 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
             kind: "office", status: o.status ?? "operating", programs: inProgram.length,
             ready_to_franchise: inProgram.filter((b) => franchisabilityOf(b).is_ready).length,
             operating_franchises: db.franchises.filter((x) => x.status === "operating" && own.some((b) => b.id === x.franchisor_business_id)).length,
+            city: o.city,
+            manager_name: db.users.find((u) => u.id === o.manager_user_id)?.full_name ?? null,
+            missing_areas: missingFirmAreas(o, db.orgs),
           },
           children: [...businessNodes, ...firmNodes],
         };

@@ -79,9 +79,9 @@ export type StructureHealth = "red" | "amber" | "green" | "grey";
 
 /** Facts of a structure node, by kind. Numbers and codes only: the screen writes the text. */
 export type StructureDetail =
-  | { kind: "office"; status: OfficeStatus; programs: number; ready_to_franchise: number; operating_franchises: number }
-  | { kind: "business"; status: BusinessStatus; program_day: number | null; consultant_name: string | null }
-  | { kind: "franchise"; status: FranchiseStatus }
+  | { kind: "office"; status: OfficeStatus; programs: number; ready_to_franchise: number; operating_franchises: number; city: string | null; manager_name: string | null; missing_areas: AreaCode[] }
+  | { kind: "business"; status: BusinessStatus; program_day: number | null; consultant_name: string | null; owner_name: string | null }
+  | { kind: "franchise"; status: FranchiseStatus; city: string }
   | { kind: "firm"; area: AreaCode | null; overdue_tasks: number };
 
 export interface StructureNode {

@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { StructurePage } from "@/components/global/structure/StructurePage";
+import { StructurePage, type StructureSearch } from "@/components/global/structure/StructurePage";
 import { tStatic } from "@/lib/i18n";
 
 export const Route = createFileRoute("/estructura")({
+  // The list is the default view, so only the diagram is written in the URL.
+  validateSearch: (raw: Record<string, unknown>): StructureSearch => (raw["view"] === "diagram" ? { view: "diagram" } : {}),
   head: () => ({
     meta: [
       { title: `${tStatic("pages.structure.title")} · SM Platform` },
@@ -13,5 +15,7 @@ export const Route = createFileRoute("/estructura")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: StructurePage,
+  component: function EstructuraRoute() {
+    return <StructurePage search={Route.useSearch()} />;
+  },
 });

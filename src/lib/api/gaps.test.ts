@@ -165,7 +165,8 @@ describe("offices: create, pause and activate (SM Global)", () => {
     expect(detail.team.map((u) => u.full_name)).toEqual(["Sofía Marín"]);
     expect(detail.checklist!.complete).toBe(false);
     expect(Object.fromEntries(detail.checklist!.items.map((i) => [i.key, i.done]))).toEqual({ manager_access: true, booking_link: false, partner_firms: false, first_lead: false });
-    expect(detail.checklist!.items.find((i) => i.key === "partner_firms")!.missing_areas).toEqual(["B1", "B2", "B3", "B4", "B5", "B6"]);
+    // B1 Estrategia is covered by the office's own SM team, so a new office misses only B2 to B6.
+    expect(detail.checklist!.items.find((i) => i.key === "partner_firms")!.missing_areas).toEqual(["B2", "B3", "B4", "B5", "B6"]);
     expect((await api.network.listOffices()).map((o) => o.office.name)).toContain("SM Jacksonville");
     expect(detail.stats).toMatchObject({ programs: 0, leads_this_month: 0, conversion_month: null, ready_to_franchise: 0 });
   });
@@ -365,7 +366,10 @@ describe("structure tree computed by the data layer", () => {
     const { root } = await (await asGlobal()).network.getStructure();
     expect(root).toMatchObject({ kind: "global", health: null, franchisability: null, detail: null });
     const miami = root.children.find((c) => c.id === seed.ORG_SM)!;
-    expect(miami.detail).toEqual({ kind: "office", status: "operating", programs: 3, ready_to_franchise: 0, operating_franchises: 1 });
+    expect(miami.detail).toEqual({
+      kind: "office", status: "operating", programs: 3, ready_to_franchise: 0, operating_franchises: 1,
+      city: "Miami, FL", manager_name: expect.any(String), missing_areas: expect.any(Array),
+    });
     expect(miami.health).toBe("red");
     const tampa = root.children.find((c) => c.id === net.ORG_TAMPA)!;
     expect(tampa.detail).toMatchObject({ kind: "office", status: "opening", programs: 0 });
@@ -380,7 +384,7 @@ describe("structure tree computed by the data layer", () => {
     const business = (await api.businesses.list()).find((b) => b.id === seed.BIZ_VOSSLER)!;
     expect(vossler.franchisability).toEqual({ value: f.franchisability_pct, expected: expectedFranchisePct(business.program_day, f.franchisability_goal) });
     expect(["red", "amber", "green"]).toContain(vossler.health);
-    expect(vossler.detail).toEqual({ kind: "business", status: "in_program", program_day: business.program_day, consultant_name: expect.any(String) });
+    expect(vossler.detail).toEqual({ kind: "business", status: "in_program", program_day: business.program_day, consultant_name: expect.any(String), owner_name: expect.any(String) });
     // Every business in the program has these numbers; none of them was computed on the screen.
     for (const n of nodes.filter((x) => x.kind === "business" && x.detail?.kind === "business" && x.detail.status === "in_program")) {
       expect(n.franchisability).not.toBeNull();
@@ -394,8 +398,8 @@ describe("structure tree computed by the data layer", () => {
     expect(bimbo).toMatchObject({ health: null, franchisability: null, detail: { kind: "business", status: "franchisor", program_day: null } });
     expect(bimbo.children.map((c) => [c.name, c.detail])).toEqual(
       expect.arrayContaining([
-        ["Bimbo Tacos Orlando Sur", { kind: "franchise", status: "operating" }],
-        ["Bimbo Tacos Tampa", { kind: "franchise", status: "opening" }],
+        ["Bimbo Tacos Orlando Sur", { kind: "franchise", status: "operating", city: expect.any(String) }],
+        ["Bimbo Tacos Tampa", { kind: "franchise", status: "opening", city: expect.any(String) }],
       ]),
     );
   });

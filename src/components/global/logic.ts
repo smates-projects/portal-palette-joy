@@ -1,4 +1,4 @@
-import type { AreaBottleneck, OfficeSummary, StructureNode, StructureTree } from "@/lib/api/network-types";
+import type { AreaBottleneck, OfficeSummary, StructureDetail, StructureNode, StructureTree } from "@/lib/api/network-types";
 import type { AreaCode, Business, Organization, TaskWithComputed } from "@/lib/api/types";
 import type { Health } from "@/lib/tasks/owner";
 import { buildAttention, type AttentionItem, type MatrixRow } from "@/lib/tasks/sm";
@@ -162,6 +162,83 @@ export function filterTree(node: TreeNode, query: string): TreeNode | null {
 /** Ids of every node that has children, used by "Expandir todo". */
 export function expandableIds(node: TreeNode): string[] {
   return node.children.length ? [node.id, ...node.children.flatMap(expandableIds)] : [];
+}
+
+// ---------- Structure diagram ----------
+
+/**
+ * A box of the org chart. Partner firms are not boxes: an office keeps their count and the areas still without a firm.
+ * Level 1 is SM Global, 2 the offices, 3 the businesses of each office, 4 the franchises of the business that franchised.
+ */
+export interface DiagramNode {
+  id: string;
+  kind: "global" | "office" | "business" | "franchise";
+  name: string;
+  health: Health | null;
+  franchisability: StructureNode["franchisability"];
+  detail: StructureDetail | null;
+  /** Office only: partner firms of the office. */
+  firms: number;
+  /** Global only: businesses in the program of the whole network. */
+  businesses: number;
+  children: DiagramNode[];
+}
+
+/** Org chart tree from the structure the data layer returns. Firms are dropped as nodes and counted on their office. */
+export function buildDiagramTree(tree: StructureTree): DiagramNode {
+  const toNode = (node: StructureNode): DiagramNode => {
+    const children = node.children.filter((c) => c.kind !== "firm");
+    return {
+      id: node.id,
+      kind: node.kind === "firm" ? "business" : node.kind,
+      name: node.name,
+      health: node.health,
+      franchisability: node.franchisability,
+      detail: node.detail,
+      firms: node.children.length - children.length,
+      businesses: node.kind === "global" ? tree.counts.businesses : 0,
+      children: children.map(toNode),
+    };
+  };
+  return toNode(tree.root);
+}
+
+/** Up to two initials of a person's name: "Ana María Vossler" gives "AV". */
+export function initialsOf(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  const first = words[0]?.[0] ?? "";
+  const last = words.length > 1 ? words[words.length - 1]?.[0] ?? "" : "";
+  return (first + last).toUpperCase();
+}
+
+/** Boxes hidden below a node, at any depth: the "+3" of a collapsed card. */
+export function descendantCount(node: DiagramNode): number {
+  return node.children.reduce((sum, c) => sum + 1 + descendantCount(c), 0);
+}
+
+/** Ids of the nodes that have children (the ones that can be collapsed). */
+export function collapsibleIds(node: DiagramNode): string[] {
+  return node.children.length ? [node.id, ...node.children.flatMap(collapsibleIds)] : [];
+}
+
+/**
+ * Search in the diagram: `matches` are the nodes whose name contains the text (to outline them) and `ancestors`
+ * are the nodes above a match (to open them so the match is visible). Both are empty with an empty search.
+ */
+export function diagramSearch(root: DiagramNode, query: string): { matches: Set<string>; ancestors: Set<string> } {
+  const needle = query.trim().toLowerCase();
+  const matches = new Set<string>();
+  const ancestors = new Set<string>();
+  if (!needle) return { matches, ancestors };
+  const visit = (node: DiagramNode): boolean => {
+    const own = node.name.toLowerCase().includes(needle);
+    if (own) matches.add(node.id);
+    const below = node.children.map(visit).some(Boolean);
+    if (below) ancestors.add(node.id);
+    return own || below;
+  };
+  visit(root);
+  return { matches, ancestors };
 }
 
 // ---------- Offices ----------

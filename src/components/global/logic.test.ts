@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { AreaBottleneck, StructureNode, StructureTree } from "@/lib/api/network-types";
 import type { Business } from "@/lib/api/types";
 import type { MatrixRow } from "@/lib/tasks/sm";
-import { buildStructureView, expandableIds, filterTree, officeHealth, sortBottlenecks, stuckBusinesses, worstHealth, type TreeNode } from "./logic";
+import { buildDiagramTree, buildStructureView, collapsibleIds, descendantCount, diagramSearch, expandableIds, filterTree, initialsOf, officeHealth, sortBottlenecks, stuckBusinesses, worstHealth, type TreeNode } from "./logic";
 
 const business = (id: string, name: string, status: Business["status"] = "in_program"): Business => ({
   id, name, industry: "services", city: "Miami", state: "FL", owner_user_id: "u", status,
@@ -60,12 +60,12 @@ describe("structure tree", () => {
       id: "g", kind: "global", name: "SM Global",
       children: [node({
         id: "o1", kind: "office", name: "SM Miami", health: "red",
-        detail: { kind: "office", status: "operating", programs: 1, ready_to_franchise: 0, operating_franchises: 1 },
+        detail: { kind: "office", status: "operating", programs: 1, ready_to_franchise: 0, operating_franchises: 1, city: "Miami, FL", manager_name: "Nicolás Rey", missing_areas: ["B1"] },
         children: [
-          node({ id: "b1", kind: "business", name: "Vossler", health: "red", franchisability: { value: 24, expected: 28 }, detail: { kind: "business", status: "in_program", program_day: 60, consultant_name: null } }),
+          node({ id: "b1", kind: "business", name: "Vossler", health: "red", franchisability: { value: 24, expected: 28 }, detail: { kind: "business", status: "in_program", program_day: 60, consultant_name: null, owner_name: "Ana Vossler" } }),
           node({
-            id: "b2", kind: "business", name: "Bimbo Tacos", detail: { kind: "business", status: "franchisor", program_day: null, consultant_name: null },
-            children: [node({ id: "f1", kind: "franchise", name: "Bimbo Sur", detail: { kind: "franchise", status: "operating" } })],
+            id: "b2", kind: "business", name: "Bimbo Tacos", detail: { kind: "business", status: "franchisor", program_day: null, consultant_name: null, owner_name: null },
+            children: [node({ id: "f1", kind: "franchise", name: "Bimbo Sur", detail: { kind: "franchise", status: "operating", city: "Doral, FL" } })],
           }),
           node({ id: "p1", kind: "firm", name: "Estudio Pérez", health: "red", detail: { kind: "firm", area: "B6", overdue_tasks: 2 } }),
         ],
@@ -113,5 +113,37 @@ describe("structure tree", () => {
 
   it("lists every node that can be expanded", () => {
     expect(expandableIds(view).sort()).toEqual(["b2", "g", "o1", "o1:firms", "o1:franchises", "o1:programs"].sort());
+  });
+
+  describe("diagram", () => {
+    const diagram = buildDiagramTree(tree);
+
+    it("draws offices, businesses and franchises, and counts the firms on their office", () => {
+      const office = diagram.children[0]!;
+      expect(office.firms).toBe(1);
+      expect(office.children.map((c) => c.name)).toEqual(["Vossler", "Bimbo Tacos"]);
+      expect(office.children[1]!.children.map((c) => c.name)).toEqual(["Bimbo Sur"]);
+      expect(diagram.businesses).toBe(1);
+    });
+
+    it("takes up to two initials from a person's name", () => {
+      expect(initialsOf("Ana María Vossler")).toBe("AV");
+      expect(initialsOf("  luciano ")).toBe("L");
+      expect(initialsOf("")).toBe("");
+    });
+
+    it("counts everything hidden below a node and lists the nodes that can collapse", () => {
+      expect(descendantCount(diagram)).toBe(4);
+      expect(descendantCount(diagram.children[0]!.children[1]!)).toBe(1);
+      expect(collapsibleIds(diagram)).toEqual(["g", "o1", "b2"]);
+    });
+
+    it("finds matches and the ancestors to open, and nothing for an empty search", () => {
+      const { matches, ancestors } = diagramSearch(diagram, "BIMBO sur");
+      expect([...matches]).toEqual(["f1"]);
+      expect([...ancestors].sort()).toEqual(["b2", "g", "o1"]);
+      expect(diagramSearch(diagram, "  ").matches.size).toBe(0);
+      expect(diagramSearch(diagram, "zzz").ancestors.size).toBe(0);
+    });
   });
 });

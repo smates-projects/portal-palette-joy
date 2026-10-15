@@ -1230,7 +1230,20 @@
         "operating": "Operating"
       },
       "empty_search_title": "No name matches \"{{q}}\"",
-      "empty_search_body": "Try another name."
+      "empty_search_body": "Try another name.",
+      "view_list": "List",
+      "view_diagram": "Diagram",
+      "diagram": {
+        "kind_office": "Office",
+        "kind_business": "Business",
+        "kind_franchise": "Franchise",
+        "businesses_one": "{{count}} business",
+        "businesses_other": "{{count}} businesses",
+        "firms_one": "{{count}} partner firm",
+        "firms_other": "{{count}} partner firms",
+        "missing_firm": "Missing firm in {{areas}}",
+        "card_label": "{{name}}: {{health}}"
+      }
     },
     "offices": {
       "question": "How is the SM office network doing?",
