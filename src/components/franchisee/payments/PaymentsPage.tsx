@@ -139,7 +139,7 @@ export function PaymentsPage() {
               <div className="space-y-1.5">
                 <Label htmlFor="report-month">{t("franchisee.payments.field_month")}</Label>
                 {dueReports.length > 1 ? (
-                  <Select value={month} onValueChange={setChosenMonth}>
+                  <Select value={month ?? ""} onValueChange={setChosenMonth}>
                     <SelectTrigger id="report-month" className="bg-surface"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {dueReports.map((r) => <SelectItem key={r.id} value={r.month}>{formatMonth(r.month, lng)}</SelectItem>)}
