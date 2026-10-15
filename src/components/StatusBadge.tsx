@@ -5,13 +5,13 @@ import type { VisibleTaskStatus } from "@/lib/api/types";
 type BadgeKind = VisibleTaskStatus | "cancelled" | "blocked" | "overdue";
 
 const styles: Record<BadgeKind, string> = {
-  pending: "bg-status-neutral-bg text-status-neutral-fg border-status-neutral-border",
-  in_progress: "bg-status-info-bg text-status-info-fg border-status-info-border font-bold",
-  submitted: "bg-status-review-bg text-status-review-fg border-status-review-border font-bold",
-  changes_requested: "bg-status-warning-bg text-status-warning-fg border-status-warning-border",
-  accepted: "bg-status-success-bg text-status-success-fg border-status-success-border",
+  pending: "bg-badge-todo text-primary-foreground border-badge-todo font-bold",
+  in_progress: "bg-badge-doing text-primary-foreground border-badge-doing font-bold",
+  submitted: "bg-badge-review text-primary-foreground border-badge-review font-bold",
+  changes_requested: "bg-badge-fix text-foreground border-badge-fix font-bold",
+  accepted: "bg-badge-done text-primary-foreground border-badge-done font-bold",
   cancelled: "bg-status-neutral-bg text-muted-foreground border-status-neutral-border line-through",
-  blocked: "bg-status-danger-bg text-status-danger-fg border-status-danger-border",
+  blocked: "bg-badge-blocked text-primary-foreground border-badge-blocked font-bold",
   overdue: "bg-status-danger-bg text-status-danger-fg border-status-danger-border",
 };
 

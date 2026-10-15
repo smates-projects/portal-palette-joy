@@ -50,10 +50,10 @@
     "B6": "Legal"
   },
   "status": {
-    "pending": "Not started",
+    "pending": "To do",
     "in_progress": "In progress",
-    "submitted": "Delivered, awaiting approval",
-    "changes_requested": "Changes requested",
+    "submitted": "To approve",
+    "changes_requested": "To fix",
     "accepted": "Approved",
     "blocked": "Blocked",
     "overdue": "Overdue",
