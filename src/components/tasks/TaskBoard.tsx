@@ -11,13 +11,14 @@ import { daysBetween } from "@/lib/tasks/table";
 import { cn } from "@/lib/utils";
 import { AreaSquare } from "@/components/AreaTag";
 import { areaColorVar } from "@/lib/tasks/area-color";
+import { StatusBadge } from "@/components/StatusBadge";
 
 const COLUMN_BAR: Record<VisibleTaskStatus, string> = {
-  pending: "bg-status-neutral-border",
-  in_progress: "bg-status-info-border",
-  submitted: "bg-status-review-border",
-  changes_requested: "bg-status-warning-border",
-  accepted: "bg-status-success-border",
+  pending: "bg-badge-todo",
+  in_progress: "bg-badge-doing",
+  submitted: "bg-badge-review",
+  changes_requested: "bg-badge-fix",
+  accepted: "bg-badge-done",
 };
 
 export function TaskBoard(props: {
@@ -166,7 +167,8 @@ export function TaskBoard(props: {
                   <div className="mt-1.5 flex items-center justify-between gap-2 text-xs text-muted-foreground">
                     <span className="truncate">{props.businessName(task.business_id)}</span>
                     {task.is_blocked && task.status !== "accepted" && (
-                      <span className="inline-flex shrink-0 items-center gap-1 text-status-danger-fg">
+                      <span className="inline-flex shrink-0 items-center gap-1.5 text-status-danger-fg">
+                        <StatusBadge status="blocked" className="text-[10px]" />
                         <Lock className="h-3 w-3" />
                         {task.depends_on_task_ids.map(props.codeById).join(", ")}
                       </span>
