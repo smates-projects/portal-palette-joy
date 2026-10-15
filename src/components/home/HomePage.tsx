@@ -2,12 +2,12 @@ import { useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Lock } from "lucide-react";
+import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ClipboardList, Lock, Target } from "lucide-react";
 import { TODAY } from "@/config/app";
 import { useBusinesses, useStartTask, useTasks, useUpcomingMeetings } from "@/lib/api/hooks";
 import type { TaskWithComputed, VisibleTaskStatus } from "@/lib/api/types";
 import { formatDate, formatDateTime } from "@/lib/format";
-import { buildProgress, buildSummary, buildToday, nextDue, SUMMARY_FILTER, type SummaryKey } from "@/lib/tasks/home";
+import { buildProgress, buildSummary, buildToday, nextDue, SUMMARY_FILTER, type TodayReason } from "@/lib/tasks/home";
 import { daysBetween } from "@/lib/tasks/table";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -15,25 +15,41 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { TaskDetail } from "@/components/tasks/detail/TaskDetail";
 
-function Legend({ className, label }: { className: string; label: string }) {
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      <span className={cn("h-2 w-2 rounded-[1px]", className)} />
-      {label}
-    </span>
-  );
-}
-
+const GROUPS: TodayReason[] = ["overdue", "today", "changes", "week"];
+const PILL: Record<TodayReason, string> = {
+  overdue: "border-status-danger-border bg-status-danger-bg text-status-danger-fg",
+  today: "border-status-warning-border bg-status-warning-bg text-status-warning-fg",
+  changes: "border-status-warning-border bg-status-warning-bg text-status-warning-fg",
+  week: "border-status-info-border bg-status-info-bg text-status-info-fg",
+};
+const DOTC: Record<TodayReason, string> = {
+  overdue: "bg-status-danger-border",
+  today: "bg-status-warning-border",
+  changes: "bg-status-warning-border",
+  week: "bg-status-info-border",
+};
+const addDays = (iso: string, n: number) => {
+  const d = new Date(`${iso}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+};
 
 export function HomePage({ taskId }: { taskId?: string | undefined }) {
   const { t, i18n } = useTranslation();
   const lng = i18n.language;
+  const locale = lng === "en" ? "en-US" : "es-US";
   const navigate = useNavigate();
   const tasksQ = useTasks();
   const bizQ = useBusinesses();
   const meetingsQ = useUpcomingMeetings();
   const start = useStartTask();
   const [submitFor, setSubmitFor] = useState<string | null>(null);
+  const [closed, setClosed] = useState<Partial<Record<TodayReason, boolean>>>({});
+  const [weekStart, setWeekStart] = useState(() => addDays(TODAY, -3));
+  const [day, setDay] = useState(TODAY);
+  const week = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const meetings = meetingsQ.data ?? [];
+  const dayMeetings = meetings.filter((m) => m.starts_at.slice(0, 10) === day);
 
   const tasks = tasksQ.data ?? [];
   const bizName = (id: string) => bizQ.data?.find((b) => b.id === id)?.name ?? "";
