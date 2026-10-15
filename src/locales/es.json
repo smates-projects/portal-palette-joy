@@ -440,7 +440,8 @@
     "col_task": "Tarea",
     "col_status": "Estado",
     "col_due": "Fecha límite",
-    "group_count": "{{count}} tareas",
+    "group_count_one": "{{count}} tarea",
+    "group_count_other": "{{count}} tareas",
     "calendar_title": "Agenda",
     "add_event": "Agregar evento",
     "add_event_title": "Agregar evento a la agenda",
@@ -456,7 +457,6 @@
     "event_save": "Agregar evento",
     "event_added": "Evento agregado a la agenda",
     "event_error": "No pudimos agregar el evento. Intenta de nuevo.",
-    "progress_sample": "Ejemplo de barra",
     "day_empty": "No tienes reuniones este día.",
     "cards": {
       "overdue": "Vencidas",

@@ -368,7 +368,10 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
                     {progress.map((p) => {
                       const biz = bizQ.data?.find((b) => b.id === p.business_id);
                       const share = p.total ? Math.round((p.accepted / p.total) * 100) : 0;
-                      const tone = p.gap >= -5 ? "text-status-success-fg" : p.gap >= -15 ? "text-status-warning-fg" : "text-status-danger-fg";
+                      // One pace rule for the text and the bar, so they never disagree (brand status colors only).
+                      const pace = p.gap >= -5 ? "success" : p.gap >= -15 ? "warning" : "danger";
+                      const tone = { success: "text-status-success-fg", warning: "text-status-warning-fg", danger: "text-status-danger-fg" }[pace];
+                      const bar = { success: "bg-status-success-fg", warning: "bg-status-warning-fg", danger: "bg-status-danger-fg" }[pace];
                       return (
                         <Link key={p.business_id} to="/tareas" search={{ business: p.business_id }} className="-mx-2 flex items-center gap-4 rounded-md px-2 py-1 transition-colors hover:bg-accent/40">
                           <div className="min-w-0 flex-1">
@@ -383,20 +386,12 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
                             role="img"
                             aria-label={t("home.progress_aria", { done: p.accepted, submitted: p.submitted, active: p.in_progress, total: p.total })}
                           >
-                            <span className={cn("absolute inset-y-0 left-0 rounded-full", share > 70 ? "bg-progress-high" : "bg-gold")} style={{ width: `${share}%` }} />
+                            <span className={cn("absolute inset-y-0 left-0 rounded-full", bar)} style={{ width: `${share}%` }} />
                           </div>
                           <span className="w-10 shrink-0 text-right font-display text-sm font-semibold tabular-nums">{share}%</span>
                         </Link>
                       );
                     })}
-                    {/* Sample bar above 70%, only to preview the color */}
-                    <div className="-mx-2 flex items-center gap-4 px-2 py-1">
-                      <p className="min-w-0 flex-1 truncate text-sm font-medium text-muted-foreground">{t("home.progress_sample")}</p>
-                      <div className="relative h-1.5 w-20 shrink-0 overflow-hidden rounded-full bg-muted">
-                        <span className="absolute inset-y-0 left-0 rounded-full bg-progress-high" style={{ width: "70%" }} />
-                      </div>
-                      <span className="w-10 shrink-0 text-right font-display text-sm font-semibold tabular-nums">70%</span>
-                    </div>
                   </div>
                 )}
               </section>

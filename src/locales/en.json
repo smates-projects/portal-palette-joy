@@ -440,7 +440,8 @@
     "col_task": "Task",
     "col_status": "Status",
     "col_due": "Due date",
-    "group_count": "{{count}} tasks",
+    "group_count_one": "{{count}} task",
+    "group_count_other": "{{count}} tasks",
     "calendar_title": "Schedule",
     "add_event": "Add event",
     "add_event_title": "Add event to the agenda",
@@ -456,7 +457,6 @@
     "event_save": "Add event",
     "event_added": "Event added to the agenda",
     "event_error": "We couldn't add the event. Try again.",
-    "progress_sample": "Sample bar",
     "day_empty": "No meetings on this day.",
     "cards": {
       "overdue": "Overdue",
