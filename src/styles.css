@@ -133,9 +133,9 @@
   --status-info-bg: #2c7eff;
   --status-info-fg: #ffffff;
   --status-info-border: #2c7eff;
-  --status-review-bg: #2c7eff;
+  --status-review-bg: #00c851;
   --status-review-fg: #ffffff;
-  --status-review-border: #2c7eff;
+  --status-review-border: #00c851;
   --status-warning-bg: oklch(0.97 0.04 85);
   --status-warning-fg: oklch(0.47 0.1 65);
   --status-warning-border: oklch(0.86 0.09 80);
