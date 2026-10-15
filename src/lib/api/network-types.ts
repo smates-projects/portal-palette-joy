@@ -81,12 +81,14 @@ export type StructureHealth = "red" | "amber" | "green" | "grey";
 export type StructureDetail =
   | { kind: "office"; status: OfficeStatus; programs: number; ready_to_franchise: number; operating_franchises: number; city: string | null; manager_name: string | null; missing_areas: AreaCode[] }
   | { kind: "business"; status: BusinessStatus; program_day: number | null; consultant_name: string | null; owner_name: string | null }
-  | { kind: "franchise"; status: FranchiseStatus; city: string }
-  | { kind: "firm"; area: AreaCode | null; overdue_tasks: number };
+  | { kind: "franchise"; status: FranchiseStatus; city: string; franchisee_name: string | null }
+  | { kind: "firm"; area: AreaCode | null; overdue_tasks: number; specialty: string | null; contact_name: string | null }
+  | { kind: "investor"; invested: number; share_pct: number };
 
 export interface StructureNode {
   id: Uuid;
-  kind: "global" | "office" | "business" | "franchise" | "firm";
+  /** An investor hangs from the business he funded; it is not part of the reporting line. */
+  kind: "global" | "office" | "business" | "franchise" | "firm" | "investor";
   name: string;
   /** Office: worst of its programs. Business in program: worst of its areas. Firm: red with overdue tasks. Null where it does not apply. */
   health: StructureHealth | null;

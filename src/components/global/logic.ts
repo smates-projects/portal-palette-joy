@@ -1,6 +1,6 @@
 import type { AreaBottleneck, OfficeSummary, StructureDetail, StructureNode, StructureTree } from "@/lib/api/network-types";
 import type { AreaCode, Business, Organization, TaskWithComputed } from "@/lib/api/types";
-import type { Health } from "@/lib/tasks/owner";
+import { AREAS, type Health } from "@/lib/tasks/owner";
 import { buildAttention, type AttentionItem, type MatrixRow } from "@/lib/tasks/sm";
 
 /** Home lists show this many rows and then "Ver todo". */
@@ -102,15 +102,16 @@ export function buildStructureView(tree: StructureTree, t: Translate): TreeNode 
 
   const businessNode = (node: StructureNode): TreeNode => {
     const detail = node.detail?.kind === "business" ? node.detail : null;
+    const franchises = node.children.filter((c) => c.kind === "franchise");
     const parts: string[] = [];
     if (detail?.status === "in_program") {
       if (detail.program_day !== null) parts.push(t("global.structure.day", { day: detail.program_day }));
       if (node.franchisability) parts.push(t("global.structure.franchisability", { pct: node.franchisability.value, expected: node.franchisability.expected }));
       parts.push(detail.consultant_name ?? t("global.structure.no_consultant"));
     } else if (detail) {
-      parts.push(t("global.structure.franchises_count", { count: node.children.length }));
+      parts.push(t("global.structure.franchises_count", { count: franchises.length }));
     }
-    return { id: node.id, kind: "business", name: node.name, datum: parts.join(" · "), health: node.health, children: node.children.map(franchiseNode) };
+    return { id: node.id, kind: "business", name: node.name, datum: parts.join(" · "), health: node.health, children: franchises.map(franchiseNode) };
   };
   const franchiseNode = (node: StructureNode): TreeNode => ({
     id: node.id, kind: "franchise", name: node.name, datum: node.detail?.kind === "franchise" ? t(`global.structure.franchise_status.${node.detail.status}`) : null, health: null, children: [],
@@ -167,42 +168,79 @@ export function expandableIds(node: TreeNode): string[] {
 // ---------- Structure diagram ----------
 
 /**
- * A box of the org chart. Partner firms are not boxes: an office keeps their count and the areas still without a firm.
- * Level 1 is SM Global, 2 the offices, 3 the businesses of each office, 4 the franchises of the business that franchised.
+ * A box of the org chart. Level 1 is SM Global, 2 the offices. Each office holds small group labels ("group") with its
+ * businesses and its partner firms: one card per firm and one placeholder ("gap") per area that has none.
+ * Below a business hang the franchises that follow the reporting line; its investors sit beside it (`investors`).
  */
 export interface DiagramNode {
   id: string;
-  kind: "global" | "office" | "business" | "franchise";
+  kind: "global" | "office" | "group" | "business" | "franchise" | "firm" | "gap" | "investor";
   name: string;
   health: Health | null;
   franchisability: StructureNode["franchisability"];
   detail: StructureDetail | null;
-  /** Office only: partner firms of the office. */
-  firms: number;
+  /** Firm and gap: the area of the card. */
+  area: AreaCode | null;
+  /** The children are drawn as a vertical list under the node instead of side by side (the firms of an office). */
+  stacked: boolean;
+  /** Business only: Bishop investors, drawn beside it with a dashed connector, not as children. */
+  investors: DiagramNode[];
   /** Global only: businesses in the program of the whole network. */
   businesses: number;
   children: DiagramNode[];
 }
 
-/** Org chart tree from the structure the data layer returns. Firms are dropped as nodes and counted on their office. */
-export function buildDiagramTree(tree: StructureTree): DiagramNode {
-  const toNode = (node: StructureNode): DiagramNode => {
-    const children = node.children.filter((c) => c.kind !== "firm");
-    return {
-      id: node.id,
-      kind: node.kind === "firm" ? "business" : node.kind,
-      name: node.name,
-      health: node.health,
-      franchisability: node.franchisability,
-      detail: node.detail,
-      firms: node.children.length - children.length,
-      businesses: node.kind === "global" ? tree.counts.businesses : 0,
-      children: children.map(toNode),
-    };
-  };
-  return toNode(tree.root);
-}
+/**
+ * Org chart tree from the structure the data layer returns. `t` writes the names of the group labels.
+ * An area without firm becomes a placeholder, except B1 (Estrategia), which the office covers with its own team.
+ */
+export function buildDiagramTree(tree: StructureTree, t: Translate): DiagramNode {
+  const make = (node: StructureNode, kind: DiagramNode["kind"], children: DiagramNode[] = []): DiagramNode => ({
+    id: node.id,
+    kind,
+    name: node.name,
+    health: node.health,
+    franchisability: node.franchisability,
+    detail: node.detail,
+    area: node.detail?.kind === "firm" ? node.detail.area : null,
+    stacked: false,
+    investors: [],
+    businesses: node.kind === "global" ? tree.counts.businesses : 0,
+    children,
+  });
+  const group = (id: string, name: string, children: DiagramNode[], stacked = false): DiagramNode => ({
+    id, kind: "group", name, health: null, franchisability: null, detail: null, area: null, stacked, investors: [], businesses: 0, children,
+  });
+  const gap = (office: StructureNode, area: AreaCode): DiagramNode => ({
+    id: `${office.id}:gap:${area}`, kind: "gap", name: area, health: null, franchisability: null, detail: null, area, stacked: false, investors: [], businesses: 0, children: [],
+  });
 
+  const businessNode = (node: StructureNode): DiagramNode => ({
+    ...make(node, "business", node.children.filter((c) => c.kind === "franchise").map((c) => make(c, "franchise"))),
+    investors: node.children.filter((c) => c.kind === "investor").map((c) => make(c, "investor")),
+  });
+
+  const officeNode = (office: StructureNode): DiagramNode => {
+    const status = (n: StructureNode) => (n.detail?.kind === "business" ? n.detail.status : null);
+    const businesses = office.children.filter((c) => c.kind === "business");
+    const firms = office.children.filter((c) => c.kind === "firm");
+    const firmOf = (area: AreaCode) => firms.find((f) => f.detail?.kind === "firm" && f.detail.area === area);
+    const slots = AREAS.map((area) => {
+      const firm = firmOf(area);
+      return firm ? make(firm, "firm") : gap(office, area);
+    });
+    const withoutArea = firms.filter((f) => f.detail?.kind === "firm" && f.detail.area === null).map((f) => make(f, "firm"));
+    const groups = [
+      { key: "programs", nodes: businesses.filter((b) => status(b) === "in_program") },
+      { key: "franchisors", nodes: businesses.filter((b) => status(b) !== "in_program") },
+    ]
+      .filter((g) => g.nodes.length > 0)
+      .map((g) => group(`${office.id}:${g.key}`, t(`global.structure.group_${g.key}`), g.nodes.map(businessNode)));
+    return make(office, "office", [...groups, group(`${office.id}:firms`, t("global.structure.group_firms"), [...slots, ...withoutArea], true)]);
+  };
+
+  return make(tree.root, "global", tree.root.children.map(officeNode));
+}
 /** Up to two initials of a person's name: "Ana María Vossler" gives "AV". */
 export function initialsOf(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean);
@@ -211,14 +249,15 @@ export function initialsOf(name: string): string {
   return (first + last).toUpperCase();
 }
 
-/** Boxes hidden below a node, at any depth: the "+3" of a collapsed card. */
+/** Boxes hidden below a node, at any depth: the "+3" of a collapsed card. Group labels are not counted. */
 export function descendantCount(node: DiagramNode): number {
-  return node.children.reduce((sum, c) => sum + 1 + descendantCount(c), 0);
+  return node.children.reduce((sum, c) => sum + (c.kind === "group" ? 0 : 1) + descendantCount(c), 0);
 }
 
-/** Ids of the nodes that have children (the ones that can be collapsed). */
+/** Ids of the nodes that have children and can be collapsed (a stacked list, like the firms, is always open). */
 export function collapsibleIds(node: DiagramNode): string[] {
-  return node.children.length ? [node.id, ...node.children.flatMap(collapsibleIds)] : [];
+  const below = node.children.flatMap(collapsibleIds);
+  return node.children.length && !node.stacked ? [node.id, ...below] : below;
 }
 
 /**
@@ -231,7 +270,8 @@ export function diagramSearch(root: DiagramNode, query: string): { matches: Set<
   const ancestors = new Set<string>();
   if (!needle) return { matches, ancestors };
   const visit = (node: DiagramNode): boolean => {
-    const own = node.name.toLowerCase().includes(needle);
+    // Group labels and placeholders are not names of the network: they never match.
+    const own = node.kind !== "group" && node.kind !== "gap" && node.name.toLowerCase().includes(needle);
     if (own) matches.add(node.id);
     const below = node.children.map(visit).some(Boolean);
     if (below) ancestors.add(node.id);

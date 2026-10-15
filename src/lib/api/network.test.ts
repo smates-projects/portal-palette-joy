@@ -323,7 +323,8 @@ describe("network (SM Global)", () => {
     expect(tree.root.children.map((c) => c.name)).toEqual(["SM Miami", "SM Orlando", "SM Tampa"]);
     const miami = tree.root.children[0]!;
     const bimbo = miami.children.find((c) => c.name === "Bimbo Tacos")!;
-    expect(bimbo.children.map((c) => c.name).sort()).toEqual(["Bimbo Tacos Orlando Sur", "Bimbo Tacos Tampa"]);
+    expect(bimbo.children.filter((c) => c.kind === "franchise").map((c) => c.name).sort()).toEqual(["Bimbo Tacos Orlando Sur", "Bimbo Tacos Tampa"]);
+    expect(bimbo.children.filter((c) => c.kind === "investor").map((c) => c.name)).toEqual(["Jefferson Paula"]);
     expect(miami.children.filter((c) => c.kind === "firm")).toHaveLength(5);
     const orlando = tree.root.children[1]!;
     expect(orlando.children.filter((c) => c.kind === "business")).toHaveLength(2);

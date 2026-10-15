@@ -2,6 +2,8 @@
 // read-only leads for SM Global and the structure tree. Same style as network.test.ts.
 import { describe, expect, it } from "vitest";
 import catalogJson from "@/data/catalogo_metodo180.json";
+import { TODAY } from "@/config/app";
+import { bishopShareAt } from "@/lib/bishop/split";
 import { expectedFranchisePct } from "@/lib/tasks/office";
 import { computeOfficeChecklist } from "./office-checklist";
 import { createMockApi } from "./mock";
@@ -398,10 +400,21 @@ describe("structure tree computed by the data layer", () => {
     expect(bimbo).toMatchObject({ health: null, franchisability: null, detail: { kind: "business", status: "franchisor", program_day: null } });
     expect(bimbo.children.map((c) => [c.name, c.detail])).toEqual(
       expect.arrayContaining([
-        ["Bimbo Tacos Orlando Sur", { kind: "franchise", status: "operating", city: expect.any(String) }],
-        ["Bimbo Tacos Tampa", { kind: "franchise", status: "opening", city: expect.any(String) }],
+        ["Bimbo Tacos Orlando Sur", { kind: "franchise", status: "operating", city: expect.any(String), franchisee_name: expect.any(String) }],
+        ["Bimbo Tacos Tampa", { kind: "franchise", status: "opening", city: expect.any(String), franchisee_name: expect.any(String) }],
       ]),
     );
+  });
+
+  it("the Bishop investment hangs from the business he funded, with his name, the amount and the provisional share", async () => {
+    const nodes = flat((await (await asGlobal()).network.getStructure()).root);
+    const investors = nodes.filter((n) => n.kind === "investor");
+    expect(investors).toHaveLength(1);
+    expect(investors[0]).toMatchObject({ name: "Jefferson Paula", detail: { kind: "investor", invested: 150000, share_pct: bishopShareAt("2025-11-14", TODAY) } });
+    const bimbo = nodes.find((n) => n.id === seed.BIZ_BIMBO)!;
+    expect(bimbo.children.filter((c) => c.kind === "investor").map((c) => c.id)).toEqual([investors[0]!.id]);
+    // No other business shows an investor.
+    expect(nodes.filter((n) => n.kind === "business" && n.id !== seed.BIZ_BIMBO).every((n) => n.children.every((c) => c.kind !== "investor"))).toBe(true);
   });
 
   it("a firm is red with overdue tasks and shows how many", async () => {
@@ -411,7 +424,7 @@ describe("structure tree computed by the data layer", () => {
     expect(nodes).toHaveLength(17);
     for (const n of nodes) {
       const overdue = tasks.filter((t) => t.organization_id === n.id && t.is_overdue).length;
-      expect(n.detail).toMatchObject({ kind: "firm", overdue_tasks: overdue });
+      expect(n.detail).toMatchObject({ kind: "firm", overdue_tasks: overdue, specialty: expect.any(String) });
       expect(n.health).toBe(overdue > 0 ? "red" : "green");
     }
     expect(nodes.some((n) => n.health === "red")).toBe(true);

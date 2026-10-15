@@ -32,7 +32,7 @@ export function StructurePage({ search }: { search: StructureSearch }) {
   const mode: "list" | "diagram" = search.view === "diagram" ? "diagram" : "list";
 
   const view: TreeNode | null = structureQ.data ? buildStructureView(structureQ.data, (key, options) => String(t(key, options ?? {}))) : null;
-  const diagram: DiagramNode | null = structureQ.data ? buildDiagramTree(structureQ.data) : null;
+  const diagram: DiagramNode | null = structureQ.data ? buildDiagramTree(structureQ.data, (key, options) => String(t(key, options ?? {}))) : null;
 
   const header = <GlobalHeader question={t("global.structure.question")} />;
   if (structureQ.isError)
@@ -72,7 +72,7 @@ export function StructurePage({ search }: { search: StructureSearch }) {
   });
   const setMode = (next: "list" | "diagram") => void navigate({ to: "/estructura", search: next === "diagram" ? { view: "diagram" } : {}, replace: true });
 
-  const openNode = (node: Pick<TreeNode, "id" | "kind">) => {
+  const openNode = (node: { id: string; kind: string }) => {
     if (node.kind === "office") void navigate({ to: "/oficinas/$officeId", params: { officeId: node.id } });
     else if (node.kind === "business") setBusinessId(node.id);
   };

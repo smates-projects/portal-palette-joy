@@ -1224,6 +1224,7 @@
       "group_programs": "Businesses in the program",
       "group_franchises": "Franchises",
       "group_firms": "Partner firms",
+      "group_franchisors": "Businesses that already franchise",
       "franchise_level": "Ready to franchise: {{ready}} · Open franchises: {{open}}",
       "franchise_status": {
         "opening": "Opening",
@@ -1239,10 +1240,19 @@
         "kind_franchise": "Franchise",
         "businesses_one": "{{count}} business",
         "businesses_other": "{{count}} businesses",
-        "firms_one": "{{count}} partner firm",
-        "firms_other": "{{count}} partner firms",
-        "missing_firm": "Missing firm in {{areas}}",
+        "kind_investor": "Investor",
+        "gap_firm": "No firm: {{area}}",
+        "own_team": "The office's own team",
+        "investor_amount": "Invested {{amount}}",
+        "investor_share": "Share {{pct}}% · Provisional",
         "card_label": "{{name}}: {{health}}"
+      },
+      "camera": {
+        "zoom_in": "Zoom in",
+        "zoom_out": "Zoom out",
+        "fit": "Fit to screen",
+        "actual_size": "Actual size",
+        "hint": "Ctrl or Shift + wheel to zoom · drag to move"
       }
     },
     "offices": {

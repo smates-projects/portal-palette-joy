@@ -65,9 +65,12 @@ describe("structure tree", () => {
           node({ id: "b1", kind: "business", name: "Vossler", health: "red", franchisability: { value: 24, expected: 28 }, detail: { kind: "business", status: "in_program", program_day: 60, consultant_name: null, owner_name: "Ana Vossler" } }),
           node({
             id: "b2", kind: "business", name: "Bimbo Tacos", detail: { kind: "business", status: "franchisor", program_day: null, consultant_name: null, owner_name: null },
-            children: [node({ id: "f1", kind: "franchise", name: "Bimbo Sur", detail: { kind: "franchise", status: "operating", city: "Doral, FL" } })],
+            children: [
+              node({ id: "f1", kind: "franchise", name: "Bimbo Sur", detail: { kind: "franchise", status: "operating", city: "Doral, FL", franchisee_name: "Luisa Gómez" } }),
+              node({ id: "i1", kind: "investor", name: "Jefferson Paula", detail: { kind: "investor", invested: 150000, share_pct: 50 } }),
+            ],
           }),
-          node({ id: "p1", kind: "firm", name: "Estudio Pérez", health: "red", detail: { kind: "firm", area: "B6", overdue_tasks: 2 } }),
+          node({ id: "p1", kind: "firm", name: "Estudio Pérez", health: "red", detail: { kind: "firm", area: "B6", overdue_tasks: 2, specialty: "Derecho corporativo", contact_name: "Lucía Pérez" } }),
         ],
       })],
     }),
@@ -116,16 +119,41 @@ describe("structure tree", () => {
   });
 
   describe("diagram", () => {
-    const diagram = buildDiagramTree(tree);
+    const diagram = buildDiagramTree(tree, t);
+    const office = diagram.children[0]!;
+    const firmsGroup = office.children.find((c) => c.id === "o1:firms")!;
 
-    it("draws offices, businesses and franchises, and counts the firms on their office", () => {
-      const office = diagram.children[0]!;
-      expect(office.firms).toBe(1);
-      expect(office.children.map((c) => c.name)).toEqual(["Vossler", "Bimbo Tacos"]);
-      expect(office.children[1]!.children.map((c) => c.name)).toEqual(["Bimbo Sur"]);
+    it("groups the businesses of an office under a label and keeps the franchises below their business", () => {
+      expect(office.children.map((c) => [c.kind, c.name])).toEqual([
+        ["group", "global.structure.group_programs"],
+        ["group", "global.structure.group_franchisors"],
+        ["group", "global.structure.group_firms"],
+      ]);
+      expect(office.children[0]!.children.map((c) => c.name)).toEqual(["Vossler"]);
+      const bimbo = office.children[1]!.children[0]!;
+      expect(bimbo.children.map((c) => c.name)).toEqual(["Bimbo Sur"]);
       expect(diagram.businesses).toBe(1);
     });
 
+    it("hangs the investor beside its business, not in the reporting line", () => {
+      const bimbo = office.children[1]!.children[0]!;
+      expect(bimbo.investors.map((i) => [i.kind, i.name, i.detail])).toEqual([["investor", "Jefferson Paula", { kind: "investor", invested: 150000, share_pct: 50 }]]);
+      expect(bimbo.children.some((c) => c.kind === "investor")).toBe(false);
+    });
+
+    it("lists one card per area: the firm where there is one, a placeholder where there is none", () => {
+      expect(firmsGroup.stacked).toBe(true);
+      expect(firmsGroup.children.map((c) => [c.kind, c.area])).toEqual([
+        ["gap", "B1"], ["gap", "B2"], ["gap", "B3"], ["gap", "B4"], ["gap", "B5"], ["firm", "B6"],
+      ]);
+      expect(firmsGroup.children[5]!.name).toBe("Estudio Pérez");
+    });
+
+    it("leaves the group labels out of the search and out of the count of hidden boxes", () => {
+      expect(diagramSearch(diagram, "global.structure").matches.size).toBe(0);
+      expect(diagramSearch(diagram, "b1").matches.size).toBe(0);
+      expect(descendantCount(office)).toBe(1 + 1 + 1 + 6);
+    });
     it("takes up to two initials from a person's name", () => {
       expect(initialsOf("Ana María Vossler")).toBe("AV");
       expect(initialsOf("  luciano ")).toBe("L");
@@ -133,15 +161,16 @@ describe("structure tree", () => {
     });
 
     it("counts everything hidden below a node and lists the nodes that can collapse", () => {
-      expect(descendantCount(diagram)).toBe(4);
-      expect(descendantCount(diagram.children[0]!.children[1]!)).toBe(1);
-      expect(collapsibleIds(diagram)).toEqual(["g", "o1", "b2"]);
+      expect(descendantCount(diagram)).toBe(10);
+      expect(descendantCount(office.children[1]!.children[0]!)).toBe(1);
+      // The list of firms is always open, so it is not collapsible.
+      expect(collapsibleIds(diagram)).toEqual(["g", "o1", "o1:programs", "o1:franchisors", "b2"]);
     });
 
     it("finds matches and the ancestors to open, and nothing for an empty search", () => {
       const { matches, ancestors } = diagramSearch(diagram, "BIMBO sur");
       expect([...matches]).toEqual(["f1"]);
-      expect([...ancestors].sort()).toEqual(["b2", "g", "o1"]);
+      expect([...ancestors].sort()).toEqual(["b2", "g", "o1", "o1:franchisors"]);
       expect(diagramSearch(diagram, "  ").matches.size).toBe(0);
       expect(diagramSearch(diagram, "zzz").ancestors.size).toBe(0);
     });

@@ -1224,6 +1224,7 @@
       "group_programs": "Negocios en programa",
       "group_franchises": "Franquicias",
       "group_firms": "Firmas aliadas",
+      "group_franchisors": "Negocios que ya franquician",
       "franchise_level": "Listos para franquiciar: {{ready}} · Franquicias abiertas: {{open}}",
       "franchise_status": {
         "opening": "En apertura",
@@ -1239,10 +1240,19 @@
         "kind_franchise": "Franquicia",
         "businesses_one": "{{count}} negocio",
         "businesses_other": "{{count}} negocios",
-        "firms_one": "{{count}} firma aliada",
-        "firms_other": "{{count}} firmas aliadas",
-        "missing_firm": "Falta firma en {{areas}}",
+        "kind_investor": "Inversor",
+        "gap_firm": "Sin firma: {{area}}",
+        "own_team": "Equipo propio de la oficina",
+        "investor_amount": "Invirtió {{amount}}",
+        "investor_share": "Participación {{pct}}% · Provisional",
         "card_label": "{{name}}: {{health}}"
+      },
+      "camera": {
+        "zoom_in": "Acercar",
+        "zoom_out": "Alejar",
+        "fit": "Ajustar a pantalla",
+        "actual_size": "Tamaño real",
+        "hint": "Ctrl o Shift + rueda para acercar · arrastra para moverte"
       }
     },
     "offices": {

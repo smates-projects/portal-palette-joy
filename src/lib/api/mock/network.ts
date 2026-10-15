@@ -338,9 +338,18 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
             health: inProgram ? rows.find((r) => r.business.id === b.id)?.health ?? "grey" : null,
             franchisability: inProgram ? { value: f.franchisability_pct, expected: expectedFranchisePct(b.program_day, f.franchisability_goal) } : null,
             detail: { kind: "business", status: b.status, program_day: inProgram ? b.program_day : null, consultant_name: consultantName(b), owner_name: db.users.find((u) => u.id === b.owner_user_id)?.full_name ?? null },
-            children: db.franchises.filter((x) => x.franchisor_business_id === b.id).map((x): StructureNode => ({
-              id: x.id, kind: "franchise", name: x.name, health: null, franchisability: null, detail: { kind: "franchise", status: x.status, city: `${x.city}, ${x.state}` }, children: [],
-            })),
+            children: [
+              ...db.franchises.filter((x) => x.franchisor_business_id === b.id).map((x): StructureNode => ({
+                id: x.id, kind: "franchise", name: x.name, health: null, franchisability: null,
+                detail: { kind: "franchise", status: x.status, city: `${x.city}, ${x.state}`, franchisee_name: db.users.find((u) => u.id === x.franchisee_user_id)?.full_name ?? null },
+                children: [],
+              })),
+              // Bishop investors hang from the business they funded; the share is the provisional split of that date.
+              ...db.investments.filter((i) => i.business_id === b.id).map((i): StructureNode => ({
+                id: i.id, kind: "investor", name: db.users.find((u) => u.id === i.bishop_user_id)?.full_name ?? "", health: null, franchisability: null,
+                detail: { kind: "investor", invested: i.invested, share_pct: bishopShareAt(i.invested_at, TODAY) }, children: [],
+              })),
+            ],
           };
         });
         const firmNodes = db.orgs
@@ -349,7 +358,11 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
             const overdue = tasks.filter((t) => t.organization_id === x.id && t.is_overdue).length;
             return {
               id: x.id, kind: "firm", name: x.name, health: overdue > 0 ? "red" : "green", franchisability: null,
-              detail: { kind: "firm", area: x.area, overdue_tasks: overdue }, children: [],
+              detail: {
+                kind: "firm", area: x.area, overdue_tasks: overdue, specialty: x.specialty,
+                contact_name: db.users.find((u) => u.role === "partner_firm" && u.organization_id === x.id)?.full_name ?? null,
+              },
+              children: [],
             };
           });
         const inProgram = own.filter((b) => b.status === "in_program");
