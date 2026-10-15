@@ -363,6 +363,12 @@
   },
   "home": {
     "heading": "What do I need to move today?",
+    "col_task": "Task",
+    "col_status": "Status",
+    "col_due": "Due date",
+    "group_count": "{{count}} tasks",
+    "calendar_title": "Schedule",
+    "day_empty": "No meetings on this day.",
     "cards": {
       "overdue": "Overdue",
       "today": "Due today",

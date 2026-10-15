@@ -363,6 +363,12 @@
   },
   "home": {
     "heading": "¿Qué tengo que mover hoy?",
+    "col_task": "Tarea",
+    "col_status": "Estado",
+    "col_due": "Fecha límite",
+    "group_count": "{{count}} tareas",
+    "calendar_title": "Agenda",
+    "day_empty": "No tienes reuniones este día.",
     "cards": {
       "overdue": "Vencidas",
       "today": "Vencen hoy",
