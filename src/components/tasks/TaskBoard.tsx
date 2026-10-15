@@ -11,11 +11,11 @@ import { daysBetween } from "@/lib/tasks/table";
 import { cn } from "@/lib/utils";
 
 const COLUMN_BAR: Record<VisibleTaskStatus, string> = {
-  pending: "bg-status-neutral-border",
-  in_progress: "bg-status-info-border",
-  submitted: "bg-status-review-border",
-  changes_requested: "bg-status-warning-border",
-  accepted: "bg-status-success-border",
+  pending: "bg-badge-todo",
+  in_progress: "bg-badge-doing",
+  submitted: "bg-badge-review",
+  changes_requested: "bg-badge-fix",
+  accepted: "bg-badge-done",
 };
 
 export function TaskBoard(props: {
