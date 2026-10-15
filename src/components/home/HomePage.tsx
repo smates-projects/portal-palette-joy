@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { CalendarDays, ChevronDown, Plus, ChevronLeft, ChevronRight, ChevronUp, ClipboardList, Lock, Target } from "lucide-react";
+import { CalendarDays, Maximize2, ChevronDown, Plus, ChevronLeft, ChevronRight, ChevronUp, ClipboardList, Lock, Target } from "lucide-react";
 import { TODAY } from "@/config/app";
 import { useBusinesses, useStartTask, useTasks, useUpcomingMeetings } from "@/lib/api/hooks";
 import type { TaskWithComputed, VisibleTaskStatus } from "@/lib/api/types";
@@ -266,6 +266,9 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
                   <span className="ml-auto text-xs font-normal capitalize text-muted-foreground">
                     {new Intl.DateTimeFormat(locale, { month: "long" }).format(new Date(`${weekStart}T12:00:00`))}
                   </span>
+                  <button onClick={() => void navigate({ to: "/tareas", search: { view: "calendar" } })} aria-label={t("home.open_calendar")} title={t("home.open_calendar")} className="rounded p-1 text-primary hover:bg-accent">
+                    <Maximize2 className="h-4 w-4" />
+                  </button>
                   <button onClick={() => setAddOpen(true)} aria-label={t("home.add_event")} title={t("home.add_event")} className="rounded p-1 text-primary hover:bg-accent">
                     <Plus className="h-4 w-4" />
                   </button>
@@ -283,6 +286,7 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
                         <button
                           key={d}
                           onClick={() => setDay(d)}
+                          onDoubleClick={() => void navigate({ to: "/tareas", search: { view: "calendar" } })}
                           className={cn(
                             "flex flex-col items-center rounded-lg py-1.5 transition-colors",
                             sel ? "bg-primary text-primary-foreground" : "hover:bg-accent",
