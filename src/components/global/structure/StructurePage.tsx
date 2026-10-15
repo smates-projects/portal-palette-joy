@@ -76,7 +76,8 @@ export function StructurePage() {
             )}
             {node.datum && <span className="block text-xs text-muted-foreground">{node.datum}</span>}
           </div>
-          {node.health && <HealthBadge health={node.health} />}
+          {/* Grey means "does not apply"; a node with nothing to measure yet (e.g. a new office) shows no badge. */}
+          {node.health && node.health !== "grey" && <HealthBadge health={node.health} />}
         </div>
         {hasChildren && isOpen && <ul role="group">{node.children.map((c) => renderNode(c, depth + 1))}</ul>}
       </li>
