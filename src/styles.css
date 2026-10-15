@@ -130,12 +130,12 @@
   --status-neutral-bg: oklch(0.965 0.004 250);
   --status-neutral-fg: oklch(0.42 0.015 250);
   --status-neutral-border: oklch(0.88 0.008 250);
-  --status-info-bg: oklch(0.96 0.025 245);
-  --status-info-fg: oklch(0.42 0.11 250);
-  --status-info-border: oklch(0.85 0.06 248);
-  --status-review-bg: oklch(0.95 0.02 240);
-  --status-review-fg: oklch(0.36 0.07 238);
-  --status-review-border: oklch(0.72 0.06 238);
+  --status-info-bg: #2c7eff;
+  --status-info-fg: #ffffff;
+  --status-info-border: #2c7eff;
+  --status-review-bg: #2c7eff;
+  --status-review-fg: #ffffff;
+  --status-review-border: #2c7eff;
   --status-warning-bg: oklch(0.97 0.04 85);
   --status-warning-fg: oklch(0.47 0.1 65);
   --status-warning-border: oklch(0.86 0.09 80);
