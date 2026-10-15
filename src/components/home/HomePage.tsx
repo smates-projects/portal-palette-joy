@@ -378,7 +378,7 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
                             role="img"
                             aria-label={t("home.progress_aria", { done: p.accepted, submitted: p.submitted, active: p.in_progress, total: p.total })}
                           >
-                            <span className="absolute inset-y-0 left-0 rounded-full bg-gold" style={{ width: `${share}%` }} />
+                            <span className={cn("absolute inset-y-0 left-0 rounded-full", share > 70 ? "bg-progress-high" : "bg-gold")} style={{ width: `${share}%` }} />
                           </div>
                           <span className="w-10 shrink-0 text-right font-display text-sm font-semibold tabular-nums">{share}%</span>
                         </Link>
