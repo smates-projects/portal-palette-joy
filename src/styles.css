@@ -149,12 +149,14 @@
   --status-success-fg: oklch(0.43 0.1 155);
   --status-success-border: oklch(0.85 0.07 155);
 
-  --area-b1: oklch(0.355 0.06 236); /* institutional blue */
-  --area-b2: oklch(0.64 0.075 236); /* mid blue */
-  --area-b3: oklch(0.6 0.11 145); /* status green */
-  --area-b4: oklch(0.8 0.06 240); /* light blue */
-  --area-b5: oklch(0.71 0.15 79); /* brand gold */
-  --area-b6: oklch(0.55 0.015 250); /* slate grey */
+  /* Método 180 area palette (approved 2026-10-15). Its own muted set: it never reuses the UI navy/gold
+     or the status green/amber/red, so an area color is never read as a state. Always shown with the area code. */
+  --area-b1: #3a6ea5; /* Estrategia: steel blue */
+  --area-b2: #1f7f7a; /* Operaciones: petrol */
+  --area-b3: #7a6a2e; /* Finanzas: toasted olive */
+  --area-b4: #6b5a8e; /* Tecnología: grey lavender */
+  --area-b5: #c0623b; /* Marketing y ventas: terracotta */
+  --area-b6: #56606e; /* Legal: graphite */
 }
 
 .dark {
