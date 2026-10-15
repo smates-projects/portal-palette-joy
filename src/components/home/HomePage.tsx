@@ -17,9 +17,9 @@ import { TaskDetail } from "@/components/tasks/detail/TaskDetail";
 
 const GROUPS: TodayReason[] = ["overdue", "today", "changes", "week"];
 const PILL: Record<TodayReason, string> = {
-  overdue: "border-status-danger-border bg-status-danger-bg text-status-danger-fg",
+  overdue: "border-transparent bg-tag-overdue text-tag-overdue-fg",
   today: "border-status-warning-border bg-status-warning-bg text-status-warning-fg",
-  changes: "border-status-warning-border bg-status-warning-bg text-status-warning-fg",
+  changes: "border-transparent bg-tag-changes text-tag-changes-fg",
   week: "border-status-info-border bg-status-info-bg text-status-info-fg",
 };
 const DOTC: Record<TodayReason, string> = {
@@ -194,7 +194,7 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
                           className="flex items-center gap-2 text-xs"
                         >
                           {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                          <span className={cn("rounded-[4px] border px-2 py-1 font-display font-semibold uppercase tracking-wide", PILL[g])}>
+                          <span className={cn("rounded-[4px] border px-1.5 py-0.5 text-[10px] font-display font-semibold uppercase leading-none tracking-wide", PILL[g])}>
                             {t(`home.cards.${g}`)}
                           </span>
                           <span className="text-muted-foreground">· {t("home.group_count", { count: rows.length })}</span>
@@ -206,7 +206,7 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
                               <span className="hidden sm:block">{t("home.col_status")}</span>
                               <span className="text-right">{t("home.col_due")}</span>
                             </div>
-                            <ul className="divide-y divide-border">
+                            <ul className="divide-y divide-border border-b border-border">
                               {rows.map(({ task }) => (
                                 <li
                                   key={task.id}
