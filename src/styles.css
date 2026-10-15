@@ -53,6 +53,12 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-indicator: var(--gold);
 
+  --color-badge-todo: #6b7280;
+  --color-badge-doing: #2878ff;
+  --color-badge-review: #6060ff;
+  --color-badge-fix: #efb200;
+  --color-badge-done: #16a34a;
+  --color-badge-blocked: #f5223b;
   --color-status-neutral-bg: var(--status-neutral-bg);
   --color-status-neutral-fg: var(--status-neutral-fg);
   --color-status-neutral-border: var(--status-neutral-border);
