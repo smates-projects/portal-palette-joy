@@ -16,13 +16,23 @@ export const primaryButtonCls =
 export const secondaryButtonCls =
   "inline-flex h-8 items-center justify-center gap-1.5 rounded-[4px] border border-border bg-surface px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50";
 
-/** "2026-09" as "septiembre de 2026" (or "September 2026"). */
-export const formatMonth = (isoMonth: string, lng: string) =>
-  new Intl.DateTimeFormat(localeTag(lng), { month: "long", year: "numeric" }).format(new Date(`${isoMonth}-01T12:00:00`));
+/** Parses "2026-09" at noon; null when the value is empty or malformed (e.g. a chart tooltip with no payload). */
+const parseIsoMonth = (isoMonth: string): Date | null => {
+  const date = new Date(`${isoMonth}-01T12:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
 
-/** "2026-09" as "sep." for chart axes. */
-export const formatMonthShort = (isoMonth: string, lng: string) =>
-  new Intl.DateTimeFormat(localeTag(lng), { month: "short" }).format(new Date(`${isoMonth}-01T12:00:00`));
+/** "2026-09" as "septiembre de 2026" (or "September 2026"); empty string for an invalid month. */
+export const formatMonth = (isoMonth: string, lng: string) => {
+  const date = parseIsoMonth(isoMonth);
+  return date ? new Intl.DateTimeFormat(localeTag(lng), { month: "long", year: "numeric" }).format(date) : "";
+};
+
+/** "2026-09" as "sep." for chart axes; empty string for an invalid month. */
+export const formatMonthShort = (isoMonth: string, lng: string) => {
+  const date = parseIsoMonth(isoMonth);
+  return date ? new Intl.DateTimeFormat(localeTag(lng), { month: "short" }).format(date) : "";
+};
 
 export function PageHeader({ question, children }: { question: string; children?: ReactNode }) {
   const { t } = useTranslation();
@@ -86,7 +96,8 @@ export function Stat({ label, value, hint }: { label: string; value: ReactNode; 
     <div className="rounded-[4px] border border-border bg-surface p-4">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="mt-1 font-display text-2xl font-semibold tabular-nums">{value}</p>
-      {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
+      {/* A div, not a p: the hint can be a block element such as a progress bar. */}
+      {hint && <div className="mt-1 text-xs text-muted-foreground">{hint}</div>}
     </div>
   );
 }

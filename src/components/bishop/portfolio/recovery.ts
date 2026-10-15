@@ -31,10 +31,12 @@ export function recoveryGap(rows: RecoveryRow[]): number | null {
   return last ? (last.actual as number) - last.projected : null;
 }
 
-/** "oct 2026" / "Oct 2026" for a YYYY-MM string. */
+/** "oct 2026" / "Oct 2026" for a YYYY-MM string; empty string when the value is missing or malformed (chart tooltips). */
 export function formatMonth(month: IsoMonth, lng: string): string {
-  const [year, m] = month.split("-").map(Number) as [number, number];
-  return new Intl.DateTimeFormat(localeTag(lng), { month: "short", year: "numeric" }).format(new Date(year, m - 1, 1));
+  const [year, m] = String(month ?? "").split("-").map(Number) as [number, number];
+  const date = new Date(year, m - 1, 1);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat(localeTag(lng), { month: "short", year: "numeric" }).format(date);
 }
 
 /** Opportunities waiting for a decision come first, then the ones with interest, then the ones passed. */
