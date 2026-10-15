@@ -67,6 +67,7 @@
   --color-status-warning-border: var(--status-warning-border);
   --color-status-danger-bg: var(--status-danger-bg);
   --color-tag-overdue: var(--tag-overdue);
+  --color-progress-high: var(--progress-high);
   --color-tag-overdue-fg: var(--tag-overdue-fg);
   --color-tag-changes: var(--tag-changes);
   --color-tag-changes-fg: var(--tag-changes-fg);
@@ -140,6 +141,7 @@
   --status-warning-border: oklch(0.86 0.09 80);
   --status-danger-bg: oklch(0.965 0.025 25);
   --tag-overdue: oklch(0.86 0.07 15);
+  --progress-high: #30d1cc;
   --tag-overdue-fg: oklch(0.38 0.12 20);
   --tag-changes: oklch(0.88 0.08 60);
   --tag-changes-fg: oklch(0.4 0.1 55);
