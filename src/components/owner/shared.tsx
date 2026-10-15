@@ -102,12 +102,11 @@ export function Stat({ label, value, hint }: { label: string; value: ReactNode; 
   );
 }
 
-export type Tone = "neutral" | "info" | "review" | "warning" | "danger" | "success";
+export type Tone = "neutral" | "info" | "warning" | "danger" | "success";
 
 const TONE: Record<Tone, string> = {
   neutral: "border-status-neutral-border bg-status-neutral-bg text-status-neutral-fg",
   info: "border-status-info-border bg-status-info-bg text-status-info-fg",
-  review: "border-status-review-border bg-status-review-bg text-status-review-fg",
   warning: "border-status-warning-border bg-status-warning-bg text-status-warning-fg",
   danger: "border-status-danger-border bg-status-danger-bg text-status-danger-fg",
   success: "border-status-success-border bg-status-success-bg text-status-success-fg",

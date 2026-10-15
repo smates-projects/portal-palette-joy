@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Lock } from "lucide-react";
 import { TODAY } from "@/config/app";
 import { useApproveTask, useCurrentUser, useStartTask, useUnstartTask } from "@/lib/api/hooks";
 import type { TaskWithComputed, VisibleTaskStatus } from "@/lib/api/types";
@@ -11,15 +10,7 @@ import { daysBetween } from "@/lib/tasks/table";
 import { cn } from "@/lib/utils";
 import { AreaSquare } from "@/components/AreaTag";
 import { areaColorVar } from "@/lib/tasks/area-color";
-import { StatusBadge } from "@/components/StatusBadge";
-
-const COLUMN_BAR: Record<VisibleTaskStatus, string> = {
-  pending: "bg-badge-todo",
-  in_progress: "bg-badge-doing",
-  submitted: "bg-badge-review",
-  changes_requested: "bg-badge-fix",
-  accepted: "bg-badge-done",
-};
+import { StatusBadge, TASK_STATUS_LOOK } from "@/components/StatusBadge";
 
 export function TaskBoard(props: {
   rows: TaskWithComputed[];
@@ -106,7 +97,7 @@ export function TaskBoard(props: {
             )}
           >
             <header className="flex items-center gap-2 px-3 py-2.5">
-              <span className={cn("h-2 w-2 rounded-[2px]", COLUMN_BAR[col])} />
+              <span className={cn("h-2 w-2 rounded-[2px]", TASK_STATUS_LOOK[col].solid)} />
               <h3 className="truncate text-xs font-semibold">{t(`tasks.board.col_${col}`)}</h3>
               <span className="ml-auto font-display text-xs tabular-nums text-muted-foreground">{items.length}</span>
             </header>
@@ -169,7 +160,6 @@ export function TaskBoard(props: {
                     {task.is_blocked && task.status !== "accepted" && (
                       <span className="inline-flex shrink-0 items-center gap-1.5 text-status-danger-fg">
                         <StatusBadge status="blocked" className="text-[10px]" />
-                        <Lock className="h-3 w-3" />
                         {task.depends_on_task_ids.map(props.codeById).join(", ")}
                       </span>
                     )}

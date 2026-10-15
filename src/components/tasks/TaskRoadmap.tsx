@@ -16,18 +16,11 @@ import {
 } from "@/lib/tasks/roadmap";
 import { daysBetween } from "@/lib/tasks/table";
 import { cn } from "@/lib/utils";
+import { TASK_STATUS_LOOK } from "@/components/StatusBadge";
 
 const LABEL_W = 280;
 const ROW_H = 32;
 const HEAD_H = 44;
-
-const BAR: Record<VisibleTaskStatus, string> = {
-  pending: "bg-status-neutral-bg border-status-neutral-border",
-  in_progress: "bg-status-info-bg border-status-info-border",
-  submitted: "bg-status-review-bg border-status-review-border",
-  changes_requested: "bg-status-warning-bg border-status-warning-border",
-  accepted: "bg-status-success-bg border-status-success-border",
-};
 
 import { AreaSquare } from "@/components/AreaTag";
 import { areaColorVar } from "@/lib/tasks/area-color";
@@ -216,7 +209,7 @@ export function TaskRoadmap(props: {
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
           <span className="inline-flex items-center gap-1.5"><span className="h-px w-5 bg-foreground/60" />{t("tasks.roadmap.legend_blocks")}</span>
           <span className="inline-flex items-center gap-1.5"><span className="w-5 border-t border-dashed border-foreground/60" />{t("tasks.roadmap.legend_input")}</span>
-          <span className="inline-flex items-center gap-1.5"><span className="bar-blocked h-2.5 w-5 rounded-[2px] border border-status-danger-border" />{t("tasks.roadmap.legend_blocked")}</span>
+          <span className="inline-flex items-center gap-1.5"><span className="bar-blocked h-2.5 w-5 rounded-[2px] border border-task-blocked-border" />{t("tasks.roadmap.legend_blocked")}</span>
           <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rotate-45 bg-gold" />{t("tasks.roadmap.legend_milestone")}</span>
           <span className="inline-flex items-center gap-1.5"><span className="h-3 w-px bg-status-danger-fg" />{t("tasks.roadmap.legend_today")}</span>
         </div>
@@ -316,9 +309,9 @@ export function TaskRoadmap(props: {
                     aria-label={tip}
                     className={cn(
                       "absolute top-1.5 z-[5] flex h-5 items-center overflow-hidden rounded-[4px] border px-1.5 text-left text-[11px] font-medium text-foreground transition-[filter] hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                      BAR[task.status as VisibleTaskStatus],
-                      blocked && "bar-blocked border-status-danger-border",
-                      task.is_overdue && "ring-1 ring-status-danger-fg",
+                      TASK_STATUS_LOOK[task.status as VisibleTaskStatus].soft,
+                      blocked && "bar-blocked border-task-blocked-border",
+                      task.is_overdue && "ring-1 ring-task-blocked-solid",
                     )}
                     style={{ left: g.left, width: g.width, borderLeftColor: areaColorVar(task.area), borderLeftWidth: 4 }}
                   >

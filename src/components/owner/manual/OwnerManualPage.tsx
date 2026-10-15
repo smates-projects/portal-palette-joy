@@ -17,7 +17,7 @@ const MAX_ACTIVITY = 5;
 const SECTION_TONE: Record<ManualSectionStatus, Tone> = {
   not_started: "neutral",
   drafting: "info",
-  in_review: "review",
+  in_review: "info",
   approved: "success",
 };
 

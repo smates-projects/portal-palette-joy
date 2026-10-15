@@ -641,8 +641,8 @@ function StateNote({ children, icon, tone }: { children: ReactNode; icon: ReactN
       className={cn(
         "inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium",
         tone === "success"
-          ? "border-status-success-border bg-status-success-bg text-status-success-fg"
-          : "border-status-review-border bg-status-review-bg text-status-review-fg",
+          ? "border-task-done-border bg-task-done-tint text-task-done-ink"
+          : "border-status-info-border bg-status-info-bg text-status-info-fg",
       )}
     >
       {icon}
@@ -654,12 +654,12 @@ function StateNote({ children, icon, tone }: { children: ReactNode; icon: ReactN
 function VersionBadge({ status, ownerFirst }: { status: string; ownerFirst: string }) {
   const { t } = useTranslation();
   const map = {
-    submitted: ["border-status-review-border bg-status-review-bg text-status-review-fg", t("taskDetail.v_submitted")],
-    changes_requested: ["border-status-warning-border bg-status-warning-bg text-status-warning-fg", t("taskDetail.v_changes", { name: ownerFirst })],
-    accepted: ["border-status-success-border bg-status-success-bg text-status-success-fg", t("taskDetail.v_accepted")],
+    submitted: ["submitted", t("taskDetail.v_submitted")],
+    changes_requested: ["changes_requested", t("taskDetail.v_changes", { name: ownerFirst })],
+    accepted: ["accepted", t("taskDetail.v_accepted")],
   } as const;
-  const [cls, label] = map[status as keyof typeof map];
-  return <span className={cn("rounded-[4px] border px-1.5 py-0.5 text-xs font-medium", cls)}>{label}</span>;
+  const [kind, label] = map[status as keyof typeof map];
+  return <StatusBadge status={kind} label={label} />;
 }
 
 function EventLine({ event, comments, userName, lng }: { event: TaskEvent; comments: TaskComment[]; userName: (id: string) => string; lng: string }) {

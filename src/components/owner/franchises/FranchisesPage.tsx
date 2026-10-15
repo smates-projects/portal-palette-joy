@@ -5,7 +5,7 @@ import type { ReportStatus } from "@/lib/api/types";
 import { formatUsd } from "@/lib/format";
 import { EmptyState, ErrorState, formatMonth, LoadingState, PageHeader, ProgressBar, ToneBadge, type Tone } from "../shared";
 
-const REPORT_TONE: Record<ReportStatus, Tone> = { due: "warning", submitted: "review", paid: "success" };
+const REPORT_TONE: Record<ReportStatus, Tone> = { due: "warning", submitted: "info", paid: "success" };
 
 /** Mis franquicias: one row per unit with status, sales, royalty, standards and last report. */
 export function FranchisesPage() {

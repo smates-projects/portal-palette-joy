@@ -4,19 +4,12 @@ import { useTranslation } from "react-i18next";
 import { formatNumber } from "@/lib/format";
 import { useBusinesses, useCurrentUser, useOrganizations, useTasks, useVersions } from "@/lib/api/hooks";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { VisibleTaskStatus } from "@/lib/api/types";
 import { buildFirmReport } from "@/lib/tasks/report";
 import { VISIBLE_STATUSES, type TasksSearch } from "@/lib/tasks/table";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TASK_STATUS_LOOK } from "@/components/StatusBadge";
 
-const FILL: Record<VisibleTaskStatus, string> = {
-  pending: "bg-status-neutral-border",
-  in_progress: "bg-status-info-border",
-  submitted: "bg-status-review-border",
-  changes_requested: "bg-status-warning-border",
-  accepted: "bg-status-success-border",
-};
 
 export function ReportPage() {
   const { t, i18n } = useTranslation();
@@ -140,7 +133,7 @@ export function ReportPage() {
             <h2 className="text-sm font-semibold">{t("report.by_client")}</h2>
             <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
               {VISIBLE_STATUSES.map((s) => (
-                <span key={s} className="inline-flex items-center gap-1"><span className={cn("h-2 w-2 rounded-[2px]", FILL[s])} />{t(`status.${s}`)}</span>
+                <span key={s} className="inline-flex items-center gap-1"><span className={cn("h-2 w-2 rounded-[2px]", TASK_STATUS_LOOK[s].solid)} />{t(`status.${s}`)}</span>
               ))}
             </div>
           </div>
@@ -160,7 +153,7 @@ export function ReportPage() {
                       onClick={() => go({ business: c.business.id, status: s })}
                       title={`${t(`status.${s}`)}: ${c.counts[s]}`}
                       style={{ width: `${(c.counts[s] / c.total) * 100}%` }}
-                      className={cn("grid place-items-center border-r border-surface text-[10px] font-medium tabular-nums text-foreground last:border-r-0 hover:brightness-95", FILL[s])}
+                      className={cn("grid place-items-center border-r border-surface text-[10px] font-medium tabular-nums last:border-r-0 hover:brightness-95", TASK_STATUS_LOOK[s].solid, TASK_STATUS_LOOK[s].onSolid)}
                     >
                       {c.counts[s]}
                     </button>

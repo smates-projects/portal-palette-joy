@@ -6,7 +6,7 @@ import type { ReportStatus, TicketState } from "@/lib/api/types";
 import { formatDate, formatRelativeDate, formatUsd } from "@/lib/format";
 import { EmptyState, ErrorState, formatMonth, LoadingState, PageHeader, Panel, ProgressBar, Stat, ToneBadge, type Tone } from "../shared";
 
-const REPORT_TONE: Record<ReportStatus, Tone> = { due: "warning", submitted: "review", paid: "success" };
+const REPORT_TONE: Record<ReportStatus, Tone> = { due: "warning", submitted: "info", paid: "success" };
 const TICKET_TONE: Record<TicketState, Tone> = { open: "warning", answered: "info", closed: "neutral" };
 
 /** One franchise: franchisee, monthly reports, standards checklist, consultations, tasks and team. */

@@ -10,7 +10,7 @@ import { formatDate, formatDateTime, localeTag } from "@/lib/format";
 import { buildProgress, buildSummary, buildToday, nextDue, SUMMARY_FILTER, type TodayReason } from "@/lib/tasks/home";
 import { daysBetween } from "@/lib/tasks/table";
 import { cn } from "@/lib/utils";
-import { StatusBadge } from "@/components/StatusBadge";
+import { StatusBadge, TASK_STATUS_LOOK } from "@/components/StatusBadge";
 import { AreaSquare, AreaTag, areaAccentStyle } from "@/components/AreaTag";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
@@ -19,9 +19,9 @@ import { TaskDetail } from "@/components/tasks/detail/TaskDetail";
 
 const GROUPS: TodayReason[] = ["overdue", "today", "changes", "week"];
 const PILL: Record<TodayReason, string> = {
-  overdue: "border-transparent bg-tag-overdue text-tag-overdue-fg",
+  overdue: TASK_STATUS_LOOK.overdue.badge,
   today: "border-status-warning-border bg-status-warning-bg text-status-warning-fg",
-  changes: "border-transparent bg-tag-changes text-tag-changes-fg",
+  changes: TASK_STATUS_LOOK.changes_requested.badge,
   week: "border-status-info-border bg-status-info-bg text-status-info-fg",
 };
 const addDays = (iso: string, n: number) => {

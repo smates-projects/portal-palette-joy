@@ -10,11 +10,11 @@ import { EmptyState, ErrorState, LoadingState, PageHeader, Panel, secondaryButto
 const CONTRACT_TONE: Record<ContractState, Tone> = {
   draft: "neutral",
   sent: "info",
-  opened: "review",
+  opened: "info",
   signed: "success",
   declined: "danger",
 };
-const DOCUMENT_TONE: Record<DocumentState, Tone> = { requested: "warning", received: "review", reviewed: "success" };
+const DOCUMENT_TONE: Record<DocumentState, Tone> = { requested: "warning", received: "info", reviewed: "success" };
 
 /** Documents SM asked for (upload them here), the ones already received, and the contracts with their signature status. */
 export function OwnerDocumentsPage() {

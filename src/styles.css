@@ -53,29 +53,48 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-indicator: var(--gold);
 
-  --color-badge-todo: #6b7280;
-  --color-badge-doing: #2878ff;
-  --color-badge-review: #6060ff;
-  --color-badge-fix: #efb200;
-  --color-badge-done: #16a34a;
-  --color-badge-blocked: #f5223b;
+  /* Task-status scale. solid: bars, dots, chart segments. fg: text on solid. tint: soft background.
+     border: outline. ink: text on tint. "overdue" reuses the blocked set. */
+  --color-task-todo-solid: var(--task-todo-solid);
+  --color-task-todo-fg: var(--task-todo-fg);
+  --color-task-todo-tint: var(--task-todo-tint);
+  --color-task-todo-border: var(--task-todo-border);
+  --color-task-todo-ink: var(--task-todo-ink);
+  --color-task-doing-solid: var(--task-doing-solid);
+  --color-task-doing-fg: var(--task-doing-fg);
+  --color-task-doing-tint: var(--task-doing-tint);
+  --color-task-doing-border: var(--task-doing-border);
+  --color-task-doing-ink: var(--task-doing-ink);
+  --color-task-review-solid: var(--task-review-solid);
+  --color-task-review-fg: var(--task-review-fg);
+  --color-task-review-tint: var(--task-review-tint);
+  --color-task-review-border: var(--task-review-border);
+  --color-task-review-ink: var(--task-review-ink);
+  --color-task-fix-solid: var(--task-fix-solid);
+  --color-task-fix-fg: var(--task-fix-fg);
+  --color-task-fix-tint: var(--task-fix-tint);
+  --color-task-fix-border: var(--task-fix-border);
+  --color-task-fix-ink: var(--task-fix-ink);
+  --color-task-done-solid: var(--task-done-solid);
+  --color-task-done-fg: var(--task-done-fg);
+  --color-task-done-tint: var(--task-done-tint);
+  --color-task-done-border: var(--task-done-border);
+  --color-task-done-ink: var(--task-done-ink);
+  --color-task-blocked-solid: var(--task-blocked-solid);
+  --color-task-blocked-fg: var(--task-blocked-fg);
+  --color-task-blocked-tint: var(--task-blocked-tint);
+  --color-task-blocked-border: var(--task-blocked-border);
+  --color-task-blocked-ink: var(--task-blocked-ink);
   --color-status-neutral-bg: var(--status-neutral-bg);
   --color-status-neutral-fg: var(--status-neutral-fg);
   --color-status-neutral-border: var(--status-neutral-border);
   --color-status-info-bg: var(--status-info-bg);
   --color-status-info-fg: var(--status-info-fg);
   --color-status-info-border: var(--status-info-border);
-  --color-status-review-bg: var(--status-review-bg);
-  --color-status-review-fg: var(--status-review-fg);
-  --color-status-review-border: var(--status-review-border);
   --color-status-warning-bg: var(--status-warning-bg);
   --color-status-warning-fg: var(--status-warning-fg);
   --color-status-warning-border: var(--status-warning-border);
   --color-status-danger-bg: var(--status-danger-bg);
-  --color-tag-overdue: var(--tag-overdue);
-  --color-tag-overdue-fg: var(--tag-overdue-fg);
-  --color-tag-changes: var(--tag-changes);
-  --color-tag-changes-fg: var(--tag-changes-fg);
   --color-status-danger-fg: var(--status-danger-fg);
   --color-status-danger-border: var(--status-danger-border);
   --color-status-success-bg: var(--status-success-bg);
@@ -135,25 +154,50 @@
   --status-neutral-bg: oklch(0.965 0.004 250);
   --status-neutral-fg: oklch(0.42 0.015 250);
   --status-neutral-border: oklch(0.88 0.008 250);
-  --status-info-bg: #2c7eff;
-  --status-info-fg: #ffffff;
-  --status-info-border: #2c7eff;
-  --status-review-bg: #00c851;
-  --status-review-fg: #ffffff;
-  --status-review-border: #00c851;
+  --status-info-bg: oklch(0.96 0.025 245);
+  --status-info-fg: oklch(0.42 0.11 250);
+  --status-info-border: oklch(0.85 0.06 248);
   --status-warning-bg: oklch(0.97 0.04 85);
   --status-warning-fg: oklch(0.47 0.1 65);
   --status-warning-border: oklch(0.86 0.09 80);
   --status-danger-bg: oklch(0.965 0.025 25);
-  --tag-overdue: oklch(0.86 0.07 15);
-  --tag-overdue-fg: oklch(0.38 0.12 20);
-  --tag-changes: oklch(0.88 0.08 60);
-  --tag-changes-fg: oklch(0.4 0.1 55);
   --status-danger-fg: oklch(0.48 0.17 27);
   --status-danger-border: oklch(0.86 0.07 25);
   --status-success-bg: oklch(0.965 0.03 155);
   --status-success-fg: oklch(0.43 0.1 155);
   --status-success-border: oklch(0.85 0.07 155);
+
+  /* Task-status scale (light). Only task statuses use these; generic tones use --status-*. */
+  --task-todo-solid: #8a94a3;
+  --task-todo-fg: #111827;
+  --task-todo-tint: #ffffff;
+  --task-todo-border: #8a94a3;
+  --task-todo-ink: #4b5563;
+  --task-doing-solid: #1550a0;
+  --task-doing-fg: #ffffff;
+  --task-doing-tint: #dbe6f3;
+  --task-doing-border: #1550a0;
+  --task-doing-ink: #153f58;
+  --task-review-solid: #153f58;
+  --task-review-fg: #ffffff;
+  --task-review-tint: #dde6ec;
+  --task-review-border: #153f58;
+  --task-review-ink: #153f58;
+  --task-fix-solid: #e0a800;
+  --task-fix-fg: #1a1a1a;
+  --task-fix-tint: #faefc6;
+  --task-fix-border: #8a6500;
+  --task-fix-ink: #5c4300;
+  --task-done-solid: #2e7d32;
+  --task-done-fg: #ffffff;
+  --task-done-tint: #dff0e0;
+  --task-done-border: #2e7d32;
+  --task-done-ink: #1b5e20;
+  --task-blocked-solid: #b42318;
+  --task-blocked-fg: #ffffff;
+  --task-blocked-tint: #fbe4e1;
+  --task-blocked-border: #b42318;
+  --task-blocked-ink: #8f1d14;
 
   /* Método 180 area palette (approved 2026-10-15). Its own muted set: it never reuses the UI navy/gold
      or the status green/amber/red, so an area color is never read as a state. Always shown with the area code. */
@@ -194,9 +238,6 @@
   --status-info-bg: oklch(0.3 0.05 250);
   --status-info-fg: oklch(0.85 0.07 248);
   --status-info-border: oklch(0.42 0.08 250);
-  --status-review-bg: oklch(0.3 0.04 240);
-  --status-review-fg: oklch(0.88 0.04 240);
-  --status-review-border: oklch(0.5 0.06 240);
   --status-warning-bg: oklch(0.32 0.05 75);
   --status-warning-fg: oklch(0.88 0.1 85);
   --status-warning-border: oklch(0.45 0.08 75);
@@ -206,6 +247,38 @@
   --status-success-bg: oklch(0.3 0.05 155);
   --status-success-fg: oklch(0.85 0.08 155);
   --status-success-border: oklch(0.42 0.08 155);
+
+  /* Task-status scale (dark): lighter solids with dark text, dark tints with light ink. */
+  --task-todo-solid: #7b8596;
+  --task-todo-fg: #0f172a;
+  --task-todo-tint: transparent;
+  --task-todo-border: #7b8596;
+  --task-todo-ink: #cbd2dc;
+  --task-doing-solid: #6aa3ee;
+  --task-doing-fg: #0b1f33;
+  --task-doing-tint: #1b2f47;
+  --task-doing-border: #6aa3ee;
+  --task-doing-ink: #cfe2fa;
+  --task-review-solid: #8fb8d3;
+  --task-review-fg: #08293d;
+  --task-review-tint: #20384a;
+  --task-review-border: #8fb8d3;
+  --task-review-ink: #d5e6f1;
+  --task-fix-solid: #f0b90b;
+  --task-fix-fg: #1a1a1a;
+  --task-fix-tint: #3a2f0e;
+  --task-fix-border: #f0b90b;
+  --task-fix-ink: #f6d36b;
+  --task-done-solid: #5cb860;
+  --task-done-fg: #0b2410;
+  --task-done-tint: #1c3320;
+  --task-done-border: #5cb860;
+  --task-done-ink: #b9e4bb;
+  --task-blocked-solid: #ef6a5e;
+  --task-blocked-fg: #2a0a07;
+  --task-blocked-tint: #3b1a18;
+  --task-blocked-border: #ef6a5e;
+  --task-blocked-ink: #f7b8b2;
 }
 
 @layer base {
@@ -240,7 +313,7 @@
   background-image: repeating-linear-gradient(
     -45deg,
     transparent 0 4px,
-    color-mix(in oklab, var(--status-danger-border) 80%, transparent) 4px 6px
+    color-mix(in oklab, var(--task-blocked-border) 80%, transparent) 4px 6px
   );
 }
 
