@@ -209,10 +209,10 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
                         </button>
                         {open && (
                           <div className="mt-2">
-                            <div className="grid grid-cols-[minmax(0,1fr)_96px] sm:grid-cols-[minmax(0,1fr)_140px_96px_120px] gap-3 border-b border-border px-1 py-2 text-xs text-muted-foreground">
+                            <div className="grid grid-cols-[minmax(0,1fr)_96px] sm:grid-cols-[minmax(0,1fr)_124px_88px_112px] gap-3 border-b border-border px-1 py-2 text-xs text-muted-foreground">
                               <span>{t("home.col_task")}</span>
                               <span className="hidden sm:block">{t("home.col_status")}</span>
-                              <span className="text-right">{t("home.col_due")}</span>
+                              <span>{t("home.col_due")}</span>
                               <span className="hidden sm:block" />
                             </div>
                             <ul className="divide-y divide-border border-b border-border">
@@ -223,7 +223,7 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
                                   tabIndex={0}
                                   onClick={() => openTask(task.id)}
                                   onKeyDown={(e) => e.key === "Enter" && openTask(task.id)}
-                                  className="grid cursor-pointer grid-cols-[minmax(0,1fr)_96px] sm:grid-cols-[minmax(0,1fr)_140px_96px_120px] items-center gap-3 px-1 py-3 transition-colors hover:bg-accent/40 focus-visible:bg-accent/40 focus-visible:outline-none"
+                                  className="grid cursor-pointer grid-cols-[minmax(0,1fr)_96px] sm:grid-cols-[minmax(0,1fr)_124px_88px_112px] items-center gap-3 px-1 py-3 transition-colors hover:bg-accent/40 focus-visible:bg-accent/40 focus-visible:outline-none"
                                 >
                                   <div className="flex min-w-0 items-center gap-3">
                                     <span className={cn("h-2.5 w-2.5 shrink-0 rounded-[2px]", DOTC[g])} />
@@ -241,7 +241,7 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
                                   <div className="hidden items-center sm:flex">
                                     <StatusBadge status={task.status as VisibleTaskStatus} />
                                   </div>
-                                  <div className="text-right" title={formatDate(task.due_date, lng)}>
+                                  <div title={formatDate(task.due_date, lng)}>
                                     <p className={cn("text-sm font-medium", (task.is_overdue || g === "today") && "text-status-danger-fg")}>
                                       {t(task.is_overdue ? "home.due_label_overdue" : "home.due_label_due")}
                                     </p>
