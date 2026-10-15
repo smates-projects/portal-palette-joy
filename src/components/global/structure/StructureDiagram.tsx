@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp, Maximize, Minus, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatUsd } from "@/lib/format";
 import type { AreaCode } from "@/lib/api/types";
+import { AreaTag } from "@/components/AreaTag";
 import { DOT } from "@/components/office/shared";
 import { descendantCount, initialsOf, type DiagramNode } from "../logic";
 import { OfficeStatusBadge } from "../shared";
@@ -31,11 +32,6 @@ const INVESTOR_GAP = 28;
 const DRAG_THRESHOLD = 4;
 const KEY_PAN_STEP = 60;
 
-/** Square of the color of each area, the same one the task screens use. */
-const AREA_BG: Record<AreaCode, string> = {
-  B1: "bg-area-b1", B2: "bg-area-b2", B3: "bg-area-b3", B4: "bg-area-b4", B5: "bg-area-b5", B6: "bg-area-b6",
-};
-
 /** Person line of a card: small initials square and the full name. */
 function Person({ name }: { name: string }) {
   return (
@@ -48,11 +44,9 @@ function Person({ name }: { name: string }) {
 
 /** Eyebrow of an area card: a small square in the area color, the code and the area name ("B3 Finanzas"). */
 function AreaEyebrow({ area }: { area: AreaCode }) {
-  const { t } = useTranslation();
   return (
     <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-      <span aria-hidden className={cn("h-2.5 w-2.5 shrink-0 rounded-[2px]", AREA_BG[area])} />
-      {area} {t(`areas.${area}`)}
+      <AreaTag area={area} />
     </span>
   );
 }

@@ -25,9 +25,9 @@ const HEALTH_DOT: Record<Health, string> = {
   green: "bg-status-success-fg",
   grey: "bg-status-neutral-border",
 };
-const AREA_BAR: Record<string, string> = {
-  B1: "bg-area-b1", B2: "bg-area-b2", B3: "bg-area-b3", B4: "bg-area-b4", B5: "bg-area-b5", B6: "bg-area-b6",
-};
+
+import { AreaSquare } from "@/components/AreaTag";
+import { areaColorVar } from "@/lib/tasks/area-color";
 
 export function OwnerHomePage({ taskId }: { taskId?: string | undefined }) {
   const { t, i18n } = useTranslation();
@@ -110,7 +110,7 @@ export function OwnerHomePage({ taskId }: { taskId?: string | undefined }) {
         <button onClick={() => openTask(it.task.id)} className="min-w-0 flex-1 text-left">
           <p className="text-sm font-medium">{what}</p>
           <p className="truncate text-sm text-muted-foreground">
-            <span className="font-display tabular-nums text-foreground">{it.task.code}</span> · {detail}
+            <span className="inline-flex items-center gap-1.5 font-display tabular-nums text-foreground"><AreaSquare area={it.task.area} />{it.task.code}</span> · {detail}
           </p>
         </button>
         {it.kind !== "meeting" && (
@@ -181,7 +181,7 @@ export function OwnerHomePage({ taskId }: { taskId?: string | undefined }) {
                     title={t(`owner.health_${a.health}`)}
                     className="relative border-l border-border px-2.5 py-2.5 text-left hover:bg-muted"
                   >
-                    <span className={cn("absolute inset-x-0 top-0 h-[3px]", AREA_BAR[a.area])} />
+                    <span className="absolute inset-x-0 top-0 h-[3px]" style={{ backgroundColor: areaColorVar(a.area) }} />
                     <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                       <span className={cn("h-2 w-2 shrink-0 rounded-full", HEALTH_DOT[a.health])} />
                       <span className="font-display">{a.area}</span>

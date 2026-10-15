@@ -28,9 +28,9 @@ const BAR: Record<VisibleTaskStatus, string> = {
   changes_requested: "bg-status-warning-bg border-status-warning-border",
   accepted: "bg-status-success-bg border-status-success-border",
 };
-const AREA_DOT: Record<AreaCode, string> = {
-  B1: "bg-area-b1", B2: "bg-area-b2", B3: "bg-area-b3", B4: "bg-area-b4", B5: "bg-area-b5", B6: "bg-area-b6",
-};
+
+import { AreaSquare } from "@/components/AreaTag";
+import { areaColorVar } from "@/lib/tasks/area-color";
 
 const PPD_LIMITS: Record<Zoom, [number, number]> = { week: [32, 90], month: [8, 28], program: [2, 12] };
 
@@ -283,7 +283,7 @@ export function TaskRoadmap(props: {
               return (
                 <div key={`a-${r.business_id}-${r.area}`} className="absolute flex border-b border-border" style={{ top, height: ROW_H, width: LABEL_W + width }}>
                   <div className="sticky left-0 z-10 flex items-center gap-2 border-r border-border bg-surface px-4 pl-6 text-xs font-medium text-muted-foreground" style={{ width: LABEL_W, minWidth: LABEL_W }}>
-                    <span className={cn("h-1.5 w-1.5 rounded-full", AREA_DOT[r.area])} />
+                    <AreaSquare area={r.area} />
                     {r.area} · {t(`areas.${r.area}`)}
                     <span className="ml-1 font-display tabular-nums">{r.count}</span>
                   </div>
@@ -306,7 +306,7 @@ export function TaskRoadmap(props: {
                   className="sticky left-0 z-10 flex items-center gap-2 border-r border-border bg-surface px-4 pl-9 text-left text-xs hover:bg-muted"
                   style={{ width: LABEL_W, minWidth: LABEL_W }}
                 >
-                  <span className="shrink-0 font-display font-semibold tabular-nums">{task.code}</span>
+                  <span className="inline-flex shrink-0 items-center gap-1.5 font-display font-semibold tabular-nums"><AreaSquare area={task.area} />{task.code}</span>
                   <span className="truncate">{task.name}</span>
                 </button>
                 <div className="relative" style={{ width }}>
@@ -320,7 +320,7 @@ export function TaskRoadmap(props: {
                       blocked && "bar-blocked border-status-danger-border",
                       task.is_overdue && "ring-1 ring-status-danger-fg",
                     )}
-                    style={{ left: g.left, width: g.width }}
+                    style={{ left: g.left, width: g.width, borderLeftColor: areaColorVar(task.area), borderLeftWidth: 4 }}
                   >
                     {g.width > 40 && <span className="truncate font-display tabular-nums">{task.code}</span>}
                   </button>

@@ -330,6 +330,7 @@
       "legend_google": "Google Calendar (no editable)",
       "meeting_proposed": "Propuesta, falta confirmar",
       "meeting_confirmed": "Confirmada",
+      "google_label": "Google Calendar",
       "google_readonly": "De tu Google Calendar, no se puede editar aquí"
     },
     "roadmap_desktop_hint": "El Roadmap se ve mejor en una pantalla más grande. Usa Tabla o Tablero desde el celular."

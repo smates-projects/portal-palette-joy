@@ -4,17 +4,12 @@ import { ChevronLeft, ChevronRight, Lock } from "lucide-react";
 import { TODAY } from "@/config/app";
 import { localeTag } from "@/lib/format";
 import { useCalendarEvents, useMeetings } from "@/lib/api/hooks";
-import type { TaskWithComputed, VisibleTaskStatus } from "@/lib/api/types";
+import type { TaskWithComputed } from "@/lib/api/types";
 import { CAL_MODES, buildCalendarItems, monthGrid, shiftAnchor, weekDays, type CalItem, type CalMode } from "@/lib/tasks/calendar";
 import { cn } from "@/lib/utils";
+import { AreaLegend, areaAccentStyle } from "@/components/AreaTag";
+import { AREAS } from "@/lib/tasks/owner";
 
-const DUE: Record<VisibleTaskStatus, string> = {
-  pending: "border-l-status-neutral-border",
-  in_progress: "border-l-status-info-border",
-  submitted: "border-l-status-review-border",
-  changes_requested: "border-l-status-warning-border",
-  accepted: "border-l-status-success-border",
-};
 const MONTH_MAX = 3;
 
 export function TaskCalendar(props: {
@@ -53,7 +48,7 @@ export function TaskCalendar(props: {
         >
           <Lock className="h-2.5 w-2.5 shrink-0" />
           <span className="shrink-0 whitespace-nowrap tabular-nums">{time(it.at)}</span>
-          <span className="truncate">{it.event.title}</span>
+          <span className="truncate">{compact ? it.event.title : `${t("tasks.calendar.google_label")} · ${it.event.title}`}</span>
         </div>
       );
     if (it.kind === "meeting") {
@@ -62,16 +57,11 @@ export function TaskCalendar(props: {
         <button
           onClick={() => props.onOpen(it.task.id)}
           title={`${it.meeting.topic} · ${time(it.at)} · ${t(`tasks.calendar.meeting_${it.meeting.status}`)} · ${it.task.code} ${props.businessName(it.task.business_id)}`}
-          className={cn(
-            base,
-            "border",
-            proposed
-              ? "border-dashed border-primary bg-surface text-primary hover:bg-accent"
-              : "border-primary bg-primary text-primary-foreground hover:brightness-110",
-          )}
+          className={cn(base, "border border-border text-foreground hover:brightness-95", proposed && "border-dashed")}
+          style={areaAccentStyle(it.task.area)}
         >
           <span className="shrink-0 whitespace-nowrap tabular-nums">{time(it.at)}</span>
-          <span className="truncate">{compact ? it.meeting.topic : `${it.meeting.topic} · ${it.task.code}`}</span>
+          <span className="truncate">{compact ? `${it.task.area} · ${it.meeting.topic}` : `${it.task.code} · ${it.meeting.topic}`}</span>
         </button>
       );
     }
@@ -82,9 +72,10 @@ export function TaskCalendar(props: {
         title={`${t("tasks.calendar.due")}: ${it.task.code} ${it.task.name} · ${props.businessName(it.task.business_id)}`}
         className={cn(
           base,
-          "border border-l-[3px] border-border bg-surface text-foreground hover:bg-accent",
-          overdue ? "border-l-status-danger-fg" : DUE[it.task.status as VisibleTaskStatus],
+          "border border-border text-foreground hover:brightness-95",
+          overdue && "ring-1 ring-status-danger-fg",
         )}
+        style={areaAccentStyle(it.task.area)}
       >
         <span className="shrink-0 whitespace-nowrap font-medium tabular-nums">{it.task.code}</span>
         <span className="truncate text-muted-foreground">{compact ? props.businessName(it.task.business_id) : it.task.name}</span>
@@ -112,9 +103,8 @@ export function TaskCalendar(props: {
         </div>
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-[2px] border border-l-[3px] border-border border-l-status-info-border bg-surface" />{t("tasks.calendar.legend_due")}</span>
-            <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-[2px] border border-dashed border-primary" />{t("tasks.calendar.legend_proposed")}</span>
-            <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-[2px] bg-primary" />{t("tasks.calendar.legend_confirmed")}</span>
+            <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-[2px] border border-border bg-surface" />{t("tasks.calendar.legend_confirmed")}</span>
+            <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-[2px] border border-dashed border-border bg-surface" />{t("tasks.calendar.legend_proposed")}</span>
             <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-[2px] border border-border bg-muted" />{t("tasks.calendar.legend_google")}</span>
           </div>
           <div role="radiogroup" aria-label={t("tasks.calendar.mode")} className="flex rounded-md border border-border bg-surface p-0.5">
@@ -133,6 +123,7 @@ export function TaskCalendar(props: {
         </div>
       </div>
 
+      <AreaLegend areas={AREAS} className="pb-2" />
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border border-border bg-surface">
         <div className="grid grid-cols-7 border-b border-border">
           {days.slice(0, 7).map((d) => (
@@ -145,13 +136,13 @@ export function TaskCalendar(props: {
             </div>
           ))}
         </div>
-        <div className={cn("grid min-h-0 flex-1 grid-cols-7 overflow-auto", mode === "month" ? "auto-rows-fr" : "")}>
+        <div className={cn("grid min-h-0 flex-1 grid-cols-7 overflow-auto", mode === "month" ? "auto-rows-[minmax(min-content,1fr)]" : "")}>{/* Rows share the height but never shrink below their chips, so "+N más" never spills into the next week. */}
           {days.map((d) => {
             const list = items.get(d) ?? [];
             const outside = mode === "month" && d.slice(0, 7) !== anchor.slice(0, 7);
             const shown = mode === "month" ? list.slice(0, MONTH_MAX) : list;
             return (
-              <div key={d} className={cn("flex min-h-24 min-w-0 flex-col gap-0.5 border-b border-r border-border p-1 [&:nth-child(7n)]:border-r-0", outside && "bg-muted/40")}>
+              <div key={d} className={cn("flex min-h-24 min-w-0 flex-col gap-0.5 border-b border-r border-border p-1 [&:nth-child(7n)]:border-r-0 [&>*]:shrink-0", outside && "bg-muted/40")}>
                 {mode === "month" && (
                   <span
                     className={cn(
@@ -181,3 +172,4 @@ export function TaskCalendar(props: {
     </div>
   );
 }
+

@@ -11,6 +11,7 @@ import { buildProgress, buildSummary, buildToday, nextDue, SUMMARY_FILTER, type 
 import { daysBetween } from "@/lib/tasks/table";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/StatusBadge";
+import { AreaSquare, AreaTag, areaAccentStyle } from "@/components/AreaTag";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { AddEventDialog } from "@/components/home/AddEventDialog";
@@ -22,12 +23,6 @@ const PILL: Record<TodayReason, string> = {
   today: "border-status-warning-border bg-status-warning-bg text-status-warning-fg",
   changes: "border-transparent bg-tag-changes text-tag-changes-fg",
   week: "border-status-info-border bg-status-info-bg text-status-info-fg",
-};
-const DOTC: Record<TodayReason, string> = {
-  overdue: "bg-status-danger-border",
-  today: "bg-status-warning-border",
-  changes: "bg-status-warning-border",
-  week: "bg-status-info-border",
 };
 const addDays = (iso: string, n: number) => {
   const d = new Date(`${iso}T12:00:00Z`);
@@ -228,7 +223,7 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
                                   className="grid cursor-pointer grid-cols-[minmax(0,1fr)_96px] sm:grid-cols-[minmax(0,1fr)_124px_88px_112px] items-center gap-3 px-1 py-3 transition-colors hover:bg-accent/40 focus-visible:bg-accent/40 focus-visible:outline-none"
                                 >
                                   <div className="flex min-w-0 items-center gap-3">
-                                    <span className={cn("h-2.5 w-2.5 shrink-0 rounded-[2px]", DOTC[g])} />
+                                    <AreaSquare area={task.area} />
                                     <div className="min-w-0">
                                       <p className="truncate text-sm">
                                         <span className="mr-2 font-display text-xs font-semibold tabular-nums">{task.code}</span>
@@ -322,7 +317,8 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
                         <button
                           key={m.id}
                           onClick={() => void navigate({ to: "/tareas", search: { view: "calendar" } })}
-                          className="w-full rounded-lg bg-muted p-4 text-left transition-colors hover:bg-accent"
+                          className="w-full rounded-lg border border-border p-4 text-left transition-[filter] hover:brightness-95"
+                          style={task ? areaAccentStyle(task.area, 4) : undefined}
                         >
                           <div className="flex items-start justify-between gap-2">
                             <p className="text-sm font-semibold">{m.topic}</p>
@@ -341,6 +337,7 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
                           <p className="mt-2 inline-block max-w-full truncate rounded-md border border-border bg-surface px-2 py-1 text-xs">
                             {task ? `${bizName(task.business_id)} · ${task.code}` : ""}
                           </p>
+                          {task && <AreaTag area={task.area} className="mt-2 text-xs text-muted-foreground" />}
                         </button>
                       );
                     })

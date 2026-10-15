@@ -9,6 +9,8 @@ import { formatDate, formatRelativeDate } from "@/lib/format";
 import { BOARD_COLUMNS, resolveBoardMove } from "@/lib/tasks/board";
 import { daysBetween } from "@/lib/tasks/table";
 import { cn } from "@/lib/utils";
+import { AreaSquare } from "@/components/AreaTag";
+import { areaColorVar } from "@/lib/tasks/area-color";
 
 const COLUMN_BAR: Record<VisibleTaskStatus, string> = {
   pending: "bg-status-neutral-border",
@@ -139,6 +141,7 @@ export function TaskBoard(props: {
                     }
                   }}
                   tabIndex={0}
+                  style={{ borderLeftColor: areaColorVar(task.area), borderLeftWidth: 4 }}
                   className={cn(
                     "cursor-grab rounded-[4px] border border-border bg-surface px-3 py-2.5 outline-none transition-[border-color,opacity] hover:border-ring focus-visible:border-ring active:cursor-grabbing",
                     props.selectedId === task.id && "border-ring",
@@ -146,7 +149,10 @@ export function TaskBoard(props: {
                   )}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-display text-xs font-semibold tabular-nums">{task.code}</span>
+                    <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap font-display text-xs font-semibold tabular-nums">
+                      <AreaSquare area={task.area} />
+                      {task.code}
+                    </span>
                     <span
                       className={cn("text-xs tabular-nums", task.is_overdue ? "text-status-danger-fg" : "text-muted-foreground")}
                       title={formatDate(task.due_date, lng)}

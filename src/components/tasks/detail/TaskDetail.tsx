@@ -25,12 +25,11 @@ import {
   AnswerRequestDialog, MeetingDialog, OwnerRequestDialog, PrimaryButton, RequestChangesDialog, SecondaryButton, SubmitDeliverableDialog,
 } from "./dialogs";
 import type { OwnerRequest } from "@/lib/api/types";
+import { AreaTag } from "@/components/AreaTag";
+import { areaColorVar } from "@/lib/tasks/area-color";
 
 export type DetailMode = "panel" | "page";
 
-const AREA_BAR: Record<string, string> = {
-  B1: "bg-area-b1", B2: "bg-area-b2", B3: "bg-area-b3", B4: "bg-area-b4", B5: "bg-area-b5", B6: "bg-area-b6",
-};
 
 /** The one task detail. Rendered inside the side panel or as the /tareas/:id page. */
 export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChanges = false }: { taskId: string; mode: DetailMode; onClose?: () => void; openSubmit?: boolean; openChanges?: boolean }) {
@@ -310,13 +309,13 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
       <div className={cn("space-y-8 px-6 py-6", mode === "page" && "px-8")}>
         {/* 1. Header */}
         <header className="relative pl-3">
-          <span className={cn("absolute inset-y-0 left-0 w-[3px] rounded", AREA_BAR[task.area])} />
+          <span className="absolute inset-y-0 left-0 w-[3px] rounded" style={{ backgroundColor: areaColorVar(task.area) }} />
           <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
             <span className="font-display font-semibold text-foreground">{task.code}</span>
             <span>·</span>
             <span>{business?.name}</span>
             <span>·</span>
-            <span>{t(`areas.${task.area}`)}</span>
+            <AreaTag area={task.area} variant="name" />
             <span>·</span>
             <span>{t(`steps.${task.step}`)}</span>
           </p>

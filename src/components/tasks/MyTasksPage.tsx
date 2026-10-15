@@ -20,6 +20,7 @@ import {
 } from "@/lib/tasks/table";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/StatusBadge";
+import { AreaSquare } from "@/components/AreaTag";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
@@ -33,9 +34,6 @@ const ALL = "__all";
 const AREAS: AreaCode[] = ["B1", "B2", "B3", "B4", "B5", "B6"];
 const COLUMNS: SortKey[] = ["code", "name", "business", "area", "step", "due", "status"];
 const VIEW_ICONS = { table: Table2, board: Columns3, roadmap: GanttChart, calendar: CalendarDays } as const;
-const AREA_DOT: Record<AreaCode, string> = {
-  B1: "bg-area-b1", B2: "bg-area-b2", B3: "bg-area-b3", B4: "bg-area-b4", B5: "bg-area-b5", B6: "bg-area-b6",
-};
 
 export function MyTasksPage({ search }: { search: TasksSearch }) {
   const { t, i18n } = useTranslation();
@@ -400,7 +398,7 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
                         <td className="whitespace-nowrap px-3 py-2.5 text-muted-foreground">{businessName(task.business_id)}</td>
                         <td className="whitespace-nowrap px-3 py-2.5 text-muted-foreground">
                           <span className="inline-flex items-center gap-1.5">
-                            <span className={cn("h-1.5 w-1.5 rounded-full", AREA_DOT[task.area])} />
+                            <AreaSquare area={task.area} />
                             {t(`areas.${task.area}`)}
                           </span>
                         </td>
