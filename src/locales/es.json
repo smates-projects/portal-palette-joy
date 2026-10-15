@@ -445,6 +445,7 @@
     "group_count_other": "{{count}} tareas",
     "calendar_title": "Agenda",
     "add_event": "Agregar evento",
+    "open_calendar": "Abrir calendario",
     "add_event_title": "Agregar evento a la agenda",
     "event_task": "Tarea",
     "event_task_placeholder": "Elige una tarea",
