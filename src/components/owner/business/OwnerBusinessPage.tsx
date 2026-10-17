@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { useBusinessProfile, useBusinessTeam, useInviteTeamMember, useUpdateBusinessProfile } from "@/lib/api/hooks";
 import type { BusinessProfile, BusinessProfilePatch } from "@/lib/api/types";
 import { EmptyState, ErrorState, Field, inputCls, LoadingState, PageHeader, Panel, primaryButtonCls, ToneBadge } from "../shared";
+import { OwnerBusinessFile } from "@/components/business/BusinessFile";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -30,6 +31,7 @@ export function OwnerBusinessPage() {
           <TeamPanel team={teamQ.data ?? []} />
         </div>
       )}
+      <OwnerBusinessFile />
     </div>
   );
 }

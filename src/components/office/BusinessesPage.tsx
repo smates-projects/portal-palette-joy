@@ -2,17 +2,17 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 import { toast } from "sonner";
-import { useBusinessEvents, useBusinesses, useCurrentUser, useFranchisabilityMany, useOrganizations, useSetBusinessConsultant, useTasks, useUsers, useVersions } from "@/lib/api/hooks";
-import { formatDateTime } from "@/lib/format";
-import { buildAreaCards, buildBusinessRows, filterBusinessRows, type BusinessRow, type BusinessesSearch } from "@/lib/tasks/office";
+import { useBusinesses, useCurrentUser, useFranchisabilityMany, useOrganizations, useSetBusinessConsultant, useTasks, useUsers, useVersions } from "@/lib/api/hooks";
+import { buildBusinessRows, filterBusinessRows, type BusinessRow, type BusinessesSearch } from "@/lib/tasks/office";
 import type { Health } from "@/lib/tasks/owner";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
-import { DOT, TEXT, firmName } from "./shared";
+import { DOT, TEXT } from "./shared";
 import { FundsAndDistribution } from "@/components/funds/FundsAndDistribution";
+import { BusinessFile } from "@/components/business/BusinessFile";
 
 const ALL = "__all";
 
@@ -235,11 +235,7 @@ function AreaDots({ row }: { row: BusinessRow }) {
 
 function BusinessProfile({ row }: { row: BusinessRow }) {
   const { t } = useTranslation();
-  const tasksQ = useTasks();
-  const versionsQ = useVersions();
-  const orgsQ = useOrganizations();
   const me = useCurrentUser().data;
-  const cards = buildAreaCards(row.business.id, tasksQ.data ?? [], versionsQ.data ?? [], orgsQ.data ?? []);
   const b = row.business;
   return (
     <div>
@@ -251,15 +247,9 @@ function BusinessProfile({ row }: { row: BusinessRow }) {
         <SheetDescription className="mt-1 text-sm text-muted-foreground">
           {row.owner ? t("office.biz.owner", { name: row.owner.full_name }) : ""} · {b.industry} · {t("office.biz.location", { city: b.city, state: b.state })}
         </SheetDescription>
-        <div className="mt-4 grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
-          <div><p className="text-xs text-muted-foreground">{t("office.biz.col_program")}</p><ProgramBar day={b.program_day} /></div>
-          <div>
-            <p className="text-xs text-muted-foreground">{t("office.biz.col_approved")}</p>
-            <span className="font-display font-semibold tabular-nums">{row.accepted_pct}%</span>
-            <span className="block text-xs text-muted-foreground">{t("office.biz.approved_of", { accepted: row.accepted, total: row.total })}</span>
-          </div>
-          <div className="col-span-2"><p className="text-xs text-muted-foreground">{t("office.biz.col_franchise")}</p><FranchiseCell row={row} /></div>
-          <div className="col-span-2"><p className="text-xs text-muted-foreground">{t("office.biz.consultant_label")}</p><ConsultantPicker row={row} /></div>
+        {/* Day, progress and areas live in "Cómo va hoy" below; here only what SM changes. */}
+        <div className="mt-4 text-sm">
+          <p className="text-xs text-muted-foreground">{t("office.biz.consultant_label")}</p><ConsultantPicker row={row} />
         </div>
         <div className="mt-5 flex flex-wrap gap-2">
           <Button asChild size="sm"><Link to="/tareas" search={{ business: b.id, sup: "all" }}>{t("office.biz.see_tasks")}</Link></Button>
@@ -267,29 +257,11 @@ function BusinessProfile({ row }: { row: BusinessRow }) {
         </div>
       </div>
       <div className="p-6">
-        <h3 className="text-sm font-semibold">{t("office.biz.areas_title")}</h3>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          {cards.map((c) => (
-            <div key={c.area} className="rounded-md border border-border p-3">
-              <div className="flex items-center gap-2">
-                <span className={cn("h-2 w-2 rounded-full", DOT[c.health])} />
-                <span className="font-display text-xs font-semibold">{c.area}</span>
-                <span className="text-sm font-medium">{t(`areas.${c.area}`)}</span>
-              </div>
-              <p className={cn("mt-0.5 text-xs", TEXT[c.health])}>{t(`sm.health.${c.health}`)}</p>
-              <p className="mt-2 truncate text-xs text-muted-foreground">{c.firm ? firmName(t, c.firm) : t("office.biz.area_firm_none")}</p>
-              <dl className="mt-2 grid grid-cols-3 gap-1 text-xs">
-                <div><dt className="text-muted-foreground">{t("office.biz.area_open")}</dt><dd className="font-display font-semibold tabular-nums">{c.open}</dd></div>
-                <div><dt className="text-muted-foreground">{t("office.biz.area_overdue")}</dt><dd className={cn("font-display font-semibold tabular-nums", c.overdue > 0 && TEXT.red)}>{c.overdue}</dd></div>
-                <div><dt className="text-muted-foreground">{t("office.biz.area_accepted")}</dt><dd className="font-display font-semibold tabular-nums">{c.accepted}</dd></div>
-              </dl>
-            </div>
-          ))}
-        </div>
+        {/* Ficha del negocio: who it is, how it arrived, how it is doing, what is missing, activity. */}
+        <BusinessFile businessId={b.id} variant="sm" />
         <div className="mt-6 border-t border-border pt-6">
           <FundsAndDistribution businessId={b.id} mode={me?.role === "sm_team" ? "sm" : "read"} />
         </div>
-        <BusinessActivity businessId={b.id} />
       </div>
     </div>
   );
@@ -323,33 +295,5 @@ function ConsultantPicker({ row }: { row: BusinessRow }) {
         {team.map((u) => <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>)}
       </SelectContent>
     </Select>
-  );
-}
-
-function BusinessActivity({ businessId }: { businessId: string }) {
-  const { t, i18n } = useTranslation();
-  const eventsQ = useBusinessEvents(businessId);
-  const users = useUsers().data ?? [];
-  const name = (id: string | null) => (id ? users.find((u) => u.id === id)?.full_name : null) ?? t("office.biz.no_consultant");
-  return (
-    <section className="mt-6">
-      <h3 className="text-sm font-semibold">{t("office.biz.activity_title")}</h3>
-      {eventsQ.isLoading ? (
-        <Skeleton className="mt-3 h-10 w-full" />
-      ) : eventsQ.isError ? (
-        <p className="mt-2 text-sm text-muted-foreground">{t("tasks.error_title")} <button onClick={() => void eventsQ.refetch()} className="text-link hover:underline">{t("tasks.retry")}</button></p>
-      ) : !eventsQ.data?.length ? (
-        <p className="mt-2 text-sm text-muted-foreground">{t("office.biz.activity_empty")}</p>
-      ) : (
-        <ul className="mt-3 space-y-2">
-          {eventsQ.data.map((e) => (
-            <li key={e.id} className="text-sm">
-              {t("office.biz.event_consultant_changed", { actor: name(e.actor_user_id).split(" ")[0], from: name(e.from_user_id), to: name(e.to_user_id) })}
-              <span className="block text-xs text-muted-foreground">{formatDateTime(e.created_at, i18n.language)}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
   );
 }
