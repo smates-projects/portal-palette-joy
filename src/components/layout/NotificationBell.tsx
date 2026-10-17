@@ -23,6 +23,8 @@ const DOT: Record<NotificationKind, string> = {
   meeting_confirmed: "bg-primary",
   unblocked: "bg-status-success-fg",
   task_updated: "bg-link",
+  bishop_accepted: "bg-status-success-fg",
+  funds_reported: "bg-primary",
 };
 
 export function NotificationBell() {
@@ -48,7 +50,9 @@ export function NotificationBell() {
   const openNotification = (n: AppNotification) => {
     if (!n.read_at) markRead.mutate(n.id);
     setOpen(false);
-    void navigate({ to: "/tareas", search: { task: n.task_id } });
+    // Lead notifications open the lead in the Embudo; the rest open the task.
+    if (n.lead_id) void navigate({ to: "/embudo", search: { lead: n.lead_id } });
+    else void navigate({ to: "/tareas", search: { task: n.task_id } });
   };
 
   return (
@@ -114,7 +118,11 @@ export function NotificationBell() {
                           : t(`notifications.kind_${n.kind}`, { name: n.actor_name ? firstName(n.actor_name) : "" })}
                       </span>
                       <span className="block truncate text-xs text-muted-foreground">
-                        <span className="font-display tabular-nums text-foreground">{n.task_code}</span> {n.task_name} · {n.business_name}
+                        {n.lead_id ? (
+                          <>{t("notifications.lead_ref", { name: n.business_name })}</>
+                        ) : (
+                          <><span className="font-display tabular-nums text-foreground">{n.task_code}</span> {n.task_name} · {n.business_name}</>
+                        )}
                       </span>
                       <span className="block text-[11px] text-muted-foreground" title={formatDateTime(n.created_at, i18n.language)}>
                         {relative(n.created_at)}

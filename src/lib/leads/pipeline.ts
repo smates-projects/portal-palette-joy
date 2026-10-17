@@ -44,11 +44,20 @@ export function resolveLeadMove(from: LeadStage, to: LeadStage): LeadMove {
 }
 
 export type LeadPrimaryAction =
-  | "schedule" | "send_nda" | "review_docs" | "approve_docs" | "wait_investor" | "send_tripartite" | "wait_signatures" | "record_funds" | "view_program" | "restore";
+  | "schedule" | "send_nda" | "review_docs" | "approve_docs" | "wait_investor" | "send_tripartite" | "wait_signatures"
+  | "record_funds" | "start_program" | "view_program" | "restore";
 
-/** One primary action per stage, from the next pending step. Accepted actions depend on the Bishop (part 2). */
+/**
+ * One primary action per stage, from the next pending step. In Aceptado: wait for a Bishop, send the tripartite
+ * contract, wait for the three signatures, record the funds, and once everything is in, confirm the start (day 1).
+ */
 export function primaryActionFor(
-  lead: Pick<Lead, "stage"> & { intake?: IntakeSummary | null; bishop_user_id?: string | null; tripartite?: TripartiteState },
+  lead: Pick<Lead, "stage"> & {
+    intake?: IntakeSummary | null;
+    bishop_user_id?: string | null;
+    tripartite?: TripartiteState;
+    funds?: { ready_to_start: boolean } | null;
+  },
 ): LeadPrimaryAction {
   switch (lead.stage) {
     case "evaluated": return "schedule";
@@ -57,7 +66,8 @@ export function primaryActionFor(
     case "accepted":
       if (!lead.bishop_user_id) return "wait_investor";
       if (!lead.tripartite || lead.tripartite === "none") return "send_tripartite";
-      return lead.tripartite === "pending" ? "wait_signatures" : "record_funds";
+      if (lead.tripartite === "pending") return "wait_signatures";
+      return lead.funds?.ready_to_start ? "start_program" : "record_funds";
     case "in_program": return "view_program";
     case "discarded": return "restore";
   }

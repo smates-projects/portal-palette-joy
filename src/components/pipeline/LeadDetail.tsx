@@ -2,7 +2,14 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Mail, MapPin, Phone, X } from "lucide-react";
-import { useAddLeadNote, useApproveDocuments, useCurrentUser, useLeadDetail, useRejectDocuments, useSendTripartite, useUsers } from "@/lib/api/hooks";
+import {
+  useAddLeadNote, useApproveDocuments, useBusinessFunds, useConfirmProgramStart, useCurrentUser, useLeadDetail, useRecordFundPayment,
+  useRejectDocuments, useRemoveFundPayment, useSendTripartite, useUsers,
+} from "@/lib/api/hooks";
+import { validateFundPayment } from "@/lib/leads/funds";
+import { FundsPanel } from "@/components/funds/FundsPanel";
+import { PaymentDialog, type PaymentFormValue } from "@/components/funds/parts";
+import { StartProgramDialog } from "@/components/funds/StartProgramDialog";
 import { InvestorsSection } from "./InvestorsSection";
 import { isDocsAdmin } from "@/lib/leads/onboarding";
 import { IntakeChecklist, RejectDocsDialog } from "./IntakeChecklist";
@@ -36,6 +43,13 @@ export function LeadDetail(props: {
   const approve = useApproveDocuments();
   const reject = useRejectDocuments();
   const sendTripartite = useSendTripartite();
+  const record = useRecordFundPayment();
+  const remove = useRemoveFundPayment();
+  const start = useConfirmProgramStart();
+  const [recording, setRecording] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const businessIdForFunds = q.data?.lead.funds ? q.data.lead.business_id ?? undefined : undefined;
+  const fundsQ = useBusinessFunds(businessIdForFunds);
   const userName = (id: string | null) => (id ? usersQ.data?.find((u) => u.id === id)?.full_name ?? "" : "");
 
   if (q.isLoading)
@@ -55,7 +69,6 @@ export function LeadDetail(props: {
   // Why the primary action is disabled (shown under it), or null when it can be used.
   const blockedHint =
     action === "wait_investor" || action === "wait_signatures" ? "" :
-    action === "record_funds" ? t("pipeline.funds_next") :
     action === "approve_docs" && !admin ? t("intake.admin_only") :
     action === "approve_docs" && approval && !approval.ok
       ? t(approval.reason === "contracts" ? "intake.missing_contracts" : "intake.missing_docs", { list: approval.missing.join(", ") })
@@ -67,8 +80,33 @@ export function LeadDetail(props: {
       return approve.mutate(lead.id, { onSuccess: () => toast.success(t("pipeline.t_docs_approved", { name: lead.business.name })), onError: fail });
     if (action === "send_tripartite")
       return sendTripartite.mutate(lead.id, { onSuccess: () => toast.success(t("pipeline.t_tripartite_sent", { name: lead.business.name })), onError: fail });
+    if (action === "record_funds") return setRecording(true);
+    if (action === "start_program") return setStarting(true);
     props.onPrimary?.(lead);
   };
+  const remaining = fundsQ.data ? Math.max(0, fundsQ.data.total - fundsQ.data.received) : 0;
+  const recordFunds = (input: PaymentFormValue) => {
+    if (!lead.business_id) return;
+    record.mutate({ businessId: lead.business_id, input }, {
+      onSuccess: (f) => {
+        setRecording(false);
+        const paymentId = f.payments.at(-1)?.id;
+        toast.success(t(f.status === "received" ? "funds.t_recorded_complete" : "funds.t_recorded"), {
+          action: paymentId && lead.business_id
+            ? { label: t("funds.undo"), onClick: () => remove.mutate({ businessId: lead.business_id!, paymentId }, { onError: fail }) }
+            : undefined,
+        });
+        // Funds complete: the start of the program is the next step, so its dialog opens right away.
+        if (f.status === "received") setStarting(true);
+      },
+      onError: fail,
+    });
+  };
+  const confirmStart = (day1: string) =>
+    start.mutate({ id: lead.id, day1 }, {
+      onSuccess: (r) => { setStarting(false); toast.success(t("funds.start.t_started", { name: lead.business.name, count: r.task_count })); },
+      onError: fail,
+    });
   const showGlobalApprove = props.readOnly && action === "approve_docs" && admin;
   const consultant = usersQ.data?.find((u) => u.id === lead.consultant_user_id);
   const fromOffice = action === "schedule" && consultant && !consultant.booking_url;
@@ -120,7 +158,7 @@ export function LeadDetail(props: {
         ) : (
           <>
             <div className="mt-4 flex flex-wrap items-center gap-3">
-              <PrimaryButton onClick={runPrimary} disabled={(props.pending ?? false) || approve.isPending || sendTripartite.isPending || blockedHint !== null}>
+              <PrimaryButton onClick={runPrimary} disabled={(props.pending ?? false) || approve.isPending || sendTripartite.isPending || record.isPending || start.isPending || blockedHint !== null}>
                 {t(`pipeline.actions.${action}`, { count: lead.intake?.to_review ?? 0 })}
               </PrimaryButton>
               {canDiscard && !props.readOnly && (
@@ -131,6 +169,8 @@ export function LeadDetail(props: {
               )}
             </div>
             {blockedHint && <p className="mt-2 text-xs text-muted-foreground">{blockedHint}</p>}
+            {action === "record_funds" && lead.funds?.to_confirm && <p className="mt-2 text-xs text-status-warning-fg">{t("funds.to_confirm_hint")}</p>}
+            {action === "start_program" && <p className="mt-2 text-xs text-muted-foreground">{t("funds.start.ready_hint")}</p>}
             {fromOffice && <p className="mt-2 text-xs text-muted-foreground">{t("pipeline.detail.booking_from_office", { name: consultant.full_name })}</p>}
           </>
         )}
@@ -141,6 +181,13 @@ export function LeadDetail(props: {
         {lead.intake && <IntakeChecklist leadId={lead.id} readOnly={!!props.readOnly} />}
         {(lead.stage === "documents" || lead.stage === "accepted") && lead.intake && (
           <InvestorsSection leadId={lead.id} businessName={lead.business.name} readOnly={!!props.readOnly} />
+        )}
+        {/* 1c. Bishop funds, once the three signed the tripartite contract (SM only: money) */}
+        {lead.funds && lead.business_id && (
+          <section className="space-y-2">
+            <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("funds.funds_title")}</h3>
+            <FundsPanel businessId={lead.business_id} mode={props.readOnly ? "read" : "sm"} />
+          </section>
         )}
         {/* 2. Assessment result as the owner saw it */}
         <section>
@@ -238,6 +285,22 @@ export function LeadDetail(props: {
           )}
         </section>
       </div>
+      {recording && (
+        <PaymentDialog
+          title={t("funds.record_title", { name: lead.business.name })}
+          body={t("funds.record_body")}
+          confirm={t("funds.record_confirm")}
+          withAmount
+          defaultAmount={remaining}
+          pending={record.isPending}
+          validate={(v) => validateFundPayment(v, remaining)}
+          onClose={() => setRecording(false)}
+          onSubmit={recordFunds}
+        />
+      )}
+      {starting && lead.funds?.ready_to_start && lead.funds.proposed_day1 && (
+        <StartProgramDialog name={lead.business.name} proposed={lead.funds.proposed_day1} pending={start.isPending} onClose={() => setStarting(false)} onConfirm={confirmStart} />
+      )}
       {rejecting && (
         <RejectDocsDialog
           name={lead.business.name}

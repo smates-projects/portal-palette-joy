@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { DOT, TEXT, firmName } from "./shared";
+import { FundsAndDistribution } from "@/components/funds/FundsAndDistribution";
 
 const ALL = "__all";
 
@@ -237,6 +238,7 @@ function BusinessProfile({ row }: { row: BusinessRow }) {
   const tasksQ = useTasks();
   const versionsQ = useVersions();
   const orgsQ = useOrganizations();
+  const me = useCurrentUser().data;
   const cards = buildAreaCards(row.business.id, tasksQ.data ?? [], versionsQ.data ?? [], orgsQ.data ?? []);
   const b = row.business;
   return (
@@ -283,6 +285,9 @@ function BusinessProfile({ row }: { row: BusinessRow }) {
               </dl>
             </div>
           ))}
+        </div>
+        <div className="mt-6 border-t border-border pt-6">
+          <FundsAndDistribution businessId={b.id} mode={me?.role === "sm_team" ? "sm" : "read"} />
         </div>
         <BusinessActivity businessId={b.id} />
       </div>

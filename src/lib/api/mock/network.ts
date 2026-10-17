@@ -473,6 +473,7 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       if (!Number.isInteger(next.franchisability_amber_tolerance) || next.franchisability_amber_tolerance < 0 || next.franchisability_amber_tolerance > 100) throw new Error("invalid_tolerance");
       if (!Number.isInteger(next.document_review_days) || next.document_review_days < 1) throw new Error("invalid_review_days");
       if (next.intake_documents.some((d) => !d.name.trim())) throw new Error("name_required");
+      if (!Number.isInteger(next.program_amount) || (next.program_amount ?? 0) < 1) throw new Error("invalid_program_amount");
       const known = new Set(db.catalog.filter((c) => !c.archived).map((c) => c.code));
       if (new Set(next.required_task_codes).size !== next.required_task_codes.length || next.required_task_codes.some((c) => !known.has(c))) throw new Error("unknown_task_code");
       const fields = Object.keys(next) as (keyof PlatformRules)[];

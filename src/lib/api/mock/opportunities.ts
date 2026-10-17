@@ -39,6 +39,10 @@ interface Deps {
   readableLeads: () => Lead[];
   withBooking: (l: Lead) => LeadWithComputed;
   pushLeadEvent: (e: Omit<LeadEvent, "id" | "actor_user_id" | "created_at">) => LeadEvent;
+  /** Bell notification to the SM team of the lead's office. */
+  notifyLead: (l: Lead, kind: "bishop_accepted") => void;
+  /** Program amount agreed for this lead once its funds exist (it does not move if SM Global changes the rule). */
+  agreedAmount: (l: Lead) => number | null;
 }
 
 /** Midpoint of the declared revenue range, only to scale the provisional projection. */
@@ -76,7 +80,7 @@ export function createOpportunities(d: Deps) {
     return {
       id: l.id, lead_id: l.id, phase, industry: l.business.industry, city: l.contact.city, state: l.contact.state,
       business_name: mine ? l.business.name : null, owner_name: mine ? l.contact.name : null,
-      investment: db.rules.program_amount,
+      investment: d.agreedAmount(l) ?? db.rules.program_amount ?? 0,
       share_year1_pct: Math.round(PROFIT_SPLIT.bishop_year1 * 100), share_stable_pct: Math.round(PROFIT_SPLIT.bishop_stabilized * 100),
       score: l.result.score, band: l.result.band,
       review: phase === "in_review" ? intake.summaryFor(l)?.clock ?? null : null,
@@ -162,6 +166,7 @@ export function createOpportunities(d: Deps) {
       const v = viewOf(l.id, u.id);
       if (v) { v.decision = "none"; v.decided_at = null; }
       d.pushLeadEvent({ lead_id: l.id, kind: "bishop_accepted", from: null, to: null, body: u.full_name });
+      d.notifyLead(l, "bishop_accepted");
       return d.delay(toOpportunity(l, u));
     },
     pass: async (id) => d.delay(decide(id, "passed")),
@@ -248,5 +253,22 @@ export function createOpportunities(d: Deps) {
     }
   };
 
-  return { bishop, leads, seed, signableAgreements, tripartiteOf, frameworkOf };
+  /** Sample data: a tripartite contract the three already signed (programs funded before today). */
+  const seedSignedTripartite = (l: Lead, id: Uuid, sentOn: string, signedOn: { owner: string; sm: string; bishop: string }) => {
+    if (!l.business_id || !l.bishop_user_id || tripartiteOf(l)) return;
+    const c = makeTripartite(l);
+    c.id = id;
+    c.sent_at = sentOn;
+    for (const s of c.signers) {
+      const on = signedOn[s.party ?? "owner"];
+      s.history = [{ status: "sent", at: sentOn }, { status: "opened", at: on }, { status: "signed", at: on }];
+      s.status = "signed";
+      s.signed_at = on;
+    }
+    c.state = "signed";
+    c.signed_at = [signedOn.owner, signedOn.sm, signedOn.bishop].sort().at(-1)!;
+    db.contracts.push(c);
+  };
+
+  return { bishop, leads, seed, seedSignedTripartite, signableAgreements, tripartiteOf, frameworkOf };
 }

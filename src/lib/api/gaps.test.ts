@@ -120,7 +120,8 @@ describe("Business Bishop: agreement files", () => {
   it("agreements say if they have a file: signed ones do, the draft does not", async () => {
     const agreements = await (await as(net.U_JEFFERSON)).bishop.listAgreements();
     const signed = agreements.filter((a) => a.state === "signed");
-    expect(signed).toHaveLength(2);
+    // Framework, Bimbo equity agreement, and the signed tripartite contracts of Vossler and Enyermy (Part 3).
+    expect(signed).toHaveLength(4);
     expect(signed.every((a) => a.has_file && a.file_name?.endsWith(".pdf"))).toBe(true);
     expect(agreements.find((a) => a.state === "draft")).toMatchObject({ has_file: false, file_name: null });
   });

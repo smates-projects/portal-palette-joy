@@ -230,7 +230,12 @@ export const NOTIFICATION_KINDS = [
   "meeting_confirmed",
   "unblocked",
   "task_updated",
+  // Entry flow (SM only): about a lead, not a task.
+  "bishop_accepted",
+  "funds_reported",
 ] as const;
+/** Kinds about a lead of the Embudo. Only the SM team of the lead's office gets them. */
+export const LEAD_NOTIFICATION_KINDS: readonly NotificationKind[] = ["bishop_accepted", "funds_reported"];
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 export type NotificationChannel = "in_app" | "email";
 
@@ -250,6 +255,8 @@ export interface AppNotification {
   read_at: IsoDateTime | null;
   /** Only for task_updated: what SM changed. */
   change?: TaskChange | null;
+  /** Lead notifications (bishop_accepted, funds_reported): the lead to open. Task fields are empty then. */
+  lead_id?: Uuid | null;
 }
 
 export interface NotificationPreference {
@@ -355,6 +362,11 @@ export interface LeadWithComputed extends Lead {
   /** Entry checklist once NDA and MOU were sent (null before). Computed by the data layer. */
   intake: IntakeSummary | null;
   tripartite: TripartiteState;
+  /**
+   * Bishop funds once the tripartite contract is signed (null before). Only the state and whether the program can
+   * start: amounts live in FundsRepository, which the mock serves only to SM and that Bishop.
+   */
+  funds: { status: FundsStatus; to_confirm: boolean; ready_to_start: boolean; proposed_day1: IsoDate | null } | null;
 }
 
 // ---------- Entry (NDA, MOU, due diligence documents) ----------
@@ -389,7 +401,8 @@ export interface IntakeSummary {
 export type LeadEventKind =
   | "submitted" | "stage_changed" | "discarded" | "restored" | "note" | "contract_signed"
   | "nda_sent" | "doc_accepted" | "doc_requested" | "docs_approved"
-  | "bishop_accepted" | "bishop_released" | "tripartite_sent";
+  | "bishop_accepted" | "bishop_released" | "tripartite_sent"
+  | "funds_recorded" | "funds_reported" | "funds_confirmed" | "funds_removed" | "program_started";
 
 export interface LeadEvent {
   id: Uuid;
@@ -401,9 +414,10 @@ export interface LeadEvent {
   to: LeadStage | null;
   /** Note text or discard reason. */
   body: string | null;
-  /** contract_signed: signature date. */
+  /** contract_signed / program_started: day 1 of the program. */
   signed_on?: IsoDate | null;
 }
 
 export * from "./network-types";
+import type { FundsStatus } from "./network-types";
 

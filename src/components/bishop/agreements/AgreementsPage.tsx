@@ -8,6 +8,7 @@ import type { AgreementState, Contract } from "@/lib/api/types";
 import { formatDate } from "@/lib/format";
 import { EmptyBlock, ErrorBlock, LoadingBlocks, Panel, primaryButton, Screen, secondaryButton, Tag, type Tone } from "@/components/bishop/ui";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { BishopFundsSection } from "@/components/bishop/funds/BishopFundsSection";
 
 const STATE_TONE: Record<AgreementState, Tone> = { draft: "neutral", sent: "warning", signed: "success" };
 
@@ -97,6 +98,8 @@ export function AgreementsPage() {
           </TooltipProvider>
         </Panel>
       </div>
+      {/* What he paid SM for each program, his receipts and, once it runs, how SM distributes it. */}
+      <div className="mt-4"><BishopFundsSection variant="agreements" /></div>
       {signing && <DocuSealSigner contract={signing} party="bishop" signerName={me?.full_name ?? ""} onClose={() => setSigning(null)} />}
     </Screen>
   );

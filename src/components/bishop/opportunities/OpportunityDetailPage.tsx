@@ -113,6 +113,7 @@ export function OpportunityDetailPage({ opportunityId }: { opportunityId: string
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm">{t(`bishop.opportunity_detail.next_${o.phase}`)}</p>
             {canSign && <button onClick={() => setSigning(true)} className={primaryButton}>{t("bishop.opportunity_detail.sign_tripartite")}</button>}
+            {o.phase === "funds_pending" && <Link to="/acuerdos" className={primaryButton}>{t("funds.bishop.go_to_funds")}</Link>}
           </div>
         )}
       </div>

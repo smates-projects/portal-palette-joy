@@ -620,7 +620,12 @@
     "pref_meeting_confirmed": "Reunión confirmada",
     "pref_unblocked": "Se desbloqueó una tarea",
     "kind_task_updated": "{{name}} cambió una tarea",
-    "pref_task_updated": "SM cambió una tarea tuya"
+    "pref_task_updated": "SM cambió una tarea tuya",
+    "kind_bishop_accepted": "{{name}} aceptó una oportunidad",
+    "kind_funds_reported": "{{name}} subió un comprobante de pago",
+    "pref_bishop_accepted": "Un inversor aceptó una oportunidad",
+    "pref_funds_reported": "Un inversor subió un comprobante de pago",
+    "lead_ref": "Embudo · {{name}}"
   },
   "soon": {
     "manual": "Aquí verás el manual operativo de tu negocio a medida que las firmas lo escriban y tú lo apruebes.",
@@ -938,7 +943,8 @@
       "wait_investor": "Esperando que un inversor acepte",
       "send_tripartite": "Enviar contrato tripartito",
       "record_funds": "Registrar fondos recibidos",
-      "wait_signatures": "Esperando las firmas del contrato"
+      "wait_signatures": "Esperando las firmas del contrato",
+      "start_program": "Confirmar inicio del programa"
     },
     "move": {
       "no_skip": "{{name}} no puede pasar a {{to}}: se vuelve de a una etapa.",
@@ -961,11 +967,6 @@
     "discard_confirm": "Descartar lead",
     "cancel": "Cancelar",
     "reason_required": "Escribe el motivo para descartar.",
-    "sign_title": "Marcar contrato firmado",
-    "sign_body": "Se crea el negocio con el día 1 en la fecha de firma y se generan sus tareas del catálogo Método 180, a cargo de las firmas de cada área y supervisadas por {{consultant}}.",
-    "sign_date": "Fecha de firma",
-    "sign_confirm": "Crear programa",
-    "sign_future": "La fecha no puede ser posterior a hoy.",
     "detail": {
       "close": "Cerrar",
       "open_full": "Detalle del lead",
@@ -1032,7 +1033,12 @@
       "docs_approved": "{{actor}} aprobó la documentación",
       "bishop_accepted": "Un inversor aceptó la oportunidad",
       "bishop_released": "{{actor}} liberó la oportunidad",
-      "tripartite_sent": "{{actor}} envió el contrato tripartito"
+      "tripartite_sent": "{{actor}} envió el contrato tripartito",
+      "funds_recorded": "{{actor}} registró un pago del inversor",
+      "funds_reported": "{{actor}} subió un comprobante de pago",
+      "funds_confirmed": "{{actor}} confirmó un pago del inversor",
+      "funds_removed": "{{actor}} quitó un pago del inversor",
+      "program_started": "{{actor}} confirmó el inicio del programa con día 1 el {{date}}."
     },
     "error_title": "No pudimos cargar el embudo.",
     "retry": "Reintentar",
@@ -1058,7 +1064,6 @@
       "release_confirm": "Liberar oportunidad",
       "t_released": "Liberaste la oportunidad de {{name}}."
     },
-    "funds_next": "Registrar los fondos llega en la próxima parte.",
     "t_tripartite_sent": "Enviamos el contrato tripartito de {{name}}."
   },
   "office": {
@@ -1526,7 +1531,8 @@
         "area_amber_days": "Días para ámbar",
         "franchisability_amber_tolerance": "Tolerancia de franquiciabilidad",
         "document_review_days": "Plazo de revisión de documentos",
-        "intake_documents": "Documentos de ingreso"
+        "intake_documents": "Documentos de ingreso",
+        "program_amount": "Monto del programa"
       },
       "percent": "{{value}}%",
       "days_one": "{{count}} día",
@@ -1536,7 +1542,10 @@
       "error_invalid_goal": "Escribe un número entero entre 1 y 100.",
       "error_invalid_days": "Escribe un número entero de 1 en adelante.",
       "error_invalid_tolerance": "Escribe un número entero entre 0 y 100.",
-      "error_invalid_review_days": "Escribe un número de días de 1 o más."
+      "error_invalid_review_days": "Escribe un número de días de 1 o más.",
+      "amount_title": "Monto del programa",
+      "amount_hint": "Lo que el inversor le paga a Strategic Mates por un programa, fuera de la app. Aplica a los contratos tripartitos que se firmen desde ahora; los ya firmados mantienen su monto.",
+      "error_invalid_program_amount": "Escribe un monto en dólares enteros, mayor que cero."
     }
   },
   "owner_extra": {
@@ -2246,6 +2255,160 @@
       "name_required": "Cada documento necesita un nombre.",
       "count_one": "{{count}} documento",
       "count_other": "{{count}} documentos"
+    }
+  },
+  "funds": {
+    "section_title": "Fondos y distribución",
+    "section_hint": "Solo lo ven Strategic Mates y el inversor de este negocio. El dueño y las firmas no ven montos.",
+    "section_hint_bishop": "Solo lectura. Lo ven Strategic Mates y tú.",
+    "funds_title": "Fondos del inversor",
+    "status": {
+      "pending": "Pendiente",
+      "partial": "Parcial",
+      "received": "Recibidos"
+    },
+    "method": {
+      "transfer": "Transferencia",
+      "wire": "Wire",
+      "other": "Otro"
+    },
+    "of_total": "de",
+    "progress": "Fondos recibidos",
+    "completed_on": "Completos el {{date}}",
+    "missing_label": "Falta",
+    "to_confirm_label": "Por confirmar:",
+    "to_confirm_hint": "El inversor subió un comprobante. Confírmalo abajo, en Fondos del inversor.",
+    "bishop_line": "Inversor: {{name}}",
+    "none": "Los fondos aparecen cuando los tres firman el contrato tripartito.",
+    "empty": "Todavía no hay pagos registrados. Cuando llegue la transferencia del inversor, regístrala con su comprobante.",
+    "empty_bishop": "Todavía no hay pagos registrados. Cuando hagas la transferencia, sube tu comprobante aquí.",
+    "error": "No pudimos cargar los fondos.",
+    "retry": "Cargar de nuevo",
+    "reference": "Referencia {{ref}}",
+    "receipt_size": "{{kb}} KB",
+    "no_receipt": "Sin comprobante",
+    "by_sm": "Registrado por Strategic Mates",
+    "by_bishop": "Subido por el inversor",
+    "payment_confirmed": "Confirmado",
+    "payment_reported": "Por confirmar",
+    "confirm": "Confirmar pago",
+    "remove": "Quitar",
+    "undo": "Deshacer",
+    "cancel": "Cancelar",
+    "no_gateway": "El pago se hace fuera de la app, por transferencia o wire a Strategic Mates. Aquí solo queda el registro.",
+    "report": "Subir comprobante",
+    "report_hint": "Strategic Mates lo revisa y lo confirma.",
+    "report_title": "Subir comprobante: {{name}}",
+    "report_body": "Indica cuánto transferiste, la fecha y el medio, y adjunta el comprobante. Cuenta cuando Strategic Mates lo confirme.",
+    "report_confirm": "Subir comprobante",
+    "record_title": "Registrar fondos recibidos: {{name}}",
+    "record_body": "Registra lo que llegó a la cuenta de Strategic Mates. No puede pasar del monto del programa.",
+    "record_confirm": "Registrar pago",
+    "t_recorded": "Registraste el pago del inversor.",
+    "t_recorded_complete": "Fondos completos. Ya puedes confirmar el inicio del programa.",
+    "t_reported": "Subiste tu comprobante. Strategic Mates lo va a confirmar.",
+    "t_confirmed": "Confirmaste el pago del inversor.",
+    "t_removed": "Quitaste el pago.",
+    "t_error": "No pudimos guardar el cambio. Intenta de nuevo.",
+    "form": {
+      "amount": "Monto (USD)",
+      "date": "Fecha del pago",
+      "method": "Medio",
+      "reference": "Referencia (opcional)",
+      "reference_placeholder": "Número de la transferencia",
+      "receipt": "Comprobante (opcional)",
+      "receipt_required": "Comprobante",
+      "receipt_pick": "Elegir archivo",
+      "receipt_change": "Cambiar archivo",
+      "receipt_type": "El comprobante tiene que ser PDF o imagen.",
+      "receipt_hint": "PDF o imagen. En esta versión de prueba solo guardamos el nombre del archivo."
+    },
+    "errors": {
+      "amount": "Escribe un monto en dólares, mayor que cero.",
+      "over_total": "El monto pasa de lo que falta recibir.",
+      "date": "Elige una fecha válida.",
+      "future": "La fecha no puede ser posterior a hoy.",
+      "method": "Elige el medio de pago.",
+      "receipt": "Adjunta el comprobante en PDF o imagen."
+    },
+    "start": {
+      "title": "Confirmar inicio del programa: {{name}}",
+      "body": "El contrato tripartito está firmado por los tres y los fondos están completos. Al confirmar, el negocio pasa a En programa y se generan sus tareas del catálogo Método 180.",
+      "day1": "Día 1 del programa",
+      "proposed": "Propuesto: {{date}}, el día en que se completó lo último (contrato firmado o fondos completos). Puedes elegir una fecha posterior.",
+      "too_early": "El día 1 no puede ser anterior al {{date}}.",
+      "today_day": "Hoy sería el día {{day}} de 180.",
+      "future": "El programa empieza el {{date}}. Hasta entonces se ve en el día 0.",
+      "what_happens": "El dueño empieza a ver su programa y las firmas reciben sus tareas.",
+      "confirm": "Confirmar inicio",
+      "ready_hint": "Contrato firmado por los tres y fondos completos. Solo falta confirmar el día 1.",
+      "t_started_one": "{{name}} empezó el programa. Se creó {{count}} tarea.",
+      "t_started_other": "{{name}} empezó el programa. Se crearon {{count}} tareas."
+    },
+    "dist": {
+      "title": "Distribución a las firmas",
+      "sm_line": "Strategic Mates (orquestación)",
+      "received": "Recibido",
+      "assigned": "Asignado",
+      "unassigned": "Sin asignar",
+      "paid": "Pagado",
+      "overdue_count_one": "{{count}} pago vencido sin marcar.",
+      "overdue_count_other": "{{count}} pagos vencidos sin marcar.",
+      "none": "La distribución aparece cuando hay fondos del inversor.",
+      "empty": "Todavía no asignaste montos. Usa Asignar monto en cada firma y en Strategic Mates.",
+      "empty_read": "Strategic Mates todavía no asignó montos a las firmas.",
+      "not_assigned": "Sin monto asignado",
+      "assign": "Asignar monto",
+      "edit": "Editar",
+      "locked": "Tiene pagos hechos: ya no se puede cambiar.",
+      "kind_label": "Forma de pago",
+      "kind": {
+        "one_time": "Pago único",
+        "installments": "Cuotas",
+        "milestones": "Por hitos"
+      },
+      "installment": "Cuota {{n}} de {{total}}",
+      "one_time_payment": "Pago único",
+      "due": "vence el {{date}}",
+      "due_label": "Fecha de pago",
+      "milestone": "Hito",
+      "milestone_placeholder": "Por ejemplo: Manual de operaciones aprobado",
+      "add_installment": "Agregar cuota",
+      "add_milestone": "Agregar hito",
+      "remove_row": "Quitar esta fila",
+      "line_total": "Total de esta línea:",
+      "line_title": "Monto para {{name}}",
+      "line_body": "La suma de todas las líneas no puede pasar de lo recibido. Disponible para esta línea:",
+      "save": "Guardar",
+      "clear": "Quitar asignación",
+      "paid_tag": "Pagado",
+      "pending_tag": "Pendiente",
+      "overdue_tag": "Vencido",
+      "paid_on": "Pagado el {{date}} · {{method}}",
+      "mark_paid": "Marcar pagado",
+      "mark_paid_title": "Marcar pagado: {{name}}",
+      "mark_paid_body": "Indica cuándo y cómo pagó Strategic Mates. El comprobante es opcional.",
+      "mark_paid_confirm": "Marcar pagado",
+      "t_paid": "Marcaste el pago como hecho.",
+      "t_saved": "Guardaste el monto de {{name}}.",
+      "t_cleared": "Quitaste el monto de {{name}}.",
+      "errors": {
+        "no_payments": "Agrega al menos un pago.",
+        "one_time_single": "Un pago único tiene un solo pago.",
+        "amount": "Cada pago necesita un monto mayor que cero.",
+        "date": "Cada pago necesita una fecha válida.",
+        "milestone": "Describe cada hito.",
+        "over_received": "La suma pasa de lo recibido. Baja el monto o reparte menos."
+      }
+    },
+    "bishop": {
+      "agreements_title": "Tus fondos",
+      "portfolio_title": "Programas que financias",
+      "empty": "Cuando firmes un contrato tripartito, aquí verás el monto del programa y tus pagos.",
+      "see": "Ver pagos",
+      "in_program": "Ver pagos y distribución",
+      "read_only": "Solo lectura. Strategic Mates registra los pagos y reparte los fondos entre las firmas.",
+      "go_to_funds": "Ver tus fondos"
     }
   }
 }

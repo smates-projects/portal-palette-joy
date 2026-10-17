@@ -1,7 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { useBishopOpportunities, useBishopPortfolio } from "@/lib/api/hooks";
+import { useBishopOpportunities, useBishopPortfolio, useMyFunds } from "@/lib/api/hooks";
+import { BishopFundsSection } from "@/components/bishop/funds/BishopFundsSection";
 import type { BishopInvestment, BishopOpportunity } from "@/lib/api/types";
 import { formatDate, formatNumber, formatUsd } from "@/lib/format";
 import { DecisionTag, PhaseTag, useOpportunityTitle } from "@/components/bishop/opportunities/parts";
@@ -22,6 +23,7 @@ export function BishopPortfolioPage() {
   const lng = i18n.language;
   const portfolioQ = useBishopPortfolio();
   const oppsQ = useBishopOpportunities();
+  const fundsQ = useMyFunds();
 
   if (portfolioQ.isError || oppsQ.isError)
     return (
@@ -44,7 +46,7 @@ export function BishopPortfolioPage() {
     return (
       <Screen ns="bishop" screen="portfolio">
         <div className="mt-6 space-y-4">
-          <EmptyBlock title={t("bishop.portfolio.empty_title")} body={t("bishop.portfolio.empty_body")} />
+          {fundsQ.data?.length ? <BishopFundsSection variant="portfolio" /> : <EmptyBlock title={t("bishop.portfolio.empty_title")} body={t("bishop.portfolio.empty_body")} />}
           <OpportunitiesPanel total={opportunities.length} shown={shownOpportunities} lng={lng} />
         </div>
       </Screen>
@@ -175,7 +177,10 @@ export function BishopPortfolioPage() {
           </div>
         </Panel>
 
-        {/* 4. Opportunities */}
+        {/* 4. Programs he funds: funds and distribution to the firms, read only */}
+        <BishopFundsSection variant="portfolio" />
+
+        {/* 5. Opportunities */}
         <OpportunitiesPanel total={opportunities.length} shown={shownOpportunities} lng={lng} />
       </div>
     </Screen>

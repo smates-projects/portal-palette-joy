@@ -153,8 +153,11 @@ export interface PlatformRules {
   document_review_days: number;
   /** Entry documents every owner uploads (to validate with Melany). */
   intake_documents: IntakeDocRule[];
-  /** USD the Bishop pays SM for one program (paid outside the app). */
-  program_amount: number;
+  /**
+   * USD the Bishop pays SM for one program (paid outside the app). Money is visible only to SM and Bishops:
+   * the mock leaves it out of the rules it returns to owners, firms and franchisees.
+   */
+  program_amount?: number | undefined;
 }
 
 export interface IntakeDocRule {
@@ -614,6 +617,132 @@ export interface BishopAgreement {
   /** The agreement document exists and can be opened. */
   has_file: boolean;
   file_name: string | null;
+}
+
+// ---------- Bishop funds and distribution to the firms (visible only to SM and that Bishop) ----------
+
+export const PAYMENT_METHODS = ["transfer", "wire", "other"] as const;
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+
+/** Simulated upload: only the file name and size are kept (PDF or image). */
+export interface Receipt {
+  file_name: string;
+  size_kb: number;
+}
+
+/** Pending: nothing confirmed. Partial: some confirmed, less than the total. Received: the total is confirmed. */
+export type FundsStatus = "pending" | "partial" | "received";
+
+/** One transfer from the Bishop to SM. Reported = the Bishop uploaded his receipt and SM has not confirmed it yet. */
+export interface FundPayment {
+  id: Uuid;
+  business_id: Uuid;
+  amount: number;
+  paid_on: IsoDate;
+  method: PaymentMethod;
+  reference: string | null;
+  receipt: Receipt | null;
+  status: "reported" | "confirmed";
+  reported_by: "sm" | "bishop";
+  created_at: IsoDateTime;
+  confirmed_at: IsoDateTime | null;
+}
+
+/** What the Bishop pays SM for one program. Exists once the tripartite contract is signed by the three. */
+export interface BishopFunds {
+  business_id: Uuid;
+  lead_id: Uuid;
+  business_name: string;
+  bishop_user_id: Uuid;
+  bishop_name: string;
+  /** Program amount when the tripartite contract was signed (SM Global rule at that moment). */
+  total: number;
+  /** Sum of the confirmed payments. */
+  received: number;
+  /** Sum of the payments the Bishop reported and SM still has to confirm. */
+  to_confirm: number;
+  status: FundsStatus;
+  /** Day the confirmed payments reached the total; null while they do not. */
+  completed_on: IsoDate | null;
+  /** Oldest first. */
+  payments: FundPayment[];
+  /** True once the program started (the funds are closed). */
+  program_started: boolean;
+}
+
+export interface FundPaymentInput {
+  amount: number;
+  paid_on: IsoDate;
+  method: PaymentMethod;
+  reference: string | null;
+  receipt: Receipt | null;
+}
+
+/** One-time payment, installments with dates, or milestones described with a short text. */
+export type PaymentPlanKind = "one_time" | "installments" | "milestones";
+
+export interface DistributionPayment {
+  id: Uuid;
+  amount: number;
+  /** One-time and installments: due date. Milestones: optional. */
+  due_on: IsoDate | null;
+  /** Milestones only. */
+  milestone: string | null;
+  status: "pending" | "paid";
+  paid_on: IsoDate | null;
+  method: PaymentMethod | null;
+  reference: string | null;
+  receipt: Receipt | null;
+  /** Computed by the data layer: pending with a due date already past. */
+  overdue: boolean;
+}
+
+/** What SM pays one partner firm of the business, or keeps for itself (organization_id null = orchestration). */
+export interface DistributionLine {
+  /** `${business_id}:${organization_id ?? "sm"}`: one line per firm. */
+  id: string;
+  business_id: Uuid;
+  organization_id: Uuid | null;
+  /** Firm name, or null for Strategic Mates (orchestration). The screen writes the label. */
+  firm_name: string | null;
+  /** Areas the firm works on in this business. */
+  areas: AreaCode[];
+  /** Null while nothing is assigned to this line. */
+  kind: PaymentPlanKind | null;
+  amount: number;
+  paid: number;
+  payments: DistributionPayment[];
+}
+
+export interface Distribution {
+  business_id: Uuid;
+  business_name: string;
+  /** Funds received (confirmed). The lines can never add up to more. */
+  received: number;
+  assigned: number;
+  unassigned: number;
+  paid: number;
+  overdue_count: number;
+  lines: DistributionLine[];
+}
+
+export interface DistributionPaymentInput {
+  amount: number;
+  due_on: IsoDate | null;
+  milestone: string | null;
+}
+
+export interface DistributionLineInput {
+  organization_id: Uuid | null;
+  kind: PaymentPlanKind;
+  payments: DistributionPaymentInput[];
+}
+
+export interface MarkPaidInput {
+  paid_on: IsoDate;
+  method: PaymentMethod;
+  reference: string | null;
+  receipt: Receipt | null;
 }
 
 // ---------- Franchisee ----------

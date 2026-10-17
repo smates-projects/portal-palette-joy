@@ -31,7 +31,7 @@ describe("pipeline counters", () => {
   it("counts sample leads on 2026-10-14", async () => {
     await api.session.setViewAs(seed.U_NICOLAS);
     const leads = await api.leads.list();
-    expect(leads).toHaveLength(13);
+    expect(leads).toHaveLength(14); // Part 3 adds Panadería La Espiga (accepted, partial funds)
     const c = buildPipelineCounters(leads, "2026-10-14");
     expect(c.week).toBe(2); // Oct 12 and Oct 13
     expect(c.uncontacted).toBe(2); // evaluated, never contacted, more than 2 days

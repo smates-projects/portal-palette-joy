@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { DOT } from "@/components/office/shared";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FundsAndDistribution } from "@/components/funds/FundsAndDistribution";
 import { MAX_HOME_ITEMS } from "./logic";
 
 const BADGE: Record<Health, string> = {
@@ -178,6 +179,13 @@ export function BusinessSheet({ businessId, onClose }: { businessId: string | nu
               })}
             </ul>
           </section>
+        )}
+
+        {/* Bishop funds and distribution to the firms: SM Global reads, never edits. */}
+        {inProgram && (
+          <div className="border-t border-border px-6 py-4">
+            <FundsAndDistribution businessId={business.id} mode="read" />
+          </div>
         )}
       </div>
     );

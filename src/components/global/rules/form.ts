@@ -6,16 +6,28 @@ export interface RulesForm {
   area_amber_days: string;
   franchisability_amber_tolerance: string;
   document_review_days: string;
+  /** Whole USD the Bishop pays SM for one program. */
+  program_amount: string;
   required_task_codes: string[];
 }
 
-export type RulesFormErrors = Partial<Record<"franchisability_goal" | "area_amber_days" | "franchisability_amber_tolerance" | "document_review_days", "invalid_goal" | "invalid_days" | "invalid_tolerance" | "invalid_review_days">>;
+export type RulesFormErrors = Partial<Record<
+  "franchisability_goal" | "area_amber_days" | "franchisability_amber_tolerance" | "document_review_days" | "program_amount",
+  "invalid_goal" | "invalid_days" | "invalid_tolerance" | "invalid_review_days" | "invalid_program_amount"
+>>;
+
+/** "150000", "150,000" and "150.000" are the same whole-dollar amount. */
+const wholeUsd = (value: string) => {
+  const digits = value.replace(/[\s,.$]/g, "");
+  return /^\d+$/.test(digits) ? Number(digits) : null;
+};
 
 export const formFromRules = (rules: PlatformRules): RulesForm => ({
   franchisability_goal: String(rules.franchisability_goal),
   area_amber_days: String(rules.area_amber_days),
   franchisability_amber_tolerance: String(rules.franchisability_amber_tolerance),
   document_review_days: String(rules.document_review_days),
+  program_amount: String(rules.program_amount ?? ""),
   required_task_codes: [...rules.required_task_codes],
 });
 
@@ -31,6 +43,8 @@ export function validateRules(form: RulesForm): RulesFormErrors {
   if (tolerance === null || tolerance < 0 || tolerance > 100) errors.franchisability_amber_tolerance = "invalid_tolerance";
   const review = wholeNumber(form.document_review_days);
   if (review === null || review < 1) errors.document_review_days = "invalid_review_days";
+  const amount = wholeUsd(form.program_amount);
+  if (amount === null || amount < 1) errors.program_amount = "invalid_program_amount";
   return errors;
 }
 
@@ -45,6 +59,8 @@ export function rulesPatch(rules: PlatformRules, form: RulesForm): Partial<Platf
   if (tolerance !== rules.franchisability_amber_tolerance) patch.franchisability_amber_tolerance = tolerance;
   const review = Number(form.document_review_days);
   if (review !== rules.document_review_days) patch.document_review_days = review;
+  const amount = wholeUsd(form.program_amount);
+  if (amount !== null && amount !== rules.program_amount) patch.program_amount = amount;
   const same = form.required_task_codes.length === rules.required_task_codes.length && form.required_task_codes.every((c) => rules.required_task_codes.includes(c));
   if (!same) patch.required_task_codes = form.required_task_codes;
   return patch;

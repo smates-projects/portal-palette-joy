@@ -5,6 +5,9 @@ import type {
   BusinessProfilePatch,
   CatalogItemInput,
   CreateOfficeInput,
+  DistributionLineInput,
+  FundPaymentInput,
+  MarkPaidInput,
   InviteMemberInput,
   PlatformRules,
   PublishManualInput,
@@ -138,14 +141,45 @@ export const useMoveLead = () =>
   useLeadMutation((v: { id: string; to: "evaluated" | "meeting" | "documents" | "accepted" }) => api.leads.move(v.id, v.to));
 export const useDiscardLead = () => useLeadMutation((v: { id: string; reason: string }) => api.leads.discard(v.id, v.reason));
 export const useAddLeadNote = () => useLeadMutation((v: { id: string; body: string }) => api.leads.addNote(v.id, v.body));
-/** Creates a business and its tasks: refresh everything. */
-export function useSignLeadContract() {
+/**
+ * "Confirmar inicio del programa": tripartite signed and funds complete. Moves the lead and the business to
+ * in_program and generates its tasks: refresh everything.
+ */
+export function useConfirmProgramStart() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (v: { id: string; signed_on: string }) => api.leads.startProgram(v.id, v.signed_on),
+    mutationFn: (v: { id: string; day1: string }) => api.leads.confirmProgramStart(v.id, v.day1),
     onSuccess: () => qc.invalidateQueries(),
   });
 }
+
+// ---------- Bishop funds and distribution (SM and that Bishop only) ----------
+/** Funds and distribution writes also change the lead (action, activity) and the Bishop screens. */
+const MONEY_ROOTS = ["funds", "distribution", "leads", "bishop", "notifications"];
+/** BishopFunds | null of one business: total, received, status, payments (with receipt). */
+export const useBusinessFunds = (businessId: string | undefined) =>
+  useQuery({ queryKey: ["funds", "business", businessId], queryFn: () => api.funds.get(businessId!), enabled: !!businessId });
+/** BishopFunds[]: every business the current Bishop funds. */
+export const useMyFunds = (enabled = true) => useQuery({ queryKey: ["funds", "mine"], queryFn: api.funds.listMine, enabled });
+export const useRecordFundPayment = () =>
+  useNetworkMutation((v: { businessId: string; input: FundPaymentInput }) => api.funds.recordPayment(v.businessId, v.input), MONEY_ROOTS);
+export const useReportFundPayment = () =>
+  useNetworkMutation((v: { businessId: string; input: FundPaymentInput }) => api.funds.reportPayment(v.businessId, v.input), MONEY_ROOTS);
+export const useConfirmFundPayment = () =>
+  useNetworkMutation((v: { businessId: string; paymentId: string }) => api.funds.confirmPayment(v.businessId, v.paymentId), MONEY_ROOTS);
+export const useRemoveFundPayment = () =>
+  useNetworkMutation((v: { businessId: string; paymentId: string }) => api.funds.removePayment(v.businessId, v.paymentId), MONEY_ROOTS);
+/** Distribution | null: one line per firm plus SM (orchestration), received / assigned / unassigned / paid. */
+export const useDistribution = (businessId: string | undefined) =>
+  useQuery({ queryKey: ["distribution", businessId], queryFn: () => api.distribution.get(businessId!), enabled: !!businessId });
+export const useSaveDistributionLine = () =>
+  useNetworkMutation((v: { businessId: string; input: DistributionLineInput }) => api.distribution.saveLine(v.businessId, v.input), MONEY_ROOTS);
+export const useClearDistributionLine = () =>
+  useNetworkMutation((v: { businessId: string; organizationId: string | null }) => api.distribution.clearLine(v.businessId, v.organizationId), MONEY_ROOTS);
+export const useMarkDistributionPaid = () =>
+  useNetworkMutation((v: { businessId: string; paymentId: string; input: MarkPaidInput }) => api.distribution.markPaid(v.businessId, v.paymentId, v.input), MONEY_ROOTS);
+export const useMarkDistributionPending = () =>
+  useNetworkMutation((v: { businessId: string; paymentId: string }) => api.distribution.markPending(v.businessId, v.paymentId), MONEY_ROOTS);
 // ---------- Entry (NDA, MOU, documents) ----------
 /** LeadIntake | null: summary (clock, counts, approval), NDA/MOU with signer status, and the entry documents. */
 export const useLeadIntake = (id: string | undefined) =>

@@ -35,6 +35,17 @@ describe("rulesPatch", () => {
   });
 });
 
+describe("program amount (SM Global)", () => {
+  it("accepts whole dollars written with or without separators and sends only a real change", () => {
+    expect(validateRules({ ...formFromRules(rules), program_amount: "160,000" })).toEqual({});
+    expect(rulesPatch(rules, { ...formFromRules(rules), program_amount: "160.000" })).toEqual({ program_amount: 160000 });
+    expect(rulesPatch(rules, { ...formFromRules(rules), program_amount: "150,000" })).toEqual({});
+  });
+  it("rejects empty, zero and text", () => {
+    for (const v of ["", "0", "abc", "150000.5x"]) expect(validateRules({ ...formFromRules(rules), program_amount: v }).program_amount, v).toBe("invalid_program_amount");
+  });
+});
+
 describe("toggleCode", () => {
   it("adds a code that is not picked and removes one that is", () => {
     expect(toggleCode(["B1-01"], "B2-03")).toEqual(["B1-01", "B2-03"]);

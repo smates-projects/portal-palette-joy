@@ -3,8 +3,9 @@ import type { AssessmentBlock, BlockStatus, Lead, LeadEvent, LeadStage } from ".
 import { ASSESSMENT_BLOCKS } from "../types";
 import { BIZ_ENYERMY, BIZ_PRIME, BIZ_VOSSLER, ORG_SM, U_CAMILA, U_NICOLAS } from "./seed";
 
-/** Same id as seed-network U_JEFFERSON (kept here to avoid an import cycle). */
+/** Same ids as seed-network U_JEFFERSON and U_LAURA (kept here to avoid an import cycle). */
 const U_JEFFERSON_LEAD = "0c000000-0000-4000-8000-000000000040";
+const U_LAURA_LEAD = "0c000000-0000-4000-8000-000000000091";
 export const uuid = (prefix: string, n: number) => `${prefix}-0000-4000-8000-${String(n).padStart(12, "0")}`;
 export const at = (date: string, time = "15:00:00") => `${date}T${time}Z`;
 export const blocks = (s: string): Lead["result"]["blocks"] => {
@@ -27,8 +28,9 @@ export interface LeadSpec {
 const specs: LeadSpec[] = [
   {
     path: [["submitted", "2026-07-08"], ["meeting", "2026-07-10"], ["documents", "2026-07-17"], ["accepted", "2026-07-24"], ["in_program", "2026-08-02"]],
+    // Funded by Jefferson (Bishop): tripartite signed, funds received, distribution under way (see seed-funds).
     lead: {
-      consultant_user_id: U_NICOLAS, business_id: BIZ_VOSSLER,
+      consultant_user_id: U_NICOLAS, business_id: BIZ_VOSSLER, bishop_user_id: U_JEFFERSON_LEAD, bishop_accepted_at: at("2026-07-25"),
       contact: { name: "Carla Méndez", email: "carla@vossler.com", phone: "+1 407 555 0110", city: "Orlando", state: "FL", hispanic_owner: true },
       business: { name: "Vossler", industry: "construction", activity: "Construcción residencial", revenue_range: "1m_3m", margin_range: "20_30", team_range: "16_50", years_range: "gt_10", has_active_clients: true },
       result: { band: "high", score: 86, eligible_program: true, eligibility_gaps: [], blocks: blocks("ssmmsmm"),
@@ -38,8 +40,9 @@ const specs: LeadSpec[] = [
   },
   {
     path: [["submitted", "2026-08-20"], ["meeting", "2026-08-24"], ["documents", "2026-08-31"], ["accepted", "2026-09-04"], ["in_program", "2026-09-14"]],
+    // Funded by Laura (Bishop).
     lead: {
-      consultant_user_id: U_CAMILA, business_id: BIZ_PRIME,
+      consultant_user_id: U_CAMILA, business_id: BIZ_PRIME, bishop_user_id: U_LAURA_LEAD, bishop_accepted_at: at("2026-09-05"),
       contact: { name: "Daniel Ortiz", email: "daniel@prime10solutions.com", phone: "+1 813 555 0133", city: "Tampa", state: "FL", hispanic_owner: true },
       business: { name: "Prime 10 Solutions", industry: "remodeling", activity: "Remodelaciones de cocinas y baños", revenue_range: "500k_1m", margin_range: "20_30", team_range: "6_15", years_range: "5_10", has_active_clients: true },
       result: { band: "mid", score: 74, eligible_program: true, eligibility_gaps: [], blocks: blocks("smmwmwm"),
@@ -49,8 +52,9 @@ const specs: LeadSpec[] = [
   },
   {
     path: [["submitted", "2026-09-21"], ["meeting", "2026-09-23"], ["documents", "2026-09-28"], ["accepted", "2026-10-02"], ["in_program", "2026-10-09"]],
+    // Funded by Jefferson (Bishop); he uploaded his own receipt and SM confirmed it.
     lead: {
-      consultant_user_id: U_NICOLAS, business_id: BIZ_ENYERMY,
+      consultant_user_id: U_NICOLAS, business_id: BIZ_ENYERMY, bishop_user_id: U_JEFFERSON_LEAD, bishop_accepted_at: at("2026-10-03"),
       contact: { name: "Enyermy Rivas", email: "enyermy@enyermyhair.com", phone: "+1 305 555 0187", city: "Miami", state: "FL", hispanic_owner: true },
       business: { name: "Enyermy Hair Studio", industry: "salon", activity: "Salón de belleza y color", revenue_range: "250k_500k", margin_range: "20_30", team_range: "6_15", years_range: "5_10", has_active_clients: true },
       result: { band: "mid", score: 68, eligible_program: true, eligibility_gaps: [], blocks: blocks("mmwwsmm"),
@@ -176,6 +180,20 @@ const specs: LeadSpec[] = [
       result: { band: "high", score: 84, eligible_program: true, eligibility_gaps: [], blocks: blocks("ssmssmm"),
         strengths: ["Equipo estable con jefes de obra", "Presupuestos con precios por partida"], priorities: ["Manual de obra", "Marca registrada"] },
       know_how_example: "Cada obra tiene un tablero con fotos diarias que el cliente ve. Terminamos a tiempo nueve de cada diez obras.",
+    },
+  },
+  {
+    // Accepted with a Bishop (Laura): tripartite signed by the three, funds partial (USD 100,000 of 150,000).
+    path: [["submitted", "2026-08-10"], ["meeting", "2026-08-13"], ["documents", "2026-08-19"], ["accepted", "2026-09-01"]],
+    contacted: true,
+    notes: [["2026-09-26", "Laura transfirió USD 100.000. El resto llega antes de fin de octubre."]],
+    lead: {
+      consultant_user_id: U_CAMILA, business_id: null, bishop_user_id: U_LAURA_LEAD, bishop_accepted_at: at("2026-09-03"),
+      contact: { name: "Rosa Delgado", email: "rosa@laespigabakery.com", phone: "+1 305 555 0124", city: "Westchester", state: "FL", hispanic_owner: true },
+      business: { name: "Panadería La Espiga", industry: "restaurant", activity: "Panadería y pastelería latina", revenue_range: "500k_1m", margin_range: "20_30", team_range: "6_15", years_range: "gt_10", has_active_clients: true },
+      result: { band: "high", score: 81, eligible_program: true, eligibility_gaps: [], blocks: blocks("smsmsmm"),
+        strengths: ["Recetas medidas y escritas", "Ventas a cafeterías todas las semanas"], priorities: ["Manual de producción", "Costos por producto"] },
+      know_how_example: "Horneamos en tandas con tiempos fijos por producto. Un panadero nuevo aprende el turno en dos semanas.",
     },
   },
 ];

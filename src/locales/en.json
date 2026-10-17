@@ -620,7 +620,12 @@
     "pref_meeting_confirmed": "Meeting confirmed",
     "pref_unblocked": "A task was unblocked",
     "kind_task_updated": "{{name}} changed a task",
-    "pref_task_updated": "SM changed one of your tasks"
+    "pref_task_updated": "SM changed one of your tasks",
+    "kind_bishop_accepted": "{{name}} accepted an opportunity",
+    "kind_funds_reported": "{{name}} uploaded a payment receipt",
+    "pref_bishop_accepted": "An investor accepted an opportunity",
+    "pref_funds_reported": "An investor uploaded a payment receipt",
+    "lead_ref": "Pipeline · {{name}}"
   },
   "soon": {
     "manual": "Here you'll see your business's operations manual as the firms write it and you approve it.",
@@ -938,7 +943,8 @@
       "wait_investor": "Waiting for an investor to accept",
       "send_tripartite": "Send three-party contract",
       "record_funds": "Record funds received",
-      "wait_signatures": "Waiting for contract signatures"
+      "wait_signatures": "Waiting for contract signatures",
+      "start_program": "Confirm program start"
     },
     "move": {
       "no_skip": "{{name}} cannot move to {{to}}: go back one stage at a time.",
@@ -961,11 +967,6 @@
     "discard_confirm": "Discard lead",
     "cancel": "Cancel",
     "reason_required": "Write the reason to discard.",
-    "sign_title": "Mark contract signed",
-    "sign_body": "The business is created with day 1 on the signature date and its Método 180 catalog tasks are generated, assigned to each area's firm and supervised by {{consultant}}.",
-    "sign_date": "Signature date",
-    "sign_confirm": "Create program",
-    "sign_future": "The date cannot be after today.",
     "detail": {
       "close": "Close",
       "open_full": "Lead detail",
@@ -1032,7 +1033,12 @@
       "docs_approved": "{{actor}} approved the documents",
       "bishop_accepted": "An investor accepted the opportunity",
       "bishop_released": "{{actor}} released the opportunity",
-      "tripartite_sent": "{{actor}} sent the tripartite contract"
+      "tripartite_sent": "{{actor}} sent the tripartite contract",
+      "funds_recorded": "{{actor}} recorded an investor payment",
+      "funds_reported": "{{actor}} uploaded a payment receipt",
+      "funds_confirmed": "{{actor}} confirmed an investor payment",
+      "funds_removed": "{{actor}} removed an investor payment",
+      "program_started": "{{actor}} confirmed the program start with day 1 on {{date}}."
     },
     "error_title": "We could not load the pipeline.",
     "retry": "Retry",
@@ -1058,7 +1064,6 @@
       "release_confirm": "Release opportunity",
       "t_released": "You released the {{name}} opportunity."
     },
-    "funds_next": "Recording funds comes in the next part.",
     "t_tripartite_sent": "We sent the tripartite contract for {{name}}."
   },
   "office": {
@@ -1526,7 +1531,8 @@
         "area_amber_days": "Days to amber",
         "franchisability_amber_tolerance": "Franchisability tolerance",
         "document_review_days": "Document review deadline",
-        "intake_documents": "Entry documents"
+        "intake_documents": "Entry documents",
+        "program_amount": "Program amount"
       },
       "percent": "{{value}}%",
       "days_one": "{{count}} day",
@@ -1536,7 +1542,10 @@
       "error_invalid_goal": "Enter a whole number between 1 and 100.",
       "error_invalid_days": "Enter a whole number from 1 up.",
       "error_invalid_tolerance": "Enter a whole number between 0 and 100.",
-      "error_invalid_review_days": "Enter a number of days of 1 or more."
+      "error_invalid_review_days": "Enter a number of days of 1 or more.",
+      "amount_title": "Program amount",
+      "amount_hint": "What the investor pays Strategic Mates for one program, outside the app. It applies to tripartite contracts signed from now on; signed ones keep their amount.",
+      "error_invalid_program_amount": "Enter a whole-dollar amount greater than zero."
     }
   },
   "owner_extra": {
@@ -2246,6 +2255,160 @@
       "name_required": "Every document needs a name.",
       "count_one": "{{count}} document",
       "count_other": "{{count}} documents"
+    }
+  },
+  "funds": {
+    "section_title": "Funds and distribution",
+    "section_hint": "Only Strategic Mates and this business's investor see this. The owner and the firms never see amounts.",
+    "section_hint_bishop": "Read only. Only Strategic Mates and you see this.",
+    "funds_title": "Investor funds",
+    "status": {
+      "pending": "Pending",
+      "partial": "Partial",
+      "received": "Received"
+    },
+    "method": {
+      "transfer": "Transfer",
+      "wire": "Wire",
+      "other": "Other"
+    },
+    "of_total": "of",
+    "progress": "Funds received",
+    "completed_on": "Complete on {{date}}",
+    "missing_label": "Missing",
+    "to_confirm_label": "To confirm:",
+    "to_confirm_hint": "The investor uploaded a receipt. Confirm it below, in Investor funds.",
+    "bishop_line": "Investor: {{name}}",
+    "none": "Funds show up once the three sign the tripartite contract.",
+    "empty": "No payments recorded yet. When the investor's transfer arrives, record it with its receipt.",
+    "empty_bishop": "No payments recorded yet. When you make the transfer, upload your receipt here.",
+    "error": "We could not load the funds.",
+    "retry": "Load again",
+    "reference": "Reference {{ref}}",
+    "receipt_size": "{{kb}} KB",
+    "no_receipt": "No receipt",
+    "by_sm": "Recorded by Strategic Mates",
+    "by_bishop": "Uploaded by the investor",
+    "payment_confirmed": "Confirmed",
+    "payment_reported": "To confirm",
+    "confirm": "Confirm payment",
+    "remove": "Remove",
+    "undo": "Undo",
+    "cancel": "Cancel",
+    "no_gateway": "You pay outside the app, by transfer or wire to Strategic Mates. This only keeps the record.",
+    "report": "Upload receipt",
+    "report_hint": "Strategic Mates reviews and confirms it.",
+    "report_title": "Upload receipt: {{name}}",
+    "report_body": "Enter how much you transferred, the date and the method, and attach the receipt. It counts once Strategic Mates confirms it.",
+    "report_confirm": "Upload receipt",
+    "record_title": "Record funds received: {{name}}",
+    "record_body": "Record what reached the Strategic Mates account. It cannot go over the program amount.",
+    "record_confirm": "Record payment",
+    "t_recorded": "You recorded the investor payment.",
+    "t_recorded_complete": "Funds complete. You can now confirm the program start.",
+    "t_reported": "You uploaded your receipt. Strategic Mates will confirm it.",
+    "t_confirmed": "You confirmed the investor payment.",
+    "t_removed": "You removed the payment.",
+    "t_error": "We could not save the change. Try again.",
+    "form": {
+      "amount": "Amount (USD)",
+      "date": "Payment date",
+      "method": "Method",
+      "reference": "Reference (optional)",
+      "reference_placeholder": "Transfer number",
+      "receipt": "Receipt (optional)",
+      "receipt_required": "Receipt",
+      "receipt_pick": "Choose file",
+      "receipt_change": "Change file",
+      "receipt_type": "The receipt must be a PDF or an image.",
+      "receipt_hint": "PDF or image. In this test version we only keep the file name."
+    },
+    "errors": {
+      "amount": "Enter a dollar amount greater than zero.",
+      "over_total": "The amount is more than what is still missing.",
+      "date": "Choose a valid date.",
+      "future": "The date cannot be later than today.",
+      "method": "Choose the payment method.",
+      "receipt": "Attach the receipt as a PDF or an image."
+    },
+    "start": {
+      "title": "Confirm program start: {{name}}",
+      "body": "The tripartite contract is signed by the three and the funds are complete. When you confirm, the business moves to In program and its tasks are generated from the Método 180 catalog.",
+      "day1": "Program day 1",
+      "proposed": "Proposed: {{date}}, the day the last step was completed (contract signed or funds complete). You can pick a later date.",
+      "too_early": "Day 1 cannot be earlier than {{date}}.",
+      "today_day": "Today would be day {{day}} of 180.",
+      "future": "The program starts on {{date}}. Until then it shows day 0.",
+      "what_happens": "The owner starts seeing the program and the firms get their tasks.",
+      "confirm": "Confirm start",
+      "ready_hint": "Contract signed by the three and funds complete. Only day 1 is left to confirm.",
+      "t_started_one": "{{name}} started the program. {{count}} task was created.",
+      "t_started_other": "{{name}} started the program. {{count}} tasks were created."
+    },
+    "dist": {
+      "title": "Distribution to the firms",
+      "sm_line": "Strategic Mates (orchestration)",
+      "received": "Received",
+      "assigned": "Assigned",
+      "unassigned": "Unassigned",
+      "paid": "Paid",
+      "overdue_count_one": "{{count}} overdue payment not marked.",
+      "overdue_count_other": "{{count}} overdue payments not marked.",
+      "none": "The distribution shows up once there are investor funds.",
+      "empty": "No amounts assigned yet. Use Assign amount on each firm and on Strategic Mates.",
+      "empty_read": "Strategic Mates has not assigned amounts to the firms yet.",
+      "not_assigned": "No amount assigned",
+      "assign": "Assign amount",
+      "edit": "Edit",
+      "locked": "It has payments made: it can no longer change.",
+      "kind_label": "Payment plan",
+      "kind": {
+        "one_time": "One-time payment",
+        "installments": "Installments",
+        "milestones": "Milestones"
+      },
+      "installment": "Installment {{n}} of {{total}}",
+      "one_time_payment": "One-time payment",
+      "due": "due {{date}}",
+      "due_label": "Payment date",
+      "milestone": "Milestone",
+      "milestone_placeholder": "For example: Operations manual approved",
+      "add_installment": "Add installment",
+      "add_milestone": "Add milestone",
+      "remove_row": "Remove this row",
+      "line_total": "Total of this line:",
+      "line_title": "Amount for {{name}}",
+      "line_body": "All lines together cannot go over what was received. Available for this line:",
+      "save": "Save",
+      "clear": "Remove amount",
+      "paid_tag": "Paid",
+      "pending_tag": "Pending",
+      "overdue_tag": "Overdue",
+      "paid_on": "Paid on {{date}} · {{method}}",
+      "mark_paid": "Mark paid",
+      "mark_paid_title": "Mark paid: {{name}}",
+      "mark_paid_body": "Enter when and how Strategic Mates paid. The receipt is optional.",
+      "mark_paid_confirm": "Mark paid",
+      "t_paid": "You marked the payment as made.",
+      "t_saved": "You saved the amount for {{name}}.",
+      "t_cleared": "You removed the amount for {{name}}.",
+      "errors": {
+        "no_payments": "Add at least one payment.",
+        "one_time_single": "A one-time payment has a single payment.",
+        "amount": "Each payment needs an amount greater than zero.",
+        "date": "Each payment needs a valid date.",
+        "milestone": "Describe each milestone.",
+        "over_received": "The sum goes over what was received. Lower the amount or split less."
+      }
+    },
+    "bishop": {
+      "agreements_title": "Your funds",
+      "portfolio_title": "Programs you fund",
+      "empty": "Once you sign a tripartite contract, you will see the program amount and your payments here.",
+      "see": "See payments",
+      "in_program": "See payments and distribution",
+      "read_only": "Read only. Strategic Mates records the payments and splits the funds among the firms.",
+      "go_to_funds": "See your funds"
     }
   }
 }

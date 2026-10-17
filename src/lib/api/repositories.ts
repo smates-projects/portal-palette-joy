@@ -1,4 +1,9 @@
 import type {
+  BishopFunds,
+  Distribution,
+  DistributionLineInput,
+  FundPaymentInput,
+  MarkPaidInput,
   AreaBottleneck,
   BishopAgreement,
   BishopPortfolio,
@@ -129,8 +134,14 @@ export interface LeadsRepository {
   /** documents → accepted. Only the office admin or an SM Global admin, with everything signed and accepted. */
   approveDocuments(id: Uuid): Promise<LeadWithComputed>;
   /**
-   * accepted → in_program: business from onboarding to in_program (day 1 = day1) and its tasks from the catalog.
-   * Part 3 gates it on the signed tripartite contract and the Bishop funds.
+   * accepted → in_program, only with the tripartite contract signed by the three and the Bishop funds complete
+   * (readyToStart). Day 1 is the proposed date (whichever happened last) or a later one SM picks. The business
+   * goes from onboarding to in_program and its tasks are generated from the catalog. SM team of the office.
+   */
+  confirmProgramStart(id: Uuid, day1: string): Promise<{ lead: Lead; business_id: Uuid; task_count: number }>;
+  /**
+   * @deprecated Old "Marcar contrato firmado" step, kept only for older tests: it starts the program without
+   * checking the tripartite contract or the funds. Screens use confirmProgramStart.
    */
   startProgram(id: Uuid, day1: string): Promise<{ lead: Lead; business_id: Uuid; task_count: number }>;
   /** "No aprobar": discards the lead with a reason. */
@@ -307,6 +318,42 @@ export interface BishopRepository {
   listAgreements(): Promise<BishopAgreement[]>;
 }
 
+/**
+ * Money the Bishop pays SM for one program (paid outside the app; the app only records it). Keyed by business.
+ * SM team of the office and SM Global read; only the SM team writes. The Bishop reads his own and reports his
+ * receipt. Owners, firms and franchisees never get an answer (forbidden).
+ */
+export interface FundsRepository {
+  /** Null before the tripartite contract is signed by the three. */
+  get(businessId: Uuid): Promise<BishopFunds | null>;
+  /** Bishop: the funds of every business he funds, newest first. */
+  listMine(): Promise<BishopFunds[]>;
+  /** SM team: a payment received, confirmed at once. Cannot go over the program amount. */
+  recordPayment(businessId: Uuid, input: FundPaymentInput): Promise<BishopFunds>;
+  /** Bishop: uploads his receipt; it counts once SM confirms it. */
+  reportPayment(businessId: Uuid, input: FundPaymentInput): Promise<BishopFunds>;
+  /** SM team: confirms a payment the Bishop reported. */
+  confirmPayment(businessId: Uuid, paymentId: Uuid): Promise<BishopFunds>;
+  /** SM team: removes a payment recorded by mistake (undo), only before the program started. */
+  removePayment(businessId: Uuid, paymentId: Uuid): Promise<BishopFunds>;
+}
+
+/**
+ * How SM distributes the funds of one business: one line per partner firm plus Strategic Mates (orchestration).
+ * SM team writes, SM Global reads, the Bishop of that business reads. Owners and firms: forbidden.
+ */
+export interface DistributionRepository {
+  /** Null while the business has no funds record. */
+  get(businessId: Uuid): Promise<Distribution | null>;
+  /** Creates or replaces the plan of one line. Not allowed once a payment of that line is paid. */
+  saveLine(businessId: Uuid, input: DistributionLineInput): Promise<Distribution>;
+  /** Clears a line with no paid payments. */
+  clearLine(businessId: Uuid, organizationId: Uuid | null): Promise<Distribution>;
+  markPaid(businessId: Uuid, paymentId: Uuid, input: MarkPaidInput): Promise<Distribution>;
+  /** Undo of markPaid. */
+  markPending(businessId: Uuid, paymentId: Uuid): Promise<Distribution>;
+}
+
 /** Franchisee: sees only its own unit. */
 export interface FranchiseeRepository {
   getHome(): Promise<FranchiseeHome>;
@@ -337,4 +384,6 @@ export interface ApiClient {
   users: UsersRepository;
   tasks: TasksRepository;
   leads: LeadsRepository;
+  funds: FundsRepository;
+  distribution: DistributionRepository;
 }

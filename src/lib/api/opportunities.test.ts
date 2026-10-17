@@ -22,7 +22,9 @@ describe("Bishop opportunities", () => {
     expect(phases).toContain("in_review");
     expect(phases).toContain("available");
     // Sol Remodeling belongs to Jefferson: other Bishops never see it.
-    expect(list.some((o) => o.business_name !== null || o.owner_name !== null)).toBe(false);
+    // Before accepting nobody sees names (Panadería La Espiga is Laura's own, accepted: she does).
+    const notMine = list.filter((o) => o.phase === "in_review" || o.phase === "available");
+    expect(notMine.some((o) => o.business_name !== null || o.owner_name !== null)).toBe(false);
     expect(JSON.stringify(await api.bishop.getOpportunity(list[0]!.id))).not.toMatch(/@|\+1 /);
   });
   it("the program amount is the SM Global rule (USD 150,000)", async () => {

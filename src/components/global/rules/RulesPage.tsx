@@ -5,6 +5,7 @@ import { useCatalogAdmin, useRules, useRulesHistory, useUpdateRules, useUsers } 
 import type { IntakeDocRule, PlatformRules } from "@/lib/api/network-types";
 import { IntakeDocsEditor } from "./IntakeDocsEditor";
 import { cn } from "@/lib/utils";
+import { formatUsd } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PrimaryButton } from "@/components/tasks/detail/dialogs";
 import { ErrorBox, GlobalHeader, HistoryList, type HistoryEntry } from "../shared";
@@ -15,7 +16,7 @@ const inputCls =
 
 /** Reglas de toda la red: only SM Global edits them. Offices and businesses only read them. */
 export function RulesPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const rulesQ = useRules();
   const historyQ = useRulesHistory();
   const catalogQ = useCatalogAdmin();
@@ -40,7 +41,9 @@ export function RulesPage() {
 
   const authorName = (id: string) => usersQ.data?.find((u) => u.id === id)?.full_name ?? "";
   const show = (field: keyof PlatformRules, value: unknown) =>
-    field === "intake_documents"
+    field === "program_amount"
+      ? formatUsd(Number(value), i18n.language)
+      : field === "intake_documents"
       ? t("intake.rules.count", { count: (value as IntakeDocRule[]).filter((d) => !d.archived).length })
       : field === "document_review_days"
         ? t("global.rules.days", { count: Number(value) })
@@ -87,7 +90,7 @@ function RulesEditor({ rules, catalog }: { rules: PlatformRules; catalog: { code
   const errors = tried ? validateRules(form) : {};
   const patch = Object.keys(validateRules(form)).length === 0 ? rulesPatch(rules, form) : {};
   const dirty = JSON.stringify(form) !== JSON.stringify(formFromRules(rules));
-  const setField = (key: "franchisability_goal" | "area_amber_days" | "franchisability_amber_tolerance" | "document_review_days", value: string) => setForm((f) => ({ ...f, [key]: value }));
+  const setField = (key: "franchisability_goal" | "area_amber_days" | "franchisability_amber_tolerance" | "document_review_days" | "program_amount", value: string) => setForm((f) => ({ ...f, [key]: value }));
   const err = (key: keyof typeof errors) => (errors[key] ? t(`global.rules.error_${errors[key]}`) : null);
 
   const needle = search.trim().toLowerCase();
@@ -110,6 +113,17 @@ function RulesEditor({ rules, catalog }: { rules: PlatformRules; catalog: { code
 
   return (
     <div className="mt-4 space-y-4">
+      {/* Program amount the Bishop pays SM (applies to tripartite contracts signed from now on) */}
+      <section className="rounded-md border border-border bg-surface p-4">
+        <h2 className="text-sm font-semibold">{t("global.rules.amount_title")}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{t("global.rules.amount_hint")}</p>
+        <label className="mt-3 flex items-center gap-2 text-sm">
+          <span className="font-display">USD</span>
+          <input inputMode="numeric" value={form.program_amount} onChange={(e) => setField("program_amount", e.target.value)} aria-label={t("global.rules.amount_title")} className={cn(inputCls, "w-40 font-display tabular-nums", errors.program_amount && "border-status-danger-fg")} />
+        </label>
+        {err("program_amount") && <p className="mt-1 text-xs text-status-danger-fg">{err("program_amount")}</p>}
+      </section>
+
       {/* Document review deadline */}
       <section className="rounded-md border border-border bg-surface p-4">
         <h2 className="text-sm font-semibold">{t("intake.rules.days_title")}</h2>

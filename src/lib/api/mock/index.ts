@@ -12,7 +12,11 @@ import * as seedNetwork from "./seed-network";
 import { createNetworkRepositories, type NetworkDb } from "./network";
 import { createIntake, type IntakeRecord } from "./intake";
 import { createOpportunities, type OpportunityView } from "./opportunities";
+import { createFunds, type FundRecord, type StoredDistLine } from "./funds";
+import { seedFunds } from "./seed-funds";
+import { readyToStart, validDay1, programDayOn } from "@/lib/leads/funds";
 import { tripartiteState } from "@/lib/leads/opportunity";
+import { LEAD_NOTIFICATION_KINDS, type FundPayment, type NotificationKind } from "../types";
 import catalogJson from "@/data/catalogo_metodo180.json";
 import { DEFAULT_PLATFORM_RULES } from "../franchisability";
 import { AREA_BY_KEY, generateProgramTasks, type CatalogEntry } from "../program";
@@ -69,6 +73,10 @@ export function createMockApi(): ApiClient {
     agreements: structuredClone(seedNetwork.agreements),
     frameworkContracts: structuredClone(seedNetwork.frameworkContracts),
     oppViews: [] as OpportunityView[],
+    // Bishop funds and their distribution to the firms (./funds). Money: SM and that Bishop only.
+    fundRecords: [] as FundRecord[],
+    fundPayments: [] as FundPayment[],
+    distLines: [] as StoredDistLine[],
   };
   const intake = createIntake(db, newId);
   intake.seed();
@@ -86,12 +94,23 @@ export function createMockApi(): ApiClient {
   const notifs = structuredClone(seed.notifications);
   const dueRead = new Set<string>(); // "userId|notificationId"
   const prefs = new Map<string, NotificationPreference[]>();
+  /** Lead notifications (bishop_accepted, funds_reported) exist only for the SM team. */
+  const kindsFor = (userId: string) => {
+    const role = db.users.find((u) => u.id === userId)?.role;
+    return NOTIFICATION_KINDS.filter((k) => role === "sm_team" || !LEAD_NOTIFICATION_KINDS.includes(k));
+  };
   const prefsOf = (userId: string) => {
-    if (!prefs.has(userId)) prefs.set(userId, NOTIFICATION_KINDS.map((kind) => ({ kind, in_app: true, email: false })));
+    if (!prefs.has(userId)) prefs.set(userId, kindsFor(userId).map((kind) => ({ kind, in_app: true, email: false })));
     return prefs.get(userId)!;
   };
   const notify = (user_id: string, kind: AppNotification["kind"], task_id: string, change: TaskChange | null = null) =>
     notifs.push({ id: newId(), user_id, kind, task_id, actor_user_id: currentUserId, created_at: nowIso(), read: false, change });
+  const leadNotifs: { id: string; user_id: string; kind: NotificationKind; lead_id: string; actor_user_id: string; created_at: string; read: boolean }[] = [];
+  /** Every SM person of the lead's office hears about it (the review and the funds are team work). */
+  const notifyLead = (l: Lead, kind: NotificationKind) => {
+    for (const u of db.users.filter((x) => x.role === "sm_team" && x.organization_id === l.office_id && x.id !== currentUserId))
+      leadNotifs.push({ id: newId(), user_id: u.id, kind, lead_id: l.id, actor_user_id: currentUserId, created_at: nowIso(), read: false });
+  };
   let currentUserId = seed.U_LUCIA;
 
   const me = (): User => db.users.find((u) => u.id === currentUserId)!;
@@ -162,7 +181,10 @@ export function createMockApi(): ApiClient {
   const withBooking = (l: Lead): LeadWithComputed => {
     const consultant = db.users.find((u) => u.id === l.consultant_user_id);
     const office = db.orgs.find((o) => o.id === l.office_id);
-    return { ...l, booking_url: consultant?.booking_url || office?.default_booking_url || "", intake: intake.summaryFor(l), tripartite: tripartiteState(opps.tripartiteOf(l)) };
+    return {
+      ...l, booking_url: consultant?.booking_url || office?.default_booking_url || "", intake: intake.summaryFor(l),
+      tripartite: tripartiteState(opps.tripartiteOf(l)), funds: fundsMod.leadFunds(l),
+    };
   };
   const pushLeadEvent = (e: Omit<LeadEvent, "id" | "actor_user_id" | "created_at">) => {
     const full: LeadEvent = { id: newId(), actor_user_id: currentUserId, created_at: nowIso(), ...e };
@@ -174,8 +196,38 @@ export function createMockApi(): ApiClient {
     l.stage_entered_at = nowIso();
     l.last_contact_at = nowIso();
   };
-  const opps = createOpportunities({ db, intake, me, newId, delay, findLead, readableLeads, withBooking: (l) => withBooking(l), pushLeadEvent });
+  const opps = createOpportunities({
+    db, intake, me, newId, delay, findLead, readableLeads, withBooking: (l) => withBooking(l), pushLeadEvent, notifyLead,
+    agreedAmount: (l) => fundsMod.recordOf(l)?.total ?? null,
+  });
   opps.seed({ jefferson: seedNetwork.U_JEFFERSON, laura: seedNetwork.U_LAURA });
+  const fundsMod = createFunds({ db, me, newId, delay, tripartiteOf: opps.tripartiteOf, pushLeadEvent, notifyLead });
+  seedFunds({ db, funds: fundsMod, seedSignedTripartite: opps.seedSignedTripartite });
+
+  /**
+   * accepted → in_program: business from onboarding to in_program with day 1 = day1, and its tasks from the live
+   * catalog (SM Global edits it; changes reach new programs only, never tasks already generated).
+   */
+  const launchProgram = (l: Lead, day1: string, eventKind: "program_started" | "contract_signed") => {
+    let b = l.business_id ? db.businesses.find((x) => x.id === l.business_id) : undefined;
+    if (!b) {
+      // Leads accepted before the entry flow existed have no business yet.
+      const ownerId = newId();
+      b = { id: newId(), name: l.business.name, industry: l.business.activity, city: l.contact.city, state: l.contact.state, owner_user_id: ownerId, status: "onboarding", program_start_date: day1, program_day: 0, office_id: l.office_id, consultant_id: l.consultant_user_id };
+      db.users.push({ id: ownerId, full_name: l.contact.name, email: l.contact.email, role: "business_owner", organization_id: null, business_id: b.id, title: null, google_calendar_email: null, booking_url: null });
+      db.businesses.push(b);
+    }
+    Object.assign(b, { status: "in_program", program_start_date: day1, program_day: programDayOn(day1) });
+    const created = generateProgramTasks(db.catalog.filter((c) => !c.archived), {
+      business_id: b.id, industry: l.business.industry, start_date: day1, supervisor_user_id: l.consultant_user_id,
+      firmFor: firmFor(l.office_id, l.consultant_user_id), newId, now: nowIso(),
+    });
+    db.tasks.push(...created);
+    setStage(l, "in_program");
+    l.business_id = b.id;
+    pushLeadEvent({ lead_id: l.id, kind: eventKind, from: "accepted", to: "in_program", body: null, signed_on: day1 });
+    return { lead: l, business_id: b.id, task_count: created.length };
+  };
 
   /** Assignee firm per area: the office's own firm for that area; with none (SM Miami B1), the office's own team (the consultant). */
   const firmFor = (officeId: string, consultantId: string) => (area: AreaCode) => {
@@ -231,7 +283,13 @@ export function createMockApi(): ApiClient {
         },
         signContract: async (contractId) => {
           const { c, party } = contractInScope(contractId);
-          return delay(intake.setSignerStatus(c, party, "signed"));
+          intake.setSignerStatus(c, party, "signed");
+          // Tripartite signed by the three: the Bishop funds open with today's program amount.
+          if (c.kind === "tripartite" && c.state === "signed") {
+            const l = db.leads.find((x) => x.business_id === c.business_id);
+            if (l) fundsMod.recordOf(l);
+          }
+          return delay(c);
         },
         declineContract: async (contractId, reason) => {
           if (!reason.trim()) throw new Error("reason_required");
@@ -243,7 +301,20 @@ export function createMockApi(): ApiClient {
   };
 
   const net = createNetworkRepositories({ db, me, newId, delay });
+  /** Rules are readable by everyone, but the program amount is money: only SM and Bishops get it. */
+  const seesMoney = () => ["sm_team", "sm_global", "bishop"].includes(me().role);
+  const rules: ApiClient["rules"] = {
+    ...net.rules,
+    get: async () => {
+      const r = await net.rules.get();
+      if (seesMoney()) return r;
+      const { program_amount: _hidden, ...rest } = r;
+      return rest;
+    },
+  };
   return {
+    funds: fundsMod.funds,
+    distribution: fundsMod.distribution,
     notifications: {
       list: () => {
         const u = me();
@@ -263,17 +334,29 @@ export function createMockApi(): ApiClient {
         const due = dueNotifications(u.id, mine.map((t) => withComputed(t, db.tasks)), db.businesses).map((n) => ({
           ...n, read_at: dueRead.has(`${u.id}|${n.id}`) ? n.created_at : null,
         }));
+        // About a lead of the Embudo: only while the user is SM team of that office.
+        const aboutLeads: AppNotification[] = u.role !== "sm_team" ? [] : leadNotifs
+          .filter((n) => n.user_id === u.id)
+          .flatMap((n) => {
+            const l = db.leads.find((x) => x.id === n.lead_id && x.office_id === u.organization_id);
+            if (!l) return [];
+            return [{
+              id: n.id, user_id: n.user_id, kind: n.kind, task_id: "", task_code: "", task_name: "", business_id: l.business_id ?? "", business_name: l.business.name,
+              actor_user_id: n.actor_user_id, actor_name: name(n.actor_user_id), created_at: n.created_at, read_at: n.read ? n.created_at : null, change: null, lead_id: l.id,
+            }];
+          });
         const enabled = new Set(prefsOf(u.id).filter((p) => p.in_app).map((p) => p.kind));
-        return delay([...stored, ...due].filter((n) => enabled.has(n.kind)).sort((a, b) => b.created_at.localeCompare(a.created_at)));
+        return delay([...stored, ...due, ...aboutLeads].filter((n) => enabled.has(n.kind)).sort((a, b) => b.created_at.localeCompare(a.created_at)));
       },
       markRead: async (id) => {
-        const n = notifs.find((x) => x.id === id && x.user_id === currentUserId);
+        const n = notifs.find((x) => x.id === id && x.user_id === currentUserId) ?? leadNotifs.find((x) => x.id === id && x.user_id === currentUserId);
         if (n) n.read = true;
         else dueRead.add(`${currentUserId}|${id}`);
         return delay(undefined);
       },
       markAllRead: async () => {
         notifs.filter((n) => n.user_id === currentUserId).forEach((n) => (n.read = true));
+        leadNotifs.filter((n) => n.user_id === currentUserId).forEach((n) => (n.read = true));
         const due = me().role !== "partner_firm" ? [] : dueNotifications(currentUserId, visibleTasks().map((t) => withComputed(t, db.tasks)), db.businesses);
         due.forEach((n) => dueRead.add(`${currentUserId}|${n.id}`));
         return delay(undefined);
@@ -403,6 +486,8 @@ export function createMockApi(): ApiClient {
       },
     },
     ...withIntakeDocuments(net),
+    // After the spread: replaces net.rules.
+    rules,
     bishop: {
       ...net.bishop,
       ...opps.bishop,
@@ -488,30 +573,21 @@ export function createMockApi(): ApiClient {
         pushLeadEvent({ lead_id: id, kind: "docs_approved", from: "documents", to: "accepted", body: null });
         return delay(withBooking(l));
       },
+      confirmProgramStart: async (id, day1) => {
+        const l = findLead(id);
+        if (l.stage !== "accepted") throw new Error("invalid_transition");
+        const r = fundsMod.recordOf(l);
+        const ready = readyToStart({ tripartite: opps.tripartiteOf(l), funds: r ? { total: r.total, payments: fundsMod.paymentsOf(r.business_id) } : null });
+        if (!ready.ok) throw new Error(ready.reason === "tripartite" ? "tripartite_unsigned" : "funds_incomplete");
+        if (!validDay1(day1, ready.day1)) throw new Error("invalid_date");
+        return delay(launchProgram(l, day1, "program_started"));
+      },
+      // Deprecated: the old "Marcar contrato firmado" step without the tripartite and funds checks (older tests only).
       startProgram: async (id, day1) => {
         const l = findLead(id);
         if (l.stage !== "accepted") throw new Error("invalid_transition");
         if (!/^\d{4}-\d{2}-\d{2}$/.test(day1) || day1 > TODAY) throw new Error("invalid_date");
-        const programDay = Math.round((Date.parse(`${TODAY}T12:00:00Z`) - Date.parse(`${day1}T12:00:00Z`)) / 86_400_000) + 1;
-        let b = l.business_id ? db.businesses.find((x) => x.id === l.business_id) : undefined;
-        if (!b) {
-          // Leads accepted before the entry flow existed have no business yet.
-          const ownerId = newId();
-          b = { id: newId(), name: l.business.name, industry: l.business.activity, city: l.contact.city, state: l.contact.state, owner_user_id: ownerId, status: "onboarding", program_start_date: day1, program_day: 0, office_id: l.office_id, consultant_id: l.consultant_user_id };
-          db.users.push({ id: ownerId, full_name: l.contact.name, email: l.contact.email, role: "business_owner", organization_id: null, business_id: b.id, title: null, google_calendar_email: null, booking_url: null });
-          db.businesses.push(b);
-        }
-        Object.assign(b, { status: "in_program", program_start_date: day1, program_day: programDay });
-        // The live catalog (SM Global edits it): changes reach new programs only, never tasks already generated.
-        const created = generateProgramTasks(db.catalog.filter((c) => !c.archived), {
-          business_id: b.id, industry: l.business.industry, start_date: day1, supervisor_user_id: l.consultant_user_id,
-          firmFor: firmFor(l.office_id, l.consultant_user_id), newId, now: nowIso(),
-        });
-        db.tasks.push(...created);
-        setStage(l, "in_program");
-        l.business_id = b.id;
-        pushLeadEvent({ lead_id: id, kind: "contract_signed", from: "accepted", to: "in_program", body: null, signed_on: day1 });
-        return delay({ lead: l, business_id: b.id, task_count: created.length });
+        return delay(launchProgram(l, day1, "contract_signed"));
       },
       rejectDocuments: async (id, reason) => {
         if (!reason.trim()) throw new Error("reason_required");
