@@ -1,12 +1,18 @@
+import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { Search } from "lucide-react";
-import { useBusinesses, useCatalog, useCurrentUser, useOrganizations, useTasks, useUsers } from "@/lib/api/hooks";
+import { Search, UserPlus } from "lucide-react";
+import { useBusinesses, useCatalog, useCurrentUser, useOrganizations, useTasks, useUsersWithInactive } from "@/lib/api/hooks";
+import type { AreaCode, Organization, User } from "@/lib/api/types";
+import { canManageFirms, isActiveUser, isOfficeAdmin } from "@/lib/accounts/permissions";
 import { AREAS } from "@/lib/tasks/owner";
-import { buildFirmCards, buildTeamRows, firmForArea } from "@/lib/tasks/office";
+import { buildAreaFirmSlots, buildFirmCards, buildTeamRows, firmForArea, type FirmCard } from "@/lib/tasks/office";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AccountHistorySheet, AdminTag, linkBtn, primaryBtn, secondaryBtn, UserStatusBadge, userStatus } from "@/components/accounts/shared";
+import { DeactivatePersonDialog, InvitePersonDialog, PersonActions } from "@/components/accounts/AccountDialogs";
+import { DeactivateFirmDialog, FirmFormDialog, FirmHistorySheet } from "./FirmDialogs";
 import { firmName } from "./shared";
 
 export type CatalogTab = "catalog" | "firms" | "team";
@@ -30,7 +36,7 @@ function ErrorBox({ onRetry }: { onRetry: () => void }) {
 }
 const Loading = () => <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-md" />)}</div>;
 
-/** Catálogo y equipo (SM): read-only catalog, the office's firms and its people. */
+/** Catálogo y equipo (SM): read-only catalog, the office's firms by area and its people. The office admin edits firms and team. */
 export function CatalogTeamPage({ search }: { search: CatalogSearch }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -108,82 +114,201 @@ function CatalogTab({ q, onQ }: { q: string; onQ: (q: string) => void }) {
   );
 }
 
+type FirmDialog = { kind: "create"; area: AreaCode } | { kind: "edit"; firm: Organization } | { kind: "replace"; firm: Organization; openTasks: number } | { kind: "deactivate"; firm: Organization } | null;
+
+/** Firmas aliadas: one slot per area with the active firm (or "Sin firma") and, folded, the firms that came before. */
 function FirmsTab() {
   const { t } = useTranslation();
+  const me = useCurrentUser().data;
   const orgsQ = useOrganizations();
-  const usersQ = useUsers();
+  const usersQ = useUsersWithInactive();
   const tasksQ = useTasks();
   const bizQ = useBusinesses();
+  const [dialog, setDialog] = useState<FirmDialog>(null);
+  const [history, setHistory] = useState<Organization | null>(null);
+  const [showPrevious, setShowPrevious] = useState(false);
   if (orgsQ.isError || usersQ.isError || tasksQ.isError || bizQ.isError)
     return <ErrorBox onRetry={() => { void orgsQ.refetch(); void usersQ.refetch(); void tasksQ.refetch(); void bizQ.refetch(); }} />;
-  if (orgsQ.isLoading || usersQ.isLoading || tasksQ.isLoading || bizQ.isLoading) return <Loading />;
-  const cards = buildFirmCards(orgsQ.data ?? [], usersQ.data ?? [], tasksQ.data ?? [], bizQ.data ?? []);
-  if (!cards.length) return <p className="rounded-md border border-dashed border-border bg-surface p-8 text-center text-sm text-muted-foreground">{t("office.cat.firms_empty")}</p>;
+  if (orgsQ.isLoading || usersQ.isLoading || tasksQ.isLoading || bizQ.isLoading || !me) return <Loading />;
+  const orgs = orgsQ.data ?? [];
+  const office = orgs.find((o) => o.kind === "sm" && o.id === me.organization_id) ?? null;
+  const admin = !!office && canManageFirms(me, office.id).ok;
+  const cards = buildFirmCards(orgs, usersQ.data ?? [], tasksQ.data ?? [], bizQ.data ?? []);
+  const cardOf = (id: string) => cards.find((c) => c.firm.id === id);
+  const slots = buildAreaFirmSlots(orgs);
+  const previous = slots.flatMap((s) => s.previous);
+
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {cards.map((c) => (
-        <article key={c.firm.id} className="rounded-md border border-border bg-surface p-4">
-          <div className="flex items-start justify-between gap-2">
-            <h2 className="text-sm font-semibold">{firmName(t, c.firm)}</h2>
-            <span className="shrink-0 rounded-[4px] border border-border px-1.5 py-0.5 text-[11px] text-muted-foreground">{c.internal ? t("office.cat.internal") : t("office.cat.external")}</span>
-          </div>
-          {c.firm.specialty && <p className="mt-1 text-xs text-muted-foreground">{c.firm.specialty}</p>}
-          <dl className="mt-3 space-y-2 text-xs">
-            <div>
-              <dt className="text-muted-foreground">{t("office.cat.contact")}</dt>
-              <dd>{[c.firm.email, c.firm.phone, c.firm.city].filter(Boolean).join(" · ")}</dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">{t("office.cat.people")}</dt>
-              <dd>{c.people.length ? c.people.map((p) => (p.title ? `${p.full_name} (${p.title})` : p.full_name)).join(", ") : t("office.cat.no_people")}</dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">{t("office.cat.works_in")}</dt>
-              <dd>{c.businesses.length ? c.businesses.map((b) => b.name).join(", ") : t("office.cat.no_businesses")}</dd>
-            </div>
-          </dl>
-          <p className="mt-3 flex gap-3 border-t border-border pt-3 text-xs">
-            <span className="tabular-nums">{t("office.cat.open_count", { count: c.open })}</span>
-            <span className={cn("tabular-nums", c.overdue > 0 ? "text-status-danger-fg" : "text-muted-foreground")}>{t("office.cat.overdue_count", { count: c.overdue })}</span>
-          </p>
-        </article>
-      ))}
-    </div>
+    <>
+      {admin ? (
+        <p className="rounded-[4px] border border-border bg-muted px-2 py-1 text-xs text-muted-foreground">{t("office.firms.admin_note")}</p>
+      ) : (
+        <p className="rounded-[4px] border border-border bg-muted px-2 py-1 text-xs text-muted-foreground">{t("office.firms.read_note")}</p>
+      )}
+      <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {slots.map((slot) => {
+          // B1 with no firm is done by the office's own team, as program generation does.
+          const firm = slot.firm ?? (slot.area === "B1" && office ? office : null);
+          const card = firm ? cardOf(firm.id) : undefined;
+          return (
+            <article key={slot.area} className={cn("rounded-md border bg-surface p-4", firm ? "border-border" : "border-dashed border-border")}>
+              <div className="flex items-start justify-between gap-2">
+                <h2 className="text-sm font-semibold"><span className="font-display">{slot.area}</span> {t(`areas.${slot.area}`)}</h2>
+                {firm && card && (
+                  <span className="shrink-0 rounded-[4px] border border-border px-1.5 py-0.5 text-[11px] text-muted-foreground">{card.internal ? t("office.cat.internal") : t("office.cat.external")}</span>
+                )}
+              </div>
+              {firm && card ? (
+                <FirmBody card={card} />
+              ) : (
+                <div className="mt-3">
+                  <p className="text-sm font-medium text-muted-foreground">{t("office.firms.none")}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{t("office.firms.none_hint")}</p>
+                </div>
+              )}
+              {admin && (
+                <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-border pt-3">
+                  {firm && firm.kind === "partner_firm" ? (
+                    <>
+                      <button className={linkBtn} onClick={() => setDialog({ kind: "edit", firm })}>{t("office.firms.edit")}</button>
+                      <button className={linkBtn} onClick={() => setDialog({ kind: "replace", firm, openTasks: card?.open ?? 0 })}>{t("office.firms.replace")}</button>
+                      <button className={linkBtn} onClick={() => setDialog({ kind: "deactivate", firm })}>{t("office.firms.deactivate")}</button>
+                      <button className={linkBtn} onClick={() => setHistory(firm)}>{t("accounts.history_action")}</button>
+                    </>
+                  ) : (
+                    <button className={secondaryBtn} onClick={() => setDialog({ kind: "create", area: slot.area })}>{t("office.firms.new")}</button>
+                  )}
+                </div>
+              )}
+            </article>
+          );
+        })}
+      </div>
+
+      {previous.length > 0 && (
+        <section className="mt-6 rounded-md border border-border bg-surface">
+          <button onClick={() => setShowPrevious((v) => !v)} className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-semibold" aria-expanded={showPrevious}>
+            {t("office.firms.previous_title", { count: previous.length })}
+            <span className="text-xs font-normal text-link">{showPrevious ? t("office.firms.previous_hide") : t("office.firms.previous_show")}</span>
+          </button>
+          {showPrevious && (
+            <ul className="divide-y divide-border border-t border-border">
+              {previous.map((p) => {
+                const card = cardOf(p.id);
+                const next = orgs.find((o) => o.id === p.replaced_by_id);
+                return (
+                  <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
+                    <div className="min-w-0">
+                      <p className="font-medium text-muted-foreground">{firmName(t, p)} <span className="ml-1 rounded-[4px] border border-status-neutral-border bg-status-neutral-bg px-1.5 py-0.5 text-[11px] font-medium text-status-neutral-fg">{t("office.firms.inactive")}</span></p>
+                      <p className="text-xs text-muted-foreground">
+                        {next ? t("office.firms.replaced_by", { name: next.name }) : t("office.firms.retired")}
+                        {card && card.open > 0 ? ` · ${t("office.cat.open_count", { count: card.open })}` : ""}
+                      </p>
+                    </div>
+                    <button className={linkBtn} onClick={() => setHistory(p)}>{t("accounts.history_action")}</button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+      )}
+
+      {dialog?.kind === "create" && office && <FirmFormDialog mode={{ kind: "create", area: dialog.area, officeId: office.id }} onClose={() => setDialog(null)} />}
+      {dialog?.kind === "edit" && <FirmFormDialog mode={{ kind: "edit", firm: dialog.firm }} onClose={() => setDialog(null)} />}
+      {dialog?.kind === "replace" && <FirmFormDialog mode={{ kind: "replace", firm: dialog.firm, openTasks: dialog.openTasks }} onClose={() => setDialog(null)} />}
+      {dialog?.kind === "deactivate" && <DeactivateFirmDialog firm={dialog.firm} onClose={() => setDialog(null)} />}
+      <FirmHistorySheet firm={history} onClose={() => setHistory(null)} />
+    </>
   );
 }
 
+function FirmBody({ card: c }: { card: FirmCard }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <p className="mt-1 text-sm font-medium">{firmName(t, c.firm)}</p>
+      {c.firm.specialty && <p className="mt-1 text-xs text-muted-foreground">{c.firm.specialty}</p>}
+      <dl className="mt-3 space-y-2 text-xs">
+        <div>
+          <dt className="text-muted-foreground">{t("office.cat.contact")}</dt>
+          <dd>{[c.firm.contact_name, c.firm.email, c.firm.phone, c.firm.city].filter(Boolean).join(" · ")}</dd>
+        </div>
+        <div>
+          <dt className="text-muted-foreground">{t("office.cat.people")}</dt>
+          <dd>{c.people.length ? c.people.map((p) => (p.title ? `${p.full_name} (${p.title})` : p.full_name)).join(", ") : t("office.cat.no_people")}</dd>
+        </div>
+        <div>
+          <dt className="text-muted-foreground">{t("office.cat.works_in")}</dt>
+          <dd>{c.businesses.length ? c.businesses.map((b) => b.name).join(", ") : t("office.cat.no_businesses")}</dd>
+        </div>
+      </dl>
+      <p className="mt-3 flex gap-3 border-t border-border pt-3 text-xs">
+        <span className="tabular-nums">{t("office.cat.open_count", { count: c.open })}</span>
+        <span className={cn("tabular-nums", c.overdue > 0 ? "text-status-danger-fg" : "text-muted-foreground")}>{t("office.cat.overdue_count", { count: c.overdue })}</span>
+      </p>
+    </>
+  );
+}
+
+/** Equipo SM: people of the office. The office admin invites, deactivates and reactivates. */
 function TeamTab() {
   const { t } = useTranslation();
   const me = useCurrentUser().data;
-  const usersQ = useUsers();
+  const usersQ = useUsersWithInactive();
+  const orgsQ = useOrganizations();
   const tasksQ = useTasks();
   const bizQ = useBusinesses();
-  if (usersQ.isError || tasksQ.isError || bizQ.isError) return <ErrorBox onRetry={() => { void usersQ.refetch(); void tasksQ.refetch(); void bizQ.refetch(); }} />;
-  if (usersQ.isLoading || tasksQ.isLoading || bizQ.isLoading || !me) return <Loading />;
-  const rows = buildTeamRows(usersQ.data ?? [], me.organization_id ?? "", tasksQ.data ?? [], bizQ.data ?? []);
-  if (!rows.length) return <p className="rounded-md border border-dashed border-border bg-surface p-8 text-center text-sm text-muted-foreground">{t("office.cat.team_empty")}</p>;
+  const [inviting, setInviting] = useState(false);
+  const [deactivating, setDeactivating] = useState<User | null>(null);
+  const [history, setHistory] = useState<User | null>(null);
+  if (usersQ.isError || tasksQ.isError || bizQ.isError || orgsQ.isError) return <ErrorBox onRetry={() => { void usersQ.refetch(); void tasksQ.refetch(); void bizQ.refetch(); void orgsQ.refetch(); }} />;
+  if (usersQ.isLoading || tasksQ.isLoading || bizQ.isLoading || orgsQ.isLoading || !me) return <Loading />;
+  const admin = isOfficeAdmin(me);
+  const rows = buildTeamRows(usersQ.data ?? [], me.organization_id ?? "", tasksQ.data ?? [], bizQ.data ?? [])
+    .sort((a, b) => Number(!isActiveUser(a.user)) - Number(!isActiveUser(b.user)) || a.user.full_name.localeCompare(b.user.full_name));
   return (
-    <div className="overflow-x-auto rounded-md border border-border bg-surface">
-      <table className="w-full min-w-[640px] text-sm">
-        <thead className="border-b border-border bg-muted text-xs text-muted-foreground">
-          <tr>
-            <th className="px-4 py-2 text-left font-medium">{t("office.cat.col_person")}</th>
-            <th className="px-3 py-2 text-left font-medium">{t("office.cat.col_role")}</th>
-            <th className="px-3 py-2 text-left font-medium">{t("office.cat.col_supervises")}</th>
-            <th className="px-3 py-2 text-left font-medium">{t("office.cat.col_booking")}</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {rows.map((r) => (
-            <tr key={r.user.id}>
-              <td className="px-4 py-3"><span className="block font-medium">{r.user.full_name}</span><span className="block text-xs text-muted-foreground">{r.user.email}</span></td>
-              <td className="px-3 py-3">{r.user.title ?? "—"}</td>
-              <td className="px-3 py-3">{r.supervises.length ? r.supervises.map((b) => b.name).join(", ") : <span className="text-muted-foreground">{t("office.cat.supervises_none")}</span>}</td>
-              <td className={cn("px-3 py-3", r.has_booking_url ? "text-status-success-fg" : "text-muted-foreground")}>{r.has_booking_url ? t("office.cat.booking_yes") : t("office.cat.booking_no")}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="rounded-[4px] border border-border bg-muted px-2 py-1 text-xs text-muted-foreground">{t(admin ? "office.team.admin_note" : "office.team.read_note")}</p>
+        {admin && <button className={primaryBtn} onClick={() => setInviting(true)}><UserPlus className="h-4 w-4" />{t("accounts.invite.title")}</button>}
+      </div>
+      {!rows.length ? (
+        <p className="mt-4 rounded-md border border-dashed border-border bg-surface p-8 text-center text-sm text-muted-foreground">{t("office.cat.team_empty")}</p>
+      ) : (
+        <div className="mt-4 overflow-x-auto rounded-md border border-border bg-surface">
+          <table className="w-full min-w-[760px] text-sm">
+            <thead className="border-b border-border bg-muted text-xs text-muted-foreground">
+              <tr>
+                <th className="px-4 py-2 text-left font-medium">{t("office.cat.col_person")}</th>
+                <th className="px-3 py-2 text-left font-medium">{t("office.cat.col_role")}</th>
+                <th className="px-3 py-2 text-left font-medium">{t("office.cat.col_supervises")}</th>
+                <th className="px-3 py-2 text-left font-medium">{t("office.cat.col_booking")}</th>
+                <th className="px-3 py-2 text-left font-medium">{t("accounts.col_status")}</th>
+                {admin && <th className="px-3 py-2 text-right font-medium">{t("accounts.col_actions")}</th>}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {rows.map((r) => (
+                <tr key={r.user.id} className={cn(!isActiveUser(r.user) && "text-muted-foreground")}>
+                  <td className="px-4 py-3">
+                    <span className="flex items-center gap-2 font-medium">{r.user.full_name}{r.user.is_admin && <AdminTag />}{r.user.id === me.id && <span className="text-xs font-normal text-muted-foreground">{t("profile.you")}</span>}</span>
+                    <span className="block text-xs text-muted-foreground">{r.user.email}</span>
+                  </td>
+                  <td className="px-3 py-3">{r.user.title ?? "—"}</td>
+                  <td className="px-3 py-3">{r.supervises.length ? r.supervises.map((b) => b.name).join(", ") : <span className="text-muted-foreground">{t("office.cat.supervises_none")}</span>}</td>
+                  <td className={cn("px-3 py-3", r.has_booking_url ? "text-status-success-fg" : "text-muted-foreground")}>{r.has_booking_url ? t("office.cat.booking_yes") : t("office.cat.booking_no")}</td>
+                  <td className="px-3 py-3"><UserStatusBadge status={userStatus(r.user)} /></td>
+                  {admin && <td className="px-3 py-3"><PersonActions user={r.user} orgs={orgsQ.data ?? []} onDeactivate={setDeactivating} onHistory={setHistory} /></td>}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <InvitePersonDialog open={inviting} onOpenChange={setInviting} fixedRole="sm_team" fixedOrganizationId={me.organization_id ?? undefined} />
+      <DeactivatePersonDialog user={deactivating} onClose={() => setDeactivating(null)} />
+      <AccountHistorySheet user={history} onClose={() => setHistory(null)} />
+    </>
   );
 }

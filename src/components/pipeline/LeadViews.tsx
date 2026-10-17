@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { LEAD_STAGES, type LeadStage, type LeadWithComputed } from "@/lib/api/types";
 import { STALE_STAGE_DAYS, byTimeInStage, daysSince } from "@/lib/leads/pipeline";
 import { cn } from "@/lib/utils";
-import { BandBadge, STAGE_BAR, StageBadge } from "./LeadBadges";
+import { AssessmentBadge, BandBadge, STAGE_BAR, StageBadge } from "./LeadBadges";
 
 interface ViewProps {
   leads: LeadWithComputed[];
@@ -43,7 +43,7 @@ function LeadCard({ lead, selected, consultantName, readOnly, onOpen, onDragStar
     >
       <div className="flex items-start justify-between gap-2">
         <span className="font-medium leading-snug">{lead.business.name}</span>
-        <BandBadge band={lead.result.band} score={lead.result.score} />
+        {lead.result ? <BandBadge band={lead.result.band} score={lead.result.score} /> : <AssessmentBadge lead={lead} />}
       </div>
       <p className="mt-0.5 text-xs text-muted-foreground">{lead.contact.name} · {lead.contact.city}</p>
       <p className="mt-1.5 text-xs text-muted-foreground">
@@ -171,7 +171,7 @@ export function LeadTable(props: ViewProps) {
               <td className="whitespace-nowrap px-3 py-2.5">{l.contact.city}, {l.contact.state}</td>
               <td className="whitespace-nowrap px-3 py-2.5">{t(`pipeline.industries.${l.business.industry}`)}</td>
               <td className="whitespace-nowrap px-3 py-2.5 tabular-nums">{t(`pipeline.revenue_ranges.${l.business.revenue_range}`)}</td>
-              <td className="px-3 py-2.5"><BandBadge band={l.result.band} score={l.result.score} /></td>
+              <td className="px-3 py-2.5">{l.result ? <BandBadge band={l.result.band} score={l.result.score} /> : <AssessmentBadge lead={l} />}</td>
               <td className="px-3 py-2.5"><StageBadge stage={l.stage} /></td>
               <td className="whitespace-nowrap px-3 py-2.5">{props.consultantName(l.consultant_user_id)}</td>
               <td className="whitespace-nowrap px-3 py-2.5 text-xs"><DaysInStage lead={l} /></td>

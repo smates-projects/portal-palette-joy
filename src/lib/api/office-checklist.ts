@@ -1,3 +1,4 @@
+import { isActiveFirm } from "@/lib/accounts/permissions";
 import { AREAS } from "@/lib/tasks/owner";
 import type { Lead, Organization, User } from "./types";
 import type { OfficeChecklist, OfficeChecklistItem } from "./network-types";
@@ -8,7 +9,8 @@ import type { OfficeChecklist, OfficeChecklistItem } from "./network-types";
  * program generation sends B1 tasks.
  */
 export function missingFirmAreas(office: Organization, orgs: Organization[]) {
-  const firms = orgs.filter((o) => o.kind === "partner_firm" && o.parent_id === office.id);
+  // Replaced or retired firms do not count: the area is "Sin firma" until a new one is added.
+  const firms = orgs.filter((o) => o.kind === "partner_firm" && o.parent_id === office.id && isActiveFirm(o));
   return AREAS.filter((area) => area !== "B1" && !firms.some((f) => f.area === area));
 }
 

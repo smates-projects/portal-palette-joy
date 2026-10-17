@@ -22,6 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { LeadBoard, LeadTable } from "./LeadViews";
 import { LeadDetail } from "./LeadDetail";
 import { DiscardLeadDialog } from "./LeadDialogs";
+import { AddBusinessDialog } from "./AddBusinessDialog";
 
 type SearchPatch = { [K in keyof LeadsSearch]?: LeadsSearch[K] | undefined };
 type MoveTarget = "evaluated" | "meeting" | "documents" | "accepted";
@@ -36,6 +37,7 @@ export function PipelinePage({ search }: { search: LeadsSearch }) {
   const discard = useDiscardLead();
   const sendNda = useSendNdaMou();
   const [discardFor, setDiscardFor] = useState<LeadWithComputed | null>(null);
+  const [adding, setAdding] = useState(false);
 
   const setSearch = (patch: SearchPatch) => {
     const next: Record<string, unknown> = { ...search, ...patch };
@@ -87,10 +89,16 @@ export function PipelinePage({ search }: { search: LeadsSearch }) {
   };
 
   const header = (
-    <>
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("pipeline.for_role")}</p>
-      <h1 className="mt-1 text-2xl font-semibold tracking-tight">{t("pipeline.heading")}</h1>
-    </>
+    <div className="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("pipeline.for_role")}</p>
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight">{t("pipeline.heading")}</h1>
+      </div>
+      {/* Businesses that did not come through the assessment (referrals, events). */}
+      <button onClick={() => setAdding(true)} className="inline-flex h-9 items-center justify-center rounded-md border border-border bg-surface px-4 text-sm font-medium transition-colors hover:bg-muted">
+        {t("pipeline.manual.add")}
+      </button>
+    </div>
   );
 
   if (leadsQ.isError)
@@ -216,6 +224,7 @@ export function PipelinePage({ search }: { search: LeadsSearch }) {
         </SheetContent>
       </Sheet>
 
+      {adding && <AddBusinessDialog onClose={() => setAdding(false)} onCreated={(id) => { setAdding(false); setSearch({ lead: id, view: "board", stage: undefined, quick: undefined }); }} />}
       {discardFor && (
         <DiscardLeadDialog
           name={discardFor.business.name}

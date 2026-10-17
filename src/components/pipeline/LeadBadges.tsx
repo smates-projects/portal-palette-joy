@@ -45,6 +45,16 @@ export function StageBadge({ stage }: { stage: LeadStage }) {
   );
 }
 
+/** Business added by hand: "Sin assessment" until SM sends it, then "Assessment pendiente". */
+export function AssessmentBadge({ lead }: { lead: { source?: "assessment" | "manual" | undefined; assessment_sent_at?: string | null | undefined } }) {
+  const { t } = useTranslation();
+  return (
+    <span className={cn(base, "border-dashed border-status-neutral-border bg-surface text-muted-foreground")}>
+      {t(lead.assessment_sent_at ? "pipeline.manual.assessment_pending" : "pipeline.manual.no_assessment")}
+    </span>
+  );
+}
+
 export function BlockBadge({ status }: { status: BlockStatus }) {
   const { t } = useTranslation();
   return <span className={cn(base, BLOCK[status])}>{t(`pipeline.block_status.${status}`)}</span>;

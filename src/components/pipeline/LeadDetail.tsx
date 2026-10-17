@@ -19,6 +19,7 @@ import { primaryActionFor } from "@/lib/leads/pipeline";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PrimaryButton } from "@/components/tasks/detail/dialogs";
 import { BandBadge, BlockBadge, StageBadge } from "./LeadBadges";
+import { ManualLeadSection } from "./ManualLeadSection";
 
 /**
  * Detail of one lead. With `readOnly` (SM Global) there are no actions and no note box: it only shows what the
@@ -189,8 +190,10 @@ export function LeadDetail(props: {
             <FundsPanel businessId={lead.business_id} mode={props.readOnly ? "read" : "sm"} />
           </section>
         )}
+        {/* 1d. Business added by hand: origin and the assessment still to come */}
+        {lead.source === "manual" && <ManualLeadSection lead={lead} readOnly={!!props.readOnly} />}
         {/* 2. Assessment result as the owner saw it */}
-        <section>
+        {lead.result && <section>
           <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("pipeline.detail.result_title")}</h3>
           <div className="mt-2 rounded-md border border-border p-4">
             <div className="flex items-start justify-between gap-3">
@@ -229,7 +232,7 @@ export function LeadDetail(props: {
             </div>
             <p className="mt-3 text-xs text-muted-foreground">{t("pipeline.detail.submitted_at", { date: formatDate(lead.submitted_at, lng) })}</p>
           </div>
-        </section>
+        </section>}
 
         {/* 3. Know-how */}
         {lead.know_how_example && (

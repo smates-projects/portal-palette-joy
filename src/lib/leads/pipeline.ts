@@ -168,7 +168,7 @@ export function filterLeads<T extends WithIntake>(leads: T[], s: LeadsSearch, to
     (l) =>
       (!s.stage || l.stage === s.stage) &&
       (!s.consultant || l.consultant_user_id === s.consultant) &&
-      (!s.band || l.result.band === s.band) &&
+      (!s.band || l.result?.band === s.band) &&
       (!s.industry || l.business.industry === s.industry) &&
       (!s.revenue || l.business.revenue_range === s.revenue) &&
       (!s.quick || matchesQuick(l, s.quick, today)),

@@ -1,4 +1,5 @@
 import { TODAY } from "@/config/app";
+import { isActiveFirm, isActiveUser } from "@/lib/accounts/permissions";
 import type { AreaCode, Business, Franchisability, Organization, TaskVersion, TaskWithComputed, User } from "@/lib/api/types";
 import { AREAS, areaHealth, type Health } from "./owner";
 
@@ -98,9 +99,26 @@ export const filterBusinessRows = (rows: BusinessRow[], s: BusinessesSearch) =>
       (!s.industry || r.business.industry === s.industry),
   );
 
-/** Firm doing an area: the partner firm of that area, else the SM office's own team (strategy). */
+/** Firm doing an area: the ACTIVE partner firm of that area, else the SM office's own team (strategy). */
 export const firmForArea = (area: AreaCode, orgs: Organization[]) =>
-  orgs.find((o) => o.kind === "partner_firm" && o.area === area) ?? orgs.find((o) => o.kind === "sm") ?? null;
+  orgs.find((o) => o.kind === "partner_firm" && o.area === area && isActiveFirm(o)) ?? orgs.find((o) => o.kind === "sm") ?? null;
+
+/** Firmas tab: for each area, the active firm (or null = "Sin firma") and the firms that did it before. */
+export interface AreaFirmSlot {
+  area: AreaCode;
+  firm: Organization | null;
+  previous: Organization[];
+}
+
+export const buildAreaFirmSlots = (orgs: Organization[]): AreaFirmSlot[] =>
+  AREAS.map((area) => {
+    const inArea = orgs.filter((o) => o.kind === "partner_firm" && o.area === area);
+    return {
+      area,
+      firm: inArea.find(isActiveFirm) ?? null,
+      previous: inArea.filter((o) => !isActiveFirm(o)).sort((a, b) => (b.deactivated_at ?? "").localeCompare(a.deactivated_at ?? "")),
+    };
+  });
 
 export interface AreaCard {
   area: AreaCode;
@@ -131,13 +149,14 @@ export function buildAreaCards(businessId: string, tasks: TaskWithComputed[], ve
 export interface FirmCard {
   firm: Organization;
   internal: boolean;
+  active: boolean;
   people: User[];
   businesses: Business[];
   open: number;
   overdue: number;
 }
 
-/** Firmas: partner firms plus the office's own team, by area order. */
+/** Firmas: partner firms (active and replaced) plus the office's own team, by area order. */
 export function buildFirmCards(orgs: Organization[], users: User[], tasks: TaskWithComputed[], businesses: Business[]): FirmCard[] {
   const areaIdx = (o: Organization) => (o.kind === "sm" ? 0 : o.area ? AREAS.indexOf(o.area) : 99);
   return orgs
@@ -147,8 +166,9 @@ export function buildFirmCards(orgs: Organization[], users: User[], tasks: TaskW
       const bizIds = new Set(mine.map((t) => t.business_id));
       return {
         firm,
-        internal: firm.kind === "sm",
-        people: users.filter((u) => u.organization_id === firm.id),
+        internal: firm.kind === "sm" || !!firm.internal,
+        active: isActiveFirm(firm),
+        people: users.filter((u) => u.organization_id === firm.id && isActiveUser(u)),
         businesses: businesses.filter((b) => bizIds.has(b.id)),
         open: mine.filter((t) => t.status !== "accepted").length,
         overdue: mine.filter((t) => t.is_overdue).length,
