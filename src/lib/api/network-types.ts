@@ -1,6 +1,7 @@
 // Types for the SM network (Global, offices), franchisors, franchises, Bishop and owner data.
 // Same conventions as types.ts: snake_case, UUID string ids, ISO dates.
 import type { AreaCode, BusinessStatus, IsoDate, IsoDateTime, Lead, LeadIndustry, LeadStage, OfficeStatus, Organization, ReviewClock, User, Uuid } from "./types";
+import type { AssessmentAreaMap } from "./entry-types";
 
 /** Month as YYYY-MM. */
 export type IsoMonth = string;
@@ -158,6 +159,8 @@ export interface PlatformRules {
    * the mock leaves it out of the rules it returns to owners, firms and franchisees.
    */
   program_amount?: number | undefined;
+  /** Assessment block → areas whose tasks start as "A validar" when the block is strong (see lib/leads/prevalidation). */
+  assessment_area_map?: AssessmentAreaMap | undefined;
 }
 
 export interface IntakeDocRule {

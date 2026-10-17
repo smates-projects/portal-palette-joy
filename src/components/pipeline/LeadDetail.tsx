@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Mail, MapPin, Phone, X } from "lucide-react";
 import {
-  useAddLeadNote, useApproveDocuments, useBusinessFunds, useConfirmProgramStart, useCurrentUser, useLeadDetail, useRecordFundPayment,
+  useAddLeadNote, useAddMeetingNote, useApproveDocuments, useBusinessFunds, useConfirmProgramStart, useCurrentUser, useLeadDetail, useRecordFundPayment,
   useRejectDocuments, useRemoveFundPayment, useSendTripartite, useUsers,
 } from "@/lib/api/hooks";
 import { validateFundPayment } from "@/lib/leads/funds";
@@ -18,7 +18,9 @@ import { formatDate, formatDateTime } from "@/lib/format";
 import { primaryActionFor } from "@/lib/leads/pipeline";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PrimaryButton } from "@/components/tasks/detail/dialogs";
-import { BandBadge, BlockBadge, StageBadge } from "./LeadBadges";
+import { StageBadge } from "./LeadBadges";
+import { AssessmentResult, KnowHow } from "./AssessmentResult";
+import { EntryTimeline, MeetingCard, MeetingNoteDialog, SummaryEmail } from "./EntrySections";
 
 /**
  * Detail of one lead. With `readOnly` (SM Global) there are no actions and no note box: it only shows what the
@@ -48,6 +50,8 @@ export function LeadDetail(props: {
   const start = useConfirmProgramStart();
   const [recording, setRecording] = useState(false);
   const [starting, setStarting] = useState(false);
+  const [noting, setNoting] = useState(false);
+  const meetingNote = useAddMeetingNote();
   const businessIdForFunds = q.data?.lead.funds ? q.data.lead.business_id ?? undefined : undefined;
   const fundsQ = useBusinessFunds(businessIdForFunds);
   const userName = (id: string | null) => (id ? usersQ.data?.find((u) => u.id === id)?.full_name ?? "" : "");
@@ -82,6 +86,11 @@ export function LeadDetail(props: {
       return sendTripartite.mutate(lead.id, { onSuccess: () => toast.success(t("pipeline.t_tripartite_sent", { name: lead.business.name })), onError: fail });
     if (action === "record_funds") return setRecording(true);
     if (action === "start_program") return setStarting(true);
+    if (action === "join_meet") {
+      if (lead.meeting) window.open(lead.meeting.meet_url, "_blank", "noopener,noreferrer");
+      return;
+    }
+    if (action === "meeting_note") return setNoting(true);
     props.onPrimary?.(lead);
   };
   const remaining = fundsQ.data ? Math.max(0, fundsQ.data.total - fundsQ.data.received) : 0;
@@ -115,7 +124,7 @@ export function LeadDetail(props: {
   const describe = (e: LeadEvent) => {
     const actor = userName(e.actor_user_id);
     const stage = (s: string | null) => (s ? t(`pipeline.stages.${s}`) : "");
-    return t(`pipeline.events.${e.kind}`, { actor, from: stage(e.from), to: stage(e.to), date: e.signed_on ? formatDate(e.signed_on, lng) : "" });
+    return t(`pipeline.events.${e.kind}`, { actor, owner: lead.contact.name, from: stage(e.from), to: stage(e.to), date: e.signed_on ? formatDate(e.signed_on, lng) : "" });
   };
   const submitNote = () => {
     if (!note.trim()) return;
@@ -158,7 +167,7 @@ export function LeadDetail(props: {
         ) : (
           <>
             <div className="mt-4 flex flex-wrap items-center gap-3">
-              <PrimaryButton onClick={runPrimary} disabled={(props.pending ?? false) || approve.isPending || sendTripartite.isPending || record.isPending || start.isPending || blockedHint !== null}>
+              <PrimaryButton onClick={runPrimary} disabled={(props.pending ?? false) || approve.isPending || sendTripartite.isPending || record.isPending || start.isPending || meetingNote.isPending || blockedHint !== null}>
                 {t(`pipeline.actions.${action}`, { count: lead.intake?.to_review ?? 0 })}
               </PrimaryButton>
               {canDiscard && !props.readOnly && (
@@ -177,6 +186,9 @@ export function LeadDetail(props: {
       </header>
 
       <div className="flex-1 space-y-6 px-6 py-5">
+        {/* 1a. Automatic entry: the four phases, the booked meeting and the summary email */}
+        <EntryTimeline lead={lead} />
+        <MeetingCard lead={lead} consultantName={consultant?.full_name ?? ""} />
         {/* 1b. Entry checklist (from NDA + MOU on) */}
         {lead.intake && <IntakeChecklist leadId={lead.id} readOnly={!!props.readOnly} />}
         {(lead.stage === "documents" || lead.stage === "accepted") && lead.intake && (
@@ -192,52 +204,14 @@ export function LeadDetail(props: {
         {/* 2. Assessment result as the owner saw it */}
         <section>
           <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("pipeline.detail.result_title")}</h3>
-          <div className="mt-2 rounded-md border border-border p-4">
-            <div className="flex items-start justify-between gap-3">
-              <p className="text-base font-semibold leading-snug">{t(`pipeline.detail.headline.${lead.result.band}`)}</p>
-              <div className="text-right">
-                <span className="block font-display text-2xl font-semibold tabular-nums">{lead.result.score}</span>
-                <BandBadge band={lead.result.band} />
-              </div>
-            </div>
-            {!lead.result.eligible_program && (
-              <div className="mt-3 rounded-md border border-status-warning-border bg-status-warning-bg px-3 py-2 text-sm text-status-warning-fg">
-                <p className="font-medium">{t("pipeline.detail.not_eligible")}</p>
-                <ul className="mt-1 list-disc pl-4">
-                  {lead.result.eligibility_gaps.map((g) => <li key={g}>{t(`pipeline.detail.gaps.${g}`)}</li>)}
-                </ul>
-              </div>
-            )}
-            <p className="mt-4 text-xs font-medium text-muted-foreground">{t("pipeline.detail.blocks_title")}</p>
-            <ul className="mt-1.5 divide-y divide-border">
-              {lead.result.blocks.map((b) => (
-                <li key={b.key} className="flex items-center justify-between py-1.5 text-sm">
-                  <span>{t(`pipeline.blocks.${b.key}`)}</span>
-                  <BlockBadge status={b.status} />
-                </li>
-              ))}
-            </ul>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">{t("pipeline.detail.strengths")}</p>
-                <ul className="mt-1 list-disc space-y-0.5 pl-4 text-sm">{lead.result.strengths.map((s) => <li key={s}>{s}</li>)}</ul>
-              </div>
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">{t("pipeline.detail.priorities")}</p>
-                <ul className="mt-1 list-disc space-y-0.5 pl-4 text-sm">{lead.result.priorities.map((s) => <li key={s}>{s}</li>)}</ul>
-              </div>
-            </div>
-            <p className="mt-3 text-xs text-muted-foreground">{t("pipeline.detail.submitted_at", { date: formatDate(lead.submitted_at, lng) })}</p>
-          </div>
+          <div className="mt-2"><AssessmentResult result={lead.result} submittedAt={lead.submitted_at} /></div>
         </section>
 
+        {/* 2b. The summary email the person got */}
+        <SummaryEmail lead={lead} />
+
         {/* 3. Know-how */}
-        {lead.know_how_example && (
-          <section className="rounded-md border-l-2 border-gold bg-muted/60 px-4 py-3">
-            <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("pipeline.detail.know_how")}</h3>
-            <p className="mt-1.5 text-sm leading-relaxed">“{lead.know_how_example}”</p>
-          </section>
-        )}
+        {lead.know_how_example && <KnowHow text={lead.know_how_example} />}
 
         {/* 4. Business data in ranges */}
         <section>
@@ -300,6 +274,14 @@ export function LeadDetail(props: {
       )}
       {starting && lead.funds?.ready_to_start && lead.funds.proposed_day1 && (
         <StartProgramDialog name={lead.business.name} proposed={lead.funds.proposed_day1} pending={start.isPending} onClose={() => setStarting(false)} onConfirm={confirmStart} />
+      )}
+      {noting && (
+        <MeetingNoteDialog
+          name={lead.business.name}
+          pending={meetingNote.isPending}
+          onClose={() => setNoting(false)}
+          onConfirm={(body) => meetingNote.mutate({ id: lead.id, body }, { onSuccess: () => { setNoting(false); toast.success(t("entry.note.t_saved")); }, onError: fail })}
+        />
       )}
       {rejecting && (
         <RejectDocsDialog

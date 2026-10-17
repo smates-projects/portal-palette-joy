@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft, ChevronRight, Lock } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { ChevronLeft, ChevronRight, Lock, Video } from "lucide-react";
 import { TODAY } from "@/config/app";
 import { localeTag } from "@/lib/format";
-import { useCalendarEvents, useMeetings } from "@/lib/api/hooks";
+import { useCalendarEvents, useCurrentUser, useLeadMeetings, useMeetings } from "@/lib/api/hooks";
 import type { TaskWithComputed } from "@/lib/api/types";
 import { CAL_MODES, buildCalendarItems, monthGrid, shiftAnchor, weekDays, type CalItem, type CalMode } from "@/lib/tasks/calendar";
 import { cn } from "@/lib/utils";
@@ -23,10 +24,13 @@ export function TaskCalendar(props: {
   const [anchor, setAnchor] = useState(TODAY);
   const meetingsQ = useMeetings();
   const eventsQ = useCalendarEvents();
+  const navigate = useNavigate();
+  // Entry meetings the owners booked with this consultant (SM team only).
+  const leadMeetingsQ = useLeadMeetings(useCurrentUser().data?.role === "sm_team");
 
   const items = useMemo(
-    () => buildCalendarItems(props.rows, meetingsQ.data ?? [], eventsQ.data ?? []),
-    [props.rows, meetingsQ.data, eventsQ.data],
+    () => buildCalendarItems(props.rows, meetingsQ.data ?? [], eventsQ.data ?? [], leadMeetingsQ.data ?? []),
+    [props.rows, meetingsQ.data, eventsQ.data, leadMeetingsQ.data],
   );
   const days = mode === "month" ? monthGrid(anchor) : weekDays(anchor);
   const fmt = (o: Intl.DateTimeFormatOptions, iso: string) =>
@@ -50,6 +54,18 @@ export function TaskCalendar(props: {
           <span className="shrink-0 whitespace-nowrap tabular-nums">{time(it.at)}</span>
           <span className="truncate">{compact ? it.event.title : `${t("tasks.calendar.google_label")} · ${it.event.title}`}</span>
         </div>
+      );
+    if (it.kind === "lead")
+      return (
+        <button
+          onClick={() => void navigate({ to: "/embudo", search: { lead: it.item.lead_id } })}
+          title={`${t("entry.calendar.title", { name: it.item.business_name })} · ${time(it.at)} · ${it.item.meeting.meet_url}`}
+          className={cn(base, "border border-primary bg-accent/60 text-foreground hover:brightness-95")}
+        >
+          <Video className="h-2.5 w-2.5 shrink-0" />
+          <span className="shrink-0 whitespace-nowrap tabular-nums">{time(it.at)}</span>
+          <span className="truncate">{compact ? it.item.business_name : t("entry.calendar.title", { name: it.item.business_name })}</span>
+        </button>
       );
     if (it.kind === "meeting") {
       const proposed = it.meeting.status === "proposed";
@@ -106,6 +122,9 @@ export function TaskCalendar(props: {
             <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-[2px] border border-border bg-surface" />{t("tasks.calendar.legend_confirmed")}</span>
             <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-[2px] border border-dashed border-border bg-surface" />{t("tasks.calendar.legend_proposed")}</span>
             <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-[2px] border border-border bg-muted" />{t("tasks.calendar.legend_google")}</span>
+            {(leadMeetingsQ.data?.length ?? 0) > 0 && (
+              <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-[2px] border border-primary bg-accent/60" />{t("entry.calendar.legend")}</span>
+            )}
           </div>
           <div role="radiogroup" aria-label={t("tasks.calendar.mode")} className="flex rounded-md border border-border bg-surface p-0.5">
             {CAL_MODES.map((m) => (
@@ -154,7 +173,7 @@ export function TaskCalendar(props: {
                   </span>
                 )}
                 {shown.map((it) => (
-                  <Item key={`${it.kind}-${it.kind === "due" ? it.task.id : it.kind === "meeting" ? it.meeting.id : it.event.id}`} it={it} compact={mode === "month"} />
+                  <Item key={`${it.kind}-${it.kind === "due" ? it.task.id : it.kind === "meeting" ? it.meeting.id : it.kind === "lead" ? it.item.lead_id : it.event.id}`} it={it} compact={mode === "month"} />
                 ))}
                 {list.length > shown.length && (
                   <button

@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { useCatalogAdmin, useRules, useRulesHistory, useUpdateRules, useUsers } from "@/lib/api/hooks";
 import type { IntakeDocRule, PlatformRules } from "@/lib/api/network-types";
 import { IntakeDocsEditor } from "./IntakeDocsEditor";
+import { AssessmentMapEditor, ZonesSection } from "./EntryRules";
 import { cn } from "@/lib/utils";
 import { formatUsd } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -41,7 +42,9 @@ export function RulesPage() {
 
   const authorName = (id: string) => usersQ.data?.find((u) => u.id === id)?.full_name ?? "";
   const show = (field: keyof PlatformRules, value: unknown) =>
-    field === "program_amount"
+    field === "assessment_area_map"
+      ? t("entry.rules.map_history")
+      : field === "program_amount"
       ? formatUsd(Number(value), i18n.language)
       : field === "intake_documents"
       ? t("intake.rules.count", { count: (value as IntakeDocRule[]).filter((d) => !d.archived).length })
@@ -70,6 +73,8 @@ export function RulesPage() {
       {/* Re-keyed by the stored rules so the form starts from what was just saved. */}
       <RulesEditor key={JSON.stringify(rulesQ.data)} rules={rulesQ.data} catalog={catalogQ.data ?? []} />
       <IntakeDocsEditor key={`docs-${JSON.stringify(rulesQ.data.intake_documents)}`} rules={rulesQ.data} />
+      <ZonesSection />
+      <AssessmentMapEditor key={`map-${JSON.stringify(rulesQ.data.assessment_area_map)}`} rules={rulesQ.data} />
       {historyQ.isError ? (
         <div className="mt-6"><ErrorBox onRetry={() => void historyQ.refetch()} /></div>
       ) : (

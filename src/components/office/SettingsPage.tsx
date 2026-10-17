@@ -4,6 +4,7 @@ import { DEFAULT_FRANCHISABILITY_RULES } from "@/lib/api/franchisability";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DOT } from "./shared";
+import { ZonesSection } from "@/components/global/rules/EntryRules";
 
 /** Configuración (SM): office details and SM Global rules, read-only. */
 export function SettingsPage() {
@@ -73,6 +74,8 @@ export function SettingsPage() {
           </Row>
         </dl>
       </section>
+      {/* Which leads reach this office (SM Global sets the zones). */}
+      <ZonesSection readOnly officeId={me?.organization_id ?? undefined} />
     </div>
   );
 }

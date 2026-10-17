@@ -25,6 +25,8 @@ const DOT: Record<NotificationKind, string> = {
   task_updated: "bg-link",
   bishop_accepted: "bg-status-success-fg",
   funds_reported: "bg-primary",
+  lead_assessment: "bg-link",
+  meeting_booked: "bg-primary",
 };
 
 export function NotificationBell() {
@@ -115,7 +117,12 @@ export function NotificationBell() {
                       <span className={cn("block text-sm", !n.read_at && "font-medium")}>
                         {n.change
                           ? describeChange(n.change, n.actor_name ? firstName(n.actor_name) : "", t, i18n.language)
-                          : t(`notifications.kind_${n.kind}`, { name: n.actor_name ? firstName(n.actor_name) : "" })}
+                          : t(`notifications.kind_${n.kind}`, {
+                              name: n.actor_name ? firstName(n.actor_name) : "",
+                              // Automatic entry: "Nuevo assessment de {business} ({place})", "{owner} agendó reunión para el {date}".
+                              owner: n.actor_name ?? "", business: n.business_name, place: n.lead_place ?? "",
+                              date: n.meeting_at ? formatDateTime(n.meeting_at, i18n.language) : "",
+                            })}
                       </span>
                       <span className="block truncate text-xs text-muted-foreground">
                         {n.lead_id ? (

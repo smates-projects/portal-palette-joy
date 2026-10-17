@@ -128,6 +128,13 @@ export interface Task {
   updated_at: IsoDateTime;
   /** When the owner approved it (null/absent if not approved). */
   accepted_at?: IsoDateTime | null;
+  /**
+   * Set when the program starts, on tasks of the areas the assessment rated "strong": pending = "A validar: el negocio
+   * ya lo tendría"; existing = the consultant confirmed it already existed; needed = it has to be done. Null otherwise.
+   */
+  pre_validation?: PreValidation | null;
+  /** How it got approved: a deliverable the owner approved, or "Ya existía" (evidence shown in the Diagnóstico). */
+  approval_source?: ApprovalSource | null;
 }
 
 export interface TaskFile {
@@ -233,9 +240,12 @@ export const NOTIFICATION_KINDS = [
   // Entry flow (SM only): about a lead, not a task.
   "bishop_accepted",
   "funds_reported",
+  // Automatic entry (to the lead's consultant): a new assessment arrived, the owner booked the meeting.
+  "lead_assessment",
+  "meeting_booked",
 ] as const;
 /** Kinds about a lead of the Embudo. Only the SM team of the lead's office gets them. */
-export const LEAD_NOTIFICATION_KINDS: readonly NotificationKind[] = ["bishop_accepted", "funds_reported"];
+export const LEAD_NOTIFICATION_KINDS: readonly NotificationKind[] = ["bishop_accepted", "funds_reported", "lead_assessment", "meeting_booked"];
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 export type NotificationChannel = "in_app" | "email";
 
@@ -257,6 +267,10 @@ export interface AppNotification {
   change?: TaskChange | null;
   /** Lead notifications (bishop_accepted, funds_reported): the lead to open. Task fields are empty then. */
   lead_id?: Uuid | null;
+  /** lead_assessment: "Miami, FL". */
+  lead_place?: string | null;
+  /** meeting_booked: when the meeting starts. */
+  meeting_at?: IsoDateTime | null;
 }
 
 export interface NotificationPreference {
@@ -311,10 +325,23 @@ export type AssessmentBlock = (typeof ASSESSMENT_BLOCKS)[number];
 export type BlockStatus = "strong" | "medium" | "weak" | "unknown";
 export type EligibilityGap = "years" | "revenue";
 
+/**
+ * A lead enters by itself. In production the assessment of strategicmates.com (outside this app) posts the lead
+ * to a webhook of the Laravel API with its result and sends the summary email; the meeting arrives later from the
+ * consultant's booking calendar (Google Calendar), also by webhook. The office comes from the zone rules
+ * (RoutingRepository). The entry phase shown on screen is derived from the stage plus summary_sent_at and
+ * meeting (see lib/leads/entry.ts): there is no separate "phase" field.
+ */
 export interface Lead {
   id: Uuid;
   /** SM office that receives the lead. */
   office_id: Uuid;
+  /** Where it came from: the public assessment of the landing. */
+  source: "landing";
+  /** When the summary email (headline, score, strengths, priorities, "Agendar mi reunión") went out. */
+  summary_sent_at: IsoDateTime | null;
+  /** Meeting the owner booked from that email; null while not booked (or when SM moved it by hand). */
+  meeting: LeadMeeting | null;
   stage: LeadStage;
   /** Stage the lead was in when discarded (null otherwise). */
   discarded_from: ActiveLeadStage | null;
@@ -402,7 +429,9 @@ export type LeadEventKind =
   | "submitted" | "stage_changed" | "discarded" | "restored" | "note" | "contract_signed"
   | "nda_sent" | "doc_accepted" | "doc_requested" | "docs_approved"
   | "bishop_accepted" | "bishop_released" | "tripartite_sent"
-  | "funds_recorded" | "funds_reported" | "funds_confirmed" | "funds_removed" | "program_started";
+  | "funds_recorded" | "funds_reported" | "funds_confirmed" | "funds_removed" | "program_started"
+  // Automatic entry (actor null): summary email sent, meeting booked by the owner. meeting_note: the consultant's note after it.
+  | "summary_sent" | "meeting_booked" | "meeting_note";
 
 export interface LeadEvent {
   id: Uuid;
@@ -420,4 +449,6 @@ export interface LeadEvent {
 
 export * from "./network-types";
 import type { FundsStatus } from "./network-types";
+export * from "./entry-types";
+import type { ApprovalSource, LeadMeeting, PreValidation } from "./entry-types";
 
