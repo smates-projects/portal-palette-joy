@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, Navigate, useRouterState } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { ChevronsLeft, ChevronsRight, Search, Check, Eye, Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -312,6 +312,21 @@ function ViewAs() {
   );
 }
 
+/**
+ * A role only reaches the screens of its own menu (plus Mi perfil and the task detail). Typing another role's URL
+ * (a firm opening /negocios) goes back to its home. The data layer scopes the data anyway; this keeps the UI honest.
+ */
+function RouteGuard({ children }: { children: ReactNode }) {
+  const { data: me } = useCurrentUser();
+  const franchisor = useIsFranchisor();
+  const onboarding = useIsOnboarding();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  if (!me) return <>{children}</>;
+  const allowed = [...navFor(me.role, { franchisor, onboarding }).map((i) => i.to), "/perfil", "/tareas"];
+  const ok = pathname === "/" || allowed.some((p) => p !== "/" && (pathname === p || pathname.startsWith(`${p}/`)));
+  return ok ? <>{children}</> : <Navigate to="/" />;
+}
+
 function TopBar({ onMenu }: { onMenu: () => void }) {
   const { t } = useTranslation();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -394,7 +409,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </Sheet>
         <div className="flex min-w-0 flex-1 flex-col">
           <TopBar onMenu={() => setMenuOpen(true)} />
-          <main className="min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]">{children}</main>
+          <main className="min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]"><RouteGuard>{children}</RouteGuard></main>
         </div>
       </div>
     </TooltipProvider>
