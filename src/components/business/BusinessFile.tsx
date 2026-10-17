@@ -80,7 +80,7 @@ export function BusinessFile({ businessId, variant }: { businessId: string; vari
           <Fact label={t("business_file.years")} value={s ? t(`pipeline.years_ranges.${s.business.years_range}`) : none} />
           <Fact label={t("business_file.team")} value={s ? t(`pipeline.team_ranges.${s.business.team_range}`) : none} />
           <Fact label={t("business_file.revenue")} value={s ? t(`pipeline.revenue_ranges.${s.business.revenue_range}`) : none} />
-          <Fact label={t("business_file.margin")} value={s ? t(`pipeline.margin_ranges.${s.business.margin_range}`) : none} />
+          <Fact label={t("business_file.margin")} value={s ? t(`pipeline.margin_ranges.${s.business.margin_range ?? "unknown"}`) : none} />
           <Fact label={t("business_file.consultant")} value={user(p.business.consultant_id)?.full_name ?? t("office.biz.no_consultant")} />
         </dl>
         <p className="mt-4 text-xs font-medium text-muted-foreground">{t("business_file.firms")}</p>

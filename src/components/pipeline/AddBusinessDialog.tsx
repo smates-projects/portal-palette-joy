@@ -8,9 +8,11 @@ import { INDUSTRIES, REVENUES } from "@/lib/leads/pipeline";
 import { Field, inputCls, primaryBtn, secondaryBtn, selectCls, textareaCls } from "@/components/accounts/shared";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const MARGINS: MarginRange[] = ["lt_10", "10_20", "20_30", "gt_30"];
-const TEAMS: TeamRange[] = ["1_5", "6_15", "16_50", "gt_50"];
-const YEARS: YearsRange[] = ["lt_2", "2_5", "5_10", "gt_10"];
+/** "unknown" is the "No lo sé" option: it is saved as a null margin, as the assessment sends it. */
+type MarginChoice = MarginRange | "unknown";
+const MARGINS: MarginChoice[] = ["margin_0_20", "margin_21_40", "margin_41_60", "margin_60_plus", "unknown"];
+const TEAMS: TeamRange[] = ["team_1", "team_2_5", "team_6_10", "team_11_20", "team_20_plus"];
+const YEARS: YearsRange[] = ["years_lt1", "years_1_2", "years_3_5", "years_6_10", "years_10_plus"];
 
 /**
  * "Agregar negocio": a business that did not come through the assessment (referral, event). Same data the
@@ -21,7 +23,7 @@ export function AddBusinessDialog({ onClose, onCreated }: { onClose: () => void;
   const create = useCreateManualLead();
   const [f, setF] = useState({
     name: "", email: "", phone: "", city: "", state: "FL", hispanic: true,
-    business: "", industry: "" as LeadIndustry | "", activity: "", revenue: "" as RevenueRange | "", margin: "" as MarginRange | "", team: "" as TeamRange | "", years: "" as YearsRange | "", clients: true,
+    business: "", industry: "" as LeadIndustry | "", activity: "", revenue: "" as RevenueRange | "", margin: "" as MarginChoice | "", team: "" as TeamRange | "", years: "" as YearsRange | "", clients: true,
     origin: "",
   });
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +36,7 @@ export function AddBusinessDialog({ onClose, onCreated }: { onClose: () => void;
     setError(null);
     const input: ManualLeadInput = {
       contact: { name: f.name, email: f.email, phone: f.phone.trim(), city: f.city.trim(), state: f.state.trim() || "FL", hispanic_owner: f.hispanic },
-      business: { name: f.business, industry: f.industry, activity: f.activity.trim(), revenue_range: f.revenue, margin_range: f.margin, team_range: f.team, years_range: f.years, has_active_clients: f.clients },
+      business: { name: f.business, industry: f.industry, activity: f.activity.trim(), revenue_range: f.revenue, margin_range: f.margin === "unknown" ? null : f.margin, team_range: f.team, years_range: f.years, has_active_clients: f.clients },
       origin_note: f.origin.trim() || null,
     };
     create.mutate(input, {

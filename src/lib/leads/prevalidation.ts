@@ -9,9 +9,9 @@ export const DEFAULT_ASSESSMENT_AREA_MAP: AssessmentAreaMap = {
   work_quality: ["B2"],
   money: ["B3"],
   clients_sales: ["B5"],
-  info_agreements: ["B4", "B6"],
+  information: ["B4", "B6"],
   experience: ["B2"],
-  vision: ["B1"],
+  direction: ["B1"],
 };
 
 /** Areas whose tasks start as "A validar": those mapped from a block the assessment rated strong. */

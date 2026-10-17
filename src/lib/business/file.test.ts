@@ -43,8 +43,8 @@ describe("ficha del negocio", () => {
     const s = ownerSnapshot({
       business_id: "b", lead_id: "l", taken_at: "", submitted_at: "", know_how_example: null, priorities: [],
       contact: { name: "", email: "", phone: "", city: "", state: "", hispanic_owner: true },
-      business: { name: "", industry: "salon", activity: "", revenue_range: "lt_250k", margin_range: "lt_10", team_range: "1_5", years_range: "2_5", has_active_clients: true },
-      result: { band: "high", score: 80, eligible_program: true, eligibility_gaps: [], blocks: [], strengths: ["x"], priorities: ["y"] },
+      business: { name: "", industry: "salon", activity: "", revenue_range: "lt_250k", margin_range: "margin_0_20", team_range: "team_2_5", years_range: "years_3_5", has_active_clients: true },
+      result: { readiness: "ready", band: "high", score: 80, eligible_program: true, eligibility_gaps: [], blocks: [], strengths: ["x"], priorities: ["y"] },
     });
     expect(s.result).toMatchObject({ score: null, band: null, strengths: ["x"], priorities: ["y"] });
   });
@@ -52,7 +52,7 @@ describe("ficha del negocio", () => {
     const manual = {
       id: "l", submitted_at: "2026-10-01T12:00:00Z", know_how_example: null, result: null,
       contact: { name: "", email: "", phone: "", city: "", state: "", hispanic_owner: false },
-      business: { name: "", industry: "salon", activity: "", revenue_range: "lt_250k", margin_range: "lt_10", team_range: "1_5", years_range: "2_5", has_active_clients: true },
+      business: { name: "", industry: "salon", activity: "", revenue_range: "lt_250k", margin_range: null, team_range: "team_2_5", years_range: "years_3_5", has_active_clients: true },
     } as unknown as Lead;
     expect(buildSnapshot(manual, "b", "2026-10-09T12:00:00Z")).toBeNull();
   });

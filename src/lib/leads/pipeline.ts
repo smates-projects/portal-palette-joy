@@ -148,7 +148,7 @@ export interface LeadsSearch {
 const ALL_STAGES: LeadStage[] = [...LEAD_STAGES, "discarded"];
 const BANDS: LeadBand[] = ["high", "mid", "low", "track"];
 export const INDUSTRIES: LeadIndustry[] = ["construction", "remodeling", "cleaning", "restaurant", "salon"];
-export const REVENUES: RevenueRange[] = ["lt_250k", "250k_500k", "500k_1m", "1m_3m", "gt_3m"];
+export const REVENUES: RevenueRange[] = ["lt_250k", "250k_500k", "500k_750k", "750k_1m", "1m_2m", "gt_2m"];
 const QUICKS: LeadQuick[] = ["week", "uncontacted", "signed_month", "in_review", "review_overdue", "no_investor"];
 const pick = <T extends string>(v: unknown, allowed: readonly T[]) => (typeof v === "string" && (allowed as readonly string[]).includes(v) ? (v as T) : undefined);
 

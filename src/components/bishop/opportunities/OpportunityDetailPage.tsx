@@ -153,7 +153,7 @@ export function OpportunityDetailPage({ opportunityId }: { opportunityId: string
                   {([
                     ["pipeline.detail.activity", o.declared.activity],
                     ["pipeline.revenue", t(`pipeline.revenue_ranges.${o.declared.revenue_range}`)],
-                    ["pipeline.detail.margin", t(`pipeline.margin_ranges.${o.declared.margin_range}`)],
+                    ["pipeline.detail.margin", t(`pipeline.margin_ranges.${o.declared.margin_range ?? "unknown"}`)],
                     ["pipeline.detail.team", t(`pipeline.team_ranges.${o.declared.team_range}`)],
                     ["pipeline.detail.years", t(`pipeline.years_ranges.${o.declared.years_range}`)],
                     ["pipeline.detail.active_clients", t(o.declared.has_active_clients ? "pipeline.detail.yes" : "pipeline.detail.no")],

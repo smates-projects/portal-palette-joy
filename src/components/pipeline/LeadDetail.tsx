@@ -223,7 +223,7 @@ export function LeadDetail(props: {
             <Item label={t("pipeline.industry")} value={t(`pipeline.industries.${lead.business.industry}`)} />
             <Item label={t("pipeline.detail.activity")} value={lead.business.activity} />
             <Item label={t("pipeline.revenue")} value={t(`pipeline.revenue_ranges.${lead.business.revenue_range}`)} />
-            <Item label={t("pipeline.detail.margin")} value={t(`pipeline.margin_ranges.${lead.business.margin_range}`)} />
+            <Item label={t("pipeline.detail.margin")} value={t(`pipeline.margin_ranges.${lead.business.margin_range ?? "unknown"}`)} />
             <Item label={t("pipeline.detail.team")} value={t(`pipeline.team_ranges.${lead.business.team_range}`)} />
             <Item label={t("pipeline.detail.years")} value={t(`pipeline.years_ranges.${lead.business.years_range}`)} />
             <Item label={t("pipeline.detail.active_clients")} value={t(lead.business.has_active_clients ? "pipeline.detail.yes" : "pipeline.detail.no")} />

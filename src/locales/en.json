@@ -1075,29 +1075,33 @@
       "salon": "Salon"
     },
     "revenue_ranges": {
-      "lt_250k": "Under $250k",
-      "250k_500k": "$250k to $500k",
-      "500k_1m": "$500k to $1M",
-      "1m_3m": "$1M to $3M",
-      "gt_3m": "Over $3M"
+      "lt_250k": "Under 250K",
+      "250k_500k": "250K to 500K",
+      "500k_750k": "500K to 750K",
+      "750k_1m": "750K to 1M",
+      "1m_2m": "1M to 2M",
+      "gt_2m": "Over 2M"
     },
     "margin_ranges": {
-      "lt_10": "Under 10%",
-      "10_20": "10% to 20%",
-      "20_30": "20% to 30%",
-      "gt_30": "Over 30%"
+      "margin_0_20": "0 to 20 %",
+      "margin_21_40": "21 to 40 %",
+      "margin_41_60": "41 to 60 %",
+      "margin_60_plus": "More than 60 %",
+      "unknown": "I don't know"
     },
     "team_ranges": {
-      "1_5": "1 to 5 people",
-      "6_15": "6 to 15 people",
-      "16_50": "16 to 50 people",
-      "gt_50": "Over 50 people"
+      "team_1": "Just me",
+      "team_2_5": "2 to 5",
+      "team_6_10": "6 to 10",
+      "team_11_20": "11 to 20",
+      "team_20_plus": "More than 20"
     },
     "years_ranges": {
-      "lt_2": "Under 2 years",
-      "2_5": "2 to 5 years",
-      "5_10": "5 to 10 years",
-      "gt_10": "Over 10 years"
+      "years_lt1": "Less than 1 year",
+      "years_1_2": "1 to 2 years",
+      "years_3_5": "3 to 5 years",
+      "years_6_10": "6 to 10 years",
+      "years_10_plus": "More than 10 years"
     },
     "filters": {
       "all_stages": "All stages",
@@ -1172,7 +1176,7 @@
       },
       "not_eligible": "Not eligible for the program yet",
       "gaps": {
-        "years": "Less than 2 years in business",
+        "years_operating": "Less than 1 year in business",
         "revenue": "Revenue below the program minimum"
       },
       "blocks_title": "The seven areas",
@@ -1198,12 +1202,12 @@
     },
     "blocks": {
       "time_team": "Your time and your team",
-      "work_quality": "Your work and its quality",
-      "money": "Your business money",
+      "work_quality": "Your jobs and quality",
+      "money": "Your business's money",
       "clients_sales": "Your clients and your sales",
-      "info_agreements": "Your information and your agreements",
+      "information": "Your information and your agreements",
       "experience": "Your experience",
-      "vision": "The business you want to build"
+      "direction": "The business you want to build"
     },
     "block_status": {
       "strong": "Solid",

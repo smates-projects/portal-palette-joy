@@ -46,7 +46,9 @@ interface Deps {
 }
 
 /** Midpoint of the declared revenue range, only to scale the provisional projection. */
-const REVENUE_MID: Record<RevenueRange, number> = { lt_250k: 180_000, "250k_500k": 375_000, "500k_1m": 750_000, "1m_3m": 1_800_000, gt_3m: 3_500_000 };
+const REVENUE_MID: Record<RevenueRange, number> = {
+  lt_250k: 180_000, "250k_500k": 375_000, "500k_750k": 625_000, "750k_1m": 875_000, "1m_2m": 1_500_000, gt_2m: 2_500_000,
+};
 /** Billing and tax files the Bishop can read after accepting (rule order: 1 billing, 6 last tax return). */
 const BISHOP_FILE_RULES = ["a1000000-0000-4000-8000-000000000001", "a1000000-0000-4000-8000-000000000006"];
 
@@ -99,7 +101,7 @@ export function createOpportunities(d: Deps) {
       ...base,
       declared,
       // A business added by hand may have no assessment yet: the Bishop sees an empty result.
-      result: l.result ?? { band: "track", score: 0, eligible_program: false, eligibility_gaps: [], blocks: [], strengths: [], priorities: [] },
+      result: l.result ?? { readiness: "on_track", band: "track", score: 0, eligible_program: false, eligibility_gaps: [], blocks: [], strengths: [], priorities: [] },
       know_how_example: l.know_how_example,
       verified: docs.filter((x) => x.required).map((x) => ({ name: x.name, fact: x.state === "reviewed" ? x.verified_fact ?? null : null })),
       checklist: { nda_signed: s.nda_signed, mou_signed: s.mou_signed, required_total: s.required_total, uploaded: s.uploaded, accepted: s.accepted, approved: !!s.approved_at },

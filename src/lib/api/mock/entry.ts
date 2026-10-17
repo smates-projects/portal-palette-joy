@@ -10,7 +10,6 @@ import type {
   BusinessEvent,
   Contract,
   Lead,
-  LeadBand,
   LeadEvent,
   LeadIndustry,
   LeadMeetingItem,
@@ -34,6 +33,7 @@ import type { PlatformRules } from "../network-types";
 import type { BusinessFileRepository, LeadsRepository, RoutingRepository, TasksRepository } from "../repositories";
 import { meetingHeld, resolveOffice, validateZone } from "@/lib/leads/entry";
 import { DEFAULT_ASSESSMENT_AREA_MAP, checkPreValidation, markPreValidation, strongAreas } from "@/lib/leads/prevalidation";
+import { readinessOutcome } from "@/lib/leads/readiness";
 import { buildMilestones, buildSnapshot, ownerSnapshot } from "@/lib/business/file";
 
 export interface EntryDb {
@@ -94,8 +94,6 @@ const SAMPLE_STRENGTHS = ["Clientes que vuelven y lo recomiendan", "Equipo estab
 const SAMPLE_PRIORITIES = ["Números del negocio", "Procesos escritos", "Contratos y licencias", "Sistema de citas", "Marca y presencia local", "Costos por servicio"];
 const BLOCK_STATUSES: BlockStatus[] = ["strong", "medium", "medium", "weak", "unknown"];
 
-/** Band of a score for a business that meets the entry rule. */
-const bandOf = (score: number): LeadBand => (score >= 78 ? "high" : score >= 60 ? "mid" : "low");
 const shuffle = <T,>(xs: T[]) => [...xs].sort(() => Math.random() - 0.5);
 
 export function createEntry(d: Deps) {
@@ -193,7 +191,8 @@ export function createEntry(d: Deps) {
       // Most businesses meet the entry rule; one in six is "Ya estás en camino" (under the years required).
       const track = Math.random() < 1 / 6;
       const score = track ? 40 + Math.floor(Math.random() * 20) : 52 + Math.floor(Math.random() * 41);
-      const years: YearsRange = track ? "lt_2" : pick(["2_5", "5_10", "gt_10"] as const);
+      const years: YearsRange = track ? "years_lt1" : pick(["years_1_2", "years_3_5", "years_6_10", "years_10_plus"] as const);
+      const revenue = pick(["250k_500k", "500k_750k", "750k_1m", "1m_2m"] as RevenueRange[]);
       const now = nowIso();
       const slug = biz.name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z]/g, "");
       const l: Lead = {
@@ -213,13 +212,14 @@ export function createEntry(d: Deps) {
         contact: { name: owner, email: `${owner.split(" ")[0]!.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")}@${slug}.com`, phone: `+1 305 555 0${100 + Math.floor(Math.random() * 899)}`, city: place.city, state: place.state, hispanic_owner: true },
         business: {
           name: biz.name, industry: biz.industry, activity: biz.activity,
-          revenue_range: pick(["250k_500k", "500k_1m", "1m_3m"] as RevenueRange[]),
-          margin_range: pick(["10_20", "20_30", "gt_30"] as MarginRange[]),
-          team_range: pick(["1_5", "6_15", "16_50"] as TeamRange[]),
+          revenue_range: revenue,
+          // null = "No lo sé", as the assessment sends it.
+          margin_range: pick([null, "margin_0_20", "margin_21_40", "margin_41_60"] as (MarginRange | null)[]),
+          team_range: pick(["team_2_5", "team_6_10", "team_11_20", "team_20_plus"] as TeamRange[]),
           years_range: years, has_active_clients: true,
         },
         result: {
-          band: track ? "track" : bandOf(score), score, eligible_program: !track, eligibility_gaps: track ? ["years"] : [],
+          ...readinessOutcome({ years_range: years, revenue_range: revenue }, score), score,
           blocks: ASSESSMENT_BLOCKS.map((key) => ({ key, status: pick(BLOCK_STATUSES) })),
           strengths: shuffle(SAMPLE_STRENGTHS).slice(0, 2 + Math.floor(Math.random() * 2)),
           priorities: shuffle(SAMPLE_PRIORITIES).slice(0, 3),

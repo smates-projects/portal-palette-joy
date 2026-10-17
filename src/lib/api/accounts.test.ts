@@ -156,7 +156,7 @@ describe("manual leads", () => {
     const api = await as(seed.U_NICOLAS);
     const lead = await api.leads.createManual({
       contact: { name: "Pedro Referido", email: "pedro@referido.com", phone: "+1 305 555 0000", city: "Miami", state: "FL", hispanic_owner: true },
-      business: { name: "Referido SA", industry: "cleaning", activity: "Limpieza", revenue_range: "500k_1m", margin_range: "10_20", team_range: "6_15", years_range: "5_10", has_active_clients: true },
+      business: { name: "Referido SA", industry: "cleaning", activity: "Limpieza", revenue_range: "500k_750k", margin_range: "margin_0_20", team_range: "team_6_10", years_range: "years_6_10", has_active_clients: true },
       origin_note: "Referido de Carla Méndez",
     });
     expect(lead.stage).toBe("evaluated");

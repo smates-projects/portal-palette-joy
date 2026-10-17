@@ -452,25 +452,44 @@ export const LEAD_STAGES = ["evaluated", "meeting", "documents", "accepted", "in
 export type ActiveLeadStage = (typeof LEAD_STAGES)[number];
 export type LeadStage = ActiveLeadStage | "discarded";
 export type LeadBand = "high" | "mid" | "low" | "track";
+/**
+ * El assessment real solo admite construction | remodeling | installations_repairs | maintenance | cleaning |
+ * other_related (+ activity_other); restaurant y salon son datos de muestra pendientes de decisión.
+ */
 export type LeadIndustry = "construction" | "remodeling" | "cleaning" | "restaurant" | "salon";
-export type RevenueRange = "lt_250k" | "250k_500k" | "500k_1m" | "1m_3m" | "gt_3m";
-export type MarginRange = "lt_10" | "10_20" | "20_30" | "gt_30";
-export type TeamRange = "1_5" | "6_15" | "16_50" | "gt_50";
-export type YearsRange = "lt_2" | "2_5" | "5_10" | "gt_10";
-export const ASSESSMENT_BLOCKS = ["time_team", "work_quality", "money", "clients_sales", "info_agreements", "experience", "vision"] as const;
+
+// Range and block keys are exactly the ones the readiness assessment of sm-platform sends to the webhook
+// (readinessQuestions.js and config/assessment_forms.php).
+/** Sales of the last 12 months. */
+export type RevenueRange = "lt_250k" | "250k_500k" | "500k_750k" | "750k_1m" | "1m_2m" | "gt_2m";
+/** Profit margin. The assessment sends null when the owner answered "No lo sé". */
+export type MarginRange = "margin_0_20" | "margin_21_40" | "margin_41_60" | "margin_60_plus";
+/** People working in the business, owner included. team_1 = "Solo yo". */
+export type TeamRange = "team_1" | "team_2_5" | "team_6_10" | "team_11_20" | "team_20_plus";
+/** Years operating. Hard program rule: years_lt1 (less than 1 year) is an eligibility gap. */
+export type YearsRange = "years_lt1" | "years_1_2" | "years_3_5" | "years_6_10" | "years_10_plus";
+/** The seven scored areas, in the order the questionnaire asks them. */
+export const ASSESSMENT_BLOCKS = ["time_team", "work_quality", "money", "clients_sales", "information", "experience", "direction"] as const;
 export type AssessmentBlock = (typeof ASSESSMENT_BLOCKS)[number];
 export type BlockStatus = "strong" | "medium" | "weak" | "unknown";
-export type EligibilityGap = "years" | "revenue";
+export type EligibilityGap = "years_operating" | "revenue";
+/** ready: eligible and the score reaches the threshold (band high/mid/low). on_track: otherwise (band track). */
+export type LeadReadiness = "ready" | "on_track";
 /** landing: came from the public readiness assessment of the landing. manual: SM added it by hand (referral, event). */
 export type LeadSource = "landing" | "manual";
 
 export interface LeadResult {
+  readiness: LeadReadiness;
+  /** Headline band. Minimum shown score: high 70, mid 55, low 0. "track" whenever readiness is on_track. */
   band: LeadBand;
+  /** Score shown to the owner (display.score of the payload, 40 to 92), not the raw percentage. */
   score: number;
   eligible_program: boolean;
   eligibility_gaps: EligibilityGap[];
   blocks: { key: AssessmentBlock; status: BlockStatus }[];
+  /** The payload brings strengths[{ question, source, text }]: only the text is kept here. */
   strengths: string[];
+  /** The payload brings priorities[{ question, block, title, reading, help }]: only the title is kept here. */
   priorities: string[];
 }
 
@@ -517,7 +536,8 @@ export interface Lead {
     /** Free text as the owner wrote it. */
     activity: string;
     revenue_range: RevenueRange;
-    margin_range: MarginRange;
+    /** Null = the owner answered "No lo sé". */
+    margin_range: MarginRange | null;
     team_range: TeamRange;
     years_range: YearsRange;
     has_active_clients: boolean;

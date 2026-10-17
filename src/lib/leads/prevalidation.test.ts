@@ -8,7 +8,7 @@ const task = (area: AreaCode, patch: Partial<T> = {}): T => ({ area, status: "pe
 
 describe("Ya lo tenía: marks at the start of the program", () => {
   it("maps strong blocks to areas (Tu información y tus acuerdos → B4 and B6)", () => {
-    // Order: time_team, work_quality, money, clients_sales, info_agreements, experience, vision.
+    // Order: time_team, work_quality, money, clients_sales, information, experience, direction.
     expect(strongAreas(blocks("mmmmsmm"))).toEqual(["B4", "B6"]);
     expect(strongAreas(blocks("ssmmmmm"))).toEqual(["B2"]);
     expect(strongAreas(blocks("mmmsmms"))).toEqual(["B1", "B5"]);

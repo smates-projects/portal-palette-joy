@@ -1075,29 +1075,33 @@
       "salon": "Salón"
     },
     "revenue_ranges": {
-      "lt_250k": "Menos de $250k",
-      "250k_500k": "$250k a $500k",
-      "500k_1m": "$500k a $1M",
-      "1m_3m": "$1M a $3M",
-      "gt_3m": "Más de $3M"
+      "lt_250k": "Menos de 250 mil",
+      "250k_500k": "250 a 500 mil",
+      "500k_750k": "500 a 750 mil",
+      "750k_1m": "750 mil a 1 millón",
+      "1m_2m": "1 a 2 millones",
+      "gt_2m": "Más de 2 millones"
     },
     "margin_ranges": {
-      "lt_10": "Menos de 10%",
-      "10_20": "10% a 20%",
-      "20_30": "20% a 30%",
-      "gt_30": "Más de 30%"
+      "margin_0_20": "0 a 20 %",
+      "margin_21_40": "21 a 40 %",
+      "margin_41_60": "41 a 60 %",
+      "margin_60_plus": "Más de 60 %",
+      "unknown": "No lo sé"
     },
     "team_ranges": {
-      "1_5": "1 a 5 personas",
-      "6_15": "6 a 15 personas",
-      "16_50": "16 a 50 personas",
-      "gt_50": "Más de 50 personas"
+      "team_1": "Solo yo",
+      "team_2_5": "2 a 5",
+      "team_6_10": "6 a 10",
+      "team_11_20": "11 a 20",
+      "team_20_plus": "Más de 20"
     },
     "years_ranges": {
-      "lt_2": "Menos de 2 años",
-      "2_5": "2 a 5 años",
-      "5_10": "5 a 10 años",
-      "gt_10": "Más de 10 años"
+      "years_lt1": "Menos de 1 año",
+      "years_1_2": "1 a 2 años",
+      "years_3_5": "3 a 5 años",
+      "years_6_10": "6 a 10 años",
+      "years_10_plus": "Más de 10 años"
     },
     "filters": {
       "all_stages": "Todas las etapas",
@@ -1172,7 +1176,7 @@
       },
       "not_eligible": "Todavía no es elegible para el programa",
       "gaps": {
-        "years": "Menos de 2 años operando",
+        "years_operating": "Menos de 1 año operando",
         "revenue": "Ventas por debajo del mínimo del programa"
       },
       "blocks_title": "Las siete áreas",
@@ -1201,9 +1205,9 @@
       "work_quality": "Tus trabajos y la calidad",
       "money": "El dinero de tu negocio",
       "clients_sales": "Tus clientes y tus ventas",
-      "info_agreements": "Tu información y tus acuerdos",
+      "information": "Tu información y tus acuerdos",
       "experience": "Tu experiencia",
-      "vision": "El negocio que quieres construir"
+      "direction": "El negocio que quieres construir"
     },
     "block_status": {
       "strong": "Sólida",
