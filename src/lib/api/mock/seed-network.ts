@@ -3,7 +3,6 @@
 // Replaceable sample data. Today is 2026-10-14. Money is in USD, dates are ISO.
 import catalogJson from "@/data/catalogo_metodo180.json";
 import { computeReportAmounts, nextMonth } from "@/lib/franchise/fees";
-import { projectYears } from "@/lib/bishop/split";
 import { addDaysIso, generateProgramTasks, type CatalogEntry } from "../program";
 import { MANUAL_SECTION_TITLES, manualSectionContent } from "./seed-manual";
 import type {

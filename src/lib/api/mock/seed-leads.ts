@@ -3,6 +3,8 @@ import type { AssessmentBlock, BlockStatus, Lead, LeadEvent, LeadStage } from ".
 import { ASSESSMENT_BLOCKS } from "../types";
 import { BIZ_ENYERMY, BIZ_PRIME, BIZ_VOSSLER, ORG_SM, U_CAMILA, U_NICOLAS } from "./seed";
 
+/** Same id as seed-network U_JEFFERSON (kept here to avoid an import cycle). */
+const U_JEFFERSON_LEAD = "0c000000-0000-4000-8000-000000000040";
 export const uuid = (prefix: string, n: number) => `${prefix}-0000-4000-8000-${String(n).padStart(12, "0")}`;
 export const at = (date: string, time = "15:00:00") => `${date}T${time}Z`;
 export const blocks = (s: string): Lead["result"]["blocks"] => {
@@ -11,7 +13,11 @@ export const blocks = (s: string): Lead["result"]["blocks"] => {
 };
 
 export interface LeadSpec {
-  lead: Omit<Lead, "id" | "office_id" | "stage" | "stage_entered_at" | "submitted_at" | "discarded_from" | "discard_reason" | "last_contact_at"> & { discard_reason?: string };
+  lead: Omit<Lead, "id" | "office_id" | "stage" | "stage_entered_at" | "submitted_at" | "discarded_from" | "discard_reason" | "last_contact_at" | "bishop_user_id" | "bishop_accepted_at"> & {
+    discard_reason?: string;
+    bishop_user_id?: string | null;
+    bishop_accepted_at?: string | null;
+  };
   /** First entry: submission date. Then each stage reached, with its date. */
   path: [LeadStage | "submitted", string][];
   contacted?: boolean;
@@ -53,9 +59,10 @@ const specs: LeadSpec[] = [
     },
   },
   {
-    path: [["submitted", "2026-09-25"], ["meeting", "2026-09-29"], ["documents", "2026-10-03"], ["accepted", "2026-10-07"]],
+    // Accepted 35 days ago and still without an investor: two Bishops saw it, one passed.
+    path: [["submitted", "2026-08-18"], ["meeting", "2026-08-21"], ["documents", "2026-08-27"], ["accepted", "2026-09-09"]],
     contacted: true,
-    notes: [["2026-10-08", "Documentación aprobada. Esperamos que un inversor tome la oportunidad."]],
+    notes: [["2026-09-10", "Documentación aprobada. Esperamos que un inversor tome la oportunidad."]],
     lead: {
       consultant_user_id: U_CAMILA, business_id: null,
       contact: { name: "Gabriela Fuentes", email: "gaby@brisaclean.com", phone: "+1 786 555 0144", city: "Kendall", state: "FL", hispanic_owner: true },
@@ -158,6 +165,19 @@ const specs: LeadSpec[] = [
       know_how_example: null,
     },
   },
+  {
+    // Accepted with a Bishop (Jefferson): tripartite contract signed by the owner and SM, waiting for him.
+    path: [["submitted", "2026-08-25"], ["meeting", "2026-08-28"], ["documents", "2026-09-03"], ["accepted", "2026-09-22"]],
+    contacted: true,
+    lead: {
+      consultant_user_id: U_NICOLAS, business_id: null, bishop_user_id: U_JEFFERSON_LEAD, bishop_accepted_at: at("2026-09-30"),
+      contact: { name: "Héctor Ramírez", email: "hector@solremodeling.com", phone: "+1 305 555 0172", city: "Doral", state: "FL", hispanic_owner: true },
+      business: { name: "Sol Remodeling", industry: "remodeling", activity: "Remodelación de cocinas y baños", revenue_range: "1m_3m", margin_range: "20_30", team_range: "16_50", years_range: "5_10", has_active_clients: true },
+      result: { band: "high", score: 84, eligible_program: true, eligibility_gaps: [], blocks: blocks("ssmssmm"),
+        strengths: ["Equipo estable con jefes de obra", "Presupuestos con precios por partida"], priorities: ["Manual de obra", "Marca registrada"] },
+      know_how_example: "Cada obra tiene un tablero con fotos diarias que el cliente ve. Terminamos a tiempo nueve de cada diez obras.",
+    },
+  },
 ];
 
 export interface LeadSeedOptions {
@@ -177,7 +197,7 @@ export function buildLeads(leadSpecs: LeadSpec[], opts: LeadSeedOptions): { lead
     const [, submitted] = s.path[0]!;
     const last = s.path.at(-1)!;
     const stage: LeadStage = last[0] === "submitted" ? "evaluated" : last[0];
-    const { discard_reason, ...rest } = s.lead;
+    const { discard_reason, bishop_user_id, bishop_accepted_at, ...rest } = s.lead;
     leadEvents.push({ id: uuid(opts.event_prefix, ++ev), lead_id: id, kind: "submitted", actor_user_id: null, created_at: at(submitted, "13:00:00"), from: null, to: "evaluated", body: null });
     let prev: LeadStage = "evaluated";
     for (const [to, date] of s.path.slice(1)) {
@@ -199,6 +219,8 @@ export function buildLeads(leadSpecs: LeadSpec[], opts: LeadSeedOptions): { lead
       stage,
       discarded_from: stage === "discarded" && before && before[0] !== "submitted" ? (before[0] as Lead["discarded_from"]) : stage === "discarded" ? "evaluated" : null,
       discard_reason: discard_reason ?? null,
+      bishop_user_id: bishop_user_id ?? null,
+      bishop_accepted_at: bishop_accepted_at ?? null,
       submitted_at: at(submitted, "13:00:00"),
       stage_entered_at: at(last[1], last[0] === "submitted" ? "13:00:00" : "15:00:00"),
       last_contact_at: s.path.length > 1 || s.contacted ? at(last[1]) : null,
