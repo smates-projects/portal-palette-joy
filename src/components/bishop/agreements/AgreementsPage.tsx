@@ -54,7 +54,7 @@ export function AgreementsPage() {
                     <th scope="col" className="px-4 py-2 font-medium">{t("bishop.agreements.col_parties")}</th>
                     <th scope="col" className="px-4 py-2 font-medium">{t("bishop.agreements.col_status")}</th>
                     <th scope="col" className="px-4 py-2 font-medium">{t("bishop.agreements.col_date")}</th>
-                    <th scope="col" className="px-4 py-2 font-medium"><span className="sr-only">{t("bishop.agreements.col_document")}</span></th>
+                    <th scope="col" className="w-44 px-4 py-2 font-medium"><span className="sr-only">{t("bishop.agreements.col_document")}</span></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border border-t border-border">
@@ -62,11 +62,11 @@ export function AgreementsPage() {
                     <tr key={a.id}>
                       <td className="px-4 py-3 font-medium">{a.name}</td>
                       <td className="px-4 py-3 text-muted-foreground">{a.counterparties}</td>
-                      <td className="px-4 py-3"><Tag tone={STATE_TONE[a.state]}>{t(`bishop.agreements.state_${a.state}`)}</Tag></td>
+                      <td className="whitespace-nowrap px-4 py-3"><Tag tone={STATE_TONE[a.state]}>{t(`bishop.agreements.state_${a.state}`)}</Tag></td>
                       <td className="px-4 py-3 tabular-nums">
                         {a.signed_at ? t("bishop.agreements.signed_on", { date: formatDate(a.signed_at, lng) }) : t("bishop.agreements.not_signed")}
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="w-44 whitespace-nowrap px-4 py-3 text-right [&_button]:inline-flex [&_button]:items-center [&_button]:whitespace-nowrap">
                         {a.contract && a.contract.signers.some((x) => x.party === "bishop" && (x.status === "sent" || x.status === "opened")) ? (
                           <button onClick={() => setSigning(a.contract!)} className={primaryButton}>{t("bishop.agreements.sign")}</button>
                         ) : a.contract && a.contract.signers.some((x) => x.signed_at) ? (
