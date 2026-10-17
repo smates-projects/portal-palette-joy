@@ -28,7 +28,7 @@ export function PeoplePage() {
   const [history, setHistory] = useState<User | null>(null);
 
   const header = (
-    <div className="flex flex-wrap items-start justify-between gap-3">
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
       <GlobalHeader question={t("accounts.people.question")} />
       <button className={primaryBtn} onClick={() => setInviting(true)}><UserPlus className="h-4 w-4" />{t("accounts.invite.title")}</button>
     </div>
@@ -67,7 +67,23 @@ export function PeoplePage() {
         {rows.length === 0 ? (
           <EmptyBox title={t(hasFilters ? "accounts.people.empty_filtered_title" : "accounts.people.empty_title")} body={t(hasFilters ? "accounts.people.empty_filtered_body" : "accounts.people.empty_body")} />
         ) : (
-          <div className="overflow-x-auto rounded-md border border-border bg-surface">
+          <>
+          <ul className="divide-y divide-border rounded-md border border-border bg-surface md:hidden">
+            {rows.map((r) => (
+              <li key={r.user.id} className={cn("space-y-2 px-4 py-3 text-sm", r.status === "inactive" && "text-muted-foreground")}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <span className="flex flex-wrap items-center gap-2 font-medium"><span className="whitespace-nowrap">{r.user.full_name}</span>{r.user.is_admin && <AdminTag />}{r.user.id === me.id && <span className="text-xs font-normal text-muted-foreground">{t("profile.you")}</span>}</span>
+                    <span className="block break-all text-xs text-muted-foreground">{r.user.email}</span>
+                  </div>
+                  <UserStatusBadge status={r.status} />
+                </div>
+                <div className="text-xs text-muted-foreground">{t(`roles.${r.user.role}`)}{r.user.title ? ` · ${r.user.title}` : ""} · {r.place || "—"} · {r.office || (r.user.role === "sm_global" ? t("roles.sm_global") : "—")}</div>
+                <PersonActions user={r.user} orgs={orgs} onDeactivate={setDeactivating} onHistory={setHistory} />
+              </li>
+            ))}
+          </ul>
+          <div className="hidden overflow-x-auto rounded-md border border-border bg-surface md:block">
             <table className="w-full min-w-[860px] text-sm">
               <thead className="border-b border-border bg-muted text-xs text-muted-foreground">
                 <tr>
@@ -96,6 +112,7 @@ export function PeoplePage() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 
