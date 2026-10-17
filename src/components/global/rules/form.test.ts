@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { PlatformRules } from "@/lib/api/network-types";
 import { formFromRules, rulesPatch, toggleCode, undoPatch, validateRules } from "./form";
 
-const rules: PlatformRules = { franchisability_goal: 85, required_task_codes: ["B1-01", "B6-01"], area_amber_days: 7, franchisability_amber_tolerance: 10 };
+const rules: PlatformRules = { franchisability_goal: 85, required_task_codes: ["B1-01", "B6-01"], area_amber_days: 7, franchisability_amber_tolerance: 10, document_review_days: 15, intake_documents: [] };
 
 describe("validateRules", () => {
   it("accepts the stored rules", () => {
