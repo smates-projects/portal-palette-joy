@@ -1,29 +1,44 @@
+import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { useBishopOpportunities } from "@/lib/api/hooks";
-import { formatDate, formatUsd } from "@/lib/format";
-import { EmptyBlock, ErrorBlock, LoadingBlocks, Panel, ProgressBar, ProvisionalTag, Screen } from "@/components/bishop/ui";
+import { useBishopAgreements, useBishopOpportunities } from "@/lib/api/hooks";
+import { OPPORTUNITY_PHASES, type OpportunityPhase } from "@/lib/api/types";
+import { formatUsd } from "@/lib/format";
+import { EmptyBlock, ErrorBlock, LoadingBlocks, Panel, ProvisionalTag, Screen } from "@/components/bishop/ui";
 import { sortByDecision } from "@/components/bishop/portfolio/recovery";
-import { DecisionTag, StageTag } from "./parts";
+import { DecisionTag, PhaseTag, ReviewDay, useOpportunityTitle } from "./parts";
+import { FrameworkGate } from "./FrameworkGate";
 
-/** All the businesses SM presents to the Bishop. Undecided ones come first. */
+/** Businesses in entry that SM offers to Bishops, by phase. Without the framework agreement signed, only the gate. */
 export function OpportunitiesPage() {
   const { t, i18n } = useTranslation();
   const lng = i18n.language;
   const oppsQ = useBishopOpportunities();
+  const agreementsQ = useBishopAgreements();
+  const title = useOpportunityTitle();
+  const [phase, setPhase] = useState<OpportunityPhase | "">("");
 
-  if (oppsQ.isError)
+  if (oppsQ.isError || agreementsQ.isError)
     return (
       <Screen ns="bishop" screen="opportunities">
-        <ErrorBlock title={t("bishop.error")} retryLabel={t("bishop.retry")} onRetry={() => void oppsQ.refetch()} />
+        <ErrorBlock title={t("bishop.error")} retryLabel={t("bishop.retry")} onRetry={() => { void oppsQ.refetch(); void agreementsQ.refetch(); }} />
       </Screen>
     );
-  if (oppsQ.isLoading || !oppsQ.data)
+  if (oppsQ.isLoading || agreementsQ.isLoading || !oppsQ.data)
     return (
       <Screen ns="bishop" screen="opportunities">
         <LoadingBlocks rows={2} />
       </Screen>
     );
+
+  const framework = agreementsQ.data?.find((a) => a.kind === "framework");
+  if (framework?.contract && framework.state !== "signed")
+    return (
+      <Screen ns="bishop" screen="opportunities">
+        <FrameworkGate contract={framework.contract} />
+      </Screen>
+    );
+
   if (oppsQ.data.length === 0)
     return (
       <Screen ns="bishop" screen="opportunities">
@@ -31,56 +46,58 @@ export function OpportunitiesPage() {
       </Screen>
     );
 
-  const items = sortByDecision(oppsQ.data);
+  const items = sortByDecision(oppsQ.data.filter((o) => !phase || o.phase === phase));
 
   return (
     <Screen ns="bishop" screen="opportunities">
-      <div className="mt-6">
+      <div className="mt-6 flex flex-wrap items-center gap-2">
+        <label htmlFor="opp-phase" className="text-sm text-muted-foreground">{t("bishop.opportunities.filter_phase")}</label>
+        <select id="opp-phase" value={phase} onChange={(e) => setPhase(e.target.value as OpportunityPhase | "")}
+          className="h-9 rounded-md border border-input bg-surface px-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <option value="">{t("bishop.opportunities.all_phases")}</option>
+          {OPPORTUNITY_PHASES.map((p) => <option key={p} value={p}>{t(`bishop.phase.${p}`)}</option>)}
+        </select>
+      </div>
+      <div className="mt-3">
         <Panel>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[960px] text-left text-sm">
-              <thead className="bg-muted/50 text-xs text-muted-foreground">
-                <tr>
-                  <th scope="col" className="px-4 py-2 font-medium">{t("bishop.opportunities.col_business")}</th>
-                  <th scope="col" className="px-4 py-2 font-medium">{t("bishop.opportunities.col_ready")}</th>
-                  <th scope="col" className="px-4 py-2 text-right font-medium">{t("bishop.opportunities.col_revenue")}</th>
-                  <th scope="col" className="px-4 py-2 text-right font-medium">{t("bishop.opportunities.col_investment")}</th>
-                  <th scope="col" className="px-4 py-2 text-right font-medium">
-                    <span className="inline-flex items-center gap-2">{t("bishop.opportunities.col_share")}<ProvisionalTag /></span>
-                  </th>
-                  <th scope="col" className="px-4 py-2 font-medium">{t("bishop.opportunities.col_decision")}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border border-t border-border">
-                {items.map((o) => (
-                  <tr key={o.id} className={o.decision === "passed" ? "text-muted-foreground" : undefined}>
-                    <td className="px-4 py-3">
-                      <Link to="/oportunidades/$opportunityId" params={{ opportunityId: o.id }} className="font-medium text-link hover:underline">
-                        {o.business_name}
-                      </Link>
-                      <p className="text-xs text-muted-foreground">{o.industry} · {o.city}, {o.state}</p>
-                    </td>
-                    <td className="w-60 px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <StageTag stage={o.stage} />
-                        <span className="font-display text-xs tabular-nums">{o.franchisability_pct}%</span>
-                      </div>
-                      <div className="mt-1.5"><ProgressBar value={o.franchisability_pct} label={t("bishop.portfolio.franchisable")} /></div>
-                      <p className="mt-1 text-xs text-muted-foreground">{t("bishop.opportunities.ready_date", { date: formatDate(o.ready_date, lng) })}</p>
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums">
-                      {o.verified_revenue === null ? <span className="text-muted-foreground">{t("bishop.opportunities.not_verified")}</span> : formatUsd(o.verified_revenue, lng)}
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums">{formatUsd(o.investment, lng)}</td>
-                    <td className="px-4 py-3 text-right tabular-nums">
-                      {t("bishop.opportunities.share_values", { year1: o.share_year1_pct, stable: o.share_stable_pct })}
-                    </td>
-                    <td className="px-4 py-3"><DecisionTag decision={o.decision} /></td>
+          {items.length === 0 ? (
+            <p className="px-4 py-6 text-sm text-muted-foreground">{t("bishop.opportunities.empty_filter")}</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[880px] text-left text-sm">
+                <thead className="bg-muted/50 text-xs text-muted-foreground">
+                  <tr>
+                    <th scope="col" className="px-4 py-2 font-medium">{t("bishop.opportunities.col_business")}</th>
+                    <th scope="col" className="px-4 py-2 font-medium">{t("bishop.opportunities.col_phase")}</th>
+                    <th scope="col" className="px-4 py-2 text-right font-medium">{t("bishop.opportunities.col_score")}</th>
+                    <th scope="col" className="px-4 py-2 text-right font-medium">{t("bishop.opportunities.col_investment")}</th>
+                    <th scope="col" className="px-4 py-2 text-right font-medium">
+                      <span className="inline-flex items-center gap-2">{t("bishop.opportunities.col_share")}<ProvisionalTag /></span>
+                    </th>
+                    <th scope="col" className="px-4 py-2 font-medium">{t("bishop.opportunities.col_decision")}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-border border-t border-border">
+                  {items.map((o) => (
+                    <tr key={o.id} className={o.decision === "passed" ? "text-muted-foreground" : undefined}>
+                      <td className="px-4 py-3">
+                        <Link to="/oportunidades/$opportunityId" params={{ opportunityId: o.id }} className="font-medium text-link hover:underline">
+                          {title(o)}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-col items-start gap-1"><PhaseTag phase={o.phase} /><ReviewDay o={o} /></div>
+                      </td>
+                      <td className="px-4 py-3 text-right font-display tabular-nums">{o.score}</td>
+                      <td className="px-4 py-3 text-right tabular-nums">{formatUsd(o.investment, lng)}</td>
+                      <td className="px-4 py-3 text-right tabular-nums">{t("bishop.opportunities.share_values", { year1: o.share_year1_pct, stable: o.share_stable_pct })}</td>
+                      <td className="px-4 py-3"><DecisionTag decision={o.decision} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </Panel>
         <p className="mt-3 text-xs text-muted-foreground">{t("bishop.opportunities.share_note")}</p>
       </div>
