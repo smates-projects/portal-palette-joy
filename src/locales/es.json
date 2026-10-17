@@ -834,21 +834,23 @@
     "counters": {
       "week": "assessments esta semana",
       "uncontacted": "sin contactar hace más de 2 días",
-      "contracts": "contratos por firmar",
       "signed_month": "entraron al programa este mes",
       "conversion": "Conversión del mes",
       "conversion_value": "{{pct}}% · {{signed}} de {{total}} assessments",
-      "conversion_none": "Sin assessments este mes"
+      "conversion_none": "Sin assessments este mes",
+      "in_review": "en revisión de documentos",
+      "review_overdue": "con revisión vencida",
+      "accepted_no_investor": "aceptados sin inversor"
     },
     "view_board": "Tablero",
     "view_table": "Tabla",
     "stages": {
       "evaluated": "Evaluado",
-      "meeting": "Reunión agendada",
+      "meeting": "Reunión",
       "accepted": "Aceptado",
-      "contract": "Contrato por firmar",
       "in_program": "En programa",
-      "discarded": "Descartado"
+      "discarded": "Descartado",
+      "documents": "Documentación"
     },
     "discarded_column": "Descartados ({{count}})",
     "discarded_show": "Mostrar descartados",
@@ -914,7 +916,10 @@
       "quick": {
         "week": "Assessments esta semana",
         "uncontacted": "Sin contactar hace más de 2 días",
-        "signed_month": "Entraron este mes"
+        "signed_month": "Entraron este mes",
+        "in_review": "En revisión de documentos",
+        "review_overdue": "Revisión vencida",
+        "no_investor": "Aceptados sin inversor"
       }
     },
     "empty_title": "No hay leads con estos filtros",
@@ -924,17 +929,21 @@
     "column_empty": "Sin leads en esta etapa",
     "actions": {
       "schedule": "Agendar reunión",
-      "accept": "Aceptar",
-      "send_contract": "Enviar contrato",
-      "sign": "Marcar contrato firmado",
       "view_program": "Ver programa",
       "restore": "Reactivar lead",
-      "discard": "Descartar"
+      "discard": "Descartar",
+      "send_nda": "Enviar NDA y MOU",
+      "review_docs": "Revisar documentos ({{count}} nuevos)",
+      "approve_docs": "Aprobar documentación",
+      "wait_investor": "Esperando que un inversor acepte",
+      "send_tripartite": "Enviar contrato tripartito",
+      "record_funds": "Registrar fondos recibidos"
     },
     "move": {
-      "no_skip": "{{name}} no puede pasar a {{to}}: se avanza o se vuelve de a una etapa.",
+      "no_skip": "{{name}} no puede pasar a {{to}}: se vuelve de a una etapa.",
       "no_locked": "{{name}} ya está en programa: no se puede mover.",
-      "no_restore_only": "Un lead descartado solo se puede reactivar a Evaluado."
+      "no_restore_only": "Un lead descartado solo se puede reactivar a Evaluado.",
+      "no_action_only": "{{name}} pasa a {{to}} solo con su acción, no arrastrando la tarjeta."
     },
     "t_moved": "{{name}} pasó a {{to}}.",
     "undo": "Deshacer",
@@ -1015,13 +1024,19 @@
       "discarded": "{{actor}} lo descartó",
       "restored": "{{actor}} lo reactivó",
       "note": "{{actor}} escribió una nota",
-      "contract_signed": "{{actor}} marcó el contrato firmado el {{date}}. Entró al programa."
+      "contract_signed": "{{actor}} inició el programa con día 1 el {{date}}.",
+      "nda_sent": "{{actor}} envió el NDA y el MOU y creó la cuenta del dueño",
+      "doc_accepted": "{{actor}} aceptó un documento",
+      "doc_requested": "{{actor}} pidió otro documento",
+      "docs_approved": "{{actor}} aprobó la documentación"
     },
     "error_title": "No pudimos cargar el embudo.",
     "retry": "Reintentar",
     "network_filtered": "Mostrando solo {{name}}",
     "network_all": "Ver toda la red",
-    "keyboard_hint": "Shift + flecha mueve el lead a la etapa de al lado."
+    "keyboard_hint": "Shift + flecha mueve el lead a la etapa de al lado.",
+    "t_nda_sent": "Enviamos el NDA y el MOU a {{name}}. Ya tiene su cuenta.",
+    "t_docs_approved": "Documentación de {{name}} aprobada."
   },
   "office": {
     "biz": {
@@ -1486,7 +1501,9 @@
         "franchisability_goal": "Meta de franquiciabilidad",
         "required_task_codes": "Tareas obligatorias",
         "area_amber_days": "Días para ámbar",
-        "franchisability_amber_tolerance": "Tolerancia de franquiciabilidad"
+        "franchisability_amber_tolerance": "Tolerancia de franquiciabilidad",
+        "document_review_days": "Plazo de revisión de documentos",
+        "intake_documents": "Documentos de ingreso"
       },
       "percent": "{{value}}%",
       "days_one": "{{count}} día",
@@ -1495,7 +1512,8 @@
       "points_other": "{{count}} puntos",
       "error_invalid_goal": "Escribe un número entero entre 1 y 100.",
       "error_invalid_days": "Escribe un número entero de 1 en adelante.",
-      "error_invalid_tolerance": "Escribe un número entero entre 0 y 100."
+      "error_invalid_tolerance": "Escribe un número entero entre 0 y 100.",
+      "error_invalid_review_days": "Escribe un número de días de 1 o más."
     }
   },
   "owner_extra": {
@@ -1600,7 +1618,9 @@
       "contract_signed": "Firmado",
       "contract_declined": "Rechazado",
       "signer_signed": "firmó el {{date}}",
-      "signer_pending": "falta su firma"
+      "signer_pending": "falta su firma",
+      "area_intake": "Ingreso",
+      "state_rejected": "Pedido de nuevo"
     },
     "business": {
       "question": "¿Qué datos tiene SM de mi negocio?",
@@ -2015,6 +2035,138 @@
       "royalty": "Regalía sobre ventas brutas",
       "marketing": "Fondo de marketing sobre ventas brutas",
       "terms_note": "Son los porcentajes que fija el acuerdo con {{franchisor}}. Los pagas con el reporte de ventas del mes."
+    }
+  },
+  "intake": {
+    "title": "Ingreso",
+    "team_note": "La revisión la hace el equipo de Strategic Mates de la oficina: cualquier persona puede aceptar o pedir otro documento.",
+    "nda": "NDA mutuo",
+    "mou": "MOU",
+    "uploaded": "Documentos subidos",
+    "accepted": "Documentos aceptados",
+    "of_required": "{{n}} de {{m}} obligatorios",
+    "party": {
+      "owner": "Dueño",
+      "sm": "Strategic Mates",
+      "bishop": "Inversor"
+    },
+    "signer_status": {
+      "sent": "Enviado por mail",
+      "opened": "Visto",
+      "signed": "Firmado",
+      "declined": "Rechazado"
+    },
+    "resend": "Reenviar",
+    "t_resent": "Reenviamos {{name}}.",
+    "sign_as_sm": "Firmar como Strategic Mates",
+    "declined_reason": "Motivo: {{reason}}",
+    "clock": {
+      "waiting_upload": "Revisión: empieza cuando el dueño suba todos los obligatorios",
+      "running": "Revisión: día {{day}} de {{total}}",
+      "paused": "Pausado: esperando al dueño",
+      "done": "Revisión terminada"
+    },
+    "docs_title": "Documentos",
+    "required": "Obligatorio",
+    "optional": "Opcional",
+    "only_llc": "Solo si es LLC",
+    "open_file": "Abrir",
+    "accept": "Aceptar",
+    "request_again": "Pedir otro",
+    "not_uploaded": "Todavía no lo subió",
+    "state": {
+      "requested": "Por subir",
+      "received": "Por revisar",
+      "reviewed": "Aceptado",
+      "rejected": "Pedido de nuevo"
+    },
+    "verified": "Verificado: {{fact}}",
+    "asked_again": "Pedido de nuevo: {{comment}}",
+    "accept_title": "Aceptar {{name}}",
+    "accept_body": "Escribe el dato verificado. Es lo que verá el inversor.",
+    "accept_label": "Dato verificado",
+    "accept_confirm": "Aceptar documento",
+    "fact_required": "Escribe el dato verificado.",
+    "t_accepted": "Documento aceptado.",
+    "request_title": "Pedir otro: {{name}}",
+    "request_body": "Cuéntale al dueño qué falta. El plazo de revisión se pausa hasta que suba el nuevo.",
+    "request_label": "Comentario para el dueño",
+    "request_confirm": "Pedir otro documento",
+    "comment_required": "Escribe un comentario.",
+    "t_requested": "Le pedimos otro documento al dueño.",
+    "admin_only": "Lo aprueba un administrador",
+    "missing_contracts": "Falta firmar: {{list}}",
+    "missing_docs": "Falta aceptar: {{list}}",
+    "reject": "No aprobar",
+    "reject_title": "No aprobar a {{name}}",
+    "reject_body": "El lead queda descartado. Escribe el motivo.",
+    "reject_label": "Motivo",
+    "reject_confirm": "No aprobar",
+    "t_rejected": "{{name}} no fue aprobado y quedó descartado.",
+    "cancel": "Cancelar",
+    "home_title": "Revisión de documentos",
+    "home_item": "Revisar documentos de {{name}}: día {{day}} de {{total}}",
+    "home_item_paused": "Documentos de {{name}}: pausado, esperando al dueño",
+    "home_item_waiting": "Documentos de {{name}}: esperando que el dueño suba todo",
+    "docuseal": {
+      "header": "Firma electrónica con DocuSeal",
+      "sample": "Documento de muestra",
+      "signing_as": "Firmas como: {{name}}",
+      "field": "Firma aquí",
+      "sign": "Firmar",
+      "decline": "Rechazar",
+      "decline_label": "Motivo del rechazo",
+      "decline_confirm": "Rechazar contrato",
+      "reason_required": "Escribe el motivo.",
+      "download": "Descargar PDF firmado",
+      "signed_done": "Ya firmaste este contrato.",
+      "t_signed": "Firmaste {{name}}.",
+      "t_declined": "Rechazaste {{name}}.",
+      "t_error": "No se pudo completar. Prueba de nuevo.",
+      "close": "Cerrar",
+      "pdf_line": "Este acuerdo protege la información que comparten {{a}} y {{b}} durante el ingreso al Método 180."
+    },
+    "owner": {
+      "question": "¿Qué te falta para empezar?",
+      "step": "Paso {{n}} de 4",
+      "done": "Listo",
+      "next": "Después",
+      "s1_title": "Firma tus acuerdos",
+      "s1_body": "Firma el NDA mutuo y el MOU. Así cuidamos tu información y la nuestra.",
+      "s1_cta": "Firmar {{name}}",
+      "s2_title": "Sube tus documentos",
+      "s2_body": "Te faltan {{count}} documentos. Si te pedimos uno de nuevo, aparece primero con nuestro comentario.",
+      "s2_cta": "Subir documentos",
+      "s3_title": "Estamos revisando tus documentos: día {{day}} de {{total}}",
+      "s3_paused": "Te pedimos otro documento. Súbelo para que sigamos con la revisión.",
+      "s3_body": "Te avisamos si necesitamos algo más.",
+      "s4_title": "Tu negocio fue aceptado. Estamos cerrando el inicio de tu programa.",
+      "s4_body": "Cuando esté listo, te pediremos que firmes el contrato de tu programa."
+    },
+    "owner_docs": {
+      "locked": "Podrás subir tus documentos cuando firmes el NDA mutuo.",
+      "sm_comment": "Comentario de Strategic Mates: {{comment}}",
+      "sign": "Firmar",
+      "upload_new": "Subir nuevo"
+    },
+    "rules": {
+      "days_title": "Plazo de revisión de documentos",
+      "days_hint": "Días que tiene Strategic Mates para revisar los documentos de ingreso, desde que el dueño sube todos los obligatorios. Se pausa mientras se pide uno de nuevo.",
+      "docs_title": "Documentos de ingreso",
+      "docs_badge": "A validar con Melany",
+      "docs_hint": "Lo que cada dueño sube antes de entrar. Los cambios aplican a los próximos ingresos.",
+      "add": "Agregar documento",
+      "new_name": "Documento nuevo",
+      "name": "Nombre",
+      "hint": "Dato verificado de ejemplo",
+      "archive": "Archivar",
+      "restore": "Restaurar",
+      "archived": "Archivado",
+      "save": "Guardar documentos",
+      "t_saved": "Documentos de ingreso guardados.",
+      "name_required": "Cada documento necesita un nombre.",
+      "count_one": "{{count}} documento",
+      "count_other": "{{count}} documentos"
     }
   }
 }

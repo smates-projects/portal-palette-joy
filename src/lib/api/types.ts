@@ -25,7 +25,8 @@ export type UserRole = "partner_firm" | "business_owner" | "sm_team" | "sm_globa
 
 export type OrganizationKind = "partner_firm" | "sm" | "sm_global" | "franchise";
 export type OfficeStatus = "opening" | "operating" | "paused";
-export type BusinessStatus = "in_program" | "franchisor";
+/** onboarding: NDA and MOU sent, still entering (no program yet). */
+export type BusinessStatus = "onboarding" | "in_program" | "franchisor";
 
 export interface Organization {
   id: Uuid;
@@ -65,6 +66,8 @@ export interface User {
   google_calendar_email: string | null;
   /** SM team: personal booking link (Google Calendar, Calendly...). Set in Mi perfil. */
   booking_url: string | null;
+  /** SM office admin (or SM Global admin): the only ones who give "Aprobar documentación". */
+  is_admin?: boolean | undefined;
 }
 
 export interface Business {
@@ -287,7 +290,7 @@ export interface FranchisabilityRules {
 
 // ---------- Pipeline (leads from the external readiness assessment) ----------
 
-export const LEAD_STAGES = ["evaluated", "meeting", "accepted", "contract", "in_program"] as const;
+export const LEAD_STAGES = ["evaluated", "meeting", "documents", "accepted", "in_program"] as const;
 export type ActiveLeadStage = (typeof LEAD_STAGES)[number];
 export type LeadStage = ActiveLeadStage | "discarded";
 export type LeadBand = "high" | "mid" | "low" | "track";
@@ -343,9 +346,42 @@ export interface Lead {
 export interface LeadWithComputed extends Lead {
   /** Consultant's booking link, or the office default. Resolved by the data layer. */
   booking_url: string;
+  /** Entry checklist once NDA and MOU were sent (null before). Computed by the data layer. */
+  intake: IntakeSummary | null;
 }
 
-export type LeadEventKind = "submitted" | "stage_changed" | "discarded" | "restored" | "note" | "contract_signed";
+// ---------- Entry (NDA, MOU, due diligence documents) ----------
+
+export type ReviewClockStatus = "waiting_upload" | "running" | "paused" | "done";
+export interface ReviewClock {
+  status: ReviewClockStatus;
+  /** Review day (0 before it starts). */
+  day: number;
+  /** SM Global rule: days SM has to review. */
+  total: number;
+  tone: "ok" | "amber" | "red";
+}
+export type DocsApproval = { ok: true } | { ok: false; reason: "contracts" | "documents"; missing: string[] };
+export interface IntakeSummary {
+  business_id: Uuid;
+  required_total: number;
+  /** Required documents with a file (accepted, waiting review or asked again). */
+  uploaded: number;
+  accepted: number;
+  /** Received and not reviewed yet. */
+  to_review: number;
+  nda_signed: boolean;
+  mou_signed: boolean;
+  /** Signed by the owner: unlocks the upload. */
+  nda_signed_by_owner: boolean;
+  clock: ReviewClock;
+  approval: DocsApproval;
+  approved_at: IsoDateTime | null;
+}
+
+export type LeadEventKind =
+  | "submitted" | "stage_changed" | "discarded" | "restored" | "note" | "contract_signed"
+  | "nda_sent" | "doc_accepted" | "doc_requested" | "docs_approved";
 
 export interface LeadEvent {
   id: Uuid;

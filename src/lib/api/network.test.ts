@@ -141,8 +141,8 @@ describe("scoping", () => {
     expect(tasks.length).toBeGreaterThan(0);
     expect(tasks.every((t) => t.organization_id === net.ORG_ORL_LEGAL)).toBe(true);
     const valentina = await as(net.U_VALENTINA);
-    const lead = (await valentina.leads.list()).find((l) => l.stage === "contract")!;
-    const res = await valentina.leads.markContractSigned(lead.id, "2026-10-14");
+    const lead = (await valentina.leads.list()).find((l) => l.stage === "accepted")!;
+    const res = await valentina.leads.startProgram(lead.id, "2026-10-14");
     const created = (await valentina.tasks.list()).filter((t) => t.business_id === res.business_id);
     expect(created.length).toBe(res.task_count);
     const orlandoFirms = new Set((await valentina.organizations.list()).filter((o) => o.kind === "partner_firm").map((o) => o.id));
@@ -246,7 +246,8 @@ describe("manual", () => {
 describe("rules (SM Global)", () => {
   it("starts with the default values and everyone can read them", async () => {
     const rules = await (await asFranchisee()).rules.get();
-    expect(rules).toEqual({ franchisability_goal: 85, required_task_codes: ["B1-01", "B2-03", "B3-01", "B3-07", "B6-01", "B6-06"], area_amber_days: 7, franchisability_amber_tolerance: 10 });
+    expect(rules).toMatchObject({ franchisability_goal: 85, required_task_codes: ["B1-01", "B2-03", "B3-01", "B3-07", "B6-01", "B6-06"], area_amber_days: 7, franchisability_amber_tolerance: 10, document_review_days: 15 });
+    expect(rules.intake_documents.filter((d) => d.required)).toHaveLength(7);
   });
   it("changes are logged, validated and reach franchisability", async () => {
     const api = await asGlobal();
@@ -301,8 +302,8 @@ describe("catalog admin (SM Global)", () => {
     await api.catalog.update("B1-01", { name: "Franchise Blueprint (versión 2)", acceptance: "Nuevo criterio de aceptación." });
     await api.catalog.archive("B1-03", "Ya no se pide");
     await api.session.setViewAs(seed.U_NICOLAS);
-    const lead = (await api.leads.list()).find((l) => l.stage === "contract")!;
-    const res = await api.leads.markContractSigned(lead.id, "2026-10-14");
+    const lead = (await api.leads.list()).find((l) => l.stage === "accepted")!;
+    const res = await api.leads.startProgram(lead.id, "2026-10-14");
     const all = await api.tasks.list();
     const created = all.filter((t) => t.business_id === res.business_id);
     expect(created.find((t) => t.code === "B1-01")).toMatchObject({ name: "Franchise Blueprint (versión 2)", acceptance_criteria: "Nuevo criterio de aceptación." });

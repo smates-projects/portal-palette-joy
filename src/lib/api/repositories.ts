@@ -35,6 +35,7 @@ import type {
   SubmitReportInput,
   SupportTicket,
   TeamMember,
+  IntakeSummary,
   Lead,
   LeadEvent,
   LeadStage,
@@ -91,6 +92,12 @@ export interface UsersRepository {
   setBookingUrl(url: string | null): Promise<User>;
 }
 
+export interface LeadIntake {
+  summary: IntakeSummary;
+  contracts: Contract[];
+  documents: BusinessDocument[];
+}
+
 export interface LeadDetail {
   lead: LeadWithComputed;
   events: LeadEvent[];
@@ -103,13 +110,30 @@ export interface LeadDetail {
 export interface LeadsRepository {
   list(opts?: { office_id?: Uuid }): Promise<LeadWithComputed[]>;
   get(id: Uuid): Promise<LeadDetail | null>;
-  /** One step forward or back, or reactivate a discarded lead to evaluated. Never to/from in_program. */
+  /** One step back, Evaluado → Reunión, or reactivate a discarded lead to evaluated (see resolveLeadMove). */
   move(id: Uuid, to: Exclude<LeadStage, "discarded" | "in_program">): Promise<LeadWithComputed>;
   /** Required reason. Not allowed once in program. */
   discard(id: Uuid, reason: string): Promise<LeadWithComputed>;
   addNote(id: Uuid, body: string): Promise<LeadEvent>;
-  /** contract → in_program: creates the business (day 1 = signed_on) and its tasks from the catalog. */
-  markContractSigned(id: Uuid, signed_on: string): Promise<{ lead: Lead; business_id: Uuid; task_count: number }>;
+  /** meeting → documents: owner account (invite), business in onboarding, NDA + MOU sent, documents requested. */
+  sendNdaMou(id: Uuid): Promise<LeadWithComputed>;
+  /** Entry checklist. SM team of the office and SM Global. */
+  getIntake(id: Uuid): Promise<LeadIntake | null>;
+  /** Any SM person of the office. The verified fact is what the Bishop sees. */
+  acceptDocument(id: Uuid, documentId: Uuid, verifiedFact: string): Promise<BusinessDocument>;
+  /** Any SM person of the office; comment required. Pauses the review clock. */
+  requestDocument(id: Uuid, documentId: Uuid, comment: string): Promise<BusinessDocument>;
+  /** After 3 days without signing. */
+  resendContract(id: Uuid, contractId: Uuid): Promise<Contract>;
+  /** documents → accepted. Only the office admin or an SM Global admin, with everything signed and accepted. */
+  approveDocuments(id: Uuid): Promise<LeadWithComputed>;
+  /**
+   * accepted → in_program: business from onboarding to in_program (day 1 = day1) and its tasks from the catalog.
+   * Part 3 gates it on the signed tripartite contract and the Bishop funds.
+   */
+  startProgram(id: Uuid, day1: string): Promise<{ lead: Lead; business_id: Uuid; task_count: number }>;
+  /** "No aprobar": discards the lead with a reason. */
+  rejectDocuments(id: Uuid, reason: string): Promise<LeadWithComputed>;
 }
 
 export interface TaskDetail {
@@ -236,6 +260,15 @@ export interface DocumentsRepository {
   listContracts(businessId?: Uuid): Promise<Contract[]>;
   /** Owner only: answers a requested document with a file (simulated). */
   uploadDocument(documentId: Uuid, fileName: string): Promise<BusinessDocument>;
+  /** Entry checklist of a business in onboarding (owner: own). Null when it has none. */
+  getIntake(businessId?: Uuid): Promise<IntakeSummary | null>;
+  /**
+   * DocuSeal (simulated today): the current user's signer opens, signs or declines (reason required).
+   * Owner signs as owner; any SM person of the office signs as Strategic Mates.
+   */
+  openContract(contractId: Uuid): Promise<Contract>;
+  signContract(contractId: Uuid): Promise<Contract>;
+  declineContract(contractId: Uuid, reason: string): Promise<Contract>;
 }
 
 export interface FinancialsRepository {

@@ -149,6 +149,21 @@ export interface PlatformRules {
   area_amber_days: number;
   /** Progress this many points below the expected line turns a business amber. */
   franchisability_amber_tolerance: number;
+  /** Days SM has to review the entry documents, counted from the full upload. */
+  document_review_days: number;
+  /** Entry documents every owner uploads (to validate with Melany). */
+  intake_documents: IntakeDocRule[];
+}
+
+export interface IntakeDocRule {
+  id: Uuid;
+  name: string;
+  required: boolean;
+  /** Required only when the business is an LLC. */
+  only_if_llc: boolean;
+  /** Example of the verified fact the Bishop sees once SM accepts it. */
+  verified_hint: string;
+  archived: boolean;
 }
 
 export interface RulesChange {
@@ -380,32 +395,54 @@ export interface PublishManualInput {
 
 // ---------- Documents, contracts, financials, business profile ----------
 
-export type DocumentState = "requested" | "received" | "reviewed";
+/** reviewed = accepted by SM. rejected = SM asked for another file. */
+export type DocumentState = "requested" | "received" | "reviewed" | "rejected";
 
 export interface BusinessDocument {
   id: Uuid;
   business_id: Uuid;
-  area: AreaCode | "diagnosis" | "closing";
+  area: AreaCode | "diagnosis" | "closing" | "intake";
   name: string;
   state: DocumentState;
   requested_at: IsoDate;
   received_at: IsoDate | null;
   file_name: string | null;
+  /** Entry documents only. */
+  required?: boolean | undefined;
+  rule_id?: Uuid | undefined;
+  only_if_llc?: boolean | undefined;
+  verified_hint?: string | undefined;
+  /** Short fact SM writes when accepting it; the Bishop sees it. */
+  verified_fact?: string | null | undefined;
+  review_comment?: string | null | undefined;
+  reviewed_at?: IsoDate | null | undefined;
+  /** Intervals while SM waited for a replacement (they pause the review clock). */
+  pauses?: { from: IsoDate; to: IsoDate | null }[] | undefined;
 }
 
 /** Same states DocuSeal reports. */
 export type ContractState = "draft" | "sent" | "opened" | "signed" | "declined";
 
+export type SignerStatus = "sent" | "opened" | "signed" | "declined";
+
 export interface Signer {
   name: string;
   role: string;
   signed_at: IsoDate | null;
+  /** Entry contracts: who signs (owner, Strategic Mates or Bishop) and DocuSeal status with its history. */
+  party?: "owner" | "sm" | "bishop" | undefined;
+  user_id?: Uuid | null | undefined;
+  status?: SignerStatus | undefined;
+  history?: { status: SignerStatus; at: IsoDate }[] | undefined;
+  decline_reason?: string | null | undefined;
 }
 
 export interface Contract {
   id: Uuid;
   business_id: Uuid;
-  area: AreaCode | "diagnosis" | "closing";
+  area: AreaCode | "diagnosis" | "closing" | "intake";
+  /** Entry contracts. */
+  kind?: "nda" | "mou" | "tripartite" | undefined;
   name: string;
   state: ContractState;
   sent_at: IsoDate | null;

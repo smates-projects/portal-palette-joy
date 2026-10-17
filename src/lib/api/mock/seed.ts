@@ -32,6 +32,8 @@ export const U_RODRIGO = uuid("0c000000", 30);
 export const U_MARIANA = uuid("0c000000", 31);
 export const U_ANDRES = uuid("0c000000", 32);
 export const U_CAMILA = uuid("0c000000", 33);
+/** SM Miami office admin (sample): gives "Aprobar documentación". */
+export const U_ANDREA = uuid("0c000000", 34);
 export const U_RODRIGO_BIMBO = uuid("0c000000", 43);
 
 // Organizations
@@ -72,7 +74,8 @@ export const users: User[] = [
   { id: U_RODRIGO, full_name: "Rodrigo Salas", email: "rodrigo@deltacontadores.com", role: "partner_firm", organization_id: ORG_DELTA, business_id: null, title: "Contador socio", google_calendar_email: null, booking_url: null },
   { id: U_MARIANA, full_name: "Mariana Ruiz", email: "mariana@tecnopyme.io", role: "partner_firm", organization_id: ORG_TECNO, business_id: null, title: "Líder de implementación", google_calendar_email: null, booking_url: null },
   { id: U_ANDRES, full_name: "Andrés Molina", email: "andres@opslab.co", role: "partner_firm", organization_id: ORG_OPSLAB, business_id: null, title: "Consultor de operaciones", google_calendar_email: null, booking_url: null },
-  { id: U_MARYLIN, full_name: "Marilyn Boraei", email: "marilyn@strategicmates.com", role: "sm_global", organization_id: ORG_GLOBAL, business_id: null, title: "Directora", google_calendar_email: null, booking_url: null },
+  { id: U_MARYLIN, full_name: "Marilyn Boraei", email: "marilyn@strategicmates.com", role: "sm_global", organization_id: ORG_GLOBAL, business_id: null, title: "Directora", google_calendar_email: null, booking_url: null, is_admin: true },
+  { id: U_ANDREA, full_name: "Andrea Salazar", email: "andrea@strategicmates.com", role: "sm_team", organization_id: ORG_SM, business_id: null, title: "Administradora de la oficina", google_calendar_email: null, booking_url: null, is_admin: true },
   { id: U_CAMILA, full_name: "Camila Soto", email: "camila@strategicmates.com", role: "sm_team", organization_id: ORG_SM, business_id: null, title: "Consultora", google_calendar_email: null, booking_url: null },
   { id: U_RODRIGO_BIMBO, full_name: "Rodrigo Bimbo", email: "rodrigo@bimbotacos.com", role: "business_owner", organization_id: null, business_id: BIZ_BIMBO, title: "Fundador de Bimbo Tacos", google_calendar_email: null, booking_url: null },
   { id: U_NICOLAS, full_name: "Nicolás García", email: "nicolas@strategicmates.com", role: "sm_team", organization_id: ORG_SM, business_id: null, title: "Consultor", google_calendar_email: null, booking_url: null },

@@ -10,6 +10,7 @@ import * as seed from "./seed";
 import * as seedLeads from "./seed-leads";
 import * as seedNetwork from "./seed-network";
 import { createNetworkRepositories, type NetworkDb } from "./network";
+import { createIntake, type IntakeRecord } from "./intake";
 import catalogJson from "@/data/catalogo_metodo180.json";
 import { DEFAULT_PLATFORM_RULES } from "../franchisability";
 import { AREA_BY_KEY, generateProgramTasks, type CatalogEntry } from "../program";
@@ -37,6 +38,7 @@ export function createMockApi(): ApiClient {
     leads: structuredClone([...seedLeads.leads, ...seedNetwork.leads]) as Lead[],
     leadEvents: structuredClone([...seedLeads.leadEvents, ...seedNetwork.leadEvents]) as LeadEvent[],
     businessEvents: [] as BusinessEvent[],
+    intakes: [] as IntakeRecord[],
     // Network data (SM Global, franchises, manual, owner screens, Bishop). Read and written by ./network.
     rules: structuredClone(DEFAULT_PLATFORM_RULES),
     rulesHistory: [] as NetworkDb["rulesHistory"],
@@ -64,6 +66,13 @@ export function createMockApi(): ApiClient {
     recovery: { [seedNetwork.bishopInvestment.id]: structuredClone(seedNetwork.recovery) },
     opportunities: structuredClone(seedNetwork.opportunities),
     agreements: structuredClone(seedNetwork.agreements),
+  };
+  const intake = createIntake(db, newId);
+  intake.seed();
+  const intakeOf = (l: Lead) => {
+    const r = intake.record(l.id);
+    if (!r) throw new Error("no_intake");
+    return r;
   };
   // Approval date comes from the latest "approved" event.
   for (const t of db.tasks) {
@@ -150,7 +159,7 @@ export function createMockApi(): ApiClient {
   const withBooking = (l: Lead): LeadWithComputed => {
     const consultant = db.users.find((u) => u.id === l.consultant_user_id);
     const office = db.orgs.find((o) => o.id === l.office_id);
-    return { ...l, booking_url: consultant?.booking_url || office?.default_booking_url || "" };
+    return { ...l, booking_url: consultant?.booking_url || office?.default_booking_url || "", intake: intake.summaryFor(l) };
   };
   const pushLeadEvent = (e: Omit<LeadEvent, "id" | "actor_user_id" | "created_at">) => {
     const full: LeadEvent = { id: newId(), actor_user_id: currentUserId, created_at: nowIso(), ...e };
@@ -167,6 +176,57 @@ export function createMockApi(): ApiClient {
     const firm = db.orgs.find((o) => o.kind === "partner_firm" && o.area === area && o.parent_id === officeId);
     const person = firm && db.users.find((u) => u.organization_id === firm.id);
     return firm && person ? { organization_id: firm.id, assignee_user_id: person.id } : { organization_id: officeId, assignee_user_id: consultantId };
+  };
+
+  /** Entry documents and DocuSeal signing on top of the network documents repository. */
+  const withIntakeDocuments = <T extends { documents: Pick<ApiClient["documents"], "listDocuments" | "listContracts" | "uploadDocument"> }>(net: T): Omit<T, "documents"> & { documents: ApiClient["documents"] } => {
+    const contractInScope = (contractId: string) => {
+      const u = me();
+      const c = db.contracts.find((x) => x.id === contractId && x.area === "intake");
+      const b = c && db.businesses.find((x) => x.id === c.business_id);
+      if (!c || !b) throw new Error("not_found");
+      if (u.role === "business_owner" && u.business_id === b.id) return { c, party: "owner" as const };
+      if ((u.role === "sm_team" && u.organization_id === b.office_id) || u.role === "sm_global") return { c, party: "sm" as const };
+      throw new Error("forbidden");
+    };
+    return {
+      ...net,
+      documents: {
+        ...net.documents,
+        uploadDocument: async (documentId, fileName) => {
+          const u = me();
+          const d = db.documents.find((x) => x.id === documentId);
+          if (d?.area !== "intake") return net.documents.uploadDocument(documentId, fileName);
+          if (u.role !== "business_owner" || u.business_id !== d.business_id) throw new Error("not_found");
+          if (!fileName.trim()) throw new Error("file_required");
+          return delay(intake.upload(d.business_id, d, fileName.trim()));
+        },
+        getIntake: async (businessId) => {
+          const u = me();
+          const id = u.role === "business_owner" ? u.business_id : businessId;
+          const b = id ? db.businesses.find((x) => x.id === id) : undefined;
+          if (!b) return delay(null);
+          const allowed = u.role === "sm_global" || (u.role === "sm_team" && u.organization_id === b.office_id) || (u.role === "business_owner" && u.business_id === b.id);
+          if (!allowed) throw new Error("forbidden");
+          return delay(intake.summaryForBusiness(b.id));
+        },
+        openContract: async (contractId) => {
+          const { c, party } = contractInScope(contractId);
+          const s = c.signers.find((x) => x.party === party);
+          if (s && s.status === "sent") intake.setSignerStatus(c, party, "opened");
+          return delay(c);
+        },
+        signContract: async (contractId) => {
+          const { c, party } = contractInScope(contractId);
+          return delay(intake.setSignerStatus(c, party, "signed"));
+        },
+        declineContract: async (contractId, reason) => {
+          if (!reason.trim()) throw new Error("reason_required");
+          const { c, party } = contractInScope(contractId);
+          return delay(intake.setSignerStatus(c, party, "declined", reason));
+        },
+      },
+    };
   };
 
   return {
@@ -255,9 +315,11 @@ export function createMockApi(): ApiClient {
     businesses: {
       list: async () => {
         const u = me();
-        if (u.role === "sm_global") return delay(db.businesses);
+        // Businesses still entering (onboarding) live in the Embudo, not in program screens.
+        const started = db.businesses.filter((b) => b.status !== "onboarding");
+        if (u.role === "sm_global") return delay(started);
         // Offices own their businesses, including franchisors whose program already ended (no tasks left to derive them from).
-        if (u.role === "sm_team") return delay(db.businesses.filter((b) => b.office_id === u.organization_id));
+        if (u.role === "sm_team") return delay(started.filter((b) => b.office_id === u.organization_id));
         if (u.role === "business_owner") return delay(db.businesses.filter((b) => b.id === u.business_id));
         const ids = new Set(visibleTasks().map((t) => t.business_id));
         return delay(db.businesses.filter((b) => ids.has(b.id)));
@@ -323,7 +385,7 @@ export function createMockApi(): ApiClient {
         return delay(u.google_calendar_email ? seed.calendarEvents.filter((e) => e.user_id === u.id) : []);
       },
     },
-    ...createNetworkRepositories({ db, me, newId, delay }),
+    ...withIntakeDocuments(createNetworkRepositories({ db, me, newId, delay })),
     leads: {
       list: async (opts) => delay(readableLeads().filter((l) => !opts?.office_id || l.office_id === opts.office_id).map(withBooking)),
       get: async (id) => {
@@ -359,27 +421,81 @@ export function createMockApi(): ApiClient {
         l.last_contact_at = nowIso();
         return delay(pushLeadEvent({ lead_id: id, kind: "note", from: null, to: null, body: body.trim() }));
       },
-      markContractSigned: async (id, signed_on) => {
+      sendNdaMou: async (id) => {
         const l = findLead(id);
-        if (l.stage !== "contract") throw new Error("invalid_transition");
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(signed_on) || signed_on > TODAY) throw new Error("invalid_date");
-        const ownerId = newId();
-        db.users.push({ id: ownerId, full_name: l.contact.name, email: l.contact.email, role: "business_owner", organization_id: null, business_id: null, title: null, google_calendar_email: null, booking_url: null });
-        const businessId = newId();
-        const programDay = Math.round((Date.parse(`${TODAY}T12:00:00Z`) - Date.parse(`${signed_on}T12:00:00Z`)) / 86_400_000) + 1;
-        db.businesses.push({ id: businessId, name: l.business.name, industry: l.business.activity, city: l.contact.city, state: l.contact.state, owner_user_id: ownerId, status: "in_program", program_start_date: signed_on, program_day: programDay, office_id: l.office_id, consultant_id: l.consultant_user_id });
-        db.users.find((u) => u.id === ownerId)!.business_id = businessId;
+        if (l.stage !== "meeting") throw new Error("invalid_transition");
+        intake.open(l, { sentOn: TODAY });
+        setStage(l, "documents");
+        pushLeadEvent({ lead_id: id, kind: "nda_sent", from: "meeting", to: "documents", body: null });
+        return delay(withBooking(l));
+      },
+      getIntake: async (id) => {
+        const l = readableLeads().find((x) => x.id === id);
+        const summary = l ? intake.summaryFor(l) : null;
+        if (!l || !summary || !l.business_id) return delay(null);
+        return delay({ summary, contracts: intake.contractsOf(l.business_id), documents: intake.docsOf(l.business_id) });
+      },
+      acceptDocument: async (id, documentId, fact) => {
+        const r = intakeOf(findLead(id));
+        const d = intake.acceptDocument(r, documentId, fact);
+        pushLeadEvent({ lead_id: id, kind: "doc_accepted", from: null, to: null, body: d.name });
+        return delay(d);
+      },
+      requestDocument: async (id, documentId, comment) => {
+        const r = intakeOf(findLead(id));
+        const d = intake.requestAgain(r, documentId, comment);
+        pushLeadEvent({ lead_id: id, kind: "doc_requested", from: null, to: null, body: `${d.name}: ${comment.trim()}` });
+        return delay(d);
+      },
+      resendContract: async (id, contractId) => {
+        const r = intakeOf(findLead(id));
+        return delay(intake.resend(r, contractId));
+      },
+      approveDocuments: async (id) => {
+        const u = me();
+        // SM Global admins approve too; every other write on a lead is SM team only.
+        const l = u.role === "sm_global" ? db.leads.find((x) => x.id === id) : findLead(id);
+        if (!l) throw new Error("not_found");
+        if (l.stage !== "documents") throw new Error("invalid_transition");
+        intake.approve(intakeOf(l), u, l);
+        setStage(l, "accepted");
+        pushLeadEvent({ lead_id: id, kind: "docs_approved", from: "documents", to: "accepted", body: null });
+        return delay(withBooking(l));
+      },
+      startProgram: async (id, day1) => {
+        const l = findLead(id);
+        if (l.stage !== "accepted") throw new Error("invalid_transition");
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(day1) || day1 > TODAY) throw new Error("invalid_date");
+        const programDay = Math.round((Date.parse(`${TODAY}T12:00:00Z`) - Date.parse(`${day1}T12:00:00Z`)) / 86_400_000) + 1;
+        let b = l.business_id ? db.businesses.find((x) => x.id === l.business_id) : undefined;
+        if (!b) {
+          // Leads accepted before the entry flow existed have no business yet.
+          const ownerId = newId();
+          b = { id: newId(), name: l.business.name, industry: l.business.activity, city: l.contact.city, state: l.contact.state, owner_user_id: ownerId, status: "onboarding", program_start_date: day1, program_day: 0, office_id: l.office_id, consultant_id: l.consultant_user_id };
+          db.users.push({ id: ownerId, full_name: l.contact.name, email: l.contact.email, role: "business_owner", organization_id: null, business_id: b.id, title: null, google_calendar_email: null, booking_url: null });
+          db.businesses.push(b);
+        }
+        Object.assign(b, { status: "in_program", program_start_date: day1, program_day: programDay });
         // The live catalog (SM Global edits it): changes reach new programs only, never tasks already generated.
         const created = generateProgramTasks(db.catalog.filter((c) => !c.archived), {
-          business_id: businessId, industry: l.business.industry, start_date: signed_on, supervisor_user_id: l.consultant_user_id,
+          business_id: b.id, industry: l.business.industry, start_date: day1, supervisor_user_id: l.consultant_user_id,
           firmFor: firmFor(l.office_id, l.consultant_user_id), newId, now: nowIso(),
         });
         db.tasks.push(...created);
-        const from = l.stage;
         setStage(l, "in_program");
-        l.business_id = businessId;
-        pushLeadEvent({ lead_id: id, kind: "contract_signed", from, to: "in_program", body: null, signed_on });
-        return delay({ lead: l, business_id: businessId, task_count: created.length });
+        l.business_id = b.id;
+        pushLeadEvent({ lead_id: id, kind: "contract_signed", from: "accepted", to: "in_program", body: null, signed_on: day1 });
+        return delay({ lead: l, business_id: b.id, task_count: created.length });
+      },
+      rejectDocuments: async (id, reason) => {
+        if (!reason.trim()) throw new Error("reason_required");
+        const l = findLead(id);
+        if (l.stage !== "documents") throw new Error("invalid_transition");
+        setStage(l, "discarded");
+        l.discarded_from = "documents";
+        l.discard_reason = reason.trim();
+        pushLeadEvent({ lead_id: id, kind: "discarded", from: "documents", to: "discarded", body: reason.trim() });
+        return delay(withBooking(l));
       },
     },
     tasks: {

@@ -8,13 +8,15 @@ import { buildPipelineCounters, matchesQuick, resolveLeadMove } from "./pipeline
 describe("pipeline transitions", () => {
   it("allows one step forward and one step back", () => {
     expect(resolveLeadMove("evaluated", "meeting")).toEqual({ ok: true, action: "move" });
-    expect(resolveLeadMove("accepted", "meeting")).toEqual({ ok: true, action: "move" });
+    expect(resolveLeadMove("accepted", "documents")).toEqual({ ok: true, action: "move" });
     expect(resolveLeadMove("evaluated", "accepted")).toEqual({ ok: false, reason: "skip" });
   });
-  it("enters En programa only by signing, and never leaves it", () => {
-    expect(resolveLeadMove("contract", "in_program")).toEqual({ ok: true, action: "sign" });
-    expect(resolveLeadMove("accepted", "in_program").ok).toBe(false);
-    expect(resolveLeadMove("in_program", "contract")).toEqual({ ok: false, reason: "locked" });
+  it("reaches Documentación, Aceptado and En programa only through their action, and never leaves En programa", () => {
+    expect(resolveLeadMove("meeting", "documents")).toEqual({ ok: false, reason: "action_only" });
+    expect(resolveLeadMove("documents", "accepted")).toEqual({ ok: false, reason: "action_only" });
+    expect(resolveLeadMove("accepted", "in_program")).toEqual({ ok: false, reason: "action_only" });
+    expect(resolveLeadMove("documents", "meeting")).toEqual({ ok: true, action: "move" });
+    expect(resolveLeadMove("in_program", "accepted")).toEqual({ ok: false, reason: "locked" });
     expect(resolveLeadMove("in_program", "discarded")).toEqual({ ok: false, reason: "locked" });
   });
   it("discards from any active stage and reactivates only to Evaluado", () => {
@@ -33,7 +35,9 @@ describe("pipeline counters", () => {
     const c = buildPipelineCounters(leads, "2026-10-14");
     expect(c.week).toBe(2); // Oct 12 and Oct 13
     expect(c.uncontacted).toBe(2); // evaluated, never contacted, more than 2 days
-    expect(c.contracts).toBe(1);
+    expect(c.in_review).toBe(2); // Sazón Criollo and Glow Nails
+    expect(c.review_overdue).toBe(1); // Glow Nails, day 17 of 15
+    expect(c.accepted_no_investor).toBe(1); // Brisa Clean
     expect(c.signed_month).toBe(1); // Enyermy, Oct 9
   });
   it("an evaluated lead submitted exactly 2 days ago is not yet 'sin contactar'", async () => {
@@ -67,8 +71,8 @@ describe("leads repository", () => {
   it("signing creates the business with day 1 on the signature date and its catalog tasks, supervised by the consultant", async () => {
     const api = createMockApi();
     await api.session.setViewAs(seed.U_NICOLAS);
-    const brisa = (await api.leads.list()).find((l) => l.stage === "contract")!;
-    const r = await api.leads.markContractSigned(brisa.id, "2026-10-14");
+    const brisa = (await api.leads.list()).find((l) => l.stage === "accepted")!;
+    const r = await api.leads.startProgram(brisa.id, "2026-10-14");
     expect(r.lead.stage).toBe("in_program");
     const biz = (await api.businesses.list()).find((b) => b.id === r.business_id)!;
     expect(biz.program_start_date).toBe("2026-10-14");
