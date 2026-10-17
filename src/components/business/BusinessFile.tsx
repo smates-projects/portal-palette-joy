@@ -156,13 +156,13 @@ export function BusinessFile({ businessId, variant }: { businessId: string; vari
             {t(p.owner ? "entry.existing_owner" : "entry.existing_sm", { count: ex.count, pct: ex.pct })}
           </p>
         )}
-        <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+        <ul className="mt-4 grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
           {cards.map((c) => (
-            <li key={c.area} className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm">
+            <li key={c.area} className="grid min-w-0 grid-cols-[auto_auto_minmax(0,1fr)] items-center gap-x-2 gap-y-0.5 rounded-md border border-border px-3 py-2 text-sm">
               <span className={cn("h-2 w-2 shrink-0 rounded-full", DOT[c.health])} />
               <span className="font-display text-xs font-semibold">{c.area}</span>
-              <span className="min-w-0 flex-1 truncate">{t(`areas.${c.area}`)}</span>
-              <span className={cn("shrink-0 text-xs", TEXT[c.health])}>{t(`sm.health.${c.health}`)}</span>
+              <span className="min-w-0 break-words">{t(`areas.${c.area}`)}</span>
+              <span className={cn("col-start-3 text-xs leading-snug", TEXT[c.health])}>{t(`sm.health.${c.health}`)}</span>
             </li>
           ))}
         </ul>
@@ -309,17 +309,21 @@ function ProfileChanges({ businessId, readOnly }: { businessId: string; readOnly
       <p className="text-xs text-muted-foreground">{t("business_file.changes_hint")}</p>
       <ul className="mt-2 divide-y divide-border rounded-md border border-border text-sm">
         {requests.map((r) => (
-          <li key={r.id} className="space-y-2 px-3 py-2.5">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="font-medium">{t(`owner_extra.business.${r.field}`)}</span>
-              <span className="text-muted-foreground line-through">{r.current_value}</span>
-              <span>→</span>
-              <span className="font-medium">{r.new_value}</span>
-              <span className={cn("ml-auto rounded-[4px] border px-1.5 py-0.5 text-[11px] font-medium", tone[r.status])}>{t(`owner_extra.business.status_${r.status}`)}</span>
+          <li key={r.id} className="space-y-2 px-3 py-3">
+            <div className="flex items-start gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-muted-foreground">{t(`owner_extra.business.${r.field}`)}</p>
+                <p className="mt-0.5 flex flex-wrap items-baseline gap-x-2 break-words">
+                  <span className="text-muted-foreground line-through">{r.current_value}</span>
+                  <span aria-hidden className="text-muted-foreground">→</span>
+                  <span className="font-medium">{r.new_value}</span>
+                </p>
+              </div>
+              <span className={cn("shrink-0 rounded-[4px] border px-1.5 py-0.5 text-[11px] font-medium", tone[r.status])}>{t(`owner_extra.business.status_${r.status}`)}</span>
             </div>
             <p className="text-xs text-muted-foreground">{t("business_file.change_requested_by", { name: name(r.requested_by_user_id), date: formatDateTime(r.created_at, i18n.language) })} · {t("business_file.change_reason", { reason: r.reason })}</p>
             {r.status === "pending" && !readOnly && (
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 border-t border-border pt-2">
                 <input className={cn(inputCls, "h-8 min-w-[12rem] flex-1 text-xs")} placeholder={t("business_file.change_note")} value={notes[r.id] ?? ""} onChange={(e) => setNotes((n) => ({ ...n, [r.id]: e.target.value }))} />
                 <button type="button" disabled={resolve.isPending} onClick={() => act(r, "applied")} className="inline-flex h-8 items-center rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground hover:bg-primary-hover disabled:opacity-50">{t("business_file.change_apply")}</button>
                 <button type="button" disabled={resolve.isPending} onClick={() => act(r, "rejected")} className="inline-flex h-8 items-center rounded-md border border-border bg-surface px-3 text-xs font-medium hover:bg-muted disabled:opacity-50">{t("business_file.change_reject")}</button>
