@@ -59,7 +59,6 @@ import {
   type OpportunityDecision,
   type PlatformRules,
   type ProjectionYear,
-  type ReadinessItem,
   type RecoveryPoint,
   type RulesChange,
   type StructureHealth,
