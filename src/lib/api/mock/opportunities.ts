@@ -139,7 +139,7 @@ export function createOpportunities(d: Deps) {
     };
   };
 
-  const bishop: Omit<BishopRepository, "getPortfolio"> & { listBaseAgreements?: never } = {
+  const bishop: Omit<BishopRepository, "getPortfolio" | "listAgreements"> = {
     listOpportunities: async () => {
       const u = bishopOnly();
       return d.delay(visibleTo(u).map((l) => toOpportunity(l, u)));
@@ -165,9 +165,6 @@ export function createOpportunities(d: Deps) {
     },
     pass: async (id) => d.delay(decide(id, "passed")),
     clearDecision: async (id) => d.delay(decide(id, "none")),
-    listAgreements: async () => {
-      throw new Error("composed_in_index");
-    },
   };
 
   /** Framework first, then tripartite contracts where this Bishop signs. */
