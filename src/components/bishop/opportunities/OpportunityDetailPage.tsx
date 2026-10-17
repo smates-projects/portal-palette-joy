@@ -2,30 +2,32 @@ import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
-import { PROGRAM_LENGTH_DAYS } from "@/config/app";
+import { ArrowLeft, CheckCircle2, Circle, FileText, ShieldAlert } from "lucide-react";
 import { PROFIT_SPLIT } from "@/config/economics";
-import { useBishopOpportunity, useClearOpportunityDecision, useExpressInterest, usePassOpportunity } from "@/lib/api/hooks";
-import type { OpportunityDecision } from "@/lib/api/types";
+import { useAcceptOpportunity, useBishopAgreements, useBishopOpportunity, useClearOpportunityDecision, useCurrentUser, usePassOpportunity } from "@/lib/api/hooks";
+import { acceptBlock } from "@/lib/leads/opportunity";
 import { formatDate, formatUsd } from "@/lib/format";
-import { EmptyBlock, ErrorBlock, LoadingBlocks, Metric, Panel, primaryButton, ProgressBar, ProvisionalTag, secondaryButton, Screen, Tag } from "@/components/bishop/ui";
+import { EmptyBlock, ErrorBlock, LoadingBlocks, Metric, Panel, primaryButton, ProvisionalTag, secondaryButton, Screen, Tag } from "@/components/bishop/ui";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { DecisionTag, StageTag } from "./parts";
+import { BlockBadge } from "@/components/pipeline/LeadBadges";
+import { DocuSealSigner } from "@/components/docuseal/DocuSealSigner";
+import { DecisionTag, PhaseTag, ReviewDay, useOpportunityTitle } from "./parts";
 
-type Answer = Exclude<OpportunityDecision, "none">;
-
-/** Sheet of one business: numbers, 5-year projection, how ready it is, and the Bishop answer (interested / pass, with undo). */
+/** One opportunity: owner's declaration, SM's verified facts, entry checklist, projection and "Aceptar oportunidad". */
 export function OpportunityDetailPage({ opportunityId }: { opportunityId: string }) {
   const { t, i18n } = useTranslation();
   const lng = i18n.language;
   const oppQ = useBishopOpportunity(opportunityId);
-  const interest = useExpressInterest();
+  const agreementsQ = useBishopAgreements();
+  const me = useCurrentUser().data;
+  const accept = useAcceptOpportunity();
   const pass = usePassOpportunity();
   const clear = useClearOpportunityDecision();
-  /** Answer waiting for the confirmation dialog. */
-  const [confirming, setConfirming] = useState<Answer | null>(null);
+  const title = useOpportunityTitle();
+  const [confirming, setConfirming] = useState(false);
+  const [signing, setSigning] = useState(false);
 
   const back = (
     <Link to="/oportunidades" className="mt-3 inline-flex items-center gap-1 text-sm text-link hover:underline">
@@ -34,19 +36,8 @@ export function OpportunityDetailPage({ opportunityId }: { opportunityId: string
   );
 
   if (oppQ.isError)
-    return (
-      <Screen ns="bishop" screen="opportunity_detail">
-        {back}
-        <ErrorBlock title={t("bishop.error")} retryLabel={t("bishop.retry")} onRetry={() => void oppQ.refetch()} />
-      </Screen>
-    );
-  if (oppQ.isLoading)
-    return (
-      <Screen ns="bishop" screen="opportunity_detail">
-        {back}
-        <LoadingBlocks />
-      </Screen>
-    );
+    return <Screen ns="bishop" screen="opportunity_detail">{back}<ErrorBlock title={t("bishop.error")} retryLabel={t("bishop.retry")} onRetry={() => void oppQ.refetch()} /></Screen>;
+  if (oppQ.isLoading) return <Screen ns="bishop" screen="opportunity_detail">{back}<LoadingBlocks /></Screen>;
   const o = oppQ.data;
   if (!o)
     return (
@@ -57,50 +48,127 @@ export function OpportunityDetailPage({ opportunityId }: { opportunityId: string
     );
 
   const money = (n: number) => formatUsd(n, lng);
+  const frameworkSigned = agreementsQ.data?.find((a) => a.kind === "framework")?.state === "signed";
+  const block = acceptBlock(o.phase, frameworkSigned);
+  const name = title(o);
   const totalForYou = o.projection.reduce((sum, p) => sum + p.bishop, 0);
-  const programPct = Math.min(100, Math.round((o.program_day / PROGRAM_LENGTH_DAYS) * 100));
-  const busy = interest.isPending || pass.isPending || clear.isPending;
   const fail = () => toast.error(t("bishop.error_action"));
+  const mySigner = o.tripartite?.signers.find((s) => s.party === "bishop");
+  const canSign = !!mySigner && (mySigner.status === "sent" || mySigner.status === "opened");
 
+  const doAccept = () =>
+    accept.mutate(o.id, {
+      onSuccess: () => { setConfirming(false); toast.success(t("bishop.opportunity_detail.t_accepted")); },
+      onError: (e) => { setConfirming(false); toast.error(e instanceof Error && e.message === "taken" ? t("bishop.opportunity_detail.t_taken") : t("bishop.error_action")); },
+    });
   const undo = () => clear.mutate(o.id, { onSuccess: () => toast.success(t("bishop.opportunity_detail.t_undone")), onError: fail });
-  const answer = (decision: Answer) => {
-    const mutation = decision === "interested" ? interest : pass;
-    mutation.mutate(o.id, {
-      onSuccess: () => {
-        setConfirming(null);
-        toast.success(t(`bishop.opportunity_detail.t_${decision}`, { name: o.business_name }), {
-          action: { label: t("bishop.opportunity_detail.undo"), onClick: undo },
-        });
-      },
+  const doPass = () =>
+    pass.mutate(o.id, {
+      onSuccess: () => toast.success(t("bishop.opportunity_detail.t_passed", { name }), { action: { label: t("bishop.opportunity_detail.undo"), onClick: undo } }),
       onError: fail,
     });
-  };
+
+  const check = (done: boolean, label: string, extra?: string) => (
+    <li className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+      <span className="inline-flex items-center gap-2">
+        {done ? <CheckCircle2 className="h-4 w-4 text-status-success-fg" aria-hidden /> : <Circle className="h-4 w-4 text-muted-foreground" aria-hidden />}
+        {label}
+      </span>
+      {extra && <span className="text-xs tabular-nums text-muted-foreground">{extra}</span>}
+    </li>
+  );
 
   return (
     <Screen ns="bishop" screen="opportunity_detail">
       {back}
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <h2 className="text-xl font-semibold">{o.business_name}</h2>
-        <StageTag stage={o.stage} />
-      </div>
-      <p className="mt-1 text-sm text-muted-foreground">{o.industry} · {o.city}, {o.state}</p>
-      <p className="mt-3 max-w-3xl text-sm">{o.summary}</p>
+      <p className="mt-4 flex items-start gap-2 rounded-md border border-status-warning-border bg-status-warning-bg px-3 py-2 text-sm text-status-warning-fg">
+        <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />{t("bishop.opportunity_detail.reminder")}
+      </p>
 
-      <div className="mt-6 space-y-4">
-        <section className="grid overflow-hidden rounded-md border border-border bg-surface md:grid-cols-5">
-          <Metric
-            label={t("bishop.opportunity_detail.verified_revenue")}
-            value={o.verified_revenue === null ? t("bishop.opportunity_detail.not_verified") : money(o.verified_revenue)}
-            sub={o.verified_revenue === null ? t("bishop.opportunity_detail.not_verified_sub") : t("bishop.opportunity_detail.verified_revenue_sub")}
-          />
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <h2 className="text-xl font-semibold">{name}</h2>
+        <PhaseTag phase={o.phase} />
+        <ReviewDay o={o} />
+        <DecisionTag decision={o.decision} />
+      </div>
+      {o.owner_name && <p className="mt-1 text-sm text-muted-foreground">{t("bishop.opportunity_detail.owner", { name: o.owner_name })}</p>}
+
+      {/* One primary action */}
+      <div className="mt-4 rounded-md border border-border bg-surface p-4">
+        {o.phase === "in_review" || o.phase === "available" ? (
+          <>
+            <div className="flex flex-wrap items-center gap-3">
+              <button onClick={() => setConfirming(true)} disabled={block !== null || accept.isPending} className={primaryButton}>
+                {t("bishop.opportunity_detail.accept")}
+              </button>
+              {o.decision === "passed" ? (
+                <button onClick={undo} disabled={clear.isPending} className={secondaryButton}>{t("bishop.opportunity_detail.change_answer")}</button>
+              ) : (
+                <button onClick={doPass} disabled={pass.isPending} className={secondaryButton}>{t("bishop.opportunity_detail.pass")}</button>
+              )}
+            </div>
+            {block && <p className="mt-2 text-xs text-muted-foreground">{t(`bishop.opportunity_detail.block_${block}`)}</p>}
+          </>
+        ) : (
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm">{t(`bishop.opportunity_detail.next_${o.phase}`)}</p>
+            {canSign && <button onClick={() => setSigning(true)} className={primaryButton}>{t("bishop.opportunity_detail.sign_tripartite")}</button>}
+          </div>
+        )}
+      </div>
+
+      <div className="mt-4 space-y-4">
+        <section className="grid overflow-hidden rounded-md border border-border bg-surface md:grid-cols-4">
           <Metric label={t("bishop.opportunity_detail.investment")} value={money(o.investment)} sub={t("bishop.opportunity_detail.investment_sub")} />
           <Metric label={t("bishop.opportunity_detail.share_year1")} badge={<ProvisionalTag />} value={`${o.share_year1_pct}%`} sub={t("bishop.opportunity_detail.share_year1_sub")} />
           <Metric label={t("bishop.opportunity_detail.share_stable")} badge={<ProvisionalTag />} value={`${o.share_stable_pct}%`} sub={t("bishop.opportunity_detail.share_stable_sub")} />
-          <Metric label={t("bishop.opportunity_detail.ready_date")} value={formatDate(o.ready_date, lng)} sub={t("bishop.opportunity_detail.ready_date_sub", { day: o.program_day, total: PROGRAM_LENGTH_DAYS })} />
+          <Metric label={t("bishop.opportunity_detail.score")} value={o.score} sub={t(`pipeline.bands.${o.band}`)} />
         </section>
 
         <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
           <div className="min-w-0 space-y-4">
+            {/* Declared by the owner */}
+            <Panel title={t("bishop.opportunity_detail.assessment_title")} action={<Tag tone="neutral">{t("bishop.opportunity_detail.declared_tag")}</Tag>}>
+              <div className="space-y-4 px-4 pb-4">
+                <p className="font-semibold">{t(`pipeline.detail.headline.${o.band}`)}</p>
+                <ul className="divide-y divide-border rounded-md border border-border">
+                  {o.result.blocks.map((b) => (
+                    <li key={b.key} className="flex items-center justify-between px-3 py-1.5 text-sm">
+                      <span>{t(`pipeline.blocks.${b.key}`)}</span><BlockBadge status={b.status} />
+                    </li>
+                  ))}
+                </ul>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground">{t("pipeline.detail.strengths")}</p>
+                    <ul className="mt-1 list-disc space-y-0.5 pl-4 text-sm">{o.result.strengths.map((s) => <li key={s}>{s}</li>)}</ul>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground">{t("pipeline.detail.priorities")}</p>
+                    <ul className="mt-1 list-disc space-y-0.5 pl-4 text-sm">{o.result.priorities.map((s) => <li key={s}>{s}</li>)}</ul>
+                  </div>
+                </div>
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-2 rounded-md border border-border p-3 text-sm">
+                  {([
+                    ["pipeline.detail.activity", o.declared.activity],
+                    ["pipeline.revenue", t(`pipeline.revenue_ranges.${o.declared.revenue_range}`)],
+                    ["pipeline.detail.margin", t(`pipeline.margin_ranges.${o.declared.margin_range}`)],
+                    ["pipeline.detail.team", t(`pipeline.team_ranges.${o.declared.team_range}`)],
+                    ["pipeline.detail.years", t(`pipeline.years_ranges.${o.declared.years_range}`)],
+                    ["pipeline.detail.active_clients", t(o.declared.has_active_clients ? "pipeline.detail.yes" : "pipeline.detail.no")],
+                  ] as const).map(([k, v]) => (
+                    <div key={k}><dt className="text-xs text-muted-foreground">{t(k)}</dt><dd>{v}</dd></div>
+                  ))}
+                </dl>
+                {o.know_how_example && (
+                  <div className="rounded-md border-l-2 border-gold bg-muted/60 px-4 py-3">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("bishop.opportunity_detail.know_how")}</p>
+                    <p className="mt-1.5 text-sm">“{o.know_how_example}”</p>
+                  </div>
+                )}
+              </div>
+            </Panel>
+
             {/* Projection */}
             <Panel title={t("bishop.opportunity_detail.projection_title")} action={<ProvisionalTag />}>
               <div className="overflow-x-auto border-t border-border">
@@ -134,95 +202,89 @@ export function OpportunityDetailPage({ opportunityId }: { opportunityId: string
                 </table>
               </div>
               <p className="px-4 pb-4 pt-3 text-xs text-muted-foreground">
-                {t("bishop.opportunity_detail.projection_note", {
-                  year1: o.share_year1_pct,
-                  stable: o.share_stable_pct,
-                  sm: Math.round(PROFIT_SPLIT.sm_from_year2 * 100),
-                })}
+                {t("bishop.opportunity_detail.projection_note", { year1: o.share_year1_pct, stable: o.share_stable_pct, sm: Math.round(PROFIT_SPLIT.sm_from_year2 * 100) })}
               </p>
             </Panel>
           </div>
 
           <div className="min-w-0 space-y-4">
-            {/* What is ready and what is missing */}
-            <Panel title={t("bishop.opportunity_detail.ready_title")}>
-              <div className="space-y-4 px-4 pb-4">
-                <div>
-                  <p className="flex justify-between text-sm">
-                    <span>{t("bishop.opportunity_detail.franchisable")}</span>
-                    <span className="font-display font-semibold tabular-nums">{o.franchisability_pct}%</span>
-                  </p>
-                  <div className="mt-1"><ProgressBar value={o.franchisability_pct} label={t("bishop.opportunity_detail.franchisable")} /></div>
-                </div>
-                <div>
-                  <p className="flex justify-between text-sm">
-                    <span>{t("bishop.opportunity_detail.program")}</span>
-                    <span className="font-display font-semibold tabular-nums">{t("bishop.opportunity_detail.program_day", { day: o.program_day, total: PROGRAM_LENGTH_DAYS })}</span>
-                  </p>
-                  <div className="mt-1"><ProgressBar value={programPct} label={t("bishop.opportunity_detail.program")} /></div>
-                </div>
-                <ul className="divide-y divide-border rounded-md border border-border">
-                  {o.readiness.map((item) => (
-                    <li key={item.key} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
-                      <span>{t(`bishop.opportunity_detail.readiness.${item.key}`)}</span>
-                      <Tag tone={item.done ? "success" : "neutral"}>{t(item.done ? "bishop.opportunity_detail.readiness_done" : "bishop.opportunity_detail.readiness_pending")}</Tag>
-                    </li>
-                  ))}
-                </ul>
-                <p className="rounded-md border border-border px-3 py-2 text-sm">
-                  {o.stage === "ready" ? t("bishop.opportunity_detail.ready_yes") : t("bishop.opportunity_detail.ready_no", { date: formatDate(o.ready_date, lng) })}
-                </p>
-              </div>
+            {/* Verified by SM */}
+            <Panel title={t("bishop.opportunity_detail.verified_title")} action={<Tag tone="success">{t("bishop.opportunity_detail.verified_tag")}</Tag>}>
+              <ul className="divide-y divide-border border-t border-border">
+                {o.verified.map((v) => (
+                  <li key={v.name} className="px-4 py-2 text-sm">
+                    <p className="text-xs text-muted-foreground">{v.name}</p>
+                    <p className={v.fact ? "font-medium" : "text-muted-foreground"}>{v.fact ?? t("bishop.opportunity_detail.pending_verify")}</p>
+                  </li>
+                ))}
+              </ul>
             </Panel>
 
-            {/* Answer */}
-            <Panel title={t("bishop.opportunity_detail.answer_title")}>
+            {/* Entry checklist */}
+            <Panel title={t("bishop.opportunity_detail.checklist_title")}>
               <div className="px-4 pb-4">
-                {o.decision === "none" ? (
-                  <>
-                    <p className="text-sm text-muted-foreground">{t("bishop.opportunity_detail.answer_help")}</p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <button disabled={busy} onClick={() => setConfirming("interested")} className={primaryButton}>{t("bishop.opportunity_detail.interested")}</button>
-                      <button disabled={busy} onClick={() => setConfirming("passed")} className={secondaryButton}>{t("bishop.opportunity_detail.pass")}</button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-2">
-                      <DecisionTag decision={o.decision} />
-                      {o.decided_at && <span className="text-xs text-muted-foreground">{formatDate(o.decided_at, lng)}</span>}
-                    </div>
-                    <p className="mt-2 text-sm text-muted-foreground">{t(`bishop.opportunity_detail.after_${o.decision}`)}</p>
-                    <button disabled={busy} onClick={undo} className={`${secondaryButton} mt-3`}>{t("bishop.opportunity_detail.change_answer")}</button>
-                  </>
+                <ul className="divide-y divide-border rounded-md border border-border">
+                  {check(o.checklist.nda_signed, t("bishop.opportunity_detail.c_nda"))}
+                  {check(o.checklist.mou_signed, t("bishop.opportunity_detail.c_mou"))}
+                  {check(o.checklist.uploaded >= o.checklist.required_total, t("bishop.opportunity_detail.c_uploaded"), `${o.checklist.uploaded} / ${o.checklist.required_total}`)}
+                  {check(o.checklist.accepted >= o.checklist.required_total, t("bishop.opportunity_detail.c_accepted"), `${o.checklist.accepted} / ${o.checklist.required_total}`)}
+                  {check(o.checklist.approved, t("bishop.opportunity_detail.c_approved"))}
+                </ul>
+                {o.review && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {o.review.status === "paused" ? t("bishop.review_paused_long") : t("bishop.review_long", { day: Math.max(o.review.day, 1), total: o.review.total })}
+                  </p>
                 )}
               </div>
             </Panel>
+
+            {/* After accepting: files and the tripartite contract */}
+            {o.files.length > 0 && (
+              <Panel title={t("bishop.opportunity_detail.files_title")}>
+                <ul className="divide-y divide-border border-t border-border">
+                  {o.files.map((f) => (
+                    <li key={f.id} className="flex items-center justify-between gap-2 px-4 py-2 text-sm">
+                      <span className="min-w-0 truncate">{f.name}</span>
+                      <button onClick={() => toast.info(t("bishop.agreements.t_download", { file: f.file_name }))} className={secondaryButton}>
+                        <FileText className="mr-1.5 h-3.5 w-3.5" />{t("bishop.opportunity_detail.open_file")}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                <p className="px-4 py-2 text-xs text-muted-foreground">{t("bishop.opportunity_detail.files_note")}</p>
+              </Panel>
+            )}
+            {o.tripartite && (
+              <Panel title={o.tripartite.name}>
+                <ul className="divide-y divide-border border-t border-border">
+                  {o.tripartite.signers.map((s) => (
+                    <li key={s.name + s.party} className="flex items-center justify-between gap-2 px-4 py-2 text-sm">
+                      <span>{s.name}</span>
+                      <Tag tone={s.status === "signed" ? "success" : s.status === "declined" ? "danger" : "neutral"}>
+                        {t(`intake.signer.${s.status ?? "sent"}`)}{s.signed_at ? ` · ${formatDate(s.signed_at, lng)}` : ""}
+                      </Tag>
+                    </li>
+                  ))}
+                </ul>
+              </Panel>
+            )}
           </div>
         </div>
       </div>
 
-      <AlertDialog open={confirming !== null} onOpenChange={(open) => !open && setConfirming(null)}>
+      <AlertDialog open={confirming} onOpenChange={(v) => !v && setConfirming(false)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{confirming && t(`bishop.opportunity_detail.confirm_${confirming}_title`, { name: o.business_name })}</AlertDialogTitle>
-            <AlertDialogDescription>{confirming && t(`bishop.opportunity_detail.confirm_${confirming}_body`)}</AlertDialogDescription>
+            <AlertDialogTitle>{t("bishop.opportunity_detail.confirm_title", { name })}</AlertDialogTitle>
+            <AlertDialogDescription>{t("bishop.opportunity_detail.confirm_body", { amount: money(o.investment) })}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("bishop.opportunity_detail.confirm_cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={busy}
-              onClick={(e) => {
-                // Keep the dialog open until the answer is saved; it closes in onSuccess.
-                e.preventDefault();
-                if (confirming) answer(confirming);
-              }}
-            >
-              {confirming && t(`bishop.opportunity_detail.confirm_${confirming}_action`)}
-            </AlertDialogAction>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); doAccept(); }} disabled={accept.isPending}>{t("bishop.opportunity_detail.confirm_action")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {signing && o.tripartite && <DocuSealSigner contract={o.tripartite} party="bishop" signerName={me?.full_name ?? ""} onClose={() => setSigning(false)} />}
     </Screen>
   );
 }
