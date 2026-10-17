@@ -276,7 +276,24 @@ function TeamTab() {
       {!rows.length ? (
         <p className="mt-4 rounded-md border border-dashed border-border bg-surface p-8 text-center text-sm text-muted-foreground">{t("office.cat.team_empty")}</p>
       ) : (
-        <div className="mt-4 overflow-x-auto rounded-md border border-border bg-surface">
+        <>
+        <ul className="mt-4 divide-y divide-border rounded-md border border-border bg-surface md:hidden">
+          {rows.map((r) => (
+            <li key={r.user.id} className={cn("space-y-2 px-4 py-3 text-sm", !isActiveUser(r.user) && "text-muted-foreground")}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <span className="flex flex-wrap items-center gap-2 font-medium"><span className="whitespace-nowrap">{r.user.full_name}</span>{r.user.is_admin && <AdminTag />}{r.user.id === me.id && <span className="text-xs font-normal text-muted-foreground">{t("profile.you")}</span>}</span>
+                  <span className="block break-all text-xs text-muted-foreground">{r.user.email}</span>
+                </div>
+                <UserStatusBadge status={userStatus(r.user)} />
+              </div>
+              <div className="text-xs text-muted-foreground">{r.user.title ?? "—"} · {r.supervises.length ? r.supervises.map((b) => b.name).join(", ") : t("office.cat.supervises_none")}</div>
+              <div className={cn("text-xs", r.has_booking_url ? "text-status-success-fg" : "text-muted-foreground")}>{r.has_booking_url ? t("office.cat.booking_yes") : t("office.cat.booking_no")}</div>
+              {admin && <PersonActions user={r.user} orgs={orgsQ.data ?? []} onDeactivate={setDeactivating} onHistory={setHistory} />}
+            </li>
+          ))}
+        </ul>
+        <div className="mt-4 hidden overflow-x-auto rounded-md border border-border bg-surface md:block">
           <table className="w-full min-w-[760px] text-sm">
             <thead className="border-b border-border bg-muted text-xs text-muted-foreground">
               <tr>
@@ -292,19 +309,20 @@ function TeamTab() {
               {rows.map((r) => (
                 <tr key={r.user.id} className={cn(!isActiveUser(r.user) && "text-muted-foreground")}>
                   <td className="px-4 py-3">
-                    <span className="flex items-center gap-2 font-medium">{r.user.full_name}{r.user.is_admin && <AdminTag />}{r.user.id === me.id && <span className="text-xs font-normal text-muted-foreground">{t("profile.you")}</span>}</span>
+                    <span className="flex items-center gap-2 font-medium"><span className="whitespace-nowrap">{r.user.full_name}</span>{r.user.is_admin && <AdminTag />}{r.user.id === me.id && <span className="text-xs font-normal text-muted-foreground">{t("profile.you")}</span>}</span>
                     <span className="block text-xs text-muted-foreground">{r.user.email}</span>
                   </td>
                   <td className="px-3 py-3">{r.user.title ?? "—"}</td>
                   <td className="px-3 py-3">{r.supervises.length ? r.supervises.map((b) => b.name).join(", ") : <span className="text-muted-foreground">{t("office.cat.supervises_none")}</span>}</td>
                   <td className={cn("px-3 py-3", r.has_booking_url ? "text-status-success-fg" : "text-muted-foreground")}>{r.has_booking_url ? t("office.cat.booking_yes") : t("office.cat.booking_no")}</td>
                   <td className="px-3 py-3"><UserStatusBadge status={userStatus(r.user)} /></td>
-                  {admin && <td className="px-3 py-3"><PersonActions user={r.user} orgs={orgsQ.data ?? []} onDeactivate={setDeactivating} onHistory={setHistory} /></td>}
+                  {admin && <td className="whitespace-nowrap px-3 py-3"><PersonActions user={r.user} orgs={orgsQ.data ?? []} onDeactivate={setDeactivating} onHistory={setHistory} /></td>}
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+        </>
       )}
       <InvitePersonDialog open={inviting} onOpenChange={setInviting} fixedRole="sm_team" fixedOrganizationId={me.organization_id ?? undefined} />
       <DeactivatePersonDialog user={deactivating} onClose={() => setDeactivating(null)} />
