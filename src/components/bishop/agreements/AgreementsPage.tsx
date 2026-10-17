@@ -1,10 +1,12 @@
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { FileText } from "lucide-react";
-import { useBishopAgreements } from "@/lib/api/hooks";
-import type { AgreementState } from "@/lib/api/types";
+import { useState } from "react";
+import { useBishopAgreements, useCurrentUser } from "@/lib/api/hooks";
+import { DocuSealSigner } from "@/components/docuseal/DocuSealSigner";
+import type { AgreementState, Contract } from "@/lib/api/types";
 import { formatDate } from "@/lib/format";
-import { EmptyBlock, ErrorBlock, LoadingBlocks, Panel, Screen, secondaryButton, Tag, type Tone } from "@/components/bishop/ui";
+import { EmptyBlock, ErrorBlock, LoadingBlocks, Panel, primaryButton, Screen, secondaryButton, Tag, type Tone } from "@/components/bishop/ui";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const STATE_TONE: Record<AgreementState, Tone> = { draft: "neutral", sent: "warning", signed: "success" };
@@ -14,6 +16,8 @@ export function AgreementsPage() {
   const { t, i18n } = useTranslation();
   const lng = i18n.language;
   const agreementsQ = useBishopAgreements();
+  const me = useCurrentUser().data;
+  const [signing, setSigning] = useState<Contract | null>(null);
 
   if (agreementsQ.isError)
     return (
@@ -60,7 +64,9 @@ export function AgreementsPage() {
                         {a.signed_at ? t("bishop.agreements.signed_on", { date: formatDate(a.signed_at, lng) }) : t("bishop.agreements.not_signed")}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        {a.has_file ? (
+                        {a.contract && a.contract.signers.some((x) => x.party === "bishop" && (x.status === "sent" || x.status === "opened")) ? (
+                          <button onClick={() => setSigning(a.contract!)} className={primaryButton}>{t("bishop.agreements.sign")}</button>
+                        ) : a.has_file ? (
                           // The mock has no real file: it only says that the document would download.
                           <button
                             onClick={() => toast.info(t("bishop.agreements.t_download", { file: a.file_name ?? a.name }))}
@@ -91,6 +97,7 @@ export function AgreementsPage() {
           </TooltipProvider>
         </Panel>
       </div>
+      {signing && <DocuSealSigner contract={signing} party="bishop" signerName={me?.full_name ?? ""} onClose={() => setSigning(null)} />}
     </Screen>
   );
 }

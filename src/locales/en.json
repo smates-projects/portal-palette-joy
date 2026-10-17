@@ -937,7 +937,8 @@
       "approve_docs": "Approve documents",
       "wait_investor": "Waiting for an investor to accept",
       "send_tripartite": "Send three-party contract",
-      "record_funds": "Record funds received"
+      "record_funds": "Record funds received",
+      "wait_signatures": "Waiting for contract signatures"
     },
     "move": {
       "no_skip": "{{name}} cannot move to {{to}}: go back one stage at a time.",
@@ -1028,7 +1029,10 @@
       "nda_sent": "{{actor}} sent the NDA and MOU and created the owner account",
       "doc_accepted": "{{actor}} accepted a document",
       "doc_requested": "{{actor}} asked for another document",
-      "docs_approved": "{{actor}} approved the documents"
+      "docs_approved": "{{actor}} approved the documents",
+      "bishop_accepted": "An investor accepted the opportunity",
+      "bishop_released": "{{actor}} released the opportunity",
+      "tripartite_sent": "{{actor}} sent the tripartite contract"
     },
     "error_title": "We could not load the pipeline.",
     "retry": "Retry",
@@ -1036,7 +1040,26 @@
     "network_all": "View the whole network",
     "keyboard_hint": "Shift + arrow moves the lead to the next stage.",
     "t_nda_sent": "We sent the NDA and MOU to {{name}}. Their account is ready.",
-    "t_docs_approved": "Documents of {{name}} approved."
+    "t_docs_approved": "Documents of {{name}} approved.",
+    "investors": {
+      "title": "Investors",
+      "none": "No investor has accepted it yet.",
+      "accepted_by": "Accepted by {{name}} on {{date}}.",
+      "release": "Release opportunity",
+      "viewed_one": "{{count}} investor saw the opportunity.",
+      "viewed_other": "{{count}} investors saw the opportunity.",
+      "viewed_on": "Saw it on {{date}}",
+      "passed_on": "not interested ({{date}})",
+      "passed_one": "{{count}} said they are not interested.",
+      "passed_other": "{{count}} said they are not interested.",
+      "release_title": "Release the {{name}} opportunity?",
+      "release_body": "It becomes available to every investor again. An unsigned tripartite contract is cancelled.",
+      "release_label": "Reason",
+      "release_confirm": "Release opportunity",
+      "t_released": "You released the {{name}} opportunity."
+    },
+    "funds_next": "Recording funds comes in the next part.",
+    "t_tripartite_sent": "We sent the tripartite contract for {{name}}."
   },
   "office": {
     "biz": {
@@ -1768,7 +1791,7 @@
     "stage_preparing": "In preparation",
     "decision_none": "No answer",
     "decision_interested": "You are interested",
-    "decision_passed": "You passed",
+    "decision_passed": "Not interested",
     "portfolio": {
       "question": "How is my investment doing?",
       "empty_title": "You have no investments yet",
@@ -1811,7 +1834,7 @@
     "opportunities": {
       "question": "Which business can I invest in?",
       "empty_title": "No opportunities for now",
-      "empty_body": "When SM has a business ready to present, you will see it here with its five-year projection.",
+      "empty_body": "When a business signs its NDA and MOU with Strategic Mates, you will see it here.",
       "col_business": "Business",
       "col_ready": "How ready it is",
       "col_investment": "Investment",
@@ -1821,7 +1844,12 @@
       "share_values": "{{year1}}% / {{stable}}%",
       "share_note": "The split is provisional and may change before signing. Each agreement sets the final split.",
       "col_revenue": "Verified revenue (12 months)",
-      "not_verified": "Not verified"
+      "not_verified": "Not verified",
+      "filter_phase": "Phase",
+      "all_phases": "All phases",
+      "empty_filter": "No opportunities in this phase.",
+      "col_phase": "Phase",
+      "col_score": "Score"
     },
     "opportunity_detail": {
       "question": "Is this business right for me?",
@@ -1829,7 +1857,7 @@
       "not_found_title": "We could not find this business",
       "not_found_body": "SM may no longer present it. Go back to the list to see the ones you have.",
       "investment": "Investment",
-      "investment_sub": "What you put in for a share of the result",
+      "investment_sub": "What you pay Strategic Mates for the program",
       "share_year1": "Your share, first year",
       "share_year1_sub": "Of the franchisor's result, first 12 months",
       "share_stable": "Your share, stabilized",
@@ -1854,13 +1882,13 @@
       "answer_title": "Your answer",
       "answer_help": "If you are interested, SM proposes a meeting with the owner. If you pass, we will not show you this business again.",
       "interested": "I am interested",
-      "pass": "Pass",
+      "pass": "Not interested",
       "after_interested": "SM will contact you to propose a meeting with the owner.",
       "after_passed": "We will not show you this business again unless you change your answer.",
       "change_answer": "Change my answer",
       "undo": "Undo",
       "t_interested": "We noted your interest in {{name}}.",
-      "t_passed": "We noted that you pass on {{name}}.",
+      "t_passed": "Noted that you are not interested in {{name}}.",
       "t_undone": "We removed your answer.",
       "confirm_interested_title": "Are you interested in {{name}}?",
       "confirm_interested_body": "We tell SM. They will propose a meeting with the owner. This does not commit you to invest.",
@@ -1881,7 +1909,38 @@
         "unit_economics": "Unit economics validated"
       },
       "readiness_done": "Done",
-      "readiness_pending": "Pending"
+      "readiness_pending": "Pending",
+      "reminder": "Remember: your agreement with Strategic Mates does not allow you to contact or negotiate directly with this business.",
+      "owner": "Owner: {{name}}",
+      "accept": "Accept opportunity",
+      "block_framework": "Sign your framework agreement to accept it.",
+      "block_in_review": "You can accept it once SM approves the documents.",
+      "block_taken": "Another investor already accepted it.",
+      "next_accepted_by_you": "You accepted it. Strategic Mates will send you the tripartite contract to sign.",
+      "next_in_contract": "The tripartite contract is being signed. Each party signs from their own portal.",
+      "next_funds_pending": "All three signed the contract. Your funds still need to be recorded.",
+      "sign_tripartite": "Sign tripartite contract",
+      "score": "Assessment score",
+      "assessment_title": "Assessment result",
+      "declared_tag": "Declared by the owner",
+      "know_how": "What the owner says they do best",
+      "verified_title": "Verified by SM",
+      "verified_tag": "Verified by SM",
+      "pending_verify": "Pending verification",
+      "checklist_title": "Business entry",
+      "c_nda": "Mutual NDA signed",
+      "c_mou": "MOU signed",
+      "c_uploaded": "Documents uploaded",
+      "c_accepted": "Documents accepted by SM",
+      "c_approved": "Documents approved",
+      "files_title": "Billing and tax files",
+      "open_file": "Open file",
+      "files_note": "Read only. You will never see the owner's phone or email.",
+      "confirm_title": "Accept the {{name}} opportunity?",
+      "confirm_body": "You commit to fund the program for {{amount}}. We stop showing this business to other investors and tell Strategic Mates.",
+      "confirm_action": "Yes, accept",
+      "t_accepted": "You accepted the opportunity. We told Strategic Mates.",
+      "t_taken": "Another investor accepted it first."
     },
     "agreements": {
       "question": "Which agreements do I have?",
@@ -1900,7 +1959,26 @@
       "open_document": "View document",
       "open_document_for": "View document of {{name}}",
       "no_file": "There is no document to open yet",
-      "t_download": "We would download the file {{file}}. This is a test version and has no real documents yet."
+      "t_download": "We would download the file {{file}}. This is a test version and has no real documents yet.",
+      "sign": "Sign"
+    },
+    "alias": "{{industry}} in {{city}}, {{state}}",
+    "phase": {
+      "in_review": "Documents in review",
+      "available": "Documents approved",
+      "accepted_by_you": "Accepted by you",
+      "in_contract": "Contract being signed",
+      "funds_pending": "Funds pending"
+    },
+    "review_paused": "Paused: waiting for the owner",
+    "review_waiting": "Waiting for the owner to upload documents",
+    "review_day": "Day {{day}} of {{total}}",
+    "review_long": "Documents in review by Strategic Mates: day {{day}} of {{total}}.",
+    "review_paused_long": "Review paused: Strategic Mates is waiting for a document from the owner.",
+    "framework": {
+      "gate_title": "Sign your framework agreement to see opportunities",
+      "gate_body": "It is your confidentiality and non-circumvention agreement with Strategic Mates. You sign it once and then see every opportunity.",
+      "sign": "Sign framework agreement"
     }
   },
   "franchisee": {
@@ -2141,7 +2219,8 @@
       "s3_paused": "We asked you for another document. Upload it so we can continue the review.",
       "s3_body": "We will let you know if we need anything else.",
       "s4_title": "Your business was accepted. We are closing the start of your program.",
-      "s4_body": "When it is ready, we will ask you to sign your program contract."
+      "s4_body": "When it is ready, we will ask you to sign your program contract.",
+      "s4_cta": "Sign your program contract"
     },
     "owner_docs": {
       "locked": "You can upload your documents once you sign the mutual NDA.",

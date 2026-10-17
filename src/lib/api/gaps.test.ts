@@ -116,38 +116,7 @@ describe("manual sections", () => {
   });
 });
 
-describe("Business Bishop: verified revenue, readiness and agreement files", () => {
-  it("verified revenue is on the list and the detail; a business SM has not verified shows none", async () => {
-    const api = await as(net.U_JEFFERSON);
-    const list = await api.bishop.listOpportunities();
-    expect(list.find((o) => o.business_name === "Vossler")?.verified_revenue).toBe(1804000);
-    expect(list.find((o) => o.business_name === "Prime 10 Solutions")?.verified_revenue).toBeNull();
-    expect((await api.bishop.getOpportunity(net.OPP_VOSSLER))?.verified_revenue).toBe(1804000);
-  });
-
-  it("the readiness checklist has the five items, computed from the business data", async () => {
-    const api = await as(net.U_JEFFERSON);
-    const detail = (await api.bishop.getOpportunity(net.OPP_VOSSLER))!;
-    expect(detail.readiness.map((i) => i.key)).toEqual(["franchisability_goal", "required_tasks", "manual_published", "legal_docs", "unit_economics"]);
-    expect(detail.readiness.every((i) => !i.done)).toBe(true);
-    // The Bishop never reads the rules, yet the checklist follows them: Global lowers the goal and the required list.
-    const global = await asGlobal();
-    await global.rules.update({ franchisability_goal: 1, required_task_codes: [] });
-    await global.session.setViewAs(net.U_JEFFERSON);
-    const relaxed = (await global.bishop.getOpportunity(net.OPP_VOSSLER))!;
-    expect(relaxed.readiness.filter((i) => i.done).map((i) => i.key)).toEqual(["franchisability_goal", "required_tasks"]);
-  });
-
-  it("the checklist is part of the detail only, and only the Bishop reads it", async () => {
-    const api = await as(net.U_JEFFERSON);
-    const [first] = await api.bishop.listOpportunities();
-    expect(first).not.toHaveProperty("readiness");
-    for (const id of [seed.U_CARLA, net.U_LUISA, seed.U_NICOLAS, seed.U_MARYLIN]) {
-      await api.session.setViewAs(id);
-      await expect(api.bishop.getOpportunity(net.OPP_VOSSLER), id).rejects.toThrow("bishop_only");
-    }
-  });
-
+describe("Business Bishop: agreement files", () => {
   it("agreements say if they have a file: signed ones do, the draft does not", async () => {
     const agreements = await (await as(net.U_JEFFERSON)).bishop.listAgreements();
     const signed = agreements.filter((a) => a.state === "signed");

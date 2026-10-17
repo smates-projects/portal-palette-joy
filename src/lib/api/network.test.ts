@@ -422,24 +422,10 @@ describe("Business Bishop", () => {
     expect(estimatePaybackMonth([{ month: "2026-01", projected: 0, actual: 0 }, { month: "2026-02", projected: 0, actual: 50 }], 100)).toBe("2026-03");
     expect(estimatePaybackMonth([{ month: "2026-01", projected: 0, actual: 120 }], 100)).toBe("2026-01");
   });
-  it("opportunities: Vossler and Prime 10, with projection; interest and pass can be undone", async () => {
-    const api = await asBishop();
-    const list = await api.bishop.listOpportunities();
-    expect(list.map((o) => o.business_name).sort()).toEqual(["Prime 10 Solutions", "Vossler"]);
-    expect(list.every((o) => o.decision === "none" && o.stage === "preparing" && o.share_year1_pct === 50 && o.share_stable_pct === 22)).toBe(true);
-    const detail = (await api.bishop.getOpportunity(net.OPP_VOSSLER))!;
-    expect(detail.projection).toHaveLength(5);
-    expect(detail.projection[0]).toMatchObject({ year: 1, bishop: 55000 });
-    expect((await api.bishop.expressInterest(net.OPP_VOSSLER)).decision).toBe("interested");
-    expect((await api.bishop.pass(net.OPP_PRIME)).decision).toBe("passed");
-    expect((await api.bishop.listOpportunities()).map((o) => o.decision).sort()).toEqual(["interested", "passed"]);
-    const undone = await api.bishop.clearDecision(net.OPP_PRIME);
-    expect(undone).toMatchObject({ decision: "none", decided_at: null });
-    await expect(api.bishop.expressInterest("0c000000-0000-4000-8000-0000000000ff")).rejects.toThrow("not_found");
-  });
-  it("agreements: equity agreement and NDA signed, Vossler in draft", async () => {
+  it("agreements: framework first, tripartite to sign, equity agreement signed, Vossler in draft", async () => {
     const agreements = await (await asBishop()).bishop.listAgreements();
-    expect(agreements.map((a) => `${a.state}`).sort()).toEqual(["draft", "signed", "signed"]);
+    expect(agreements[0]?.kind).toBe("framework");
+    expect(agreements.map((a) => `${a.state}`).sort()).toEqual(["draft", "sent", "signed", "signed"]);
     expect(agreements.find((a) => a.business_id === seed.BIZ_BIMBO)?.signed_at).toBe("2025-11-14");
   });
 });

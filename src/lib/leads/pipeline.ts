@@ -3,6 +3,7 @@ import {
   LEAD_STAGES,
   type ActiveLeadStage,
   type Lead,
+  type TripartiteState,
   type LeadBand,
   type LeadIndustry,
   type LeadStage,
@@ -43,15 +44,20 @@ export function resolveLeadMove(from: LeadStage, to: LeadStage): LeadMove {
 }
 
 export type LeadPrimaryAction =
-  | "schedule" | "send_nda" | "review_docs" | "approve_docs" | "wait_investor" | "send_tripartite" | "record_funds" | "view_program" | "restore";
+  | "schedule" | "send_nda" | "review_docs" | "approve_docs" | "wait_investor" | "send_tripartite" | "wait_signatures" | "record_funds" | "view_program" | "restore";
 
 /** One primary action per stage, from the next pending step. Accepted actions depend on the Bishop (part 2). */
-export function primaryActionFor(lead: Pick<Lead, "stage"> & { intake?: IntakeSummary | null }): LeadPrimaryAction {
+export function primaryActionFor(
+  lead: Pick<Lead, "stage"> & { intake?: IntakeSummary | null; bishop_user_id?: string | null; tripartite?: TripartiteState },
+): LeadPrimaryAction {
   switch (lead.stage) {
     case "evaluated": return "schedule";
     case "meeting": return "send_nda";
     case "documents": return lead.intake && lead.intake.to_review > 0 ? "review_docs" : "approve_docs";
-    case "accepted": return "wait_investor";
+    case "accepted":
+      if (!lead.bishop_user_id) return "wait_investor";
+      if (!lead.tripartite || lead.tripartite === "none") return "send_tripartite";
+      return lead.tripartite === "pending" ? "wait_signatures" : "record_funds";
     case "in_program": return "view_program";
     case "discarded": return "restore";
   }
@@ -72,7 +78,7 @@ type WithIntake = Lead & { intake?: IntakeSummary | null };
 export function matchesQuick(lead: WithIntake, quick: LeadQuick, today: string = TODAY) {
   if (quick === "in_review") return lead.stage === "documents";
   if (quick === "review_overdue") return lead.stage === "documents" && lead.intake?.clock.tone === "red";
-  if (quick === "no_investor") return lead.stage === "accepted";
+  if (quick === "no_investor") return lead.stage === "accepted" && !lead.bishop_user_id;
   if (quick === "week") return day(lead.submitted_at) >= mondayOf(today) && day(lead.submitted_at) <= today;
   if (quick === "uncontacted") return lead.stage === "evaluated" && !lead.last_contact_at && daysSince(lead.submitted_at, today) > UNCONTACTED_DAYS;
   return lead.stage === "in_program" && sameMonth(lead.stage_entered_at, today);

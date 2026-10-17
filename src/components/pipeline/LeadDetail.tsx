@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Mail, MapPin, Phone, X } from "lucide-react";
-import { useAddLeadNote, useApproveDocuments, useCurrentUser, useLeadDetail, useRejectDocuments, useUsers } from "@/lib/api/hooks";
+import { useAddLeadNote, useApproveDocuments, useCurrentUser, useLeadDetail, useRejectDocuments, useSendTripartite, useUsers } from "@/lib/api/hooks";
+import { InvestorsSection } from "./InvestorsSection";
 import { isDocsAdmin } from "@/lib/leads/onboarding";
 import { IntakeChecklist, RejectDocsDialog } from "./IntakeChecklist";
 import type { LeadEvent, LeadWithComputed } from "@/lib/api/types";
@@ -34,6 +35,7 @@ export function LeadDetail(props: {
   const meQ = useCurrentUser();
   const approve = useApproveDocuments();
   const reject = useRejectDocuments();
+  const sendTripartite = useSendTripartite();
   const userName = (id: string | null) => (id ? usersQ.data?.find((u) => u.id === id)?.full_name ?? "" : "");
 
   if (q.isLoading)
@@ -52,7 +54,8 @@ export function LeadDetail(props: {
   const approval = lead.intake?.approval;
   // Why the primary action is disabled (shown under it), or null when it can be used.
   const blockedHint =
-    action === "wait_investor" ? "" :
+    action === "wait_investor" || action === "wait_signatures" ? "" :
+    action === "record_funds" ? t("pipeline.funds_next") :
     action === "approve_docs" && !admin ? t("intake.admin_only") :
     action === "approve_docs" && approval && !approval.ok
       ? t(approval.reason === "contracts" ? "intake.missing_contracts" : "intake.missing_docs", { list: approval.missing.join(", ") })
@@ -62,6 +65,8 @@ export function LeadDetail(props: {
     if (action === "review_docs") return document.getElementById("intake-docs")?.scrollIntoView({ behavior: "smooth", block: "start" });
     if (action === "approve_docs")
       return approve.mutate(lead.id, { onSuccess: () => toast.success(t("pipeline.t_docs_approved", { name: lead.business.name })), onError: fail });
+    if (action === "send_tripartite")
+      return sendTripartite.mutate(lead.id, { onSuccess: () => toast.success(t("pipeline.t_tripartite_sent", { name: lead.business.name })), onError: fail });
     props.onPrimary?.(lead);
   };
   const showGlobalApprove = props.readOnly && action === "approve_docs" && admin;
@@ -115,7 +120,7 @@ export function LeadDetail(props: {
         ) : (
           <>
             <div className="mt-4 flex flex-wrap items-center gap-3">
-              <PrimaryButton onClick={runPrimary} disabled={(props.pending ?? false) || approve.isPending || blockedHint !== null}>
+              <PrimaryButton onClick={runPrimary} disabled={(props.pending ?? false) || approve.isPending || sendTripartite.isPending || blockedHint !== null}>
                 {t(`pipeline.actions.${action}`, { count: lead.intake?.to_review ?? 0 })}
               </PrimaryButton>
               {canDiscard && !props.readOnly && (
@@ -134,6 +139,9 @@ export function LeadDetail(props: {
       <div className="flex-1 space-y-6 px-6 py-5">
         {/* 1b. Entry checklist (from NDA + MOU on) */}
         {lead.intake && <IntakeChecklist leadId={lead.id} readOnly={!!props.readOnly} />}
+        {(lead.stage === "documents" || lead.stage === "accepted") && lead.intake && (
+          <InvestorsSection leadId={lead.id} businessName={lead.business.name} readOnly={!!props.readOnly} />
+        )}
         {/* 2. Assessment result as the owner saw it */}
         <section>
           <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("pipeline.detail.result_title")}</h3>

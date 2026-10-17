@@ -200,7 +200,7 @@ export function createIntake(db: IntakeDb, newId: () => string) {
       return c;
     },
     /** DocuSeal simulated: the signer is the current user (owner of the business, or any SM of the office for "sm"). */
-    setSignerStatus: (c: Contract, party: "owner" | "sm", status: SignerStatus, reason?: string | null) => {
+    setSignerStatus: (c: Contract, party: "owner" | "sm" | "bishop", status: SignerStatus, reason?: string | null) => {
       const s = c.signers.find((x) => x.party === party);
       if (!s) throw new Error("not_signer");
       if (s.status === "signed" || s.status === "declined") throw new Error("invalid_state");

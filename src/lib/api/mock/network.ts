@@ -59,7 +59,6 @@ import {
   type OpportunityDecision,
   type PlatformRules,
   type ProjectionYear,
-  type ReadinessItem,
   type RecoveryPoint,
   type RulesChange,
   type StructureHealth,
@@ -71,20 +70,6 @@ import {
   type User,
   type Uuid,
 } from "../types";
-
-export interface BishopOpportunityRecord {
-  id: Uuid;
-  bishop_user_id: Uuid;
-  business_id: Uuid;
-  investment: number;
-  ready_date: string;
-  summary: string;
-  projection: ProjectionYear[];
-  /** Last 12 months verified by SM; null until SM verifies the financials. */
-  verified_revenue: number | null;
-  decision: OpportunityDecision;
-  decided_at: string | null;
-}
 
 export interface BishopInvestmentRecord {
   id: Uuid;
@@ -121,7 +106,6 @@ export interface NetworkDb {
   teamMembers: TeamMember[];
   investments: BishopInvestmentRecord[];
   recovery: Record<Uuid, RecoveryPoint[]>;
-  opportunities: BishopOpportunityRecord[];
   agreements: BishopAgreement[];
 }
 
@@ -134,8 +118,8 @@ export interface MockContext {
 
 type NetworkApi = Pick<
   ApiClient,
-  "network" | "rules" | "catalog" | "franchises" | "manual" | "financials" | "businessProfile" | "bishop" | "franchisee"
-> & { documents: Pick<ApiClient["documents"], "listDocuments" | "listContracts" | "uploadDocument"> };
+  "network" | "rules" | "catalog" | "franchises" | "manual" | "financials" | "businessProfile" | "franchisee"
+> & { bishop: Pick<BishopRepository, "getPortfolio" | "listAgreements"> } & { documents: Pick<ApiClient["documents"], "listDocuments" | "listContracts" | "uploadDocument"> };
 
 const PRIORITIES = ["minimo", "alto_valor", "opcional", "tercero", "fuera"];
 const AREA_KEY_BY_CODE = Object.fromEntries(Object.entries(AREA_BY_KEY).map(([key, code]) => [code, key])) as Record<AreaCode, string>;
@@ -796,47 +780,7 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
     if (u.role !== "bishop") throw new Error("bishop_only");
     return u;
   };
-  const toOpportunity = (o: BishopOpportunityRecord): BishopOpportunity => {
-    const b = businessOf(o.business_id)!;
-    const f = franchisabilityOf(b);
-    return {
-      id: o.id, business_id: b.id, business_name: b.name, industry: b.industry, city: b.city, state: b.state,
-      stage: f.is_ready ? "ready" : "preparing", investment: o.investment,
-      share_year1_pct: Math.round(PROFIT_SPLIT.bishop_year1 * 100), share_stable_pct: Math.round(PROFIT_SPLIT.bishop_stabilized * 100),
-      ready_date: o.ready_date, franchisability_pct: f.franchisability_pct, program_day: b.program_day, summary: o.summary,
-      verified_revenue: o.verified_revenue, decision: o.decision, decided_at: o.decided_at,
-    };
-  };
-  /**
-   * What is done and what is pending before the business can franchise, computed from its own data so the Bishop
-   * never needs access to the rules or the business' tasks.
-   */
-  const readinessOf = (b: Business): ReadinessItem[] => {
-    const f = franchisabilityOf(b);
-    const approved = (code: string) => db.tasks.some((t) => t.business_id === b.id && t.code === code && t.status === "accepted");
-    const fddDelivered = db.documents.some((d) => d.business_id === b.id && d.area === "closing" && d.name.includes("FDD") && d.state !== "requested");
-    return [
-      { key: "franchisability_goal", done: f.franchisability_pct >= f.franchisability_goal },
-      { key: "required_tasks", done: f.missing_required.length === 0 },
-      { key: "manual_published", done: db.manualVersions.some((v) => v.business_id === b.id) },
-      // The FDD itself is prepared by a third party: it is ready when SM handed the business over (B6-09) or the document arrived.
-      { key: "legal_docs", done: approved("B6-09") || fddDelivered },
-      { key: "unit_economics", done: approved("B3-03") && approved("B3-04") },
-    ];
-  };
-  const myOpportunity = (id: Uuid) => {
-    const u = bishopOnly();
-    const o = db.opportunities.find((x) => x.id === id && x.bishop_user_id === u.id);
-    if (!o) throw new Error("not_found");
-    return o;
-  };
-  const decide = (id: Uuid, decision: OpportunityDecision) => {
-    const o = myOpportunity(id);
-    o.decision = decision;
-    o.decided_at = decision === "none" ? null : nowIso();
-    return toOpportunity(o);
-  };
-  const bishop: BishopRepository = {
+  const bishop: Pick<BishopRepository, "getPortfolio" | "listAgreements"> = {
     getPortfolio: async () => {
       const u = bishopOnly();
       const investments = db.investments
@@ -857,18 +801,6 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       const recovered = investments.reduce((a, i) => a + i.recovered, 0);
       return delay({ investments, totals: { invested, recovered, recovered_pct: pct(recovered, invested) } });
     },
-    listOpportunities: async () => {
-      const u = bishopOnly();
-      return delay(db.opportunities.filter((o) => o.bishop_user_id === u.id).map(toOpportunity));
-    },
-    getOpportunity: async (id) => {
-      const u = bishopOnly();
-      const o = db.opportunities.find((x) => x.id === id && x.bishop_user_id === u.id);
-      return delay(o ? { ...toOpportunity(o), projection: o.projection, readiness: readinessOf(businessOf(o.business_id)!) } : null);
-    },
-    expressInterest: async (id) => delay(decide(id, "interested")),
-    pass: async (id) => delay(decide(id, "passed")),
-    clearDecision: async (id) => delay(decide(id, "none")),
     listAgreements: async () => {
       const u = bishopOnly();
       return delay(db.agreements.filter((a) => a.bishop_user_id === u.id));

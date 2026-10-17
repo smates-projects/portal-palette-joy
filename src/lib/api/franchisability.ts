@@ -17,6 +17,7 @@ export const DEFAULT_PLATFORM_RULES: PlatformRules = {
   area_amber_days: DEFAULT_AREA_AMBER_DAYS,
   franchisability_amber_tolerance: DEFAULT_AMBER_TOLERANCE_POINTS,
   document_review_days: 15,
+  program_amount: 150_000,
   // Entry documents (to validate with Melany). SM Global edits them in Reglas.
   intake_documents: [
     { id: "a1000000-0000-4000-8000-000000000001", name: "Facturación del último año (estados de cuenta bancarios de 12 meses o P&L)", required: true, only_if_llc: false, verified_hint: "USD 640.000 en 12 meses", archived: false },

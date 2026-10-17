@@ -1,6 +1,6 @@
 // Types for the SM network (Global, offices), franchisors, franchises, Bishop and owner data.
 // Same conventions as types.ts: snake_case, UUID string ids, ISO dates.
-import type { AreaCode, BusinessStatus, IsoDate, IsoDateTime, LeadStage, OfficeStatus, Organization, User, Uuid } from "./types";
+import type { AreaCode, BusinessStatus, IsoDate, IsoDateTime, Lead, LeadIndustry, LeadStage, OfficeStatus, Organization, ReviewClock, User, Uuid } from "./types";
 
 /** Month as YYYY-MM. */
 export type IsoMonth = string;
@@ -153,6 +153,8 @@ export interface PlatformRules {
   document_review_days: number;
   /** Entry documents every owner uploads (to validate with Melany). */
   intake_documents: IntakeDocRule[];
+  /** USD the Bishop pays SM for one program (paid outside the app). */
+  program_amount: number;
 }
 
 export interface IntakeDocRule {
@@ -442,7 +444,7 @@ export interface Contract {
   business_id: Uuid;
   area: AreaCode | "diagnosis" | "closing" | "intake";
   /** Entry contracts. */
-  kind?: "nda" | "mou" | "tripartite" | undefined;
+  kind?: "nda" | "mou" | "tripartite" | "framework" | undefined;
   name: string;
   state: ContractState;
   sent_at: IsoDate | null;
@@ -522,7 +524,7 @@ export interface BishopPortfolio {
   totals: { invested: number; recovered: number; recovered_pct: number };
 }
 
-export type OpportunityDecision = "none" | "interested" | "passed";
+export type OpportunityDecision = "none" | "passed";
 
 export interface ProjectionYear {
   year: number;
@@ -535,46 +537,74 @@ export interface ProjectionYear {
   sm: number;
 }
 
+/**
+ * Phase of an opportunity as one Bishop sees it. It is born from a lead once NDA and MOU are signed by both.
+ * in_review: SM reviews the documents. available: approved, nobody took it. accepted_by_you: you took it.
+ * in_contract: tripartite contract being signed. funds_pending: signed by the three, funds pending (Part 3).
+ */
+export const OPPORTUNITY_PHASES = ["in_review", "available", "accepted_by_you", "in_contract", "funds_pending"] as const;
+export type OpportunityPhase = (typeof OPPORTUNITY_PHASES)[number];
+
 export interface BishopOpportunity {
+  /** Same as lead_id. */
   id: Uuid;
-  business_id: Uuid;
-  business_name: string;
-  industry: string;
+  lead_id: Uuid;
+  phase: OpportunityPhase;
+  industry: LeadIndustry;
   city: string;
   state: string;
-  /** preparing: still in the program. ready: franchisability reached. */
-  stage: "preparing" | "ready";
+  /** Commercial and owner names: only once this Bishop accepted it. Never the owner's contact. */
+  business_name: string | null;
+  owner_name: string | null;
+  /** Program amount the Bishop pays SM (SM Global rule). */
   investment: number;
   /** Bishop share of the result in year 1 and once stabilized (provisional parameters). */
   share_year1_pct: number;
   share_stable_pct: number;
-  ready_date: IsoDate;
-  franchisability_pct: number;
-  program_day: number;
-  summary: string;
-  /** Revenue of the last 12 months as verified by SM; null until SM has verified the financials. */
-  verified_revenue: number | null;
+  score: number;
+  band: Lead["result"]["band"];
+  /** Review clock while SM reviews the documents. */
+  review: ReviewClock | null;
   decision: OpportunityDecision;
   decided_at: IsoDateTime | null;
 }
 
-export type ReadinessKey = "franchisability_goal" | "required_tasks" | "manual_published" | "legal_docs" | "unit_economics";
-
-export interface ReadinessItem {
-  key: ReadinessKey;
-  done: boolean;
+export interface OpportunityVerifiedItem {
+  name: string;
+  /** Fact SM wrote when accepting the document; null = pending. */
+  fact: string | null;
 }
 
 export interface OpportunityDetail extends BishopOpportunity {
+  /** What the owner declared in the assessment (ranges, never the name before accepting). */
+  declared: Omit<Lead["business"], "name">;
+  result: Lead["result"];
+  know_how_example: string | null;
+  verified: OpportunityVerifiedItem[];
+  checklist: { nda_signed: boolean; mou_signed: boolean; required_total: number; uploaded: number; accepted: number; approved: boolean };
   projection: ProjectionYear[];
-  /** What is done and what is pending before the business can franchise. Computed from the business data. */
-  readiness: ReadinessItem[];
+  /** After accepting: billing and tax files, read only. */
+  files: { id: Uuid; name: string; file_name: string }[];
+  /** Tripartite contract once SM sent it. */
+  tripartite: Contract | null;
+}
+
+/** What SM sees about the Bishops on one lead. */
+export interface LeadInvestors {
+  /** Bishops that opened the opportunity (with their answer). */
+  views: { bishop_user_id: Uuid; name: string; viewed_at: IsoDateTime; decision: OpportunityDecision; decided_at: IsoDateTime | null }[];
+  bishop: { user_id: Uuid; name: string; accepted_at: IsoDateTime } | null;
+  tripartite: Contract | null;
 }
 
 export type AgreementState = "draft" | "sent" | "signed";
 
 export interface BishopAgreement {
   id: Uuid;
+  /** framework: agreement with SM (confidentiality, non-circumvention). tripartite: program contract. */
+  kind?: "framework" | "tripartite" | "participation" | "nda" | undefined;
+  /** Signable through DocuSeal (framework and tripartite). */
+  contract?: Contract | undefined;
   bishop_user_id: Uuid;
   business_id: Uuid | null;
   name: string;

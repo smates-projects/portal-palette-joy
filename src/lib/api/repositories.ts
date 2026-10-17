@@ -28,6 +28,7 @@ import type {
   OfficeSummary,
   OpportunityDetail,
   BishopOpportunity,
+  LeadInvestors,
   PlatformRules,
   PublishManualInput,
   RulesChange,
@@ -134,6 +135,12 @@ export interface LeadsRepository {
   startProgram(id: Uuid, day1: string): Promise<{ lead: Lead; business_id: Uuid; task_count: number }>;
   /** "No aprobar": discards the lead with a reason. */
   rejectDocuments(id: Uuid, reason: string): Promise<LeadWithComputed>;
+  /** Who saw the opportunity, who passed, who accepted, and the tripartite contract. SM team and SM Global. */
+  getInvestors(id: Uuid): Promise<LeadInvestors | null>;
+  /** Gives the opportunity back to every Bishop (reason required). Drops an unsigned tripartite contract. */
+  releaseOpportunity(id: Uuid, reason: string): Promise<LeadWithComputed>;
+  /** accepted with a Bishop: contract signed by owner, SM and Bishop, each from his own portal. */
+  sendTripartite(id: Uuid): Promise<Contract>;
 }
 
 export interface TaskDetail {
@@ -290,10 +297,13 @@ export interface BishopRepository {
   getPortfolio(): Promise<BishopPortfolio>;
   listOpportunities(): Promise<BishopOpportunity[]>;
   getOpportunity(id: Uuid): Promise<OpportunityDetail | null>;
-  expressInterest(id: Uuid): Promise<BishopOpportunity>;
+  /** Only "available" and with the framework agreement signed; the first Bishop takes it. */
+  acceptOpportunity(id: Uuid): Promise<BishopOpportunity>;
+  /** "No me interesa". */
   pass(id: Uuid): Promise<BishopOpportunity>;
-  /** Undo interest or pass. */
+  /** Undo a pass. */
   clearDecision(id: Uuid): Promise<BishopOpportunity>;
+  /** Framework agreement first, then tripartite contracts, then the rest. */
   listAgreements(): Promise<BishopAgreement[]>;
 }
 
