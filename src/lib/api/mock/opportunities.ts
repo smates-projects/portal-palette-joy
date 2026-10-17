@@ -5,11 +5,12 @@ import { TODAY, nowIso } from "@/config/app";
 import { projectYears } from "@/lib/bishop/split";
 import { opportunityPhase, tripartiteState, acceptBlock } from "@/lib/leads/opportunity";
 import type {
-  BishopAgreement, BishopOpportunity, BishopRepository, Contract, Lead, LeadEvent, LeadInvestors, LeadWithComputed,
+  BishopAgreement, BishopOpportunity, Contract, Lead, LeadEvent, LeadInvestors, LeadWithComputed,
   OpportunityDecision, OpportunityDetail, RevenueRange, Signer, User, Uuid,
 } from "../types";
 import type { PlatformRules } from "../network-types";
 import type { Intake } from "./intake";
+import type { BishopRepository } from "../repositories";
 
 export interface OpportunityView {
   lead_id: Uuid;

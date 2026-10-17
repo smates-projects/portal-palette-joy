@@ -66,7 +66,6 @@ export function createMockApi(): ApiClient {
     teamMembers: structuredClone(seedNetwork.teamMembers),
     investments: structuredClone([seedNetwork.bishopInvestment]),
     recovery: { [seedNetwork.bishopInvestment.id]: structuredClone(seedNetwork.recovery) },
-    opportunities: structuredClone(seedNetwork.opportunities),
     agreements: structuredClone(seedNetwork.agreements),
     frameworkContracts: structuredClone(seedNetwork.frameworkContracts),
     oppViews: [] as OpportunityView[],
@@ -243,6 +242,7 @@ export function createMockApi(): ApiClient {
     };
   };
 
+  const net = createNetworkRepositories({ db, me, newId, delay });
   return {
     notifications: {
       list: () => {
