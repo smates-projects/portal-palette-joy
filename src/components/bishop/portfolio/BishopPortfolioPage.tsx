@@ -4,7 +4,7 @@ import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YA
 import { useBishopOpportunities, useBishopPortfolio } from "@/lib/api/hooks";
 import type { BishopInvestment, BishopOpportunity } from "@/lib/api/types";
 import { formatDate, formatNumber, formatUsd } from "@/lib/format";
-import { DecisionTag, StageTag } from "@/components/bishop/opportunities/parts";
+import { DecisionTag, PhaseTag, useOpportunityTitle } from "@/components/bishop/opportunities/parts";
 import { EmptyBlock, ErrorBlock, LoadingBlocks, Metric, Panel, ProgressBar, ProvisionalTag, Screen } from "@/components/bishop/ui";
 import { buildRecoveryRows, formatMonth, recoveryGap, sortByDecision } from "./recovery";
 
@@ -185,6 +185,7 @@ export function BishopPortfolioPage() {
 /** Up to five businesses SM presents, with how ready they are to franchise. The rest is one click away. */
 function OpportunitiesPanel({ total, shown, lng }: { total: number; shown: BishopOpportunity[]; lng: string }) {
   const { t } = useTranslation();
+  const title = useOpportunityTitle();
   return (
     <Panel title={t("bishop.portfolio.opps_title")}>
       {shown.length === 0 ? (
@@ -196,19 +197,11 @@ function OpportunitiesPanel({ total, shown, lng }: { total: number; shown: Bisho
               <li key={o.id} className="flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
                 <div className="min-w-48 flex-1">
                   <Link to="/oportunidades/$opportunityId" params={{ opportunityId: o.id }} className="text-sm font-medium text-link hover:underline">
-                    {o.business_name}
+                    {title(o)}
                   </Link>
-                  <p className="text-xs text-muted-foreground">{o.industry} · {o.city}, {o.state}</p>
-                </div>
-                <div className="w-44">
-                  <p className="flex justify-between text-xs text-muted-foreground">
-                    <span>{t("bishop.portfolio.franchisable")}</span>
-                    <span className="font-display tabular-nums text-foreground">{o.franchisability_pct}%</span>
-                  </p>
-                  <div className="mt-1"><ProgressBar value={o.franchisability_pct} label={t("bishop.portfolio.franchisable")} /></div>
                 </div>
                 <div className="flex w-52 flex-wrap gap-1.5">
-                  <StageTag stage={o.stage} />
+                  <PhaseTag phase={o.phase} />
                   {o.decision !== "none" && <DecisionTag decision={o.decision} />}
                 </div>
                 <p className="w-24 text-right text-sm tabular-nums">{formatUsd(o.investment, lng)}</p>

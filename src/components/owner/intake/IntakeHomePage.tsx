@@ -22,7 +22,9 @@ export function IntakeHomePage() {
   if (queries.some((q) => q.isLoading) || !intakeQ.data) return <Wrap><LoadingState rows={3} /></Wrap>;
 
   const s = intakeQ.data;
-  const toSign = (contractsQ.data ?? []).filter((c) => c.area === "intake" && c.signers.some((x) => x.party === "owner" && (x.status === "sent" || x.status === "opened")));
+  const pendingOwner = (c: Contract) => c.signers.some((x) => x.party === "owner" && (x.status === "sent" || x.status === "opened"));
+  const tripartite = (contractsQ.data ?? []).find((c) => c.kind === "tripartite" && pendingOwner(c));
+  const toSign = (contractsQ.data ?? []).filter((c) => c.area === "intake" && c.kind !== "tripartite" && c.signers.some((x) => x.party === "owner" && (x.status === "sent" || x.status === "opened")));
   const missing = (docsQ.data ?? []).filter((d) => d.area === "intake" && (d.state === "requested" || d.state === "rejected")).length;
   const current = toSign.length > 0 ? 1 : missing > 0 ? 2 : !s.approved_at ? 3 : 4;
 
@@ -32,7 +34,8 @@ export function IntakeHomePage() {
     { n: 2, title: t("intake.owner.s2_title"), body: t("intake.owner.s2_body", { count: missing }),
       cta: <Link to="/documentos" className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90">{t("intake.owner.s2_cta")}</Link> },
     { n: 3, title: t("intake.owner.s3_title", { day: Math.max(s.clock.day, 1), total: s.clock.total }), body: s.clock.status === "paused" ? t("intake.owner.s3_paused") : t("intake.owner.s3_body"), cta: null },
-    { n: 4, title: t("intake.owner.s4_title"), body: t("intake.owner.s4_body"), cta: null },
+    { n: 4, title: t("intake.owner.s4_title"), body: t("intake.owner.s4_body"),
+      cta: tripartite ? <button onClick={() => setSigning(tripartite)} className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90">{t("intake.owner.s4_cta")}</button> : null },
   ];
 
   return (
