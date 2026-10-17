@@ -5,6 +5,7 @@ import { SmHomePage } from "@/components/home/SmHomePage";
 import { GlobalHomePage } from "@/components/global/home/GlobalHomePage";
 import { BishopPortfolioPage } from "@/components/bishop/portfolio/BishopPortfolioPage";
 import { FranchiseeHomePage } from "@/components/franchisee/home/FranchiseeHomePage";
+import { IntakeHomePage } from "@/components/owner/intake/IntakeHomePage";
 import { FranchisorHomePage } from "@/components/owner/franchisor/FranchisorHomePage";
 import { useBusinesses, useCurrentUser } from "@/lib/api/hooks";
 import { tStatic } from "@/lib/i18n";
@@ -37,6 +38,7 @@ function HomeRoute() {
     // The owner of a franchisor business gets the franchisor home; wait for the business to know which one.
     if (businesses.isLoading) return null;
     const own = businesses.data?.find((b) => b.id === me.data?.business_id);
+    if (own?.status === "onboarding") return <IntakeHomePage />;
     return own?.status === "franchisor" ? <FranchisorHomePage /> : <OwnerHomePage taskId={task} />;
   }
   if (role === "sm_team") return <SmHomePage taskId={task} />;

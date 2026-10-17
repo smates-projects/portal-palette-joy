@@ -70,6 +70,12 @@ export const ownerNav: NavItem[] = [
   { to: "/negocio", key: "business", icon: Store },
 ];
 
+// Business owner still entering (NDA and MOU sent): only Inicio ("Tu ingreso") and Documentos.
+export const ownerIntakeNav: NavItem[] = [
+  { to: "/", key: "home", icon: Home },
+  { to: "/documentos", key: "documents", icon: FileText },
+];
+
 // Menu for the SM office team.
 export const smNav: NavItem[] = [
   { to: "/", key: "home", icon: Home },
@@ -118,9 +124,9 @@ export const franchiseeNav: NavItem[] = [
 ];
 
 /** An owner of a franchisor business gets the franchisor menu; an owner still in the program keeps the program menu. */
-export const navFor = (role: UserRole | undefined, opts: { franchisor?: boolean } = {}) => {
+export const navFor = (role: UserRole | undefined, opts: { franchisor?: boolean; onboarding?: boolean } = {}) => {
   switch (role) {
-    case "business_owner": return opts.franchisor ? franchisorNav : ownerNav;
+    case "business_owner": return opts.franchisor ? franchisorNav : opts.onboarding ? ownerIntakeNav : ownerNav;
     case "sm_team": return smNav;
     case "sm_global": return smGlobalNav;
     case "bishop": return bishopNav;

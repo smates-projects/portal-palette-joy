@@ -2,7 +2,9 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Upload } from "lucide-react";
-import { useContracts, useDocuments, useUploadDocument } from "@/lib/api/hooks";
+import { useContracts, useCurrentUser, useDocuments, useIntake, useUploadDocument } from "@/lib/api/hooks";
+import type { Contract } from "@/lib/api/types";
+import { DocuSealSigner } from "@/components/docuseal/DocuSealSigner";
 import type { BusinessDocument, ContractState, DocumentState } from "@/lib/api/types";
 import { formatDate } from "@/lib/format";
 import { EmptyState, ErrorState, LoadingState, PageHeader, Panel, secondaryButtonCls, ToneBadge, type Tone } from "../shared";
@@ -14,7 +16,7 @@ const CONTRACT_TONE: Record<ContractState, Tone> = {
   signed: "success",
   declined: "danger",
 };
-const DOCUMENT_TONE: Record<DocumentState, Tone> = { requested: "warning", received: "info", reviewed: "success" };
+const DOCUMENT_TONE: Record<DocumentState, Tone> = { requested: "warning", received: "info", reviewed: "success", rejected: "warning" };
 
 /** Documents SM asked for (upload them here), the ones already received, and the contracts with their signature status. */
 export function OwnerDocumentsPage() {
@@ -28,10 +30,16 @@ export function OwnerDocumentsPage() {
 
   const documents = documentsQ.data ?? [];
   const contracts = contractsQ.data ?? [];
-  const requested = documents.filter((d) => d.state === "requested");
-  const received = documents.filter((d) => d.state !== "requested");
+  const intakeQ = useIntake();
+  const me = useCurrentUser().data;
+  const [signing, setSigning] = useState<Contract | null>(null);
+  // Documents asked again go first, with the Strategic Mates comment.
+  const requested = [...documents.filter((d) => d.state === "rejected"), ...documents.filter((d) => d.state === "requested")];
+  const received = documents.filter((d) => d.state !== "requested" && d.state !== "rejected");
+  // Entry documents unlock once the owner signed the NDA.
+  const locked = !!intakeQ.data && !intakeQ.data.nda_signed_by_owner;
 
-  const areaLabel = (area: BusinessDocument["area"]) => (area === "diagnosis" || area === "closing" ? t(`owner_extra.documents.area_${area}`) : t(`areas.${area}`));
+  const areaLabel = (area: BusinessDocument["area"]) => (area === "diagnosis" || area === "closing" || area === "intake" ? t(`owner_extra.documents.area_${area}`) : t(`areas.${area}`));
 
   const pick = (documentId: string) => {
     setUploadingId(documentId);
@@ -66,6 +74,9 @@ export function OwnerDocumentsPage() {
           <input ref={fileInput} type="file" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => onFile(e.target.files?.[0])} />
 
           <Panel title={t("owner_extra.documents.requested_title")} aside={t("owner_extra.documents.count", { count: requested.length })}>
+            {locked && requested.some((d) => d.area === "intake") && (
+              <p className="border-t border-border bg-muted px-4 py-2 text-sm">{t("intake.owner_docs.locked")}</p>
+            )}
             {requested.length === 0 ? (
               <p className="border-t border-border px-4 py-3 text-sm text-muted-foreground">{t("owner_extra.documents.requested_empty")}</p>
             ) : (
@@ -77,10 +88,13 @@ export function OwnerDocumentsPage() {
                       <p className="text-xs text-muted-foreground">
                         {areaLabel(d.area)} · {t("owner_extra.documents.asked_on", { date: formatDate(d.requested_at, lng) })}
                       </p>
+                      {d.state === "rejected" && d.review_comment && (
+                        <p className="mt-1 text-xs text-status-warning-fg">{t("intake.owner_docs.sm_comment", { comment: d.review_comment })}</p>
+                      )}
                     </div>
-                    <button className={secondaryButtonCls} disabled={upload.isPending} onClick={() => pick(d.id)}>
+                    <button className={secondaryButtonCls} disabled={upload.isPending || (locked && d.area === "intake")} onClick={() => pick(d.id)}>
                       <Upload className="h-4 w-4" />
-                      {uploadingId === d.id && upload.isPending ? t("owner_extra.documents.uploading") : t("owner_extra.documents.upload")}
+                      {uploadingId === d.id && upload.isPending ? t("owner_extra.documents.uploading") : d.state === "rejected" ? t("intake.owner_docs.upload_new") : t("owner_extra.documents.upload")}
                     </button>
                   </li>
                 ))}
@@ -129,13 +143,16 @@ export function OwnerDocumentsPage() {
                               : ""}
                         </p>
                       </div>
+                      {c.signers.some((x) => x.party === "owner" && (x.status === "sent" || x.status === "opened")) && (
+                        <button className={secondaryButtonCls} onClick={() => setSigning(c)}>{t("intake.owner_docs.sign")}</button>
+                      )}
                       <ToneBadge tone={CONTRACT_TONE[c.state]}>{t(`owner_extra.documents.contract_${c.state}`)}</ToneBadge>
                     </div>
                     {c.signers.length > 0 && (
                       <ul className="mt-2 space-y-0.5 text-xs text-muted-foreground">
                         {c.signers.map((s) => (
                           <li key={`${s.name}-${s.role}`}>
-                            {s.name} ({s.role}):{" "}
+                            {s.name} ({s.party ? t(`intake.party.${s.party}`) : s.role}):{" "}
                             <span className={s.signed_at ? "text-status-success-fg" : undefined}>
                               {s.signed_at ? t("owner_extra.documents.signer_signed", { date: formatDate(s.signed_at, lng) }) : t("owner_extra.documents.signer_pending")}
                             </span>
@@ -150,6 +167,7 @@ export function OwnerDocumentsPage() {
           </Panel>
         </div>
       )}
+      {signing && <DocuSealSigner contract={signing} party="owner" signerName={me?.full_name ?? ""} onClose={() => setSigning(null)} />}
     </div>
   );
 }
