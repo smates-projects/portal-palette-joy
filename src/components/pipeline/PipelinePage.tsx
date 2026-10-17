@@ -3,12 +3,11 @@ import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { localeTag } from "@/lib/format";
-import { useDiscardLead, useLeads, useMoveLead, useSignLeadContract, useUsers } from "@/lib/api/hooks";
+import { useDiscardLead, useLeads, useMoveLead, useSendNdaMou, useUsers } from "@/lib/api/hooks";
 import { LEAD_STAGES, type LeadStage, type LeadWithComputed } from "@/lib/api/types";
 import {
   INDUSTRIES,
   REVENUES,
-  actionTarget,
   buildPipelineCounters,
   filterLeads,
   primaryActionFor,
@@ -22,10 +21,10 @@ import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LeadBoard, LeadTable } from "./LeadViews";
 import { LeadDetail } from "./LeadDetail";
-import { DiscardLeadDialog, SignContractDialog } from "./LeadDialogs";
+import { DiscardLeadDialog } from "./LeadDialogs";
 
 type SearchPatch = { [K in keyof LeadsSearch]?: LeadsSearch[K] | undefined };
-type MoveTarget = "evaluated" | "meeting" | "accepted" | "contract";
+type MoveTarget = "evaluated" | "meeting" | "documents" | "accepted";
 const ALL = "__all";
 
 export function PipelinePage({ search }: { search: LeadsSearch }) {
@@ -35,9 +34,8 @@ export function PipelinePage({ search }: { search: LeadsSearch }) {
   const usersQ = useUsers();
   const move = useMoveLead();
   const discard = useDiscardLead();
-  const sign = useSignLeadContract();
+  const sendNda = useSendNdaMou();
   const [discardFor, setDiscardFor] = useState<LeadWithComputed | null>(null);
-  const [signFor, setSignFor] = useState<LeadWithComputed | null>(null);
 
   const setSearch = (patch: SearchPatch) => {
     const next: Record<string, unknown> = { ...search, ...patch };
@@ -69,23 +67,23 @@ export function PipelinePage({ search }: { search: LeadsSearch }) {
       return;
     }
     if (m.action === "discard") setDiscardFor(lead);
-    else if (m.action === "sign") setSignFor(lead);
     else doMove(lead, to as MoveTarget);
   };
 
   const onPrimary = (lead: LeadWithComputed) => {
-    const action = primaryActionFor(lead.stage);
+    const action = primaryActionFor(lead);
     if (action === "view_program") {
       if (lead.business_id) void navigate({ to: "/red", search: { biz: lead.business_id } });
       return;
     }
-    if (action === "sign") return setSignFor(lead);
+    if (action === "send_nda")
+      return sendNda.mutate(lead.id, { onSuccess: () => toast.success(t("pipeline.t_nda_sent", { name: lead.business.name })), onError: fail });
+    if (action === "restore") return doMove(lead, "evaluated");
     if (action === "schedule") {
       // Open synchronously from the click so the browser does not block the new tab.
       window.open(lead.booking_url, "_blank", "noopener,noreferrer");
       return doMove(lead, "meeting", t("pipeline.t_scheduled", { name: lead.business.name }));
     }
-    doMove(lead, actionTarget[action] as MoveTarget);
   };
 
   const header = (
@@ -122,8 +120,8 @@ export function PipelinePage({ search }: { search: LeadsSearch }) {
   const selected = all.find((l) => l.id === search.lead);
   const nf = new Intl.NumberFormat(localeTag(i18n.language));
 
-  const counter = (key: "week" | "uncontacted" | "contracts" | "signed_month", value: number, patch: SearchPatch, danger = false) => {
-    const active = key === "contracts" ? search.stage === "contract" && !search.quick : search.quick === key;
+  const counter = (key: "week" | "uncontacted" | "in_review" | "review_overdue" | "accepted_no_investor" | "signed_month", value: number, patch: SearchPatch, danger = false) => {
+    const active = search.quick === patch.quick;
     return (
       <button
         key={key}
@@ -143,10 +141,12 @@ export function PipelinePage({ search }: { search: LeadsSearch }) {
     <div className="mx-auto max-w-[1440px] px-6 py-8">
       {header}
 
-      <div className="mt-6 grid grid-cols-2 overflow-hidden rounded-md border border-border bg-surface sm:grid-cols-5 sm:divide-x sm:divide-border">
+      <div className="mt-6 grid grid-cols-2 overflow-hidden rounded-md border border-border bg-surface sm:grid-cols-4 lg:grid-cols-7 sm:divide-x sm:divide-border">
         {counter("week", counters.week, { quick: "week" as LeadQuick })}
         {counter("uncontacted", counters.uncontacted, { quick: "uncontacted" as LeadQuick }, true)}
-        {counter("contracts", counters.contracts, { stage: "contract" })}
+        {counter("in_review", counters.in_review, { quick: "in_review" as LeadQuick })}
+        {counter("review_overdue", counters.review_overdue, { quick: "review_overdue" as LeadQuick }, true)}
+        {counter("accepted_no_investor", counters.accepted_no_investor, { quick: "no_investor" as LeadQuick })}
         {counter("signed_month", counters.signed_month, { quick: "signed_month" as LeadQuick })}
         <div className="px-4 py-3">
           <p className="text-xs font-medium text-muted-foreground">{t("pipeline.counters.conversion")}</p>
@@ -210,7 +210,7 @@ export function PipelinePage({ search }: { search: LeadsSearch }) {
               onClose={() => setSearch({ lead: undefined })}
               onPrimary={onPrimary}
               onDiscard={setDiscardFor}
-              pending={move.isPending || sign.isPending}
+              pending={move.isPending || sendNda.isPending}
             />
           )}
         </SheetContent>
@@ -224,25 +224,6 @@ export function PipelinePage({ search }: { search: LeadsSearch }) {
           onConfirm={(reason) =>
             discard.mutate({ id: discardFor.id, reason }, {
               onSuccess: () => { toast.success(t("pipeline.t_discarded", { name: discardFor.business.name })); setDiscardFor(null); },
-              onError: fail,
-            })
-          }
-        />
-      )}
-      {signFor && (
-        <SignContractDialog
-          consultant={consultantName(signFor.consultant_user_id)}
-          pending={sign.isPending}
-          onClose={() => setSignFor(null)}
-          onConfirm={(date) =>
-            sign.mutate({ id: signFor.id, signed_on: date }, {
-              onSuccess: (r) => {
-                const lead = signFor;
-                setSignFor(null);
-                toast.success(t("pipeline.t_signed", { name: lead.business.name, count: r.task_count }), {
-                  action: { label: t("pipeline.actions.view_program"), onClick: () => void navigate({ to: "/red", search: { biz: r.business_id } }) },
-                });
-              },
               onError: fail,
             })
           }
