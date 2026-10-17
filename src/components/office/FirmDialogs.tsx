@@ -52,7 +52,7 @@ export function FirmFormDialog({ mode, onClose }: { mode: Mode; onClose: () => v
       setError(null);
       return update.mutate(
         { id: mode.firm.id, patch: { name: form.name, specialty: form.specialty, contact_name: form.contact_name, email: form.email, phone: form.phone, city: form.city } },
-        { onSuccess: () => { toast.success(t("office.firms.t_edited", { name: form.name.trim() })); onClose(); }, onError: fail },
+        { onSuccess: () => { toast.success(t("office.firms.t_edited", { name: firmName(t, { ...mode.firm, name: form.name.trim() }) })); onClose(); }, onError: fail },
       );
     }
     if (!form.area) return setError(t("office.firms.err_area"));
@@ -66,14 +66,14 @@ export function FirmFormDialog({ mode, onClose }: { mode: Mode; onClose: () => v
       first_person: { full_name: form.person_name, email: form.person_email, title: form.person_title || null },
     };
     if (mode.kind === "create")
-      return create.mutate(input, { onSuccess: (o) => { toast.success(t("office.firms.t_created", { name: o.name, person: form.person_name.trim() })); onClose(); }, onError: fail });
+      return create.mutate(input, { onSuccess: (o) => { toast.success(t("office.firms.t_created", { name: firmName(t, o), person: form.person_name.trim() })); onClose(); }, onError: fail });
     replace.mutate({ id: mode.firm.id, input, openTasks: policy }, {
-      onSuccess: (o) => { toast.success(t(policy === "transfer" ? "office.firms.t_replaced_transfer" : "office.firms.t_replaced_keep", { name: o.name, old: mode.firm.name, count: mode.openTasks })); onClose(); },
+      onSuccess: (o) => { toast.success(t(policy === "transfer" ? "office.firms.t_replaced_transfer" : "office.firms.t_replaced_keep", { name: firmName(t, o), old: firmName(t, mode.firm), count: mode.openTasks })); onClose(); },
       onError: fail,
     });
   };
 
-  const title = mode.kind === "create" ? t("office.firms.new_title") : mode.kind === "edit" ? t("office.firms.edit_title", { name: firm?.name }) : t("office.firms.replace_title", { name: firm?.name });
+  const title = mode.kind === "create" ? t("office.firms.new_title") : mode.kind === "edit" ? t("office.firms.edit_title", { name: firmName(t, firm) }) : t("office.firms.replace_title", { name: firmName(t, firm) });
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto bg-surface sm:max-w-lg">
@@ -171,7 +171,7 @@ export function DeactivateFirmDialog({ firm, onClose }: { firm: Organization; on
     setTried(true);
     if (!reason.trim()) return;
     deactivate.mutate({ id: firm.id, reason: reason.trim() }, {
-      onSuccess: () => { toast.success(t("office.firms.t_deactivated", { name: firm.name })); onClose(); },
+      onSuccess: () => { toast.success(t("office.firms.t_deactivated", { name: firmName(t, firm) })); onClose(); },
       onError: (e) => toast.error(accountError(t, e)),
     });
   };
@@ -179,7 +179,7 @@ export function DeactivateFirmDialog({ firm, onClose }: { firm: Organization; on
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="bg-surface sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{t("office.firms.deactivate_title", { name: firm.name })}</DialogTitle>
+          <DialogTitle>{t("office.firms.deactivate_title", { name: firmName(t, firm) })}</DialogTitle>
           <DialogDescription>{t("office.firms.deactivate_body")}</DialogDescription>
         </DialogHeader>
         <Field label={t("office.firms.deactivate_reason")}>

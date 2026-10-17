@@ -173,14 +173,15 @@ export function OwnerHomePage({ taskId }: { taskId?: string | undefined }) {
               <div className="mt-2 h-1 overflow-hidden rounded-full bg-muted">
                 <div className="h-full bg-gold" style={{ width: `${Math.min(100, (day / PROGRAM_LENGTH_DAYS) * 100)}%` }} />
               </div>
-              <div className="mt-4 grid grid-cols-[minmax(92px,0.9fr)_repeat(6,minmax(0,1fr))_minmax(92px,0.9fr)] overflow-hidden rounded-md border border-border">
+              {/* 1px gaps over the border color draw the cell borders, so the strip can wrap on narrow screens. */}
+              <div className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-md border border-border bg-border sm:grid-cols-4 lg:grid-cols-[minmax(92px,0.9fr)_repeat(6,minmax(0,1fr))_minmax(92px,0.9fr)]">
                 <Gate state={gateState(day, "diagnosis")} title={t("owner.gate_diagnosis")} sub={t(`owner.gate_diagnosis_${gateState(day, "diagnosis")}`)} />
                 {areas.map((a) => (
                   <button
                     key={a.area}
                     onClick={() => void navigate({ to: "/tareas", search: { area: a.area } })}
                     title={t(`owner.health_${a.health}`)}
-                    className="relative border-l border-border px-2.5 py-2.5 text-left hover:bg-muted"
+                    className="relative min-w-0 bg-surface px-2.5 py-2.5 text-left hover:bg-muted"
                   >
                     <span className="absolute inset-x-0 top-0 h-[3px]" style={{ backgroundColor: areaColorVar(a.area) }} />
                     <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
@@ -200,7 +201,7 @@ export function OwnerHomePage({ taskId }: { taskId?: string | undefined }) {
                     )}
                   </button>
                 ))}
-                <Gate state={gateState(day, "closing")} title={t("owner.gate_closing")} sub={t(`owner.gate_closing_${gateState(day, "closing")}`)} border />
+                <Gate state={gateState(day, "closing")} title={t("owner.gate_closing")} sub={t(`owner.gate_closing_${gateState(day, "closing")}`)} />
               </div>
               <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
                 {(["green", "amber", "red", "grey"] as const).map((h) => (
@@ -293,9 +294,9 @@ function ActionButton(props: { children: React.ReactNode; onClick: () => void; d
   );
 }
 
-function Gate({ state, title, sub, border }: { state: "done" | "current" | "upcoming"; title: string; sub: string; border?: boolean }) {
+function Gate({ state, title, sub }: { state: "done" | "current" | "upcoming"; title: string; sub: string }) {
   return (
-    <div className={cn("bg-muted/40 px-2.5 py-2.5", border && "border-l border-border")}>
+    <div className="min-w-0 bg-muted px-2.5 py-2.5">
       <span className="flex items-center gap-1.5 text-xs font-medium">
         {state === "done" ? <CheckCircle2 className="h-3.5 w-3.5 text-status-success-fg" /> : <span className={cn("h-2 w-2 rounded-full", state === "current" ? "bg-gold" : "bg-status-neutral-border")} />}
         {title}

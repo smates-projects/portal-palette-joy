@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Logo } from "@/components/brand/Logo";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { isNavActive, navFor } from "./nav";
+import { firmName } from "@/components/office/shared";
 import { NotificationBell } from "./NotificationBell";
 import { cn } from "@/lib/utils";
 import { hoverOf } from "@/lib/brand/contrast";
@@ -198,6 +199,7 @@ function ViewAs() {
           : isTeamMember(o)
             ? `${o.business?.name ?? ""} (${t("topbar.team_member")}, ${o.user.full_name})`
             : o.organization?.name ?? `${o.user.full_name} (${o.business?.name ?? ""})`;
+      case "partner_firm": return `${firmName(t, o.organization)} · ${o.user.full_name}${o.user.is_admin ? ` (${t("topbar.admin")})` : ""}`;
       default: return `${o.organization?.name ?? ""} (${o.user.full_name}${o.user.is_admin ? `, ${t("topbar.admin")}` : ""})`;
     }
   };
