@@ -66,6 +66,9 @@ export const U_VALENTINA = uuid("0c000000", 45);
 export const U_OSCAR = uuid("0c000000", 46);
 export const U_MARTA = uuid("0c000000", 47);
 export const U_JEFFERSON = uuid("0c000000", 40);
+/** More sample Bishops: Laura signed the framework agreement, Diego not yet. */
+export const U_LAURA = uuid("0c000000", 41);
+export const U_DIEGO = uuid("0c000000", 42);
 export const U_LUISA = uuid("0c000000", 41);
 export const U_MARCO = uuid("0c000000", 42);
 const U_ORL_ESTRATEGIA = uuid("0c000000", 50);
@@ -75,8 +78,6 @@ const U_ORL_TECNOLOGIA = uuid("0c000000", 53);
 const U_ORL_MARKETING = uuid("0c000000", 54);
 export const U_ORL_LEGAL = uuid("0c000000", 55);
 
-export const OPP_VOSSLER = uuid("3c000000", 1);
-export const OPP_PRIME = uuid("3c000000", 2);
 
 // ---------- SM Orlando: office, firms, people ----------
 export const organizations: Organization[] = [
@@ -113,6 +114,8 @@ export const users: User[] = [
   person(U_ORL_MARKETING, "Diana Prieto", "diana@faromarketing.com", "partner_firm", ORG_ORL_MARKETING, null, "Directora de cuentas"),
   person(U_ORL_LEGAL, "Héctor Ramos", "hector@bufeteramos.legal", "partner_firm", ORG_ORL_LEGAL, null, "Abogado socio"),
   person(U_JEFFERSON, "Jefferson Paula", "jefferson@paulainvestments.com", "bishop", null, null, "Business Bishop"),
+  person(U_LAURA, "Laura Ortega", "laura@ortegacapital.com", "bishop", null, null, "Business Bishop"),
+  person(U_DIEGO, "Diego Rivas", "diego@rivasholdings.com", "bishop", null, null, "Business Bishop"),
   person(U_LUISA, "Luisa Paredes", "luisa@bimbotacos.com", "franchisee", FRANCHISE_ORLANDO_SUR, null, "Dueña de la franquicia"),
   person(U_MARCO, "Marco Ibáñez", "marco@bimbotacos.com", "franchisee", FRANCHISE_TAMPA, null, "Dueño de la franquicia"),
   person(U_TAMPA_MANAGER, "Natalia Escobar", "natalia@strategicmates.com", "sm_team", ORG_TAMPA, null, "Consultora y directora de la oficina"),
@@ -456,34 +459,25 @@ export const bishopInvestment = {
   invested_at: "2025-11-14",
 };
 
-export const opportunities = [
-  {
-    id: OPP_VOSSLER, bishop_user_id: U_JEFFERSON, business_id: BIZ_VOSSLER, investment: 150000, ready_date: "2027-01-23", verified_revenue: 1804000, decision: "none" as const, decided_at: null,
-    summary: "Construcción residencial con 11 años de operación, 14 empleados y 2 cuadrillas. Finanzas ordenadas desde agosto. El manual va en 49% y la marca necesita un rediseño para poder registrarse.",
-    projection: projectYears([
-      { year: 1, franchises: 4, revenue: 320000, result: 110000 },
-      { year: 2, franchises: 10, revenue: 760000, result: 270000 },
-      { year: 3, franchises: 18, revenue: 1300000, result: 490000 },
-      { year: 4, franchises: 26, revenue: 1900000, result: 720000 },
-      { year: 5, franchises: 35, revenue: 2600000, result: 980000 },
-    ]),
-  },
-  {
-    id: OPP_PRIME, bishop_user_id: U_JEFFERSON, business_id: BIZ_PRIME, investment: 150000, ready_date: "2027-03-08", verified_revenue: null, decision: "none" as const, decided_at: null,
-    summary: "Remodelación residencial en Tampa, 6 años de operación y 9 empleados. Entró al programa hace un mes y todavía no tiene finanzas verificadas.",
-    projection: projectYears([
-      { year: 1, franchises: 3, revenue: 210000, result: 70000 },
-      { year: 2, franchises: 8, revenue: 540000, result: 190000 },
-      { year: 3, franchises: 14, revenue: 950000, result: 350000 },
-      { year: 4, franchises: 20, revenue: 1400000, result: 520000 },
-      { year: 5, franchises: 28, revenue: 1950000, result: 740000 },
-    ]),
-  },
+/** Framework agreement with SM (confidentiality, non-circumvention), signed through DocuSeal. Diego has not signed. */
+const framework = (n: number, user: string, name: string, signedOn: string | null): Contract => ({
+  id: uuid("9c000000", n), business_id: "", area: "intake", kind: "framework",
+  name: "Acuerdo marco con Strategic Mates (confidencialidad y no circunvención)",
+  state: signedOn ? "signed" : "sent", sent_at: "2025-10-28", signed_at: signedOn,
+  signers: [
+    { name, role: "bishop", party: "bishop", user_id: user, status: signedOn ? "signed" : "sent", signed_at: signedOn, decline_reason: null,
+      history: signedOn ? [{ status: "sent", at: "2025-10-28" }, { status: "signed", at: signedOn }] : [{ status: "sent", at: "2026-10-12" }] },
+    { name: "Strategic Mates", role: "sm", party: "sm", user_id: null, status: "signed", signed_at: "2025-10-28", decline_reason: null, history: [{ status: "signed", at: "2025-10-28" }] },
+  ],
+});
+export const frameworkContracts: Contract[] = [
+  framework(1, U_JEFFERSON, "Jefferson Paula", "2025-10-30"),
+  framework(2, U_LAURA, "Laura Ortega", "2026-03-02"),
+  framework(3, U_DIEGO, "Diego Rivas", null),
 ];
 
 export const agreements: BishopAgreement[] = [
   { id: uuid("9b000000", 1), bishop_user_id: U_JEFFERSON, business_id: BIZ_BIMBO, name: "Acuerdo de participación: Bimbo Tacos", counterparties: "Rodrigo Bimbo, Strategic Mates", state: "signed", signed_at: "2025-11-14", has_file: true, file_name: "Acuerdo_participacion_Bimbo_Tacos.pdf" },
-  { id: uuid("9b000000", 2), bishop_user_id: U_JEFFERSON, business_id: null, name: "NDA de Business Bishop", counterparties: "Strategic Mates", state: "signed", signed_at: "2025-10-30", has_file: true, file_name: "NDA_Business_Bishop.pdf" },
   // The draft is still with SM's lawyers: no file to open yet.
   { id: uuid("9b000000", 3), bishop_user_id: U_JEFFERSON, business_id: BIZ_VOSSLER, name: "Acuerdo de participación: Vossler", counterparties: "Carla Méndez, Strategic Mates", state: "draft", signed_at: null, has_file: false, file_name: null },
 ];
