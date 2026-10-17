@@ -31,13 +31,13 @@ describe("pipeline counters", () => {
   it("counts sample leads on 2026-10-14", async () => {
     await api.session.setViewAs(seed.U_NICOLAS);
     const leads = await api.leads.list();
-    expect(leads).toHaveLength(12);
+    expect(leads).toHaveLength(13);
     const c = buildPipelineCounters(leads, "2026-10-14");
     expect(c.week).toBe(2); // Oct 12 and Oct 13
     expect(c.uncontacted).toBe(2); // evaluated, never contacted, more than 2 days
     expect(c.in_review).toBe(2); // Sazón Criollo and Glow Nails
     expect(c.review_overdue).toBe(1); // Glow Nails, day 17 of 15
-    expect(c.accepted_no_investor).toBe(1); // Brisa Clean
+    expect(c.accepted_no_investor).toBe(1); // Brisa Clean (Sol Remodeling has a Bishop)
     expect(c.signed_month).toBe(1); // Enyermy, Oct 9
   });
   it("an evaluated lead submitted exactly 2 days ago is not yet 'sin contactar'", async () => {

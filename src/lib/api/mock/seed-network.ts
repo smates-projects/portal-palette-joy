@@ -66,8 +66,8 @@ export const U_OSCAR = uuid("0c000000", 46);
 export const U_MARTA = uuid("0c000000", 47);
 export const U_JEFFERSON = uuid("0c000000", 40);
 /** More sample Bishops: Laura signed the framework agreement, Diego not yet. */
-export const U_LAURA = uuid("0c000000", 41);
-export const U_DIEGO = uuid("0c000000", 42);
+export const U_LAURA = uuid("0c000000", 91);
+export const U_DIEGO = uuid("0c000000", 92);
 export const U_LUISA = uuid("0c000000", 41);
 export const U_MARCO = uuid("0c000000", 42);
 const U_ORL_ESTRATEGIA = uuid("0c000000", 50);
