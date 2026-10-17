@@ -261,7 +261,7 @@ export function OpportunityDetailPage({ opportunityId }: { opportunityId: string
                     <li key={s.name + s.party} className="flex items-center justify-between gap-2 px-4 py-2 text-sm">
                       <span>{s.name}</span>
                       <Tag tone={s.status === "signed" ? "success" : s.status === "declined" ? "danger" : "neutral"}>
-                        {t(`intake.signer.${s.status ?? "sent"}`)}{s.signed_at ? ` · ${formatDate(s.signed_at, lng)}` : ""}
+                        {t(`intake.signer_status.${s.status ?? "sent"}`)}{s.signed_at ? ` · ${formatDate(s.signed_at, lng)}` : ""}
                       </Tag>
                     </li>
                   ))}
