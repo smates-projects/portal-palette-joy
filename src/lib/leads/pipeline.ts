@@ -3,6 +3,7 @@ import {
   LEAD_STAGES,
   type ActiveLeadStage,
   type Lead,
+  type TripartiteState,
   type LeadBand,
   type LeadIndustry,
   type LeadStage,
