@@ -49,7 +49,7 @@ export function IntakeHomePage() {
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 {done ? <Check className="h-4 w-4 text-status-success-fg" /> : null}
                 <span>{t("intake.owner.step", { n: st.n })}</span>
-                <span>· {done ? t("intake.owner.done") : active ? "" : t("intake.owner.next")}</span>
+                {(done || !active) && <span>· {done ? t("intake.owner.done") : t("intake.owner.next")}</span>}
               </div>
               <h2 className={cn("mt-1 font-semibold", active ? "text-lg" : "text-sm")}>{st.title}</h2>
               {active && <p className="mt-1 text-sm text-muted-foreground">{st.body}</p>}
