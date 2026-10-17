@@ -4,6 +4,7 @@ import { FileText } from "lucide-react";
 import { useState } from "react";
 import { useBishopAgreements, useCurrentUser } from "@/lib/api/hooks";
 import { DocuSealSigner } from "@/components/docuseal/DocuSealSigner";
+import { SignedContractDialog } from "@/components/docuseal/SignedContractDialog";
 import type { AgreementState, Contract } from "@/lib/api/types";
 import { formatDate } from "@/lib/format";
 import { EmptyBlock, ErrorBlock, LoadingBlocks, Panel, primaryButton, Screen, secondaryButton, Tag, type Tone } from "@/components/bishop/ui";
@@ -19,6 +20,7 @@ export function AgreementsPage() {
   const agreementsQ = useBishopAgreements();
   const me = useCurrentUser().data;
   const [signing, setSigning] = useState<Contract | null>(null);
+  const [viewing, setViewing] = useState<Contract | null>(null);
 
   if (agreementsQ.isError)
     return (
@@ -67,6 +69,10 @@ export function AgreementsPage() {
                       <td className="px-4 py-3 text-right">
                         {a.contract && a.contract.signers.some((x) => x.party === "bishop" && (x.status === "sent" || x.status === "opened")) ? (
                           <button onClick={() => setSigning(a.contract!)} className={primaryButton}>{t("bishop.agreements.sign")}</button>
+                        ) : a.contract && a.contract.signers.some((x) => x.signed_at) ? (
+                          <button onClick={() => setViewing(a.contract!)} aria-label={t("bishop.agreements.open_document_for", { name: a.name })} className={secondaryButton}>
+                            <FileText className="mr-1.5 h-3.5 w-3.5" />{t("bishop.agreements.open_document")}
+                          </button>
                         ) : a.has_file ? (
                           // The mock has no real file: it only says that the document would download.
                           <button
@@ -101,6 +107,7 @@ export function AgreementsPage() {
       {/* What he paid SM for each program, his receipts and, once it runs, how SM distributes it. */}
       <div className="mt-4"><BishopFundsSection variant="agreements" /></div>
       {signing && <DocuSealSigner contract={signing} party="bishop" signerName={me?.full_name ?? ""} onClose={() => setSigning(null)} />}
+      {viewing && <SignedContractDialog contract={viewing} onClose={() => setViewing(null)} />}
     </Screen>
   );
 }

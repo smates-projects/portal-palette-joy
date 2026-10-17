@@ -72,6 +72,7 @@ export function createMockApi(): ApiClient {
     contracts: structuredClone(seedNetwork.contracts),
     financials: structuredClone(seedNetwork.financials),
     profiles: structuredClone(seedNetwork.profiles),
+    profileChangeRequests: [],
     teamMembers: structuredClone(seedNetwork.teamMembers),
     investments: structuredClone([seedNetwork.bishopInvestment]),
     recovery: { [seedNetwork.bishopInvestment.id]: structuredClone(seedNetwork.recovery) },

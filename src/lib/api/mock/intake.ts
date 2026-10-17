@@ -2,6 +2,7 @@
 // The real backend gets the DocuSeal events by webhook; here signing is simulated through the same repository calls.
 import { TODAY } from "@/config/app";
 import { summarizeIntake, isDocsAdmin, canResend } from "@/lib/leads/onboarding";
+import { typedSignatureDataUrl } from "@/lib/contracts/signature";
 import type { Business, BusinessDocument, Contract, IntakeSummary, Lead, Signer, SignerStatus, User, Uuid } from "../types";
 import type { PlatformRules } from "../network-types";
 
@@ -38,6 +39,7 @@ const signer = (party: "owner" | "sm", name: string, user_id: Uuid | null, sentO
   return {
     name, role: party, party, user_id, status: last.status, history,
     signed_at: last.status === "signed" ? last.at : null, decline_reason: null,
+    signature: last.status === "signed" ? { kind: "typed", image_url: typedSignatureDataUrl(name) } : null,
   };
 };
 

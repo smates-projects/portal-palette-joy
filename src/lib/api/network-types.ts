@@ -505,6 +505,37 @@ export interface BusinessProfile {
 
 export type BusinessProfilePatch = Partial<Pick<BusinessProfile, "legal_name" | "address" | "city" | "state" | "phone" | "email" | "website" | "employees">>;
 
+/**
+ * Fields SM verified against the entry documents (articles of organization, licenses). Once the business is past
+ * onboarding the owner cannot edit them: they ask SM for a change and SM applies it after checking the paperwork.
+ */
+export const VERIFIED_PROFILE_FIELDS = ["legal_name", "address", "city", "state"] as const;
+export type VerifiedProfileField = (typeof VERIFIED_PROFILE_FIELDS)[number];
+
+export type ProfileChangeStatus = "pending" | "applied" | "rejected";
+
+export interface ProfileChangeRequest {
+  id: Uuid;
+  business_id: Uuid;
+  field: VerifiedProfileField;
+  current_value: string;
+  new_value: string;
+  /** Why it changed (new address, legal rename...). SM asks for the supporting document outside the app. */
+  reason: string;
+  status: ProfileChangeStatus;
+  requested_by_user_id: Uuid;
+  created_at: IsoDateTime;
+  resolved_by_user_id: Uuid | null;
+  resolved_at: IsoDateTime | null;
+  resolution_note: string | null;
+}
+
+export interface ProfileChangeInput {
+  field: VerifiedProfileField;
+  new_value: string;
+  reason: string;
+}
+
 export interface InviteMemberInput {
   name: string;
   role: string;

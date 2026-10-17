@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PrimaryButton, SecondaryButton } from "@/components/tasks/detail/dialogs";
 import { DocuSealSigner } from "@/components/docuseal/DocuSealSigner";
+import { SignedContractDialog } from "@/components/docuseal/SignedContractDialog";
 
 const TONE: Record<ReviewClock["tone"], string> = {
   ok: "border-border bg-muted text-foreground",
@@ -45,6 +46,7 @@ export function IntakeChecklist({ leadId, readOnly }: { leadId: string; readOnly
   const [accepting, setAccepting] = useState<BusinessDocument | null>(null);
   const [requesting, setRequesting] = useState<BusinessDocument | null>(null);
   const [signing, setSigning] = useState<Contract | null>(null);
+  const [viewing, setViewing] = useState<Contract | null>(null);
 
   if (q.isLoading) return <Skeleton className="h-40 rounded-md" />;
   if (q.isError) return <button onClick={() => void q.refetch()} className="text-sm text-link hover:underline">{t("pipeline.retry")}</button>;
@@ -60,6 +62,9 @@ export function IntakeChecklist({ leadId, readOnly }: { leadId: string; readOnly
           {done ? <Check className="h-4 w-4 text-status-success-fg" /> : <Circle className="h-4 w-4 text-muted-foreground" />}
           <span className="text-sm font-medium">{c.name}</span>
           <span className="ml-auto flex gap-2">
+            {c.signers.some((s) => s.signed_at) && (
+              <button onClick={() => setViewing(c)} className="text-xs text-link hover:underline">{t("intake.docuseal.view_signed")}</button>
+            )}
             {!readOnly && sm && sm.status !== "signed" && sm.status !== "declined" && (
               <button onClick={() => setSigning(c)} className="text-xs text-link hover:underline">{t("intake.sign_as_sm")}</button>
             )}
@@ -136,6 +141,7 @@ export function IntakeChecklist({ leadId, readOnly }: { leadId: string; readOnly
       {accepting && <AcceptDialog leadId={leadId} doc={accepting} onClose={() => setAccepting(null)} />}
       {requesting && <RequestDialog leadId={leadId} doc={requesting} onClose={() => setRequesting(null)} />}
       {signing && <DocuSealSigner contract={signing} party="sm" signerName="Strategic Mates" onClose={() => setSigning(null)} />}
+      {viewing && <SignedContractDialog contract={viewing} onClose={() => setViewing(null)} />}
     </section>
   );
 }

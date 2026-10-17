@@ -36,6 +36,8 @@ import type {
   BishopOpportunity,
   LeadInvestors,
   PlatformRules,
+  ProfileChangeInput,
+  ProfileChangeRequest,
   PublishManualInput,
   RulesChange,
   StructureTree,
@@ -394,8 +396,14 @@ export interface FinancialsRepository {
 
 export interface BusinessProfileRepository {
   get(businessId?: Uuid): Promise<BusinessProfile | null>;
-  /** Owner only, own business. */
+  /** Owner only, own business. Verified fields (VERIFIED_PROFILE_FIELDS) reject with "locked_field" once past onboarding. */
   update(patch: BusinessProfilePatch): Promise<BusinessProfile>;
+  /** Owner only: asks SM to change a verified field. */
+  requestChange(input: ProfileChangeInput): Promise<ProfileChangeRequest>;
+  /** Owner (own business) or SM (office): requests, newest first. */
+  listChangeRequests(businessId?: Uuid): Promise<ProfileChangeRequest[]>;
+  /** SM only: "applied" updates the profile, "rejected" keeps it; the note goes to the owner. */
+  resolveChangeRequest(id: Uuid, status: "applied" | "rejected", note: string | null): Promise<ProfileChangeRequest>;
   listTeam(businessId?: Uuid): Promise<TeamMember[]>;
   /** Owner only, own business: adds a person as invited, with an account (business_owner, not admin) behind it. */
   inviteMember(input: InviteMemberInput): Promise<TeamMember>;

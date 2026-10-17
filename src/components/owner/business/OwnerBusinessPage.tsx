@@ -1,10 +1,12 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { useBusinesses, useBusinessProfile, useBusinessTeam, useCurrentUser, useInviteTeamMember, useMakeOwner, useUpdateBusinessProfile } from "@/lib/api/hooks";
-import type { BusinessProfile, BusinessProfilePatch, TeamMember } from "@/lib/api/types";
+import { useBusinesses, useBusinessProfile, useBusinessTeam, useCurrentUser, useInviteTeamMember, useMakeOwner, useProfileChangeRequests, useRequestProfileChange, useUpdateBusinessProfile } from "@/lib/api/hooks";
+import { VERIFIED_PROFILE_FIELDS, type BusinessProfile, type BusinessProfilePatch, type ProfileChangeRequest, type TeamMember, type VerifiedProfileField } from "@/lib/api/types";
 import { BrandPanel } from "@/components/brand/BrandPanel";
-import { EmptyState, ErrorState, Field, inputCls, LoadingState, PageHeader, Panel, primaryButtonCls, ToneBadge } from "../shared";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { formatDateTime } from "@/lib/format";
+import { EmptyState, ErrorState, Field, inputCls, LoadingState, PageHeader, Panel, primaryButtonCls, secondaryButtonCls, textareaCls, ToneBadge } from "../shared";
 import { OwnerBusinessFile } from "@/components/business/BusinessFile";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -42,9 +44,16 @@ export function OwnerBusinessPage() {
 
 type ProfileField = keyof BusinessProfilePatch;
 
+/** Profile of the business. Past onboarding the verified fields are read-only: the owner asks SM for a change. */
 function ProfileForm({ profile }: { profile: BusinessProfile }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const update = useUpdateBusinessProfile();
+  const me = useCurrentUser().data;
+  const business = useBusinesses().data?.find((b) => b.id === me?.business_id);
+  const verified = !!business && business.status !== "onboarding";
+  const requestsQ = useProfileChangeRequests();
+  const [requesting, setRequesting] = useState<VerifiedProfileField | null>(null);
+  const pendingFor = (f: VerifiedProfileField) => requestsQ.data?.find((r) => r.field === f && r.status === "pending");
   const [values, setValues] = useState({
     legal_name: profile.legal_name,
     address: profile.address,
@@ -75,38 +84,61 @@ function ProfileForm({ profile }: { profile: BusinessProfile }) {
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
-    update.mutate(
-      {
-        legal_name: values.legal_name.trim(),
-        address: values.address.trim(),
-        city: values.city.trim(),
-        state: values.state.trim(),
-        phone: values.phone.trim(),
-        email: values.email.trim(),
-        website: values.website.trim() || null,
-        employees: Number(values.employees),
-      },
-      { onSuccess: () => toast.success(t("owner_extra.business.t_saved")), onError: () => toast.error(t("owner_extra.common.t_error")) },
+    const editable: BusinessProfilePatch = {
+      phone: values.phone.trim(),
+      email: values.email.trim(),
+      website: values.website.trim() || null,
+      employees: Number(values.employees),
+    };
+    // Only while entering can the owner still fix the legal data; afterwards SM changes it through a request.
+    const patch: BusinessProfilePatch = verified
+      ? editable
+      : { ...editable, legal_name: values.legal_name.trim(), address: values.address.trim(), city: values.city.trim(), state: values.state.trim() };
+    update.mutate(patch, {
+      onSuccess: () => toast.success(t("owner_extra.business.t_saved")),
+      onError: (e) => toast.error(t(e instanceof Error && e.message === "locked_field" ? "owner_extra.business.t_locked" : "owner_extra.common.t_error")),
+    });
+  };
+
+  const field = (name: ProfileField, label: string, extra?: { type?: string; inputMode?: "numeric" | "tel" | "email"; autoComplete?: string }) => {
+    const locked = verified && (VERIFIED_PROFILE_FIELDS as readonly string[]).includes(name);
+    if (locked) {
+      const f = name as VerifiedProfileField;
+      const pending = pendingFor(f);
+      return (
+        <Field label={label}>
+          <div className="flex min-h-9 items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-1.5 text-sm">
+            <span className="min-w-0 flex-1 truncate">{values[name]}</span>
+            <span className="rounded-[4px] border border-status-success-border bg-status-success-bg px-1.5 py-0.5 text-[11px] font-medium text-status-success-fg">{t("owner_extra.business.verified")}</span>
+            {pending ? (
+              <span className="rounded-[4px] border border-status-warning-border bg-status-warning-bg px-1.5 py-0.5 text-[11px] font-medium text-status-warning-fg" title={pending.new_value}>{t("owner_extra.business.status_pending")}</span>
+            ) : (
+              <button type="button" onClick={() => setRequesting(f)} className="text-xs text-link hover:underline">{t("owner_extra.business.request_change")}</button>
+            )}
+          </div>
+        </Field>
+      );
+    }
+    return (
+      <Field label={label}>
+        <input
+          className={inputCls}
+          value={values[name]}
+          onChange={(e) => set(name, e.target.value)}
+          aria-invalid={!!errors[name]}
+          aria-describedby={errors[name] ? `err-${name}` : undefined}
+          {...extra}
+        />
+        {errors[name] && <span id={`err-${name}`} className="block text-xs text-status-danger-fg">{errors[name]}</span>}
+      </Field>
     );
   };
 
-  const field = (name: ProfileField, label: string, extra?: { type?: string; inputMode?: "numeric" | "tel" | "email"; autoComplete?: string }) => (
-    <Field label={label}>
-      <input
-        className={inputCls}
-        value={values[name]}
-        onChange={(e) => set(name, e.target.value)}
-        aria-invalid={!!errors[name]}
-        aria-describedby={errors[name] ? `err-${name}` : undefined}
-        {...extra}
-      />
-      {errors[name] && <span id={`err-${name}`} className="block text-xs text-status-danger-fg">{errors[name]}</span>}
-    </Field>
-  );
-
   return (
-    <Panel title={t("owner_extra.business.profile_title")} aside={t("owner_extra.business.profile_hint")}>
+    <Panel title={t("owner_extra.business.profile_title")} aside={t(verified ? "owner_extra.business.profile_hint_verified" : "owner_extra.business.profile_hint")}>
+      {requesting && <RequestChangeDialog field={requesting} current={values[requesting]} onClose={() => setRequesting(null)} />}
       <form onSubmit={submit} noValidate className="space-y-4 border-t border-border p-4">
+        {verified && <p className="text-xs text-muted-foreground">{t("owner_extra.business.verified_hint")}</p>}
         <dl className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <dt className="text-xs text-muted-foreground">{t("owner_extra.business.industry")}</dt>
@@ -133,7 +165,65 @@ function ProfileForm({ profile }: { profile: BusinessProfile }) {
           {update.isPending ? t("owner_extra.common.saving") : t("owner_extra.business.save")}
         </button>
       </form>
+      {!!requestsQ.data?.length && (
+        <div className="border-t border-border p-4">
+          <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("owner_extra.business.pending_title")}</h3>
+          <ul className="mt-2 space-y-1.5 text-xs">
+            {requestsQ.data.map((r: ProfileChangeRequest) => (
+              <li key={r.id} className="flex flex-wrap items-center gap-2">
+                <span>{t("owner_extra.business.request_line", { field: t(`owner_extra.business.${r.field}`), from: r.current_value, to: r.new_value })}</span>
+                <ToneBadge tone={r.status === "pending" ? "warning" : r.status === "applied" ? "success" : "neutral"}>{t(`owner_extra.business.status_${r.status}`)}</ToneBadge>
+                <span className="text-muted-foreground">{formatDateTime(r.resolved_at ?? r.created_at, i18n.language)}</span>
+                {r.resolution_note && <span className="w-full text-muted-foreground">{r.resolution_note}</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </Panel>
+  );
+}
+
+/** "Pedir cambio" of a verified field: new value and reason; SM reviews it with the supporting document. */
+function RequestChangeDialog({ field, current, onClose }: { field: VerifiedProfileField; current: string; onClose: () => void }) {
+  const { t } = useTranslation();
+  const request = useRequestProfileChange();
+  const [value, setValue] = useState(current);
+  const [reason, setReason] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const submit = () => {
+    if (!value.trim() || value.trim() === current) return setError(t("owner_extra.business.err_same_value"));
+    if (!reason.trim()) return setError(t("owner_extra.business.err_reason"));
+    setError(null);
+    request.mutate({ field, new_value: value.trim(), reason: reason.trim() }, {
+      onSuccess: () => { toast.success(t("owner_extra.business.t_requested")); onClose(); },
+      onError: () => toast.error(t("owner_extra.common.t_error")),
+    });
+  };
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="bg-surface sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{t("owner_extra.business.request_title")}</DialogTitle>
+          <DialogDescription>{t("owner_extra.business.request_body")}</DialogDescription>
+        </DialogHeader>
+        <dl className="grid grid-cols-2 gap-3 text-sm">
+          <div><dt className="text-xs text-muted-foreground">{t("owner_extra.business.request_field")}</dt><dd className="mt-0.5 font-medium">{t(`owner_extra.business.${field}`)}</dd></div>
+          <div><dt className="text-xs text-muted-foreground">{t("owner_extra.business.request_current")}</dt><dd className="mt-0.5 truncate">{current}</dd></div>
+        </dl>
+        <Field label={t("owner_extra.business.request_new_value")}>
+          <input autoFocus className={inputCls} value={value} onChange={(e) => setValue(e.target.value)} />
+        </Field>
+        <Field label={t("owner_extra.business.request_reason")}>
+          <textarea rows={3} className={textareaCls} value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t("owner_extra.business.request_reason_placeholder")} />
+        </Field>
+        {error && <p className="text-xs text-status-danger-fg">{error}</p>}
+        <DialogFooter>
+          <button type="button" className={secondaryButtonCls} onClick={onClose}>{t("accounts.cancel")}</button>
+          <button type="button" className={primaryButtonCls} onClick={submit} disabled={request.isPending}>{t("owner_extra.business.request_send")}</button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

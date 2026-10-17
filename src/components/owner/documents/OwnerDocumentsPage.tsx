@@ -1,10 +1,11 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Upload } from "lucide-react";
+import { FileText, Upload } from "lucide-react";
 import { useContracts, useCurrentUser, useDocuments, useIntake, useUploadDocument } from "@/lib/api/hooks";
 import type { Contract } from "@/lib/api/types";
 import { DocuSealSigner } from "@/components/docuseal/DocuSealSigner";
+import { SignedContractDialog } from "@/components/docuseal/SignedContractDialog";
 import type { BusinessDocument, ContractState, DocumentState } from "@/lib/api/types";
 import { formatDate } from "@/lib/format";
 import { EmptyState, ErrorState, LoadingState, PageHeader, Panel, secondaryButtonCls, ToneBadge, type Tone } from "../shared";
@@ -33,6 +34,7 @@ export function OwnerDocumentsPage() {
   const intakeQ = useIntake();
   const me = useCurrentUser().data;
   const [signing, setSigning] = useState<Contract | null>(null);
+  const [viewing, setViewing] = useState<Contract | null>(null);
   // Documents asked again go first, with the Strategic Mates comment.
   const requested = [...documents.filter((d) => d.state === "rejected"), ...documents.filter((d) => d.state === "requested")];
   const received = documents.filter((d) => d.state !== "requested" && d.state !== "rejected");
@@ -146,6 +148,9 @@ export function OwnerDocumentsPage() {
                       {c.signers.some((x) => x.party === "owner" && (x.status === "sent" || x.status === "opened")) && (
                         <button className={secondaryButtonCls} onClick={() => setSigning(c)}>{t("intake.owner_docs.sign")}</button>
                       )}
+                      {c.signers.some((x) => x.signed_at) && (
+                        <button className={secondaryButtonCls} onClick={() => setViewing(c)}><FileText className="h-4 w-4" />{t("intake.docuseal.view_signed")}</button>
+                      )}
                       <ToneBadge tone={CONTRACT_TONE[c.state]}>{t(`owner_extra.documents.contract_${c.state}`)}</ToneBadge>
                     </div>
                     {c.signers.length > 0 && (
@@ -168,6 +173,7 @@ export function OwnerDocumentsPage() {
         </div>
       )}
       {signing && <DocuSealSigner contract={signing} party="owner" signerName={me?.full_name ?? ""} onClose={() => setSigning(null)} />}
+      {viewing && <SignedContractDialog contract={viewing} onClose={() => setViewing(null)} />}
     </div>
   );
 }

@@ -1,9 +1,12 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { useState } from "react";
+import { toast } from "sonner";
 import {
-  useBusinessMilestones, useBusinessSnapshot, useBusinesses, useCurrentUser, useFranchisability, useOrganizations, useRules, useTasks, useUsers, useVersions,
+  useBusinessMilestones, useBusinessSnapshot, useBusinesses, useCurrentUser, useFranchisability, useOrganizations, useProfileChangeRequests, useResolveProfileChange, useRules, useTasks, useUsers, useVersions,
 } from "@/lib/api/hooks";
-import type { AssessmentSnapshot, Business, BusinessMilestone, TaskWithComputed } from "@/lib/api/types";
+import type { AssessmentSnapshot, Business, BusinessMilestone, ProfileChangeRequest, TaskWithComputed } from "@/lib/api/types";
+import { inputCls } from "@/components/accounts/shared";
 import { missingWork } from "@/lib/business/file";
 import { existingSummary } from "@/lib/leads/prevalidation";
 import { buildAreaCards, expectedFranchisePct, franchiseHealth } from "@/lib/tasks/office";
@@ -33,6 +36,7 @@ export function BusinessFile({ businessId, variant }: { businessId: string; vari
   const fQ = useFranchisability(businessId);
   const snapQ = useBusinessSnapshot(owner ? undefined : businessId);
   const business = bizQ.data?.find((b) => b.id === businessId);
+  const me = useCurrentUser().data;
 
   const queries = [bizQ, tasksQ, versionsQ, orgsQ, usersQ, rulesQ, snapQ];
   if (queries.some((q) => q.isError))
@@ -52,6 +56,7 @@ export function BusinessFile({ businessId, variant }: { businessId: string; vari
     <div className="space-y-6">
       {/* Parts 1-3 are render helpers (not components) so they read the queries above without remounting. */}
       {WhoItIs({ business, snapshot, tasks, owner })}
+      {!owner && <ProfileChanges businessId={business.id} readOnly={me?.role === "sm_global"} />}
       {!owner && HowItArrived({ snapshot })}
       {HowItIsDoing({ business, tasks, owner })}
       <WhatIsMissing tasks={tasks} requiredCodes={fQ.data?.required_task_codes ?? rulesQ.data?.required_task_codes ?? []} snapshot={snapshot} owner={owner} />
@@ -273,6 +278,58 @@ function Fact({ label, value }: { label: string; value: ReactNode }) {
       <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className="mt-0.5">{value}</dd>
     </div>
+  );
+}
+
+/**
+ * Owner requests to change verified data (legal name, address, city, state). The office applies or rejects them
+ * after checking the supporting document; SM Global only reads. Shown only when there is something to show.
+ */
+function ProfileChanges({ businessId, readOnly }: { businessId: string; readOnly: boolean }) {
+  const { t, i18n } = useTranslation();
+  const q = useProfileChangeRequests(businessId);
+  const usersQ = useUsers();
+  const resolve = useResolveProfileChange();
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const requests = q.data ?? [];
+  if (requests.length === 0) return null;
+  const name = (id: string) => usersQ.data?.find((u) => u.id === id)?.full_name ?? "";
+  const act = (r: ProfileChangeRequest, status: "applied" | "rejected") =>
+    resolve.mutate({ id: r.id, status, note: notes[r.id] ?? null }, {
+      onSuccess: () => toast.success(t(status === "applied" ? "business_file.t_change_applied" : "business_file.t_change_rejected")),
+      onError: () => toast.error(t("tasks.t_error")),
+    });
+  const tone: Record<ProfileChangeRequest["status"], string> = {
+    pending: "border-status-warning-border bg-status-warning-bg text-status-warning-fg",
+    applied: "border-status-success-border bg-status-success-bg text-status-success-fg",
+    rejected: "border-status-neutral-border bg-status-neutral-bg text-status-neutral-fg",
+  };
+  return (
+    <Part title={t("business_file.changes_title")}>
+      <p className="text-xs text-muted-foreground">{t("business_file.changes_hint")}</p>
+      <ul className="mt-2 divide-y divide-border rounded-md border border-border text-sm">
+        {requests.map((r) => (
+          <li key={r.id} className="space-y-2 px-3 py-2.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-medium">{t(`owner_extra.business.${r.field}`)}</span>
+              <span className="text-muted-foreground line-through">{r.current_value}</span>
+              <span>→</span>
+              <span className="font-medium">{r.new_value}</span>
+              <span className={cn("ml-auto rounded-[4px] border px-1.5 py-0.5 text-[11px] font-medium", tone[r.status])}>{t(`owner_extra.business.status_${r.status}`)}</span>
+            </div>
+            <p className="text-xs text-muted-foreground">{t("business_file.change_requested_by", { name: name(r.requested_by_user_id), date: formatDateTime(r.created_at, i18n.language) })} · {t("business_file.change_reason", { reason: r.reason })}</p>
+            {r.status === "pending" && !readOnly && (
+              <div className="flex flex-wrap items-center gap-2">
+                <input className={cn(inputCls, "h-8 min-w-[12rem] flex-1 text-xs")} placeholder={t("business_file.change_note")} value={notes[r.id] ?? ""} onChange={(e) => setNotes((n) => ({ ...n, [r.id]: e.target.value }))} />
+                <button type="button" disabled={resolve.isPending} onClick={() => act(r, "applied")} className="inline-flex h-8 items-center rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground hover:bg-primary-hover disabled:opacity-50">{t("business_file.change_apply")}</button>
+                <button type="button" disabled={resolve.isPending} onClick={() => act(r, "rejected")} className="inline-flex h-8 items-center rounded-md border border-border bg-surface px-3 text-xs font-medium hover:bg-muted disabled:opacity-50">{t("business_file.change_reject")}</button>
+              </div>
+            )}
+            {r.resolution_note && <p className="text-xs text-muted-foreground">{r.resolution_note}</p>}
+          </li>
+        ))}
+      </ul>
+    </Part>
   );
 }
 

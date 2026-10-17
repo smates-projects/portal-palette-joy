@@ -3,6 +3,7 @@
 // Replaceable sample data. Today is 2026-10-14. Money is in USD, dates are ISO.
 import catalogJson from "@/data/catalogo_metodo180.json";
 import { computeReportAmounts, nextMonth } from "@/lib/franchise/fees";
+import { typedSignatureDataUrl } from "@/lib/contracts/signature";
 import { addDaysIso, generateProgramTasks, type CatalogEntry } from "../program";
 import { MANUAL_SECTION_TITLES, manualSectionContent } from "./seed-manual";
 import type {
@@ -471,8 +472,10 @@ const framework = (n: number, user: string, name: string, signedOn: string | nul
   state: signedOn ? "signed" : "sent", sent_at: "2025-10-28", signed_at: signedOn,
   signers: [
     { name, role: "bishop", party: "bishop", user_id: user, status: signedOn ? "signed" : "sent", signed_at: signedOn, decline_reason: null,
-      history: signedOn ? [{ status: "sent", at: "2025-10-28" }, { status: "signed", at: signedOn }] : [{ status: "sent", at: "2026-10-12" }] },
-    { name: "Strategic Mates", role: "sm", party: "sm", user_id: null, status: "signed", signed_at: "2025-10-28", decline_reason: null, history: [{ status: "signed", at: "2025-10-28" }] },
+      history: signedOn ? [{ status: "sent", at: "2025-10-28" }, { status: "signed", at: signedOn }] : [{ status: "sent", at: "2026-10-12" }],
+      signature: signedOn ? { kind: "typed", image_url: typedSignatureDataUrl(name) } : null },
+    { name: "Strategic Mates", role: "sm", party: "sm", user_id: null, status: "signed", signed_at: "2025-10-28", decline_reason: null, history: [{ status: "signed", at: "2025-10-28" }],
+      signature: { kind: "typed", image_url: typedSignatureDataUrl("Marilyn Boraei") } },
   ],
 });
 export const frameworkContracts: Contract[] = [

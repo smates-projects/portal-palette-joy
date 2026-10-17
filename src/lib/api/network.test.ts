@@ -394,6 +394,29 @@ describe("owner data", () => {
     expect(invited.state).toBe("invited");
     expect(await carla.businessProfile.listTeam()).toHaveLength(4);
   });
+  it("verified data is frozen past onboarding: the owner requests a change and SM applies it", async () => {
+    const carla = await as(seed.U_CARLA);
+    // Vossler is in the program: the legal data was verified against the entry documents.
+    await expect(carla.businessProfile.update({ legal_name: "Otro nombre LLC" })).rejects.toThrow("locked_field");
+    await expect(carla.businessProfile.update({ address: "4821 Curry Ford Rd" })).resolves.toBeTruthy(); // same value: no change
+    await expect(carla.businessProfile.requestChange({ field: "address", new_value: "4821 Curry Ford Rd", reason: "x" })).rejects.toThrow("same_value");
+    await expect(carla.businessProfile.requestChange({ field: "address", new_value: "900 Lake Ave", reason: "" })).rejects.toThrow("reason_required");
+    const r = await carla.businessProfile.requestChange({ field: "address", new_value: "900 Lake Ave", reason: "Nos mudamos en enero." });
+    expect(r.status).toBe("pending");
+    await expect(carla.businessProfile.requestChange({ field: "address", new_value: "901 Lake Ave", reason: "otra" })).rejects.toThrow("already_pending");
+    await expect(carla.businessProfile.resolveChangeRequest(r.id, "applied", null)).rejects.toThrow("sm_only");
+    // Same in-memory db: switch the user instead of opening a new client.
+    await carla.session.setViewAs(seed.U_NICOLAS);
+    const miami = carla;
+    expect((await miami.businessProfile.listChangeRequests(seed.BIZ_VOSSLER)).map((x) => x.id)).toContain(r.id);
+    const done = await miami.businessProfile.resolveChangeRequest(r.id, "applied", "Vimos el contrato de alquiler.");
+    expect(done.status).toBe("applied");
+    expect((await miami.businessProfile.get(seed.BIZ_VOSSLER))?.address).toBe("900 Lake Ave");
+    await expect(miami.businessProfile.resolveChangeRequest(r.id, "rejected", null)).rejects.toThrow("invalid_state");
+    await carla.session.setViewAs(seed.U_CARLA);
+    const again = await carla.businessProfile.listChangeRequests();
+    expect(again[0]).toMatchObject({ status: "applied", resolution_note: "Vimos el contrato de alquiler." });
+  });
   it("SM reads a named business of its office but never another office", async () => {
     const miami = await asMiami();
     expect((await miami.financials.get(seed.BIZ_VOSSLER))?.business_id).toBe(seed.BIZ_VOSSLER);

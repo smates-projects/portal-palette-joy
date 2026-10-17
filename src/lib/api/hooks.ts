@@ -17,6 +17,7 @@ import type {
   InviteMemberInput,
   OpenTasksPolicy,
   PlatformRules,
+  ProfileChangeInput,
   PublishManualInput,
   SubmitReportInput,
 } from "./types";
@@ -403,6 +404,13 @@ export const useBusinessProfile = (businessId?: string) =>
   useQuery({ queryKey: ["business-profile", "profile", businessId ?? "own"], queryFn: () => api.businessProfile.get(businessId) });
 export const useUpdateBusinessProfile = () =>
   useNetworkMutation((patch: BusinessProfilePatch) => api.businessProfile.update(patch), ["business-profile"]);
+/** ProfileChangeRequest[] of a business: the owner's asks to change verified data, newest first. */
+export const useProfileChangeRequests = (businessId?: string) =>
+  useQuery({ queryKey: ["business-profile", "changes", businessId ?? "own"], queryFn: () => api.businessProfile.listChangeRequests(businessId) });
+export const useRequestProfileChange = () =>
+  useNetworkMutation((input: ProfileChangeInput) => api.businessProfile.requestChange(input), ["business-profile"]);
+export const useResolveProfileChange = () =>
+  useNetworkMutation((v: { id: string; status: "applied" | "rejected"; note: string | null }) => api.businessProfile.resolveChangeRequest(v.id, v.status, v.note), ["business-profile"]);
 /** TeamMember[] of a business (active or invited). */
 export const useBusinessTeam = (businessId?: string) =>
   useQuery({ queryKey: ["business-profile", "team", businessId ?? "own"], queryFn: () => api.businessProfile.listTeam(businessId) });

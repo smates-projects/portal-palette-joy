@@ -14,6 +14,7 @@ import { computeFranchisability } from "../franchisability";
 import { computeOfficeChecklist, missingFirmAreas } from "../office-checklist";
 import { AREA_BY_KEY, addDaysIso } from "../program";
 import { MANUAL_SECTION_TITLES, manualSectionContent } from "./seed-manual";
+import { VERIFIED_PROFILE_FIELDS, type ProfileChangeRequest } from "../network-types";
 import type {
   ApiClient,
   BishopRepository,
@@ -104,6 +105,7 @@ export interface NetworkDb {
   contracts: Contract[];
   financials: FinancialSeries[];
   profiles: BusinessProfile[];
+  profileChangeRequests: ProfileChangeRequest[];
   teamMembers: TeamMember[];
   investments: BishopInvestmentRecord[];
   recovery: Record<Uuid, RecoveryPoint[]>;
@@ -757,11 +759,54 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       const b = ownOwnerBusiness();
       const p = db.profiles.find((x) => x.business_id === b.id);
       if (!p) throw new Error("not_found");
+      // Past onboarding the verified fields are frozen: SM checked them against the entry documents.
+      if (b.status !== "onboarding" && VERIFIED_PROFILE_FIELDS.some((f) => patch[f] !== undefined && patch[f] !== p[f])) throw new Error("locked_field");
       if (patch.email !== undefined && !validEmail(patch.email)) throw new Error("invalid_email");
       if (patch.legal_name !== undefined && !patch.legal_name.trim()) throw new Error("name_required");
       if (patch.employees !== undefined && (!Number.isInteger(patch.employees) || patch.employees < 0)) throw new Error("invalid_employees");
       Object.assign(p, patch);
       return delay(p);
+    },
+    requestChange: async (input) => {
+      const b = ownOwnerBusiness();
+      const p = db.profiles.find((x) => x.business_id === b.id);
+      if (!p) throw new Error("not_found");
+      if (!VERIFIED_PROFILE_FIELDS.includes(input.field)) throw new Error("not_verified_field");
+      if (!input.new_value.trim()) throw new Error("value_required");
+      if (input.new_value.trim() === p[input.field]) throw new Error("same_value");
+      if (!input.reason.trim()) throw new Error("reason_required");
+      if (db.profileChangeRequests.some((r) => r.business_id === b.id && r.field === input.field && r.status === "pending")) throw new Error("already_pending");
+      const r: ProfileChangeRequest = {
+        id: newId(), business_id: b.id, field: input.field, current_value: p[input.field], new_value: input.new_value.trim(), reason: input.reason.trim(),
+        status: "pending", requested_by_user_id: me().id, created_at: new Date().toISOString(), resolved_by_user_id: null, resolved_at: null, resolution_note: null,
+      };
+      db.profileChangeRequests.push(r);
+      return delay(r);
+    },
+    listChangeRequests: async (businessId) => {
+      const b = pickBusiness(businessId);
+      return delay(db.profileChangeRequests.filter((r) => r.business_id === b.id).sort((x, y) => y.created_at.localeCompare(x.created_at)));
+    },
+    resolveChangeRequest: async (id, status, note) => {
+      const u = me();
+      if (u.role !== "sm_team" && u.role !== "sm_global") throw new Error("sm_only");
+      const r = db.profileChangeRequests.find((x) => x.id === id);
+      if (!r) throw new Error("not_found");
+      pickBusiness(r.business_id); // scope: the office of the business, or Global
+      if (r.status !== "pending") throw new Error("invalid_state");
+      if (status === "applied") {
+        const p = db.profiles.find((x) => x.business_id === r.business_id);
+        if (!p) throw new Error("not_found");
+        p[r.field] = r.new_value;
+        const b = businessOf(r.business_id);
+        if (b && r.field === "city") b.city = r.new_value;
+        if (b && r.field === "state") b.state = r.new_value;
+      }
+      r.status = status;
+      r.resolved_by_user_id = u.id;
+      r.resolved_at = new Date().toISOString();
+      r.resolution_note = note?.trim() || null;
+      return delay(r);
     },
     listTeam: async (businessId) => {
       const b = pickBusiness(businessId);
