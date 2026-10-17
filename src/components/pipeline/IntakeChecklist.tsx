@@ -151,7 +151,7 @@ function CountRow({ label, n, m }: { label: string; n: number; m: number }) {
   );
 }
 
-function TextDialog(props: { title: string; body: string; label: string; confirm: string; required: string; initial?: string; pending: boolean; onClose: () => void; onConfirm: (v: string) => void }) {
+export function TextDialog(props: { title: string; body: string; label: string; confirm: string; required: string; initial?: string; pending: boolean; onClose: () => void; onConfirm: (v: string) => void }) {
   const { t } = useTranslation();
   const [value, setValue] = useState(props.initial ?? "");
   const [tried, setTried] = useState(false);
