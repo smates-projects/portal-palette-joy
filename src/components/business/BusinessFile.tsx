@@ -123,8 +123,8 @@ export function BusinessFile({ businessId, variant }: { businessId: string; vari
           <div>
             <p className="text-xs text-muted-foreground">{t("business_file.program")}</p>
             <p className="mt-0.5 font-display font-semibold tabular-nums">{t("business_file.day", { day: p.business.program_day })}</p>
-            <div className="mt-1 h-1.5 rounded-full bg-muted" role="progressbar" aria-valuemin={0} aria-valuemax={180} aria-valuenow={p.business.program_day}>
-              <div className="h-full rounded-full bg-gold" style={{ width: `${Math.min(100, (p.business.program_day / 180) * 100)}%` }} />
+            <div className="mt-1 h-1.5 rounded-[2px] border border-border bg-muted" role="progressbar" aria-valuemin={0} aria-valuemax={180} aria-valuenow={p.business.program_day}>
+              <div className="h-full bg-gold" style={{ width: `${Math.min(100, (p.business.program_day / 180) * 100)}%` }} />
             </div>
           </div>
           <div className="col-span-1">

@@ -64,7 +64,7 @@ export function FundsBody({ funds, mode }: { funds: BishopFunds; mode: "sm" | "b
           </p>
           <FundsStatusBadge status={funds.status} />
         </div>
-        <div role="progressbar" aria-label={t("funds.progress")} aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+        <div role="progressbar" aria-label={t("funds.progress")} aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} className="mt-2 h-1.5 overflow-hidden rounded-[2px] border border-border bg-muted">
           <div className="h-full bg-gold" style={{ width: `${pct}%` }} />
         </div>
         <p className="mt-2 text-xs text-muted-foreground">

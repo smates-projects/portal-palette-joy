@@ -169,7 +169,7 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
 
           <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
             {/* Para hoy, grouped by urgency */}
-            <section className="rounded-xl border border-border bg-surface p-5">
+            <section className="rounded-md border border-border bg-surface p-5">
               <h2 className="mb-4 flex items-center gap-2 text-base font-semibold">
                 <ClipboardList className="h-4 w-4 text-primary" />
                 {t("home.today_title")}
@@ -177,7 +177,7 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
               {loading ? (
                 <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10 rounded-md" />)}</div>
               ) : today.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-border p-6 text-sm">
+                <div className="rounded-md border border-dashed border-border p-6 text-sm">
                   <p className="font-medium">{t("home.empty_title")}</p>
                   <p className="mt-1 text-muted-foreground">
                     {next
@@ -259,7 +259,7 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
 
             <aside className="space-y-6">
               {/* Agenda: week strip + meetings of the chosen day */}
-              <section className="rounded-xl border border-border bg-surface p-5">
+              <section className="rounded-md border border-border bg-surface p-5">
                 <h2 className="mb-4 flex items-center gap-2 text-base font-semibold">
                   <CalendarDays className="h-4 w-4 text-primary" />
                   {t("home.calendar_title")}
@@ -288,7 +288,7 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
                           onClick={() => setDay(d)}
                           onDoubleClick={() => void navigate({ to: "/tareas", search: { view: "calendar" } })}
                           className={cn(
-                            "flex flex-col items-center rounded-lg py-1.5 transition-colors",
+                            "flex flex-col items-center rounded-md py-1.5 transition-colors",
                             sel ? "bg-primary text-primary-foreground" : "hover:bg-accent",
                           )}
                         >
@@ -307,13 +307,13 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
                 </div>
                 <div className="mt-4 space-y-2">
                   {meetingsQ.isLoading || loading ? (
-                    <Skeleton className="h-20 rounded-lg" />
+                    <Skeleton className="h-20 rounded-md" />
                   ) : meetingsQ.isError ? (
                     <p className="text-sm text-muted-foreground">{t("home.meetings_error")}</p>
                   ) : meetings.length === 0 ? (
-                    <p className="rounded-lg bg-muted p-4 text-sm text-muted-foreground">{t("home.meetings_empty")}</p>
+                    <p className="rounded-md border border-border bg-muted p-4 text-sm text-muted-foreground">{t("home.meetings_empty")}</p>
                   ) : dayMeetings.length === 0 ? (
-                    <p className="rounded-lg bg-muted p-4 text-sm text-muted-foreground">{t("home.day_empty")}</p>
+                    <p className="rounded-md border border-border bg-muted p-4 text-sm text-muted-foreground">{t("home.day_empty")}</p>
                   ) : (
                     dayMeetings.map((m) => {
                       const task = tasks.find((x) => x.id === m.task_id);
@@ -321,7 +321,7 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
                         <button
                           key={m.id}
                           onClick={() => void navigate({ to: "/tareas", search: { view: "calendar" } })}
-                          className="w-full rounded-lg border border-border p-4 text-left transition-[filter] hover:brightness-95"
+                          className="w-full rounded-md border border-border p-4 text-left transition-[filter] hover:brightness-95"
                           style={task ? areaAccentStyle(task.area, 4) : undefined}
                         >
                           <div className="flex items-start justify-between gap-2">
@@ -350,7 +350,7 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
               </section>
 
               {/* Progress per business */}
-              <section className="rounded-xl border border-border bg-surface p-5">
+              <section className="rounded-md border border-border bg-surface p-5">
                 <div className="mb-4 flex items-baseline justify-between gap-2">
                   <h2 className="flex items-center gap-2 text-base font-semibold">
                     <Target className="h-4 w-4 text-primary" />

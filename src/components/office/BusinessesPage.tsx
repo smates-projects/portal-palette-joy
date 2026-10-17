@@ -191,8 +191,8 @@ function ProgramBar({ day }: { day: number }) {
   return (
     <div className="w-32">
       <span className="text-xs tabular-nums">{t("sm.program_day", { day })}</span>
-      <div className="mt-1 h-1.5 rounded-full bg-muted" role="progressbar" aria-valuemin={0} aria-valuemax={180} aria-valuenow={day}>
-        <div className="h-full rounded-full bg-gold" style={{ width: `${Math.min(100, (day / 180) * 100)}%` }} />
+      <div className="mt-1 h-1.5 rounded-[2px] border border-border bg-muted" role="progressbar" aria-valuemin={0} aria-valuemax={180} aria-valuenow={day}>
+        <div className="h-full bg-gold" style={{ width: `${Math.min(100, (day / 180) * 100)}%` }} />
       </div>
     </div>
   );

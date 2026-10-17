@@ -448,7 +448,7 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
                           : t("taskDetail.request_due", { date: formatShortDate(r.due_date, lng) })}
                       </p>
                       {r.answer && (
-                        <p className="mt-2 rounded-md bg-muted px-3 py-2 text-sm">
+                        <p className="mt-2 rounded-md border border-border bg-muted px-3 py-2 text-sm">
                           <span className="text-xs font-medium text-muted-foreground">{t("taskDetail.owner_answer", { name: ownerFirst })}: </span>
                           {r.answer}
                         </p>
