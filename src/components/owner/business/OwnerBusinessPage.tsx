@@ -207,9 +207,9 @@ function RequestChangeDialog({ field, current, onClose }: { field: VerifiedProfi
           <DialogTitle>{t("owner_extra.business.request_title")}</DialogTitle>
           <DialogDescription>{t("owner_extra.business.request_body")}</DialogDescription>
         </DialogHeader>
-        <dl className="grid grid-cols-2 gap-3 text-sm">
+        <dl className="grid gap-3 rounded-md border border-border bg-muted/50 p-3 text-sm sm:grid-cols-2">
           <div><dt className="text-xs text-muted-foreground">{t("owner_extra.business.request_field")}</dt><dd className="mt-0.5 font-medium">{t(`owner_extra.business.${field}`)}</dd></div>
-          <div><dt className="text-xs text-muted-foreground">{t("owner_extra.business.request_current")}</dt><dd className="mt-0.5 truncate">{current}</dd></div>
+          <div><dt className="text-xs text-muted-foreground">{t("owner_extra.business.request_current")}</dt><dd className="mt-0.5 break-words">{current}</dd></div>
         </dl>
         <Field label={t("owner_extra.business.request_new_value")}>
           <input autoFocus className={inputCls} value={value} onChange={(e) => setValue(e.target.value)} />
