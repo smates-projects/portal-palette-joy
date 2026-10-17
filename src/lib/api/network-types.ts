@@ -153,6 +153,8 @@ export interface PlatformRules {
   document_review_days: number;
   /** Entry documents every owner uploads (to validate with Melany). */
   intake_documents: IntakeDocRule[];
+  /** USD the Bishop pays SM for one program (paid outside the app). */
+  program_amount: number;
 }
 
 export interface IntakeDocRule {
