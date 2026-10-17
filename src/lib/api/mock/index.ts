@@ -14,6 +14,9 @@ import { createIntake, type IntakeRecord } from "./intake";
 import { createOpportunities, type OpportunityView } from "./opportunities";
 import { createFunds, type FundRecord, type StoredDistLine } from "./funds";
 import { seedFunds } from "./seed-funds";
+import { createAccounts } from "./accounts";
+import { isActiveFirm, isActiveUser } from "@/lib/accounts/permissions";
+import type { AccountEvent, BrandEvent, BusinessBrand, FirmEvent } from "../types";
 import { readyToStart, validDay1, programDayOn } from "@/lib/leads/funds";
 import { tripartiteState } from "@/lib/leads/opportunity";
 import { LEAD_NOTIFICATION_KINDS, type FundPayment, type NotificationKind } from "../types";
@@ -77,6 +80,11 @@ export function createMockApi(): ApiClient {
     fundRecords: [] as FundRecord[],
     fundPayments: [] as FundPayment[],
     distLines: [] as StoredDistLine[],
+    // Accounts, partner firms and the business brand (./accounts). Nothing here is ever deleted.
+    accountEvents: [] as AccountEvent[],
+    firmEvents: [] as FirmEvent[],
+    brands: structuredClone(seed.brands) as BusinessBrand[],
+    brandEvents: structuredClone(seed.brandEvents) as BrandEvent[],
   };
   const intake = createIntake(db, newId);
   intake.seed();
@@ -153,6 +161,11 @@ export function createMockApi(): ApiClient {
   const smOnly = () => {
     if (me().role !== "sm_team") throw new Error("sm_only");
   };
+  /** A business_owner account that is not the owner in charge (team member) sees the program but never approves. */
+  const ownerInCharge = (t: Task) => {
+    const u = me();
+    if (u.role === "business_owner" && db.businesses.find((b) => b.id === t.business_id)?.owner_user_id !== u.id) throw new Error("owner_only");
+  };
   /** Log the change on the task and tell the firm (old and new assignee on a reassignment). */
   const recordChange = (t: Task, kind: TaskEvent["kind"], change: TaskChange, alsoNotify: string[] = []) => {
     pushEvent(t.id, kind, null, change);
@@ -203,6 +216,9 @@ export function createMockApi(): ApiClient {
   opps.seed({ jefferson: seedNetwork.U_JEFFERSON, laura: seedNetwork.U_LAURA });
   const fundsMod = createFunds({ db, me, newId, delay, tripartiteOf: opps.tripartiteOf, pushLeadEvent, notifyLead });
   seedFunds({ db, funds: fundsMod, seedSignedTripartite: opps.seedSignedTripartite });
+  const accounts = createAccounts({
+    db, me, newId, delay, notify, recordTaskChange: recordChange, personLabel, pushLeadEvent, withBooking: (l) => withBooking(l), findLead,
+  });
 
   /**
    * accepted → in_program: business from onboarding to in_program with day 1 = day1, and its tasks from the live
@@ -229,10 +245,13 @@ export function createMockApi(): ApiClient {
     return { lead: l, business_id: b.id, task_count: created.length };
   };
 
-  /** Assignee firm per area: the office's own firm for that area; with none (SM Miami B1), the office's own team (the consultant). */
+  /**
+   * Assignee firm per area: the office's ACTIVE firm for that area and an active person in it; with none ("Sin firma",
+   * or SM Miami B1), the office's own team (the consultant) until a firm is assigned.
+   */
   const firmFor = (officeId: string, consultantId: string) => (area: AreaCode) => {
-    const firm = db.orgs.find((o) => o.kind === "partner_firm" && o.area === area && o.parent_id === officeId);
-    const person = firm && db.users.find((u) => u.organization_id === firm.id);
+    const firm = db.orgs.find((o) => o.kind === "partner_firm" && o.area === area && o.parent_id === officeId && isActiveFirm(o));
+    const person = firm && db.users.find((u) => u.organization_id === firm.id && isActiveUser(u));
     return firm && person ? { organization_id: firm.id, assignee_user_id: person.id } : { organization_id: officeId, assignee_user_id: consultantId };
   };
 
@@ -376,8 +395,13 @@ export function createMockApi(): ApiClient {
             const user = db.users.find((u) => u.id === id)!;
             return { user, organization: db.orgs.find((o) => o.id === user.organization_id) ?? null, business: null, enabled: true };
           }),
+          // Estudio Pérez: Lucía is its admin (Mi equipo), Julián is not.
+          { user: db.users.find((u) => u.id === seed.U_JULIAN)!, organization: db.orgs.find((o) => o.id === seed.ORG_PEREZ) ?? null, business: null, enabled: true },
           { user: db.users.find((u) => u.id === seed.U_CARLA)!, organization: null, business: db.businesses.find((b) => b.id === seed.BIZ_VOSSLER) ?? null, enabled: true },
+          // Vossler team member: sees the Vossler brand but never approves.
+          { user: db.users.find((u) => u.id === seed.U_ANA_VOSSLER)!, organization: null, business: db.businesses.find((b) => b.id === seed.BIZ_VOSSLER) ?? null, enabled: true },
           { user: db.users.find((u) => u.id === seed.U_NICOLAS)!, organization: db.orgs.find((o) => o.id === seed.ORG_SM) ?? null, business: null, enabled: true },
+          // SM Miami office admin: manages the team and the partner firms.
           { user: db.users.find((u) => u.id === seed.U_ANDREA)!, organization: db.orgs.find((o) => o.id === seed.ORG_SM) ?? null, business: null, enabled: true },
           // A business owner still entering (Sazón Criollo, documents in review).
           ...db.businesses.filter((b) => b.status === "onboarding" && b.name === "Sazón Criollo").map((b) => ({ user: db.users.find((u) => u.id === b.owner_user_id)!, organization: null, business: b, enabled: true })),
@@ -411,6 +435,7 @@ export function createMockApi(): ApiClient {
         return delay(db.orgs.filter((o) => o.id === u.organization_id));
       },
       get: (id) => delay(db.orgs.find((o) => o.id === id) ?? null),
+      ...accounts.organizations,
     },
     businesses: {
       list: async () => {
@@ -453,20 +478,8 @@ export function createMockApi(): ApiClient {
       },
     },
     users: {
-      // Nobody sees people of another office; a Bishop or franchisee only sees themselves.
-      list: async () => {
-        const u = me();
-        if (u.role === "bishop" || u.role === "franchisee") return delay([u]);
-        const officeOfUser = (x: User): string | null => {
-          if (x.role === "sm_team") return x.organization_id;
-          if (x.role === "partner_firm") return db.orgs.find((o) => o.id === x.organization_id)?.parent_id ?? null;
-          if (x.role === "business_owner") return db.businesses.find((b) => b.id === x.business_id)?.office_id ?? null;
-          return null;
-        };
-        if (u.role === "sm_global") return delay(db.users);
-        const mine = officeOfUser(u);
-        return delay(db.users.filter((x) => x.role === "sm_global" || (x.role !== "bishop" && x.role !== "franchisee" && officeOfUser(x) === mine)));
-      },
+      // Nobody sees people of another office; a Bishop only sees himself. Scope and writes live in ./accounts.
+      ...accounts.users,
       setGoogleCalendar: async (email) => {
         const u = me();
         u.google_calendar_email = email;
@@ -488,6 +501,9 @@ export function createMockApi(): ApiClient {
     ...withIntakeDocuments(net),
     // After the spread: replaces net.rules.
     rules,
+    // Inviting a team member creates an account behind it; handing the business over needs the owner.
+    businessProfile: { ...net.businessProfile, ...accounts.businessProfile },
+    brand: accounts.brand,
     bishop: {
       ...net.bishop,
       ...opps.bishop,
@@ -498,6 +514,7 @@ export function createMockApi(): ApiClient {
     },
     leads: {
       ...opps.leads,
+      ...accounts.leads,
       list: async (opts) => delay(readableLeads().filter((l) => !opts?.office_id || l.office_id === opts.office_id).map(withBooking)),
       get: async (id) => {
         const l = readableLeads().find((x) => x.id === id);
@@ -694,6 +711,8 @@ export function createMockApi(): ApiClient {
           id: newId(), task_id: id, version: t.current_version, submitted_by_user_id: currentUserId, submitted_at: nowIso(),
           note: input.note, files: input.file_names.map((name) => ({ id: newId(), name, size_kb: 480 })),
           status: "submitted", review_comment_id: null,
+          // B5-13: the brand read from the manual travels with the version and applies when the owner approves it.
+          brand: t.code === "B5-13" && input.brand ? input.brand : null,
         };
         db.versions.push(v);
         pushEvent(id, "submitted", v.version);
@@ -735,6 +754,7 @@ export function createMockApi(): ApiClient {
       },
       approve: async (id) => {
         const t = findTask(id);
+        ownerInCharge(t);
         const wasBlocked = new Set(db.tasks.filter((x) => withComputed(x, db.tasks).is_blocked).map((x) => x.id));
         transition(t, "accepted");
         const v = db.versions.filter((x) => x.task_id === id).sort((a, b) => b.version - a.version)[0];
@@ -742,11 +762,14 @@ export function createMockApi(): ApiClient {
         pushEvent(id, "approved", v?.version ?? null);
         // Tell the firm of each task this approval unblocks.
         for (const x of db.tasks) if (wasBlocked.has(x.id) && !withComputed(x, db.tasks).is_blocked) notify(x.assignee_user_id, "unblocked", x.id);
+        // B5-13 approved with a brand: the business portal takes it ("Tu portal ya tiene tu marca").
+        accounts.applyBrandFromVersion(t, v);
         return delay(withComputed(t, db.tasks));
       },
       requestChanges: async (id, note) => {
         if (!note.trim()) throw new Error("note_required");
         const t = findTask(id);
+        ownerInCharge(t);
         transition(t, "changes_requested");
         const c: TaskComment = { id: newId(), task_id: id, author_user_id: currentUserId, body: note.trim(), created_at: nowIso(), kind: "changes_requested", file_id: null };
         db.comments.push(c);

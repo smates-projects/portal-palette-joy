@@ -25,6 +25,10 @@ export type UserRole = "partner_firm" | "business_owner" | "sm_team" | "sm_globa
 
 export type OrganizationKind = "partner_firm" | "sm" | "sm_global" | "franchise";
 export type OfficeStatus = "opening" | "operating" | "paused";
+/** Partner firms only. An inactive firm was replaced or retired: it keeps its history and is never deleted. */
+export type FirmStatus = "active" | "inactive";
+/** invited: account created, mail simulated, not accepted yet. inactive: deactivated with a reason (never deleted). */
+export type UserStatus = "invited" | "active" | "inactive";
 /** onboarding: NDA and MOU sent, still entering (no program yet). */
 export type BusinessStatus = "onboarding" | "in_program" | "franchisor";
 
@@ -52,6 +56,55 @@ export interface Organization {
   manager_user_id?: Uuid | null;
   /** Franchise units only: the franchisor business they belong to. */
   franchisor_business_id?: Uuid | null;
+  /** Partner firms: SM's own team doing that area (shown as "equipo propio"). */
+  internal?: boolean | undefined;
+  /** Partner firms: active (one per area per office) or inactive (replaced or retired). Absent = active. */
+  firm_status?: FirmStatus | null | undefined;
+  /** Partner firms: contact person SM talks to. */
+  contact_name?: string | null | undefined;
+  /** Partner firms: the firm that took its place when it was replaced. */
+  replaced_by_id?: Uuid | null | undefined;
+  deactivated_at?: IsoDateTime | null | undefined;
+  deactivation_reason?: string | null | undefined;
+}
+
+/** What the office admin (or SM Global) gives to add a partner firm with its first person. */
+export interface CreateFirmInput {
+  /** SM Global picks the office; an office admin always gets its own (ignored for it). */
+  office_id?: Uuid | null | undefined;
+  name: string;
+  area: AreaCode;
+  /** SM's own team for that area. */
+  internal: boolean;
+  specialty: string | null;
+  contact_name: string;
+  email: string;
+  phone: string | null;
+  city: string | null;
+  /** First person of the firm: partner_firm with is_admin. */
+  first_person: { full_name: string; email: string; title: string | null };
+}
+
+export type FirmPatch = Partial<Pick<Organization, "name" | "specialty" | "contact_name" | "email" | "phone" | "city">>;
+
+/** What happens with the open tasks of the firm being replaced. */
+export type OpenTasksPolicy = "transfer" | "keep";
+
+export type FirmEventKind = "created" | "edited" | "replaced" | "deactivated" | "took_over";
+
+/** History of a partner firm: never deleted, every change is kept. */
+export interface FirmEvent {
+  id: Uuid;
+  organization_id: Uuid;
+  kind: FirmEventKind;
+  actor_user_id: Uuid;
+  created_at: IsoDateTime;
+  /** replaced / took_over: the other firm. */
+  other_organization_id: Uuid | null;
+  /** Reason, or a summary of the edit. */
+  body: string | null;
+  /** replaced: how many open tasks moved to the new firm. */
+  moved_tasks?: number | null | undefined;
 }
 
 export interface User {
@@ -68,6 +121,38 @@ export interface User {
   booking_url: string | null;
   /** SM office admin (or SM Global admin): the only ones who give "Aprobar documentación". */
   is_admin?: boolean | undefined;
+  /** Absent = active (older seed rows). */
+  status?: UserStatus | undefined;
+  invited_at?: IsoDateTime | null | undefined;
+  activated_at?: IsoDateTime | null | undefined;
+  deactivated_at?: IsoDateTime | null | undefined;
+  deactivation_reason?: string | null | undefined;
+}
+
+/** Who to invite. The organization and business depend on the role: SM people have an organization, owners a business. */
+export interface InviteUserInput {
+  full_name: string;
+  email: string;
+  role: UserRole;
+  organization_id: Uuid | null;
+  business_id: Uuid | null;
+  title: string | null;
+  /** Only SM Global may set it; the office admin creates the first person of a firm as admin. */
+  is_admin: boolean;
+}
+
+export type AccountEventKind = "invited" | "accepted" | "deactivated" | "reactivated" | "admin_granted" | "admin_revoked" | "made_owner";
+
+/** History of a person's account. Nobody deletes accounts: every change is kept here. */
+export interface AccountEvent {
+  id: Uuid;
+  user_id: Uuid;
+  kind: AccountEventKind;
+  /** Null when the person accepted the invitation (simulated). */
+  actor_user_id: Uuid | null;
+  created_at: IsoDateTime;
+  /** Deactivation reason. */
+  body: string | null;
 }
 
 export interface Business {
@@ -149,6 +234,51 @@ export interface TaskVersion {
   status: VersionStatus;
   /** Owner comment that requested changes on this version. */
   review_comment_id: Uuid | null;
+  /** B5-13 only: the brand the firm read from the manual. Applied to the business when the owner approves. */
+  brand?: BrandProposal | null | undefined;
+}
+
+// ---------- Business brand (white label) ----------
+
+/** Colors as #rrggbb. The logo is a simulated upload: only its file name is kept and the portal draws a wordmark. */
+export interface BrandPalette {
+  primary_color: string;
+  accent_color: string;
+  font_family: string | null;
+  logo_file_name: string | null;
+}
+
+/** What the firm sends with B5-13: the manual, the logo and the palette it read from the manual (corrected by hand if needed). */
+export interface BrandProposal extends BrandPalette {
+  manual_file_name: string;
+}
+
+export type BrandSource = "b5_13" | "manual_sm";
+
+/**
+ * The brand a business shows in its portal. Absent = Strategic Mates brand. Applied automatically when the owner
+ * approves B5-13, or loaded by hand by SM. Franchises inherit it from their franchisor and cannot edit it.
+ */
+export interface BusinessBrand extends BrandPalette {
+  business_id: Uuid;
+  source: BrandSource;
+  /** Deliverable version that brought it (b5_13), null when SM loaded it. */
+  version: number | null;
+  applied_at: IsoDateTime;
+  applied_by_user_id: Uuid | null;
+  manual_file_name: string | null;
+}
+
+export type BrandEventKind = "applied_from_b5_13" | "set_by_sm" | "reset";
+
+export interface BrandEvent {
+  id: Uuid;
+  business_id: Uuid;
+  kind: BrandEventKind;
+  actor_user_id: Uuid | null;
+  created_at: IsoDateTime;
+  /** The palette that was applied (null on reset). */
+  palette: BrandPalette | null;
 }
 
 export type TaskEventKind =
@@ -233,6 +363,8 @@ export const NOTIFICATION_KINDS = [
   // Entry flow (SM only): about a lead, not a task.
   "bishop_accepted",
   "funds_reported",
+  // Owner: "Tu portal ya tiene tu marca" (B5-13 approved with a brand).
+  "brand_applied",
 ] as const;
 /** Kinds about a lead of the Embudo. Only the SM team of the lead's office gets them. */
 export const LEAD_NOTIFICATION_KINDS: readonly NotificationKind[] = ["bishop_accepted", "funds_reported"];
@@ -310,6 +442,26 @@ export const ASSESSMENT_BLOCKS = ["time_team", "work_quality", "money", "clients
 export type AssessmentBlock = (typeof ASSESSMENT_BLOCKS)[number];
 export type BlockStatus = "strong" | "medium" | "weak" | "unknown";
 export type EligibilityGap = "years" | "revenue";
+/** assessment: came from the public readiness assessment. manual: SM added it by hand (referral, event). */
+export type LeadSource = "assessment" | "manual";
+
+export interface LeadResult {
+  band: LeadBand;
+  score: number;
+  eligible_program: boolean;
+  eligibility_gaps: EligibilityGap[];
+  blocks: { key: AssessmentBlock; status: BlockStatus }[];
+  strengths: string[];
+  priorities: string[];
+}
+
+/** What SM types to add a business by hand: the same data the assessment collects, without the result. */
+export interface ManualLeadInput {
+  contact: Lead["contact"];
+  business: Lead["business"];
+  /** Where it came from (referral, event...). Kept as the first note. */
+  origin_note: string | null;
+}
 
 export interface Lead {
   id: Uuid;
@@ -338,16 +490,13 @@ export interface Lead {
     years_range: YearsRange;
     has_active_clients: boolean;
   };
-  result: {
-    band: LeadBand;
-    score: number;
-    eligible_program: boolean;
-    eligibility_gaps: EligibilityGap[];
-    blocks: { key: AssessmentBlock; status: BlockStatus }[];
-    strengths: string[];
-    priorities: string[];
-  };
+  /** Null for a business added by hand that has not done the assessment yet. */
+  result: LeadResult | null;
   know_how_example: string | null;
+  /** Absent = assessment. */
+  source?: LeadSource | undefined;
+  /** Manual leads: when SM sent the assessment link ("Assessment pendiente"); null until then. */
+  assessment_sent_at?: IsoDateTime | null | undefined;
   /** Bishop who accepted the opportunity (null while nobody took it, or after SM released it). */
   bishop_user_id: Uuid | null;
   bishop_accepted_at: IsoDateTime | null;
@@ -402,7 +551,9 @@ export type LeadEventKind =
   | "submitted" | "stage_changed" | "discarded" | "restored" | "note" | "contract_signed"
   | "nda_sent" | "doc_accepted" | "doc_requested" | "docs_approved"
   | "bishop_accepted" | "bishop_released" | "tripartite_sent"
-  | "funds_recorded" | "funds_reported" | "funds_confirmed" | "funds_removed" | "program_started";
+  | "funds_recorded" | "funds_reported" | "funds_confirmed" | "funds_removed" | "program_started"
+  // Business added by hand and the assessment sent to it afterwards.
+  | "created_manual" | "assessment_sent";
 
 export interface LeadEvent {
   id: Uuid;

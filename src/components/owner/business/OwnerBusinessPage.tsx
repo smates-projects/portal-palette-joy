@@ -1,13 +1,14 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { useBusinessProfile, useBusinessTeam, useInviteTeamMember, useUpdateBusinessProfile } from "@/lib/api/hooks";
-import type { BusinessProfile, BusinessProfilePatch } from "@/lib/api/types";
+import { useBusinesses, useBusinessProfile, useBusinessTeam, useCurrentUser, useInviteTeamMember, useMakeOwner, useUpdateBusinessProfile } from "@/lib/api/hooks";
+import type { BusinessProfile, BusinessProfilePatch, TeamMember } from "@/lib/api/types";
+import { BrandPanel } from "@/components/brand/BrandPanel";
 import { EmptyState, ErrorState, Field, inputCls, LoadingState, PageHeader, Panel, primaryButtonCls, ToneBadge } from "../shared";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/** Mi negocio: the data SM holds about the business (editable) and the people of the team (invite by email). */
+/** Mi negocio: the data SM holds about the business (editable), the brand of the portal and the people of the team (invite by email). */
 export function OwnerBusinessPage() {
   const { t } = useTranslation();
   const profileQ = useBusinessProfile();
@@ -27,7 +28,10 @@ export function OwnerBusinessPage() {
       ) : (
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
           <ProfileForm profile={profile} />
-          <TeamPanel team={teamQ.data ?? []} />
+          <div className="space-y-4">
+            <BrandPanel mode="owner" />
+            <TeamPanel team={teamQ.data ?? []} />
+          </div>
         </div>
       )}
     </div>
@@ -131,11 +135,24 @@ function ProfileForm({ profile }: { profile: BusinessProfile }) {
   );
 }
 
-function TeamPanel({ team }: { team: { id: string; name: string; role: string; email: string | null; state: "active" | "invited" }[] }) {
+const MEMBER_TONE = { active: "success", invited: "warning", inactive: "neutral" } as const;
+
+function TeamPanel({ team }: { team: TeamMember[] }) {
   const { t } = useTranslation();
+  const me = useCurrentUser().data;
+  const businesses = useBusinesses().data;
   const invite = useInviteTeamMember();
+  const makeOwner = useMakeOwner();
   const [form, setForm] = useState({ name: "", role: "", email: "" });
   const [error, setError] = useState<string | null>(null);
+  const business = businesses?.find((b) => b.id === me?.business_id);
+  // Only the owner in charge invites or hands the business over; a team member only sees the list.
+  const inCharge = !!me && !!business && business.owner_user_id === me.id;
+  const handOver = (m: TeamMember) =>
+    makeOwner.mutate(m.id, {
+      onSuccess: () => toast.success(t("owner_extra.business.t_made_owner", { name: m.name })),
+      onError: (e) => toast.error(t(`owner_extra.business.err_owner_${e instanceof Error ? e.message : "generic"}`, { defaultValue: t("owner_extra.common.t_error") })),
+    });
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -160,19 +177,27 @@ function TeamPanel({ team }: { team: { id: string; name: string; role: string; e
         <p className="border-t border-border px-4 py-3 text-sm text-muted-foreground">{t("owner_extra.business.team_empty")}</p>
       ) : (
         <ul className="divide-y divide-border border-t border-border">
-          {team.map((m) => (
-            <li key={m.id} className="flex items-center gap-3 px-4 py-3">
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium">{m.name}</p>
-                <p className="truncate text-xs text-muted-foreground">{[m.role, m.email].filter(Boolean).join(" · ")}</p>
-              </div>
-              <ToneBadge tone={m.state === "active" ? "success" : "warning"}>{t(`owner_extra.business.member_${m.state}`)}</ToneBadge>
-            </li>
-          ))}
+          {team.map((m) => {
+            const isOwner = !!business && m.user_id === business.owner_user_id;
+            return (
+              <li key={m.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium">{m.name}{isOwner && <span className="ml-2 rounded-[4px] border border-border px-1.5 py-0.5 text-[11px] font-normal text-muted-foreground">{t("owner_extra.business.owner_tag")}</span>}</p>
+                  <p className="truncate text-xs text-muted-foreground">{[m.role, m.email].filter(Boolean).join(" · ")}</p>
+                </div>
+                <ToneBadge tone={MEMBER_TONE[m.state]}>{t(`owner_extra.business.member_${m.state}`)}</ToneBadge>
+                {inCharge && !isOwner && m.user_id && m.state === "active" && (
+                  <button type="button" onClick={() => handOver(m)} disabled={makeOwner.isPending} className="text-xs text-link hover:underline disabled:opacity-50">
+                    {t("owner_extra.business.make_owner")}
+                  </button>
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
 
-      <form onSubmit={submit} noValidate className="space-y-3 border-t border-border p-4">
+      {inCharge && <form onSubmit={submit} noValidate className="space-y-3 border-t border-border p-4">
         <h3 className="text-sm font-semibold">{t("owner_extra.business.invite_title")}</h3>
         <Field label={t("owner_extra.business.invite_name")}>
           <input className={inputCls} value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} autoComplete="off" />
@@ -187,7 +212,8 @@ function TeamPanel({ team }: { team: { id: string; name: string; role: string; e
         <button type="submit" className={primaryButtonCls} disabled={invite.isPending}>
           {invite.isPending ? t("owner_extra.common.saving") : t("owner_extra.business.invite_send")}
         </button>
-      </form>
+      </form>}
+      {!inCharge && <p className="border-t border-border px-4 py-3 text-xs text-muted-foreground">{t("owner_extra.business.team_member_note")}</p>}
     </Panel>
   );
 }

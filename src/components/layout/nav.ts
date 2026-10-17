@@ -21,6 +21,7 @@ import {
   Target,
   TrendingUp,
   UserRound,
+  Users,
   type LucideIcon,
 } from "lucide-react";
 import type { UserRole } from "@/lib/api/types";
@@ -30,7 +31,7 @@ export type NavKey =
   | "calendar" | "manual" | "documents" | "numbers" | "business"
   | "network" | "businesses" | "catalog" | "settings" | "pipeline"
   // SM Global
-  | "structure" | "offices" | "global_pipeline" | "global_catalog" | "rules"
+  | "structure" | "offices" | "global_pipeline" | "global_catalog" | "rules" | "people"
   // Franchisor (business owner whose business is a franchisor)
   | "franchisor" | "franchises"
   // Business Bishop
@@ -42,7 +43,7 @@ export interface NavItem {
   to:
     | "/" | "/tareas" | "/clientes" | "/reporte" | "/perfil" | "/manual" | "/documentos" | "/numeros" | "/negocio" | "/red" | "/negocios"
     | "/catalogo" | "/configuracion" | "/embudo"
-    | "/estructura" | "/oficinas" | "/reglas" | "/franquiciadora" | "/franquicias" | "/oportunidades" | "/acuerdos" | "/pagos";
+    | "/estructura" | "/oficinas" | "/reglas" | "/personas" | "/franquiciadora" | "/franquicias" | "/oportunidades" | "/acuerdos" | "/pagos";
   key: NavKey;
   icon: LucideIcon;
   /** Only for "Calendario": Mis tareas opened in the calendar view. */
@@ -96,6 +97,7 @@ export const smGlobalNav: NavItem[] = [
   { to: "/embudo", key: "global_pipeline", icon: Filter },
   { to: "/catalogo", key: "global_catalog", icon: Library },
   { to: "/reglas", key: "rules", icon: SlidersHorizontal },
+  { to: "/personas", key: "people", icon: Users },
 ];
 
 // Menu for a business owner whose business is a franchisor (finished the program).

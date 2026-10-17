@@ -1,6 +1,6 @@
 // Types for the SM network (Global, offices), franchisors, franchises, Bishop and owner data.
 // Same conventions as types.ts: snake_case, UUID string ids, ISO dates.
-import type { AreaCode, BusinessStatus, IsoDate, IsoDateTime, Lead, LeadIndustry, LeadStage, OfficeStatus, Organization, ReviewClock, User, Uuid } from "./types";
+import type { AreaCode, BusinessStatus, IsoDate, IsoDateTime, Lead, LeadBand, LeadIndustry, LeadResult, LeadStage, OfficeStatus, Organization, ReviewClock, User, Uuid } from "./types";
 
 /** Month as YYYY-MM. */
 export type IsoMonth = string;
@@ -312,7 +312,10 @@ export interface TeamMember {
   name: string;
   role: string;
   email: string | null;
-  state: "active" | "invited";
+  /** inactive: the account behind the member was deactivated. */
+  state: "active" | "invited" | "inactive";
+  /** Account behind the member (invited through the portal). Absent for people without an account. */
+  user_id?: Uuid | null | undefined;
 }
 
 export interface FranchiseDetail {
@@ -565,7 +568,7 @@ export interface BishopOpportunity {
   share_year1_pct: number;
   share_stable_pct: number;
   score: number;
-  band: Lead["result"]["band"];
+  band: LeadBand;
   /** Review clock while SM reviews the documents. */
   review: ReviewClock | null;
   decision: OpportunityDecision;
@@ -581,7 +584,8 @@ export interface OpportunityVerifiedItem {
 export interface OpportunityDetail extends BishopOpportunity {
   /** What the owner declared in the assessment (ranges, never the name before accepting). */
   declared: Omit<Lead["business"], "name">;
-  result: Lead["result"];
+  /** Empty result (score 0, every block unknown) for a business added by hand that has no assessment yet. */
+  result: LeadResult;
   know_how_example: string | null;
   verified: OpportunityVerifiedItem[];
   checklist: { nda_signed: boolean; mou_signed: boolean; required_total: number; uploaded: number; accepted: number; approved: boolean };

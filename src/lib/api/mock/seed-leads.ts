@@ -1,5 +1,5 @@
 // Sample leads for SM Miami (replaceable). They mimic what the external readiness assessment sends.
-import type { AssessmentBlock, BlockStatus, Lead, LeadEvent, LeadStage } from "../types";
+import type { AssessmentBlock, BlockStatus, Lead, LeadEvent, LeadResult, LeadStage } from "../types";
 import { ASSESSMENT_BLOCKS } from "../types";
 import { BIZ_ENYERMY, BIZ_PRIME, BIZ_VOSSLER, ORG_SM, U_CAMILA, U_NICOLAS } from "./seed";
 
@@ -8,7 +8,7 @@ const U_JEFFERSON_LEAD = "0c000000-0000-4000-8000-000000000040";
 const U_LAURA_LEAD = "0c000000-0000-4000-8000-000000000091";
 export const uuid = (prefix: string, n: number) => `${prefix}-0000-4000-8000-${String(n).padStart(12, "0")}`;
 export const at = (date: string, time = "15:00:00") => `${date}T${time}Z`;
-export const blocks = (s: string): Lead["result"]["blocks"] => {
+export const blocks = (s: string): LeadResult["blocks"] => {
   const map: Record<string, BlockStatus> = { s: "strong", m: "medium", w: "weak", u: "unknown" };
   return ASSESSMENT_BLOCKS.map((key: AssessmentBlock, i) => ({ key, status: map[s[i]!]! }));
 };

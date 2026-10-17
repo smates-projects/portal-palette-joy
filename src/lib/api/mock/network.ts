@@ -2,6 +2,7 @@
 // franchisee). Like the rest of the mock layer it filters by the current user to simulate API authorization.
 import { TODAY, nowIso } from "@/config/app";
 import { PROFIT_SPLIT } from "@/config/economics";
+import { isActiveFirm, isActiveUser } from "@/lib/accounts/permissions";
 import { bishopShareAt, estimatePaybackMonth } from "@/lib/bishop/split";
 import { computeReportAmounts, nextMonth, previousMonth } from "@/lib/franchise/fees";
 import { buildPipelineCounters } from "@/lib/leads/pipeline";
@@ -222,7 +223,7 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       ready_to_franchise: programs.filter((b) => franchisabilityOf(b).is_ready).length,
       franchisors: biz.length - programs.length,
       franchises: db.franchises.filter((f) => ids.has(f.franchisor_business_id)).length,
-      partner_firms: db.orgs.filter((o) => o.kind === "partner_firm" && o.parent_id === office.id).length,
+      partner_firms: db.orgs.filter((o) => o.kind === "partner_firm" && o.parent_id === office.id && isActiveFirm(o)).length,
       open_leads: db.leads.filter((l) => l.office_id === office.id && l.stage !== "in_program" && l.stage !== "discarded").length,
       open_tasks: tasks.filter((t) => t.status !== "accepted").length,
       overdue_tasks: tasks.filter((t) => t.is_overdue).length,
@@ -295,8 +296,8 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       return delay({
         ...officeSummary(office, all),
         businesses,
-        firms: db.orgs.filter((o) => o.kind === "partner_firm" && o.parent_id === id),
-        team: db.users.filter((x) => x.role === "sm_team" && x.organization_id === id),
+        firms: db.orgs.filter((o) => o.kind === "partner_firm" && o.parent_id === id && isActiveFirm(o)),
+        team: db.users.filter((x) => x.role === "sm_team" && x.organization_id === id && isActiveUser(x)),
         checklist: office.status === "opening" ? computeOfficeChecklist(office, db.users, db.orgs, db.leads) : null,
       });
     },
@@ -337,14 +338,14 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
           };
         });
         const firmNodes = db.orgs
-          .filter((x) => x.kind === "partner_firm" && x.parent_id === o.id)
+          .filter((x) => x.kind === "partner_firm" && x.parent_id === o.id && isActiveFirm(x))
           .map((x): StructureNode => {
             const overdue = tasks.filter((t) => t.organization_id === x.id && t.is_overdue).length;
             return {
               id: x.id, kind: "firm", name: x.name, health: overdue > 0 ? "red" : "green", franchisability: null,
               detail: {
                 kind: "firm", area: x.area, overdue_tasks: overdue, specialty: x.specialty,
-                contact_name: db.users.find((u) => u.role === "partner_firm" && u.organization_id === x.id)?.full_name ?? null,
+                contact_name: x.contact_name ?? db.users.find((u) => u.role === "partner_firm" && u.organization_id === x.id && isActiveUser(u))?.full_name ?? null,
               },
               children: [],
             };
@@ -372,7 +373,7 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
           businesses: db.businesses.filter((b) => b.status === "in_program").length,
           franchisors: db.businesses.filter((b) => b.status === "franchisor").length,
           franchises: db.franchises.length,
-          firms: db.orgs.filter((o) => o.kind === "partner_firm").length,
+          firms: db.orgs.filter((o) => o.kind === "partner_firm" && isActiveFirm(o)).length,
         },
       });
     },
@@ -425,9 +426,10 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(input.planned_opening_date) || input.planned_opening_date < TODAY) throw new Error("invalid_date");
       const officeId = newId();
       const managerId = newId();
+      // The manager is the admin of the new office: invites its team and adds its partner firms.
       db.users.push({
         id: managerId, full_name: input.manager_name.trim(), email: input.manager_email.trim(), role: "sm_team", organization_id: officeId, business_id: null,
-        title: "Responsable de la oficina", google_calendar_email: null, booking_url: null,
+        title: "Responsable de la oficina", google_calendar_email: null, booking_url: null, is_admin: true, status: "invited", invited_at: nowIso(),
       });
       const office: Organization = {
         id: officeId, name, kind: "sm", area: null, specialty: null, city, email: null, phone: null, default_booking_url: null,
@@ -765,13 +767,17 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       const b = pickBusiness(businessId);
       return delay(db.teamMembers.filter((m) => m.owner_id === b.id));
     },
+    // Replaced by ./accounts (the member gets an account behind it); kept so this module stays complete on its own.
     inviteMember: async (input) => {
       const b = ownOwnerBusiness();
       if (!input.name.trim() || !input.role.trim()) throw new Error("name_required");
       if (!validEmail(input.email)) throw new Error("invalid_email");
-      const m: TeamMember = { id: newId(), owner_id: b.id, name: input.name.trim(), role: input.role.trim(), email: input.email.trim(), state: "invited" };
+      const m: TeamMember = { id: newId(), owner_id: b.id, name: input.name.trim(), role: input.role.trim(), email: input.email.trim(), state: "invited", user_id: null };
       db.teamMembers.push(m);
       return delay(m);
+    },
+    makeOwner: async () => {
+      throw new Error("not_implemented");
     },
   };
 

@@ -47,9 +47,20 @@ import type {
   LeadStage,
   LeadWithComputed,
   AppNotification,
+  AccountEvent,
+  BrandEvent,
+  BrandPalette,
+  BrandProposal,
   Business,
+  BusinessBrand,
   BusinessEvent,
+  CreateFirmInput,
+  FirmEvent,
+  FirmPatch,
   Franchisability,
+  InviteUserInput,
+  ManualLeadInput,
+  OpenTasksPolicy,
   NotificationChannel,
   NotificationKind,
   NotificationPreference,
@@ -75,8 +86,27 @@ export interface SessionRepository {
 }
 
 export interface OrganizationsRepository {
+  /** Inactive (replaced) firms are included: screens decide whether to show them. */
   list(): Promise<Organization[]>;
   get(id: Uuid): Promise<Organization | null>;
+  /**
+   * Office admin (or SM Global): adds a partner firm to the office with its first person (partner_firm, is_admin,
+   * invited). One active firm per area: with one already there, use replaceFirm. The first person's invitation is
+   * simulated like any other.
+   */
+  createFirm(input: CreateFirmInput): Promise<Organization>;
+  /** Office admin (or SM Global): contact data of a firm of the office. */
+  updateFirm(id: Uuid, patch: FirmPatch): Promise<Organization>;
+  /**
+   * Office admin (or SM Global): the new firm takes the area; the old one becomes inactive with its history (never
+   * deleted). Open tasks of the old firm either move to the new firm's first person ("transfer") or finish with the
+   * old firm ("keep"). Logged on both firms and on every moved task.
+   */
+  replaceFirm(id: Uuid, input: CreateFirmInput, openTasks: OpenTasksPolicy): Promise<Organization>;
+  /** Office admin (or SM Global): retires a firm with a reason; the area shows "Sin firma". Open tasks finish with it. */
+  deactivateFirm(id: Uuid, reason: string): Promise<Organization>;
+  /** History of one firm or of every firm in scope, newest first. */
+  listFirmEvents(organizationId?: Uuid): Promise<FirmEvent[]>;
 }
 
 export interface BusinessesRepository {
@@ -89,7 +119,22 @@ export interface BusinessesRepository {
 }
 
 export interface UsersRepository {
-  list(): Promise<User[]>;
+  /** People in the current user's scope. Deactivated people are left out unless include_inactive. */
+  list(opts?: { include_inactive?: boolean }): Promise<User[]>;
+  /**
+   * Creates the account as "invited" (the mail is simulated). Who may invite whom lives in
+   * src/lib/accounts/permissions.ts (canInvite) and is enforced here: "forbidden" otherwise.
+   */
+  invite(input: InviteUserInput): Promise<User>;
+  /** Demo only: the person accepts the invitation and becomes active. Anyone who manages the account may trigger it. */
+  simulateAcceptance(userId: Uuid): Promise<User>;
+  /** Deactivates with a required reason. Nobody is deleted; the history keeps it. Never yourself. */
+  deactivate(userId: Uuid, reason: string): Promise<User>;
+  reactivate(userId: Uuid): Promise<User>;
+  /** SM Global only: grants or removes the admin flag inside the person's organization. */
+  setAdmin(userId: Uuid, isAdmin: boolean): Promise<User>;
+  /** Account history of one person (or of everyone in scope), newest first. */
+  listAccountEvents(userId?: Uuid): Promise<AccountEvent[]>;
   /** Connect (with an account email) or disconnect (null) the current user's Google Calendar. */
   setGoogleCalendar(email: string | null): Promise<User>;
   /** Current user's Google Calendar events; empty when not connected. */
@@ -152,6 +197,13 @@ export interface LeadsRepository {
   releaseOpportunity(id: Uuid, reason: string): Promise<LeadWithComputed>;
   /** accepted with a Bishop: contract signed by owner, SM and Bishop, each from his own portal. */
   sendTripartite(id: Uuid): Promise<Contract>;
+  /**
+   * SM team of the office: a business that did not come through the assessment (referral, event). Enters Evaluado
+   * with source "manual", no result and the current user as consultant.
+   */
+  createManual(input: ManualLeadInput): Promise<LeadWithComputed>;
+  /** SM team: sends the assessment link to a manual lead (simulated); it shows "Assessment pendiente" until the result arrives. */
+  sendAssessment(id: Uuid): Promise<LeadWithComputed>;
 }
 
 export interface TaskDetail {
@@ -166,6 +218,8 @@ export interface TaskDetail {
 export interface SubmitVersionInput {
   note: string;
   file_names: string[];
+  /** B5-13 only: the brand read from the manual. Applied to the business when the owner approves this version. */
+  brand?: BrandProposal | null | undefined;
 }
 
 export interface TasksRepository {
@@ -299,8 +353,27 @@ export interface BusinessProfileRepository {
   /** Owner only, own business. */
   update(patch: BusinessProfilePatch): Promise<BusinessProfile>;
   listTeam(businessId?: Uuid): Promise<TeamMember[]>;
-  /** Owner only, own business: adds a person as invited. */
+  /** Owner only, own business: adds a person as invited, with an account (business_owner, not admin) behind it. */
   inviteMember(input: InviteMemberInput): Promise<TeamMember>;
+  /** Owner only: hands the business over to an active member with an account. The previous owner stays in the team. */
+  makeOwner(memberId: Uuid): Promise<TeamMember>;
+}
+
+/**
+ * Brand of a business (white label). Read by the owner and the team (own business), the franchisor and its
+ * franchises (inherited), SM team (office) and SM Global. Firms and Bishops get "forbidden": they keep the SM brand.
+ */
+export interface BrandRepository {
+  /** Null = Strategic Mates brand. Owner: own business. Franchisee: its franchisor's. SM: any business in scope. */
+  get(businessId?: Uuid): Promise<BusinessBrand | null>;
+  /** The brand the current user's portal shows: null for SM, firms, Bishops and businesses without a brand. */
+  getMine(): Promise<BusinessBrand | null>;
+  /** SM team of the office (or SM Global): loads the brand by hand when the business already had one. */
+  set(businessId: Uuid, palette: BrandPalette): Promise<BusinessBrand>;
+  /** "Volver a la marca de Strategic Mates": the owner (own business) or SM. Franchises cannot. */
+  reset(businessId: Uuid): Promise<void>;
+  /** Newest first. Same scope as get. */
+  listEvents(businessId: Uuid): Promise<BrandEvent[]>;
 }
 
 /** Business Bishop: sees only his own portfolio, opportunities and agreements. */
@@ -386,4 +459,5 @@ export interface ApiClient {
   leads: LeadsRepository;
   funds: FundsRepository;
   distribution: DistributionRepository;
+  brand: BrandRepository;
 }

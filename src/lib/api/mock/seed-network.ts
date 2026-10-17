@@ -35,6 +35,10 @@ import {
   BIZ_PRIME,
   BIZ_VOSSLER,
   ORG_GLOBAL,
+  U_ANA_VOSSLER,
+  U_CARLA,
+  U_DANIEL,
+  U_ENYERMY,
   U_RODRIGO_BIMBO,
   businesses as miamiBusinesses,
 } from "./seed";
@@ -98,26 +102,27 @@ export const organizations: Organization[] = [
   { id: TAMPA_FIRM_IDS.B6, name: "Estudio Legal Ybor", kind: "partner_firm", area: "B6", specialty: "Contratos, licencias y propiedad intelectual para franquicias", city: "Tampa, FL", email: "contacto@estudioybor.legal", phone: "+1 813 555 0406", parent_id: ORG_TAMPA },
 ];
 
-const person = (id: string, name: string, email: string, role: User["role"], organization_id: string | null, business_id: string | null, title: string | null): User => ({
-  id, full_name: name, email, role, organization_id, business_id, title, google_calendar_email: null, booking_url: null,
+const person = (id: string, name: string, email: string, role: User["role"], organization_id: string | null, business_id: string | null, title: string | null, is_admin = false): User => ({
+  id, full_name: name, email, role, organization_id, business_id, title, google_calendar_email: null, booking_url: null, is_admin, status: "active",
 });
 
+// Office managers and the partner of each firm are admins of their organization; owners are admins of their business.
 export const users: User[] = [
-  person(U_VALENTINA, "Valentina Ríos", "valentina@strategicmates.com", "sm_team", ORG_ORLANDO, null, "Consultora y directora de la oficina"),
-  person(U_OSCAR, "Óscar Medina", "oscar@sunshineroofing.com", "business_owner", null, BIZ_SUNSHINE, null),
-  person(U_MARTA, "Marta Quintero", "marta@casalimpiaorlando.com", "business_owner", null, BIZ_CASA_LIMPIA, null),
-  person(U_ORL_ESTRATEGIA, "Paola Giraldo", "paola@meridianestrategia.com", "partner_firm", ORG_ORL_ESTRATEGIA, null, "Socia"),
-  person(U_ORL_OPERACIONES, "Iván Cortés", "ivan@procesopro.co", "partner_firm", ORG_ORL_OPERACIONES, null, "Consultor de operaciones"),
-  person(U_ORL_FINANZAS, "Beatriz Núñez", "beatriz@contadoresdelsol.com", "partner_firm", ORG_ORL_FINANZAS, null, "Contadora socia"),
-  person(U_ORL_TECNOLOGIA, "Esteban Cardona", "esteban@nubelatina.io", "partner_firm", ORG_ORL_TECNOLOGIA, null, "Líder de implementación"),
-  person(U_ORL_MARKETING, "Diana Prieto", "diana@faromarketing.com", "partner_firm", ORG_ORL_MARKETING, null, "Directora de cuentas"),
-  person(U_ORL_LEGAL, "Héctor Ramos", "hector@bufeteramos.legal", "partner_firm", ORG_ORL_LEGAL, null, "Abogado socio"),
+  person(U_VALENTINA, "Valentina Ríos", "valentina@strategicmates.com", "sm_team", ORG_ORLANDO, null, "Consultora y directora de la oficina", true),
+  person(U_OSCAR, "Óscar Medina", "oscar@sunshineroofing.com", "business_owner", null, BIZ_SUNSHINE, null, true),
+  person(U_MARTA, "Marta Quintero", "marta@casalimpiaorlando.com", "business_owner", null, BIZ_CASA_LIMPIA, null, true),
+  person(U_ORL_ESTRATEGIA, "Paola Giraldo", "paola@meridianestrategia.com", "partner_firm", ORG_ORL_ESTRATEGIA, null, "Socia", true),
+  person(U_ORL_OPERACIONES, "Iván Cortés", "ivan@procesopro.co", "partner_firm", ORG_ORL_OPERACIONES, null, "Consultor de operaciones", true),
+  person(U_ORL_FINANZAS, "Beatriz Núñez", "beatriz@contadoresdelsol.com", "partner_firm", ORG_ORL_FINANZAS, null, "Contadora socia", true),
+  person(U_ORL_TECNOLOGIA, "Esteban Cardona", "esteban@nubelatina.io", "partner_firm", ORG_ORL_TECNOLOGIA, null, "Líder de implementación", true),
+  person(U_ORL_MARKETING, "Diana Prieto", "diana@faromarketing.com", "partner_firm", ORG_ORL_MARKETING, null, "Directora de cuentas", true),
+  person(U_ORL_LEGAL, "Héctor Ramos", "hector@bufeteramos.legal", "partner_firm", ORG_ORL_LEGAL, null, "Abogado socio", true),
   person(U_JEFFERSON, "Jefferson Paula", "jefferson@paulainvestments.com", "bishop", null, null, "Business Bishop"),
   person(U_LAURA, "Laura Ortega", "laura@ortegacapital.com", "bishop", null, null, "Business Bishop"),
   person(U_DIEGO, "Diego Rivas", "diego@rivasholdings.com", "bishop", null, null, "Business Bishop"),
-  person(U_LUISA, "Luisa Paredes", "luisa@bimbotacos.com", "franchisee", FRANCHISE_ORLANDO_SUR, null, "Dueña de la franquicia"),
-  person(U_MARCO, "Marco Ibáñez", "marco@bimbotacos.com", "franchisee", FRANCHISE_TAMPA, null, "Dueño de la franquicia"),
-  person(U_TAMPA_MANAGER, "Natalia Escobar", "natalia@strategicmates.com", "sm_team", ORG_TAMPA, null, "Consultora y directora de la oficina"),
+  person(U_LUISA, "Luisa Paredes", "luisa@bimbotacos.com", "franchisee", FRANCHISE_ORLANDO_SUR, null, "Dueña de la franquicia", true),
+  person(U_MARCO, "Marco Ibáñez", "marco@bimbotacos.com", "franchisee", FRANCHISE_TAMPA, null, "Dueño de la franquicia", true),
+  person(U_TAMPA_MANAGER, "Natalia Escobar", "natalia@strategicmates.com", "sm_team", ORG_TAMPA, null, "Consultora y directora de la oficina", true),
 ];
 
 export const businesses: Business[] = [
@@ -423,23 +428,24 @@ export const profiles: BusinessProfile[] = [
   { business_id: BIZ_CASA_LIMPIA, legal_name: "Casa Limpia Orlando LLC", industry: "Limpieza de casas y oficinas", address: "3100 E Colonial Dr", city: "Orlando", state: "FL", phone: "+1 407 555 0232", email: "marta@casalimpiaorlando.com", website: null, years_operating: 8, employees: 24 },
 ];
 
-const member = (n: number, owner_id: string, name: string, role: string, email: string | null, state: TeamMember["state"]): TeamMember => ({ id: uuid("8a000000", n), owner_id, name, role, email, state });
+const member = (n: number, owner_id: string, name: string, role: string, email: string | null, state: TeamMember["state"], user_id: string | null = null): TeamMember => ({ id: uuid("8a000000", n), owner_id, name, role, email, state, user_id });
 
+/** Members with a user_id have an account in the portal (the owner and the people invited through it). */
 export const teamMembers: TeamMember[] = [
-  member(1, BIZ_VOSSLER, "Carla Méndez", "Dueña", "carla@vossler.com", "active"),
-  member(2, BIZ_VOSSLER, "Ana Vossler", "Administración", "ana@vosslerbuild.com", "active"),
+  member(1, BIZ_VOSSLER, "Carla Méndez", "Dueña", "carla@vossler.com", "active", U_CARLA),
+  member(2, BIZ_VOSSLER, "Ana Vossler", "Administración", "ana@vosslerbuild.com", "active", U_ANA_VOSSLER),
   member(3, BIZ_VOSSLER, "Luis Prado", "Jefe de obra", "luis@vosslerbuild.com", "invited"),
-  member(4, BIZ_PRIME, "Daniel Ortiz", "Dueño", "daniel@prime10solutions.com", "active"),
-  member(5, BIZ_ENYERMY, "Enyermy Rivas", "Dueña", "enyermy@enyermyhair.com", "active"),
-  member(6, BIZ_BIMBO, "Rodrigo Bimbo", "Dueño", "rodrigo@bimbotacos.com", "active"),
+  member(4, BIZ_PRIME, "Daniel Ortiz", "Dueño", "daniel@prime10solutions.com", "active", U_DANIEL),
+  member(5, BIZ_ENYERMY, "Enyermy Rivas", "Dueña", "enyermy@enyermyhair.com", "active", U_ENYERMY),
+  member(6, BIZ_BIMBO, "Rodrigo Bimbo", "Dueño", "rodrigo@bimbotacos.com", "active", U_RODRIGO_BIMBO),
   member(7, BIZ_BIMBO, "Carla Bimbo", "Operaciones y franquicias", "carla@bimbotacos.com", "active"),
   member(8, BIZ_BIMBO, "Esteban Ruiz", "Encargado del local de Miami", "esteban@bimbotacos.com", "active"),
-  member(9, BIZ_SUNSHINE, "Óscar Medina", "Dueño", "oscar@sunshineroofing.com", "active"),
-  member(10, BIZ_CASA_LIMPIA, "Marta Quintero", "Dueña", "marta@casalimpiaorlando.com", "active"),
-  member(11, FRANCHISE_ORLANDO_SUR, "Luisa Paredes", "Dueña", "luisa@bimbotacos.com", "active"),
+  member(9, BIZ_SUNSHINE, "Óscar Medina", "Dueño", "oscar@sunshineroofing.com", "active", U_OSCAR),
+  member(10, BIZ_CASA_LIMPIA, "Marta Quintero", "Dueña", "marta@casalimpiaorlando.com", "active", U_MARTA),
+  member(11, FRANCHISE_ORLANDO_SUR, "Luisa Paredes", "Dueña", "luisa@bimbotacos.com", "active", U_LUISA),
   member(12, FRANCHISE_ORLANDO_SUR, "Tomás Reyes", "Encargado de turno", "tomas@bimbotacos.com", "active"),
   member(13, FRANCHISE_ORLANDO_SUR, "Equipo de cocina", "Operación", null, "invited"),
-  member(14, FRANCHISE_TAMPA, "Marco Ibáñez", "Dueño", "marco@bimbotacos.com", "active"),
+  member(14, FRANCHISE_TAMPA, "Marco Ibáñez", "Dueño", "marco@bimbotacos.com", "active", U_MARCO),
 ];
 
 // ---------- Business Bishop ----------

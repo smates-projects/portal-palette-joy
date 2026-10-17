@@ -1,5 +1,8 @@
 import type { ExternalCalendarEvent, NotificationKind, TaskChange,
+  BrandEvent,
+  BrandProposal,
   Business,
+  BusinessBrand,
   Meeting,
   Organization,
   OwnerRequest,
@@ -34,6 +37,8 @@ export const U_ANDRES = uuid("0c000000", 32);
 export const U_CAMILA = uuid("0c000000", 33);
 /** SM Miami office admin (sample): gives "Aprobar documentación". */
 export const U_ANDREA = uuid("0c000000", 34);
+/** Vossler team member (not the owner): sees the Vossler brand, never approves. */
+export const U_ANA_VOSSLER = uuid("0c000000", 35);
 export const U_RODRIGO_BIMBO = uuid("0c000000", 43);
 
 // Organizations
@@ -63,22 +68,24 @@ export const BIZ_PRIME = uuid("0b000000", 2);
 export const BIZ_ENYERMY = uuid("0b000000", 3);
 
 
+// is_admin: the partner of each firm manages its people; the owner of each business manages its team.
 export const users: User[] = [
-  { id: U_JULIAN, full_name: "Julián Ferreyra", email: "julian@estudioperez.legal", role: "partner_firm", organization_id: ORG_PEREZ, business_id: null, title: "Abogado asociado", google_calendar_email: null, booking_url: null },
-  { id: U_SOFIA, full_name: "Sofía Lagos", email: "sofia@agenciaxyz.com", role: "partner_firm", organization_id: ORG_XYZ, business_id: null, title: "Especialista SEO", google_calendar_email: null, booking_url: null },
-  { id: U_LUCIA, full_name: "Lucía Pérez", email: "lucia@estudioperez.legal", role: "partner_firm", organization_id: ORG_PEREZ, business_id: null, title: "Socia", google_calendar_email: "lucia.perez@gmail.com", booking_url: null },
-  { id: U_TOMAS, full_name: "Tomás Herrera", email: "tomas@agenciaxyz.com", role: "partner_firm", organization_id: ORG_XYZ, business_id: null, title: "Director de cuentas", google_calendar_email: null, booking_url: null },
-  { id: U_CARLA, full_name: "Carla Méndez", email: "carla@vossler.com", role: "business_owner", organization_id: null, business_id: BIZ_VOSSLER, title: null, google_calendar_email: null, booking_url: null },
-  { id: U_DANIEL, full_name: "Daniel Ortiz", email: "daniel@prime10solutions.com", role: "business_owner", organization_id: null, business_id: BIZ_PRIME, title: null, google_calendar_email: null, booking_url: null },
-  { id: U_ENYERMY, full_name: "Enyermy Rivas", email: "enyermy@enyermyhair.com", role: "business_owner", organization_id: null, business_id: BIZ_ENYERMY, title: null, google_calendar_email: null, booking_url: null },
-  { id: U_RODRIGO, full_name: "Rodrigo Salas", email: "rodrigo@deltacontadores.com", role: "partner_firm", organization_id: ORG_DELTA, business_id: null, title: "Contador socio", google_calendar_email: null, booking_url: null },
-  { id: U_MARIANA, full_name: "Mariana Ruiz", email: "mariana@tecnopyme.io", role: "partner_firm", organization_id: ORG_TECNO, business_id: null, title: "Líder de implementación", google_calendar_email: null, booking_url: null },
-  { id: U_ANDRES, full_name: "Andrés Molina", email: "andres@opslab.co", role: "partner_firm", organization_id: ORG_OPSLAB, business_id: null, title: "Consultor de operaciones", google_calendar_email: null, booking_url: null },
-  { id: U_MARYLIN, full_name: "Marilyn Boraei", email: "marilyn@strategicmates.com", role: "sm_global", organization_id: ORG_GLOBAL, business_id: null, title: "Directora", google_calendar_email: null, booking_url: null, is_admin: true },
-  { id: U_ANDREA, full_name: "Andrea Salazar", email: "andrea@strategicmates.com", role: "sm_team", organization_id: ORG_SM, business_id: null, title: "Administradora de la oficina", google_calendar_email: null, booking_url: null, is_admin: true },
-  { id: U_CAMILA, full_name: "Camila Soto", email: "camila@strategicmates.com", role: "sm_team", organization_id: ORG_SM, business_id: null, title: "Consultora", google_calendar_email: null, booking_url: null },
-  { id: U_RODRIGO_BIMBO, full_name: "Rodrigo Bimbo", email: "rodrigo@bimbotacos.com", role: "business_owner", organization_id: null, business_id: BIZ_BIMBO, title: "Fundador de Bimbo Tacos", google_calendar_email: null, booking_url: null },
-  { id: U_NICOLAS, full_name: "Nicolás García", email: "nicolas@strategicmates.com", role: "sm_team", organization_id: ORG_SM, business_id: null, title: "Consultor", google_calendar_email: null, booking_url: null },
+  { id: U_JULIAN, full_name: "Julián Ferreyra", email: "julian@estudioperez.legal", role: "partner_firm", organization_id: ORG_PEREZ, business_id: null, title: "Abogado asociado", google_calendar_email: null, booking_url: null, status: "active" },
+  { id: U_SOFIA, full_name: "Sofía Lagos", email: "sofia@agenciaxyz.com", role: "partner_firm", organization_id: ORG_XYZ, business_id: null, title: "Especialista SEO", google_calendar_email: null, booking_url: null, status: "active" },
+  { id: U_LUCIA, full_name: "Lucía Pérez", email: "lucia@estudioperez.legal", role: "partner_firm", organization_id: ORG_PEREZ, business_id: null, title: "Socia", google_calendar_email: "lucia.perez@gmail.com", booking_url: null, is_admin: true, status: "active" },
+  { id: U_TOMAS, full_name: "Tomás Herrera", email: "tomas@agenciaxyz.com", role: "partner_firm", organization_id: ORG_XYZ, business_id: null, title: "Director de cuentas", google_calendar_email: null, booking_url: null, is_admin: true, status: "active" },
+  { id: U_CARLA, full_name: "Carla Méndez", email: "carla@vossler.com", role: "business_owner", organization_id: null, business_id: BIZ_VOSSLER, title: null, google_calendar_email: null, booking_url: null, is_admin: true, status: "active" },
+  { id: U_ANA_VOSSLER, full_name: "Ana Vossler", email: "ana@vosslerbuild.com", role: "business_owner", organization_id: null, business_id: BIZ_VOSSLER, title: "Administración", google_calendar_email: null, booking_url: null, status: "active" },
+  { id: U_DANIEL, full_name: "Daniel Ortiz", email: "daniel@prime10solutions.com", role: "business_owner", organization_id: null, business_id: BIZ_PRIME, title: null, google_calendar_email: null, booking_url: null, is_admin: true, status: "active" },
+  { id: U_ENYERMY, full_name: "Enyermy Rivas", email: "enyermy@enyermyhair.com", role: "business_owner", organization_id: null, business_id: BIZ_ENYERMY, title: null, google_calendar_email: null, booking_url: null, is_admin: true, status: "active" },
+  { id: U_RODRIGO, full_name: "Rodrigo Salas", email: "rodrigo@deltacontadores.com", role: "partner_firm", organization_id: ORG_DELTA, business_id: null, title: "Contador socio", google_calendar_email: null, booking_url: null, is_admin: true, status: "active" },
+  { id: U_MARIANA, full_name: "Mariana Ruiz", email: "mariana@tecnopyme.io", role: "partner_firm", organization_id: ORG_TECNO, business_id: null, title: "Líder de implementación", google_calendar_email: null, booking_url: null, is_admin: true, status: "active" },
+  { id: U_ANDRES, full_name: "Andrés Molina", email: "andres@opslab.co", role: "partner_firm", organization_id: ORG_OPSLAB, business_id: null, title: "Consultor de operaciones", google_calendar_email: null, booking_url: null, is_admin: true, status: "active" },
+  { id: U_MARYLIN, full_name: "Marilyn Boraei", email: "marilyn@strategicmates.com", role: "sm_global", organization_id: ORG_GLOBAL, business_id: null, title: "Directora", google_calendar_email: null, booking_url: null, is_admin: true, status: "active" },
+  { id: U_ANDREA, full_name: "Andrea Salazar", email: "andrea@strategicmates.com", role: "sm_team", organization_id: ORG_SM, business_id: null, title: "Administradora de la oficina", google_calendar_email: null, booking_url: null, is_admin: true, status: "active" },
+  { id: U_CAMILA, full_name: "Camila Soto", email: "camila@strategicmates.com", role: "sm_team", organization_id: ORG_SM, business_id: null, title: "Consultora", google_calendar_email: null, booking_url: null, status: "active" },
+  { id: U_RODRIGO_BIMBO, full_name: "Rodrigo Bimbo", email: "rodrigo@bimbotacos.com", role: "business_owner", organization_id: null, business_id: BIZ_BIMBO, title: "Fundador de Bimbo Tacos", google_calendar_email: null, booking_url: null, is_admin: true, status: "active" },
+  { id: U_NICOLAS, full_name: "Nicolás García", email: "nicolas@strategicmates.com", role: "sm_team", organization_id: ORG_SM, business_id: null, title: "Consultor", google_calendar_email: null, booking_url: null, status: "active" },
 ];
 
 export const businesses: Business[] = [
@@ -161,7 +168,8 @@ const plans: Record<string, Plan> = {
     "B5-15": { status: "changes_requested", start: "2026-09-08", due: "2026-10-17", version: 1 },
     "B5-06": { status: "in_progress", start: "2026-10-01", due: "2026-10-30" },
     "B5-14": { status: "pending", start: "2026-10-26", due: "2026-11-27" },
-    "B5-13": { status: "submitted", start: "2026-09-14", due: "2026-10-16", version: 1 },
+    // Approved with the brand manual: the Vossler brand was applied to its portal (see `brands`).
+    "B5-13": { status: "accepted", start: "2026-09-14", due: "2026-10-16", version: 1 },
     // Construction business that keeps materials: B3-02 and B4-03 apply. B3-15/B3-16 wait for the new entity; B4-05 waits for reliable data.
     "B3-01": { status: "accepted", start: "2026-08-10", due: "2026-09-11", version: 1 },
     "B3-02": { status: "submitted", start: "2026-09-01", due: "2026-10-16", version: 1 },
@@ -433,7 +441,21 @@ ownerRequests.push(
   { id: uuid("1a000000", 911), task_id: TASK_B402_VOSSLER, requested_by_user_id: U_MARIANA, question: "Exportación de clientes y trabajos de tu sistema actual (Excel o CSV).", due_date: "2026-10-15", answer: null, status: "open", created_at: "2026-10-10T13:30:00Z", resolved_at: null },
 );
 meetings.push({ id: uuid("1b000000", 910), task_id: TASK_B402_VOSSLER, proposed_by_user_id: U_MARIANA, topic: "Demo del CRM con tus etapas de venta", starts_at: "2026-10-16T18:00:00Z", duration_minutes: 45, status: "proposed" });
+// Vossler brand (white label): read from the manual delivered with B5-13 and applied when Carla approved it.
+export const VOSSLER_BRAND: BrandProposal = {
+  primary_color: "#1f4e3d", accent_color: "#d9a441", font_family: "Montserrat", logo_file_name: "Vossler_logo.png", manual_file_name: "Vossler_manual_de_marca.pdf",
+};
+const b513Version = versions.find((v) => v.task_id === TASK_B513_VOSSLER);
+if (b513Version) b513Version.brand = VOSSLER_BRAND;
+const B513_APPROVED_AT = events.find((e) => e.task_id === TASK_B513_VOSSLER && e.kind === "approved")?.created_at ?? "2026-10-10T11:20:00Z";
+export const brands: BusinessBrand[] = [
+  { business_id: BIZ_VOSSLER, primary_color: VOSSLER_BRAND.primary_color, accent_color: VOSSLER_BRAND.accent_color, font_family: VOSSLER_BRAND.font_family, logo_file_name: VOSSLER_BRAND.logo_file_name, source: "b5_13", version: 1, applied_at: B513_APPROVED_AT, applied_by_user_id: U_CARLA, manual_file_name: VOSSLER_BRAND.manual_file_name },
+];
+export const brandEvents: BrandEvent[] = [
+  { id: uuid("1a100000", 1), business_id: BIZ_VOSSLER, kind: "applied_from_b5_13", actor_user_id: U_CARLA, created_at: B513_APPROVED_AT, palette: { primary_color: VOSSLER_BRAND.primary_color, accent_color: VOSSLER_BRAND.accent_color, font_family: VOSSLER_BRAND.font_family, logo_file_name: VOSSLER_BRAND.logo_file_name } },
+];
 notifications.push(
+  { id: uuid("1f000000", 25), user_id: U_CARLA, kind: "brand_applied", task_id: TASK_B513_VOSSLER, actor_user_id: null, created_at: B513_APPROVED_AT, read: true },
   { id: uuid("1f000000", 20), user_id: U_CARLA, kind: "submitted_for_approval", task_id: TASK_B302_VOSSLER, actor_user_id: U_RODRIGO, created_at: "2026-10-13T20:10:00Z", read: false },
   { id: uuid("1f000000", 21), user_id: U_CARLA, kind: "meeting_proposed", task_id: TASK_B402_VOSSLER, actor_user_id: U_MARIANA, created_at: "2026-10-13T16:00:00Z", read: false },
   { id: uuid("1f000000", 22), user_id: U_CARLA, kind: "submitted_for_approval", task_id: TASK_B404_VOSSLER, actor_user_id: U_MARIANA, created_at: "2026-10-12T19:30:00Z", read: false },

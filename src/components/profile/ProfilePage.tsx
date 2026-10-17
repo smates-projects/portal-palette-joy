@@ -1,10 +1,16 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { NotificationPreferences } from "@/components/profile/NotificationPreferences";
 import { BookingUrlSection } from "@/components/profile/BookingUrlSection";
-import { CalendarDays, Mail, MapPin, Phone } from "lucide-react";
-import { useCurrentUser, useOrganizations, useSetGoogleCalendar, useUsers } from "@/lib/api/hooks";
+import { CalendarDays, Mail, MapPin, Phone, UserPlus } from "lucide-react";
+import { useCurrentUser, useOrganizations, useSetGoogleCalendar, useUsersWithInactive } from "@/lib/api/hooks";
+import type { User } from "@/lib/api/types";
+import { isActiveUser, isFirmAdmin } from "@/lib/accounts/permissions";
+import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AccountHistorySheet, AdminTag, primaryBtn, UserStatusBadge, userStatus } from "@/components/accounts/shared";
+import { DeactivatePersonDialog, InvitePersonDialog, PersonActions } from "@/components/accounts/AccountDialogs";
 
 const initials = (n: string) => n.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 
@@ -12,13 +18,18 @@ export function ProfilePage() {
   const { t } = useTranslation();
   const meQ = useCurrentUser();
   const orgsQ = useOrganizations();
-  const usersQ = useUsers();
+  const usersQ = useUsersWithInactive();
   const setCal = useSetGoogleCalendar();
+  const [inviting, setInviting] = useState(false);
+  const [deactivating, setDeactivating] = useState<User | null>(null);
+  const [history, setHistory] = useState<User | null>(null);
 
   const me = meQ.data;
   const org = orgsQ.data?.find((o) => o.id === me?.organization_id);
-  const team = (usersQ.data ?? []).filter((u) => u.organization_id && u.organization_id === me?.organization_id)
-    .sort((a, b) => Number(b.id === me?.id) - Number(a.id === me?.id));
+  // The firm admin manages the team ("Mi equipo"); everyone else only sees it.
+  const admin = !!me && isFirmAdmin(me);
+  const team = (usersQ.data ?? []).filter((u) => u.organization_id && u.organization_id === me?.organization_id && (admin || isActiveUser(u)))
+    .sort((a, b) => Number(b.id === me?.id) - Number(a.id === me?.id) || Number(!isActiveUser(a)) - Number(!isActiveUser(b)) || a.full_name.localeCompare(b.full_name));
   const loading = meQ.isLoading || orgsQ.isLoading || usersQ.isLoading;
 
   const connect = () => {
@@ -73,28 +84,40 @@ export function ProfilePage() {
             </dl>
           </section>
 
-          {/* Team */}
+          {/* Team ("Mi equipo": the firm admin invites and deactivates) */}
           <section>
-            <h2 className="mb-3 text-sm font-semibold">{t("profile.team_title")}</h2>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-semibold">{t(admin ? "profile.my_team_title" : "profile.team_title")}</h2>
+                {admin && <p className="mt-0.5 text-xs text-muted-foreground">{t("profile.my_team_hint")}</p>}
+              </div>
+              {admin && <button className={primaryBtn} onClick={() => setInviting(true)}><UserPlus className="h-4 w-4" />{t("accounts.invite.title")}</button>}
+            </div>
             {team.length === 0 ? (
-              <p className="rounded-md border border-dashed border-border bg-surface p-4 text-sm text-muted-foreground">{t("profile.team_empty")}</p>
+              <p className="rounded-md border border-dashed border-border bg-surface p-4 text-sm text-muted-foreground">{t(admin ? "profile.my_team_empty" : "profile.team_empty")}</p>
             ) : (
               <ul className="divide-y divide-border rounded-md border border-border bg-surface">
                 {team.map((u) => (
-                  <li key={u.id} className="flex items-center gap-3 px-5 py-3">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary font-display text-xs font-semibold text-primary-foreground">
+                  <li key={u.id} className={cn("flex flex-wrap items-center gap-3 px-5 py-3", !isActiveUser(u) && "text-muted-foreground")}>
+                    <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-display text-xs font-semibold", isActiveUser(u) ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
                       {initials(u.full_name)}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">
+                      <p className="flex flex-wrap items-center gap-2 text-sm font-medium">
                         {u.full_name}
-                        {u.id === me.id && <span className="ml-2 text-xs font-normal text-muted-foreground">{t("profile.you")}</span>}
+                        {u.is_admin && <AdminTag />}
+                        {u.id === me.id && <span className="text-xs font-normal text-muted-foreground">{t("profile.you")}</span>}
                       </p>
-                      <p className="truncate text-xs text-muted-foreground">{u.title} · {u.email}</p>
+                      <p className="truncate text-xs text-muted-foreground">{[u.title, u.email].filter(Boolean).join(" · ")}</p>
                     </div>
-                    <span className="hidden text-xs text-muted-foreground sm:inline">
-                      {u.google_calendar_email ? t("profile.cal_on_short") : t("profile.cal_off_short")}
-                    </span>
+                    <UserStatusBadge status={userStatus(u)} />
+                    {admin ? (
+                      <PersonActions user={u} orgs={orgsQ.data ?? []} onDeactivate={setDeactivating} onHistory={setHistory} />
+                    ) : (
+                      <span className="hidden text-xs text-muted-foreground sm:inline">
+                        {u.google_calendar_email ? t("profile.cal_on_short") : t("profile.cal_off_short")}
+                      </span>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -138,6 +161,9 @@ export function ProfilePage() {
           <NotificationPreferences />
         </div>
       )}
+      {admin && me && <InvitePersonDialog open={inviting} onOpenChange={setInviting} fixedRole="partner_firm" fixedOrganizationId={me.organization_id ?? undefined} />}
+      <DeactivatePersonDialog user={deactivating} onClose={() => setDeactivating(null)} />
+      <AccountHistorySheet user={history} onClose={() => setHistory(null)} />
     </div>
   );
 }

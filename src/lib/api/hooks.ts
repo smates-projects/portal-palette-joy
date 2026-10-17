@@ -2,13 +2,19 @@ import { keepPreviousData, useMutation, useQueries, useQuery, useQueryClient } f
 import { api } from "./index";
 import type { SubmitVersionInput } from "./repositories";
 import type {
+  BrandPalette,
   BusinessProfilePatch,
   CatalogItemInput,
+  CreateFirmInput,
   CreateOfficeInput,
   DistributionLineInput,
+  FirmPatch,
   FundPaymentInput,
+  InviteUserInput,
+  ManualLeadInput,
   MarkPaidInput,
   InviteMemberInput,
+  OpenTasksPolicy,
   PlatformRules,
   PublishManualInput,
   SubmitReportInput,
@@ -55,7 +61,9 @@ export function useIsFranchisor(): boolean {
   const businesses = useBusinesses().data;
   return me?.role === "business_owner" && businesses?.find((b) => b.id === me.business_id)?.status === "franchisor";
 }
-export const useUsers = () => useQuery({ queryKey: queryKeys.users, queryFn: api.users.list });
+export const useUsers = () => useQuery({ queryKey: queryKeys.users, queryFn: () => api.users.list() });
+/** Everyone in scope, deactivated people included (Personas, Equipo, Mi equipo). */
+export const useUsersWithInactive = () => useQuery({ queryKey: [...queryKeys.users, "with-inactive"], queryFn: () => api.users.list({ include_inactive: true }) });
 export const useTaskDetail = (id: string) =>
   useQuery({ queryKey: queryKeys.task(id), queryFn: () => api.tasks.get(id) });
 
@@ -78,10 +86,13 @@ export function useSetViewAs() {
   });
 }
 
-/** Task mutations refresh both the list and every detail (status, blocked flags). */
+/** Task mutations refresh both the list and every detail (status, blocked flags). An approval may also apply the brand. */
 function useTaskMutation<V, R>(fn: (vars: V) => Promise<R>) {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: fn, onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: queryKeys.tasks }), qc.invalidateQueries({ queryKey: ["notifications"] })]) });
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: queryKeys.tasks }), qc.invalidateQueries({ queryKey: ["notifications"] }), qc.invalidateQueries({ queryKey: ["brand"] })]),
+  });
 }
 
 export const useStartTask = () => useTaskMutation((id: string) => api.tasks.start(id));
@@ -141,6 +152,10 @@ export const useMoveLead = () =>
   useLeadMutation((v: { id: string; to: "evaluated" | "meeting" | "documents" | "accepted" }) => api.leads.move(v.id, v.to));
 export const useDiscardLead = () => useLeadMutation((v: { id: string; reason: string }) => api.leads.discard(v.id, v.reason));
 export const useAddLeadNote = () => useLeadMutation((v: { id: string; body: string }) => api.leads.addNote(v.id, v.body));
+/** "Agregar negocio": a lead added by hand, in Evaluado with source "manual" and no result. */
+export const useCreateManualLead = () => useLeadMutation((input: ManualLeadInput) => api.leads.createManual(input));
+/** "Enviar el assessment" to a manual lead: it shows "Assessment pendiente". */
+export const useSendAssessment = () => useLeadMutation((id: string) => api.leads.sendAssessment(id));
 /**
  * "Confirmar inicio del programa": tripartite signed and funds complete. Moves the lead and the business to
  * in_program and generates its tasks: refresh everything.
@@ -223,6 +238,40 @@ export function useSetBookingUrl() {
     onSuccess: () => qc.invalidateQueries(),
   });
 }
+
+// ---------- Accounts and partner firms ----------
+/** People, firms and tasks change together (a replaced firm moves tasks; a new person changes who can be assigned). */
+const ACCOUNT_ROOTS = ["users", "organizations", "tasks", "network", "business-profile", "session"];
+/** AccountEvent[] of one person (or everyone in scope), newest first. */
+export const useAccountEvents = (userId?: string) =>
+  useQuery({ queryKey: [...queryKeys.users, "events", userId ?? "all"], queryFn: () => api.users.listAccountEvents(userId) });
+export const useInviteUser = () => useNetworkMutation((input: InviteUserInput) => api.users.invite(input), ACCOUNT_ROOTS);
+/** Demo: the invited person accepts and becomes active. */
+export const useSimulateAcceptance = () => useNetworkMutation((userId: string) => api.users.simulateAcceptance(userId), ACCOUNT_ROOTS);
+export const useDeactivateUser = () => useNetworkMutation((v: { userId: string; reason: string }) => api.users.deactivate(v.userId, v.reason), ACCOUNT_ROOTS);
+export const useReactivateUser = () => useNetworkMutation((userId: string) => api.users.reactivate(userId), ACCOUNT_ROOTS);
+export const useSetUserAdmin = () => useNetworkMutation((v: { userId: string; isAdmin: boolean }) => api.users.setAdmin(v.userId, v.isAdmin), ACCOUNT_ROOTS);
+/** FirmEvent[] of one firm (or every firm in scope), newest first. */
+export const useFirmEvents = (organizationId?: string) =>
+  useQuery({ queryKey: ["organizations", "firm-events", organizationId ?? "all"], queryFn: () => api.organizations.listFirmEvents(organizationId) });
+export const useCreateFirm = () => useNetworkMutation((input: CreateFirmInput) => api.organizations.createFirm(input), ACCOUNT_ROOTS);
+export const useUpdateFirm = () => useNetworkMutation((v: { id: string; patch: FirmPatch }) => api.organizations.updateFirm(v.id, v.patch), ACCOUNT_ROOTS);
+export const useReplaceFirm = () =>
+  useNetworkMutation((v: { id: string; input: CreateFirmInput; openTasks: OpenTasksPolicy }) => api.organizations.replaceFirm(v.id, v.input, v.openTasks), ACCOUNT_ROOTS);
+export const useDeactivateFirm = () => useNetworkMutation((v: { id: string; reason: string }) => api.organizations.deactivateFirm(v.id, v.reason), ACCOUNT_ROOTS);
+/** Owner hands the business over to a team member with an active account. */
+export const useMakeOwner = () => useNetworkMutation((memberId: string) => api.businessProfile.makeOwner(memberId), [...ACCOUNT_ROOTS, "businesses", "brand"]);
+
+// ---------- Business brand (white label) ----------
+/** BusinessBrand | null the current user's portal shows (null = Strategic Mates brand). Drives the shell colors. */
+export const useMyBrand = () => useQuery({ queryKey: ["brand", "mine"], queryFn: api.brand.getMine });
+/** BusinessBrand | null of a business (owner: own; SM: the one named). */
+export const useBusinessBrand = (businessId?: string, enabled = true) =>
+  useQuery({ queryKey: ["brand", "business", businessId ?? "own"], queryFn: () => api.brand.get(businessId), enabled });
+export const useBrandEvents = (businessId: string | undefined) =>
+  useQuery({ queryKey: ["brand", "events", businessId], queryFn: () => api.brand.listEvents(businessId!), enabled: !!businessId });
+export const useSetBrand = () => useNetworkMutation((v: { businessId: string; palette: BrandPalette }) => api.brand.set(v.businessId, v.palette), ["brand"]);
+export const useResetBrand = () => useNetworkMutation((businessId: string) => api.brand.reset(businessId), ["brand"]);
 
 export const useBusinessEvents = (businessId: string) =>
   useQuery({ queryKey: [...queryKeys.businesses, "events", businessId], queryFn: () => api.businesses.listEvents(businessId) });

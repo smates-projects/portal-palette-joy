@@ -82,7 +82,7 @@ export function createOpportunities(d: Deps) {
       business_name: mine ? l.business.name : null, owner_name: mine ? l.contact.name : null,
       investment: d.agreedAmount(l) ?? db.rules.program_amount ?? 0,
       share_year1_pct: Math.round(PROFIT_SPLIT.bishop_year1 * 100), share_stable_pct: Math.round(PROFIT_SPLIT.bishop_stabilized * 100),
-      score: l.result.score, band: l.result.band,
+      score: l.result?.score ?? 0, band: l.result?.band ?? "track",
       review: phase === "in_review" ? intake.summaryFor(l)?.clock ?? null : null,
       decision: v?.decision ?? "none", decided_at: v?.decided_at ?? null,
     };
@@ -98,7 +98,8 @@ export function createOpportunities(d: Deps) {
     return {
       ...base,
       declared,
-      result: l.result,
+      // A business added by hand may have no assessment yet: the Bishop sees an empty result.
+      result: l.result ?? { band: "track", score: 0, eligible_program: false, eligibility_gaps: [], blocks: [], strengths: [], priorities: [] },
       know_how_example: l.know_how_example,
       verified: docs.filter((x) => x.required).map((x) => ({ name: x.name, fact: x.state === "reviewed" ? x.verified_fact ?? null : null })),
       checklist: { nda_signed: s.nda_signed, mou_signed: s.mou_signed, required_total: s.required_total, uploaded: s.uploaded, accepted: s.accepted, approved: !!s.approved_at },

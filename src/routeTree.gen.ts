@@ -24,6 +24,7 @@ import { Route as NegociosRouteImport } from './routes/negocios'
 import { Route as NumerosRouteImport } from './routes/numeros'
 import { Route as PagosRouteImport } from './routes/pagos'
 import { Route as PerfilRouteImport } from './routes/perfil'
+import { Route as PersonasRouteImport } from './routes/personas'
 import { Route as RedRouteImport } from './routes/red'
 import { Route as ReglasRouteImport } from './routes/reglas'
 import { Route as ReporteRouteImport } from './routes/reporte'
@@ -111,6 +112,11 @@ const PerfilRoute = PerfilRouteImport.update({
   path: '/perfil',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PersonasRoute = PersonasRouteImport.update({
+  id: '/personas',
+  path: '/personas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RedRoute = RedRouteImport.update({
   id: '/red',
   path: '/red',
@@ -184,6 +190,7 @@ export interface FileRoutesByFullPath {
   '/numeros': typeof NumerosRoute
   '/pagos': typeof PagosRoute
   '/perfil': typeof PerfilRoute
+  '/personas': typeof PersonasRoute
   '/red': typeof RedRoute
   '/reglas': typeof ReglasRoute
   '/reporte': typeof ReporteRoute
@@ -212,6 +219,7 @@ export interface FileRoutesByTo {
   '/numeros': typeof NumerosRoute
   '/pagos': typeof PagosRoute
   '/perfil': typeof PerfilRoute
+  '/personas': typeof PersonasRoute
   '/red': typeof RedRoute
   '/reglas': typeof ReglasRoute
   '/reporte': typeof ReporteRoute
@@ -241,6 +249,7 @@ export interface FileRoutesById {
   '/numeros': typeof NumerosRoute
   '/pagos': typeof PagosRoute
   '/perfil': typeof PerfilRoute
+  '/personas': typeof PersonasRoute
   '/red': typeof RedRoute
   '/reglas': typeof ReglasRoute
   '/reporte': typeof ReporteRoute
@@ -271,6 +280,7 @@ export interface FileRouteTypes {
     | '/numeros'
     | '/pagos'
     | '/perfil'
+    | '/personas'
     | '/red'
     | '/reglas'
     | '/reporte'
@@ -299,6 +309,7 @@ export interface FileRouteTypes {
     | '/numeros'
     | '/pagos'
     | '/perfil'
+    | '/personas'
     | '/red'
     | '/reglas'
     | '/reporte'
@@ -327,6 +338,7 @@ export interface FileRouteTypes {
     | '/numeros'
     | '/pagos'
     | '/perfil'
+    | '/personas'
     | '/red'
     | '/reglas'
     | '/reporte'
@@ -356,6 +368,7 @@ export interface RootRouteChildren {
   NumerosRoute: typeof NumerosRoute
   PagosRoute: typeof PagosRoute
   PerfilRoute: typeof PerfilRoute
+  PersonasRoute: typeof PersonasRoute
   RedRoute: typeof RedRoute
   ReglasRoute: typeof ReglasRoute
   ReporteRoute: typeof ReporteRoute
@@ -476,6 +489,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PerfilRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/personas': {
+      id: '/personas'
+      path: '/personas'
+      fullPath: '/personas'
+      preLoaderRoute: typeof PersonasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/red': {
       id: '/red'
       path: '/red'
@@ -572,6 +592,7 @@ const rootRouteChildren: RootRouteChildren = {
   NumerosRoute: NumerosRoute,
   PagosRoute: PagosRoute,
   PerfilRoute: PerfilRoute,
+  PersonasRoute: PersonasRoute,
   RedRoute: RedRoute,
   ReglasRoute: ReglasRoute,
   ReporteRoute: ReporteRoute,
