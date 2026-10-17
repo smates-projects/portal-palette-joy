@@ -17,10 +17,10 @@ import { Amount, Badge, FundsStatusBadge, PaymentDialog, ReceiptLink } from "./p
 export function FundsPanel({ businessId, mode }: { businessId: string; mode: "sm" | "bishop" | "read" }) {
   const { t } = useTranslation();
   const q = useBusinessFunds(businessId);
-  if (q.isLoading) return <Skeleton className="h-32 rounded-md" />;
+  if (q.isLoading) return <div className="space-y-2"><Skeleton className="h-10 rounded-md" /><Skeleton className="h-10 rounded-md" /><Skeleton className="h-10 rounded-md" /></div>;
   if (q.isError)
     return (
-      <p className="text-sm text-muted-foreground">
+      <p role="alert" className="rounded-md border border-border bg-surface px-4 py-3 text-sm">
         {t("funds.error")} <button onClick={() => void q.refetch()} className="text-link hover:underline">{t("funds.retry")}</button>
       </p>
     );
