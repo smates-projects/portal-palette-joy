@@ -1365,6 +1365,7 @@
       "needed": "Hay que hacerla",
       "hint": "Tu consultor la revisa contigo en el Diagnóstico.",
       "hint_sm": "Revísala con el dueño en el Diagnóstico (días 1 a 15).",
+      "have_any": "¿El negocio ya tiene esto resuelto? Marcar como Ya lo tenía",
       "have": "Ya lo tenía",
       "do": "Hay que hacerla",
       "dialog_title": "{{code}}: ya lo tenía",

@@ -28,6 +28,9 @@ describe("Ya lo tenía: marks at the start of the program", () => {
     expect(checkPreValidation(marked, { decision: "needed" })).toBeNull();
     expect(checkPreValidation(task("B5"), { decision: "needed" })).toBe("not_marked");
     expect(checkPreValidation(task("B5", { pre_validation: "pending", status: "in_progress" }), { decision: "needed" })).toBe("not_marked");
+    // Not flagged by the assessment: SM can still mark "Ya lo tenía" while the task has not started.
+    expect(checkPreValidation(task("B5"), { decision: "existing", evidence_file_name: "manual.pdf", note: "" })).toBeNull();
+    expect(checkPreValidation(task("B5", { status: "in_progress" }), { decision: "existing", evidence_file_name: "manual.pdf", note: "" })).toBe("not_marked");
   });
   it("undo works on a decided task nobody moved since", () => {
     expect(checkPreValidation(task("B5", { pre_validation: "existing", status: "accepted" }), { decision: "pending" })).toBeNull();

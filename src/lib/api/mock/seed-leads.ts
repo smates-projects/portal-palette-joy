@@ -179,8 +179,9 @@ const specs: LeadSpec[] = [
     lead: {
       consultant_user_id: U_NICOLAS, business_id: null,
       contact: { name: "Andrés Quispe", email: "andres@andespainting.com", phone: "+1 321 555 0147", city: "Sanford", state: "FL", hispanic_owner: true },
-      business: { name: "Andes Painting", industry: "construction", activity: "Pintura residencial", revenue_range: "lt_250k", margin_range: "margin_21_40", team_range: "team_1", years_range: "years_3_5", has_active_clients: true },
-      result: { readiness: "on_track", band: "track", score: 48, eligible_program: false, eligibility_gaps: ["revenue"], blocks: blocks("wmwwmwm"),
+      // Less than a year operating: the only gap the public form can produce (its revenue range is mandatory).
+      business: { name: "Andes Painting", industry: "construction", activity: "Pintura residencial", revenue_range: "lt_250k", margin_range: "margin_21_40", team_range: "team_1", years_range: "years_lt1", has_active_clients: true },
+      result: { readiness: "on_track", band: "track", score: 48, eligible_program: false, eligibility_gaps: ["years_operating"], blocks: blocks("wmwwmwm"),
         strengths: ["Buen margen por trabajo"], priorities: ["Crecer en ventas", "Sumar equipo"] },
       know_how_example: null,
     },

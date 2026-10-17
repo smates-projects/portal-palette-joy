@@ -1365,6 +1365,7 @@
       "needed": "Needs to be done",
       "hint": "Your consultant reviews it with you in the Diagnosis.",
       "hint_sm": "Review it with the owner in the Diagnosis (days 1 to 15).",
+      "have_any": "Does the business already have this? Mark as They already had it",
       "have": "They already had it",
       "do": "Needs to be done",
       "dialog_title": "{{code}}: they already had it",

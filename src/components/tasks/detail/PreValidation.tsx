@@ -29,7 +29,9 @@ export function PreValidationBlock({ task, canResolve }: { task: TaskWithCompute
   const resolve = useResolvePreValidation();
   const [open, setOpen] = useState(false);
   const value = task.pre_validation;
-  if (!value) return null;
+  // Not flagged by the assessment: SM can still mark it "Ya lo tenía" while it has not started.
+  const canMarkAny = !value && canResolve && task.status === "pending";
+  if (!value && !canMarkAny) return null;
   const fail = () => toast.error(t("entry.pre.t_error"));
   const undo = () => resolve.mutate({ id: task.id, input: { decision: "pending" } }, { onError: fail });
   const needed = () =>
@@ -43,6 +45,14 @@ export function PreValidationBlock({ task, canResolve }: { task: TaskWithCompute
       onError: fail,
     });
 
+  if (!value) {
+    return (
+      <div className="flex flex-col items-start gap-1">
+        <button type="button" onClick={() => setOpen(true)} className="text-xs text-link hover:underline">{t("entry.pre.have_any")}</button>
+        {open && <ExistingDialog code={task.code} pending={resolve.isPending} onClose={() => setOpen(false)} onConfirm={existing} />}
+      </div>
+    );
+  }
   return (
     <div className="flex flex-col items-start gap-1.5">
       <PreValidationBadge value={value} />

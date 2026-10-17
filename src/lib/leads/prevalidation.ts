@@ -33,8 +33,10 @@ export function markPreValidation<T extends Pick<Task, "area" | "status" | "pre_
 export type PreValidationError = "not_marked" | "evidence_required" | "not_resolved";
 
 /**
- * The consultant decides with the owner during the Diagnóstico. "Ya lo tenía" needs the evidence the owner shows;
- * only a task still marked "A validar" can be decided, and undo only works on a decided one that nobody moved since.
+ * The consultant decides with the owner during the Diagnóstico. "Ya lo tenía" needs the evidence the owner shows and
+ * works on any task not started yet, marked by the assessment or not (SM can see in the meeting that marketing is
+ * already solved even if the assessment did not flag it). "Hay que hacerla" only answers a task marked "A validar".
+ * Undo only works on a decided task that nobody moved since.
  */
 export function checkPreValidation(task: Pick<Task, "status" | "pre_validation">, input: PreValidationInput): PreValidationError | null {
   if (input.decision === "pending") {
@@ -42,7 +44,9 @@ export function checkPreValidation(task: Pick<Task, "status" | "pre_validation">
     if (task.pre_validation === "needed") return task.status === "pending" ? null : "not_resolved";
     return "not_resolved";
   }
-  if (task.pre_validation !== "pending" || task.status !== "pending") return "not_marked";
+  if (task.status !== "pending") return "not_marked";
+  const marked = task.pre_validation === "pending";
+  if (!marked && !(input.decision === "existing" && !task.pre_validation)) return "not_marked";
   if (input.decision === "existing" && !input.evidence_file_name.trim()) return "evidence_required";
   return null;
 }
