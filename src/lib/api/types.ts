@@ -341,13 +341,20 @@ export interface Lead {
     priorities: string[];
   };
   know_how_example: string | null;
+  /** Bishop who accepted the opportunity (null while nobody took it, or after SM released it). */
+  bishop_user_id: Uuid | null;
+  bishop_accepted_at: IsoDateTime | null;
 }
+
+/** Tripartite contract (Bishop + SM + owner) of an accepted lead. */
+export type TripartiteState = "none" | "pending" | "signed";
 
 export interface LeadWithComputed extends Lead {
   /** Consultant's booking link, or the office default. Resolved by the data layer. */
   booking_url: string;
   /** Entry checklist once NDA and MOU were sent (null before). Computed by the data layer. */
   intake: IntakeSummary | null;
+  tripartite: TripartiteState;
 }
 
 // ---------- Entry (NDA, MOU, due diligence documents) ----------
@@ -381,7 +388,8 @@ export interface IntakeSummary {
 
 export type LeadEventKind =
   | "submitted" | "stage_changed" | "discarded" | "restored" | "note" | "contract_signed"
-  | "nda_sent" | "doc_accepted" | "doc_requested" | "docs_approved";
+  | "nda_sent" | "doc_accepted" | "doc_requested" | "docs_approved"
+  | "bishop_accepted" | "bishop_released" | "tripartite_sent";
 
 export interface LeadEvent {
   id: Uuid;
