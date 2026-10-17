@@ -16,6 +16,7 @@ import { firstName, formatDate, formatDateTime, formatShortDate } from "@/lib/fo
 import { daysBetween } from "@/lib/tasks/table";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/StatusBadge";
+import { PreValidationBlock } from "./PreValidation";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CancelTasksDialog, EditTasksDialog } from "@/components/tasks/sm/SmTaskActions";
 import { describeChange } from "@/lib/tasks/changes";
@@ -322,6 +323,7 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
           <h2 className="mt-1.5 text-xl font-semibold leading-snug tracking-tight">{task.name}</h2>
           <div className="mt-3 flex flex-col items-start gap-1.5 text-sm">
             <StatusBadge status={cancelled ? "cancelled" : status} />
+            {!cancelled && <PreValidationBlock task={task} canResolve={isSm} />}
             {openRequests.length > 0 && (
               <button
                 type="button"
