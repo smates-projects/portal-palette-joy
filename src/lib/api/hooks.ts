@@ -153,8 +153,16 @@ export const useLeadIntake = (id: string | undefined) =>
 /** Entry writes touch leads, documents and contracts: refresh both roots. */
 function useIntakeMutation<V, R>(fn: (v: V) => Promise<R>) {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: fn, onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: ["leads"] }), qc.invalidateQueries({ queryKey: ["documents"] })]) });
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: ["leads"] }), qc.invalidateQueries({ queryKey: ["documents"] }), qc.invalidateQueries({ queryKey: ["bishop"] })]),
+  });
 }
+/** LeadInvestors | null: who saw the opportunity, who passed, who accepted, tripartite contract. */
+export const useLeadInvestors = (id: string | undefined) =>
+  useQuery({ queryKey: ["leads", "investors", id], queryFn: () => api.leads.getInvestors(id!), enabled: !!id });
+export const useReleaseOpportunity = () => useIntakeMutation((v: { id: string; reason: string }) => api.leads.releaseOpportunity(v.id, v.reason));
+export const useSendTripartite = () => useIntakeMutation((id: string) => api.leads.sendTripartite(id));
 export const useSendNdaMou = () => useIntakeMutation((id: string) => api.leads.sendNdaMou(id));
 export const useAcceptDocument = () => useIntakeMutation((v: { id: string; documentId: string; fact: string }) => api.leads.acceptDocument(v.id, v.documentId, v.fact));
 export const useRequestDocument = () => useIntakeMutation((v: { id: string; documentId: string; comment: string }) => api.leads.requestDocument(v.id, v.documentId, v.comment));
@@ -303,9 +311,16 @@ export const useBishopOpportunities = () => useQuery({ queryKey: ["bishop", "opp
 /** OpportunityDetail | null: opportunity plus the five-year projection (franchises, revenue, result, Bishop, SM) and the readiness checklist. */
 export const useBishopOpportunity = (id: string | undefined) =>
   useQuery({ queryKey: ["bishop", "opportunities", id], queryFn: () => api.bishop.getOpportunity(id!), enabled: !!id });
-export const useExpressInterest = () => useNetworkMutation((id: string) => api.bishop.expressInterest(id), ["bishop"]);
+/** First Bishop takes it; SM sees it on the lead. */
+export const useAcceptOpportunity = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.bishop.acceptOpportunity(id),
+    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: ["bishop"] }), qc.invalidateQueries({ queryKey: ["leads"] })]),
+  });
+};
 export const usePassOpportunity = () => useNetworkMutation((id: string) => api.bishop.pass(id), ["bishop"]);
-/** Undo interest or pass. */
+/** Undo a pass. */
 export const useClearOpportunityDecision = () => useNetworkMutation((id: string) => api.bishop.clearDecision(id), ["bishop"]);
 /** BishopAgreement[]: equity agreement, NDA, drafts. */
 export const useBishopAgreements = () => useQuery({ queryKey: ["bishop", "agreements"], queryFn: api.bishop.listAgreements });
