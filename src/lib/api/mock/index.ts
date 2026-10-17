@@ -11,6 +11,8 @@ import * as seedLeads from "./seed-leads";
 import * as seedNetwork from "./seed-network";
 import { createNetworkRepositories, type NetworkDb } from "./network";
 import { createIntake, type IntakeRecord } from "./intake";
+import { createOpportunities, type OpportunityView } from "./opportunities";
+import { tripartiteState } from "@/lib/leads/opportunity";
 import catalogJson from "@/data/catalogo_metodo180.json";
 import { DEFAULT_PLATFORM_RULES } from "../franchisability";
 import { AREA_BY_KEY, generateProgramTasks, type CatalogEntry } from "../program";
@@ -66,6 +68,8 @@ export function createMockApi(): ApiClient {
     recovery: { [seedNetwork.bishopInvestment.id]: structuredClone(seedNetwork.recovery) },
     opportunities: structuredClone(seedNetwork.opportunities),
     agreements: structuredClone(seedNetwork.agreements),
+    frameworkContracts: structuredClone(seedNetwork.frameworkContracts),
+    oppViews: [] as OpportunityView[],
   };
   const intake = createIntake(db, newId);
   intake.seed();
@@ -159,7 +163,7 @@ export function createMockApi(): ApiClient {
   const withBooking = (l: Lead): LeadWithComputed => {
     const consultant = db.users.find((u) => u.id === l.consultant_user_id);
     const office = db.orgs.find((o) => o.id === l.office_id);
-    return { ...l, booking_url: consultant?.booking_url || office?.default_booking_url || "", intake: intake.summaryFor(l) };
+    return { ...l, booking_url: consultant?.booking_url || office?.default_booking_url || "", intake: intake.summaryFor(l), tripartite: tripartiteState(opps.tripartiteOf(l)) };
   };
   const pushLeadEvent = (e: Omit<LeadEvent, "id" | "actor_user_id" | "created_at">) => {
     const full: LeadEvent = { id: newId(), actor_user_id: currentUserId, created_at: nowIso(), ...e };
@@ -171,6 +175,9 @@ export function createMockApi(): ApiClient {
     l.stage_entered_at = nowIso();
     l.last_contact_at = nowIso();
   };
+  const opps = createOpportunities({ db, intake, me, newId, delay, findLead, readableLeads, withBooking: (l) => withBooking(l), pushLeadEvent });
+  opps.seed({ jefferson: seedNetwork.U_JEFFERSON, laura: seedNetwork.U_LAURA });
+
   /** Assignee firm per area: the office's own firm for that area; with none (SM Miami B1), the office's own team (the consultant). */
   const firmFor = (officeId: string, consultantId: string) => (area: AreaCode) => {
     const firm = db.orgs.find((o) => o.kind === "partner_firm" && o.area === area && o.parent_id === officeId);
@@ -182,9 +189,16 @@ export function createMockApi(): ApiClient {
   const withIntakeDocuments = <T extends { documents: Pick<ApiClient["documents"], "listDocuments" | "listContracts" | "uploadDocument"> }>(net: T): Omit<T, "documents"> & { documents: ApiClient["documents"] } => {
     const contractInScope = (contractId: string) => {
       const u = me();
+      const fw = db.frameworkContracts.find((x) => x.id === contractId);
+      if (fw) {
+        if (u.role === "bishop" && fw.signers.some((s) => s.party === "bishop" && s.user_id === u.id)) return { c: fw, party: "bishop" as const };
+        throw new Error("not_found");
+      }
       const c = db.contracts.find((x) => x.id === contractId && x.area === "intake");
       const b = c && db.businesses.find((x) => x.id === c.business_id);
       if (!c || !b) throw new Error("not_found");
+      // Tripartite: the Bishop signs from his portal.
+      if (u.role === "bishop" && c.signers.some((s) => s.party === "bishop" && s.user_id === u.id)) return { c, party: "bishop" as const };
       if (u.role === "business_owner" && u.business_id === b.id) return { c, party: "owner" as const };
       if ((u.role === "sm_team" && u.organization_id === b.office_id) || u.role === "sm_global") return { c, party: "sm" as const };
       throw new Error("forbidden");
@@ -287,7 +301,7 @@ export function createMockApi(): ApiClient {
           // New roles: SM Global, the franchisor (a business owner whose business is a franchisor), Business Bishop and a franchisee.
           { user: db.users.find((u) => u.id === seed.U_MARYLIN)!, organization: db.orgs.find((o) => o.id === seed.ORG_GLOBAL) ?? null, business: null, enabled: true },
           { user: db.users.find((u) => u.id === seed.U_RODRIGO_BIMBO)!, organization: null, business: db.businesses.find((b) => b.id === seed.BIZ_BIMBO) ?? null, enabled: true },
-          { user: db.users.find((u) => u.id === seedNetwork.U_JEFFERSON)!, organization: null, business: null, enabled: true },
+          ...[seedNetwork.U_JEFFERSON, seedNetwork.U_LAURA, seedNetwork.U_DIEGO].map((id) => ({ user: db.users.find((u) => u.id === id)!, organization: null, business: null, enabled: true })),
           { user: db.users.find((u) => u.id === seedNetwork.U_LUISA)!, organization: db.orgs.find((o) => o.id === seedNetwork.FRANCHISE_ORLANDO_SUR) ?? null, business: null, enabled: true },
         ]),
       setViewAs: async (userId) => {
@@ -388,8 +402,17 @@ export function createMockApi(): ApiClient {
         return delay(u.google_calendar_email ? seed.calendarEvents.filter((e) => e.user_id === u.id) : []);
       },
     },
-    ...withIntakeDocuments(createNetworkRepositories({ db, me, newId, delay })),
+    ...withIntakeDocuments(net),
+    bishop: {
+      ...net.bishop,
+      ...opps.bishop,
+      listAgreements: async () => {
+        const base = await net.bishop.listAgreements();
+        return [...opps.signableAgreements(me()), ...base];
+      },
+    },
     leads: {
+      ...opps.leads,
       list: async (opts) => delay(readableLeads().filter((l) => !opts?.office_id || l.office_id === opts.office_id).map(withBooking)),
       get: async (id) => {
         const l = readableLeads().find((x) => x.id === id);
