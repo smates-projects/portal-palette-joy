@@ -1,0 +1,12 @@
+# Same line endings on every machine: Prettier expects LF and Windows checkouts no longer turn files into CRLF.
+* text eol=lf
+# Binary files are never converted.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.pdf binary
+*.woff binary
+*.woff2 binary

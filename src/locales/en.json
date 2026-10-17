@@ -3,6 +3,14 @@
     "name": "SM Platform",
     "company": "Strategic Mates"
   },
+  "errors": {
+    "not_found_title": "Page not found",
+    "not_found_body": "This address does not exist or has moved. Go back home to continue.",
+    "go_home": "Go home",
+    "load_title": "This page didn't load",
+    "load_body": "Something went wrong on our end. Try again or go back home.",
+    "retry": "Try again"
+  },
   "nav": {
     "home": "Home",
     "tasks": "My tasks",

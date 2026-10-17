@@ -3,6 +3,14 @@
     "name": "SM Platform",
     "company": "Strategic Mates"
   },
+  "errors": {
+    "not_found_title": "Página no encontrada",
+    "not_found_body": "La dirección no existe o cambió de lugar. Vuelve al inicio para seguir.",
+    "go_home": "Ir al inicio",
+    "load_title": "Esta página no cargó",
+    "load_body": "Algo falló de nuestro lado. Intenta de nuevo o vuelve al inicio.",
+    "retry": "Intentar de nuevo"
+  },
   "nav": {
     "home": "Inicio",
     "tasks": "Mis tareas",

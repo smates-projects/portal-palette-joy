@@ -81,10 +81,10 @@ describe("manual sections", () => {
     const oscar = await asOscar();
     const operacion = (await oscar.manual.get()).sections.find((s) => s.title === "Operación")!;
     await expect(oscar.manual.approveSection(operacion.id)).rejects.toThrow("tasks_pending");
-    // Prime 10 has no task for Compras: there is nothing to approve.
+    // Prime 10 has no task for Atención al cliente (B4-04 is not in its program): there is nothing to approve.
     const daniel = await as(seed.U_DANIEL);
-    const compras = (await daniel.manual.get()).sections.find((s) => s.title === "Compras")!;
-    await expect(daniel.manual.approveSection(compras.id)).rejects.toThrow("no_tasks");
+    const service = (await daniel.manual.get()).sections.find((s) => s.title === "Atención al cliente")!;
+    await expect(daniel.manual.approveSection(service.id)).rejects.toThrow("no_tasks");
   });
 
   it("only the owner of the business approves: SM, firms, Bishop, franchisee and other owners are refused", async () => {

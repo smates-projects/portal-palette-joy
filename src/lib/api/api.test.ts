@@ -32,8 +32,8 @@ describe("task rules", () => {
 });
 
 describe("seed data", () => {
-  it("has 111 tasks (66 in the three running programs + 45 approved ones of Bimbo Tacos) and the required minimums", () => {
-    expect(all).toHaveLength(111);
+  it("has 136 tasks (91 in the three running programs + 45 approved ones of Bimbo Tacos) and the required minimums", () => {
+    expect(all).toHaveLength(136);
     expect(all.filter((t) => t.business_id === seed.BIZ_BIMBO).every((t) => t.status === "accepted")).toBe(true);
     expect(all.filter((t) => t.is_blocked).length).toBeGreaterThanOrEqual(2);
     expect(all.filter((t) => t.is_overdue).length).toBeGreaterThanOrEqual(2);
@@ -64,7 +64,7 @@ describe("mock authorization", () => {
     await api.session.setViewAs(seed.U_CARLA);
     const mine = await api.tasks.list();
     expect(mine).toHaveLength(seed.tasks.filter((t) => t.business_id === seed.BIZ_VOSSLER).length);
-    expect(mine).toHaveLength(32);
+    expect(mine).toHaveLength(41);
     expect(mine.every((t) => t.business_id === seed.BIZ_VOSSLER)).toBe(true);
   });
   it("Vossler gets only the catalog B3/B4 tasks that apply, with names taken verbatim from the catalog", () => {
@@ -74,6 +74,18 @@ describe("mock authorization", () => {
     expect(codes).toContain("B4-03");
     const b301 = seed.tasks.find((t) => t.code === "B3-01")!;
     expect(b301.name).toBe("Paquete financiero histórico depurado / Financial Data Room");
+  });
+  it("the running programs carry every 'minimo' B1 and B2 task that applies, B1 with SM and B2 with OpsLab", () => {
+    const b1b2 = ["B1-01", "B1-02", "B1-03", "B1-04", "B1-05", "B2-01", "B2-02", "B2-03", "B2-04", "B2-05", "B2-06", "B2-09", "B2-16", "B2-17"];
+    const construction = ["B2-07", "B2-08"];
+    const codesOf = (biz: string) => seed.tasks.filter((t) => t.business_id === biz && /^B[12]-/.test(t.code)).map((t) => t.code).sort();
+    expect(codesOf(seed.BIZ_VOSSLER)).toEqual([...b1b2, ...construction].sort());
+    expect(codesOf(seed.BIZ_PRIME)).toEqual([...b1b2, ...construction].sort());
+    // A salon: change orders and QA/QC apply only to construction and maintenance.
+    expect(codesOf(seed.BIZ_ENYERMY)).toEqual(b1b2.sort());
+    const running = seed.tasks.filter((t) => t.business_id !== seed.BIZ_BIMBO);
+    expect(running.filter((t) => t.area === "B1").every((t) => t.organization_id === seed.ORG_SM)).toBe(true);
+    expect(running.filter((t) => t.area === "B2").every((t) => t.organization_id === seed.ORG_OPSLAB)).toBe(true);
   });
 });
 

@@ -45,7 +45,10 @@ export function InvitePersonDialog(props: { open: boolean; onOpenChange: (o: boo
       let firms = orgs.filter((o) => o.kind === "partner_firm" && isActiveFirm(o));
       if (isOfficeAdmin(me)) firms = firms.filter((o) => o.parent_id === me.organization_id && !users.some((u) => u.organization_id === o.id && isActiveUser(u)));
       if (isFirmAdmin(me)) firms = firms.filter((o) => o.id === me.organization_id);
-      return firms.map((o) => ({ id: o.id, label: me.role === "sm_global" ? `${o.name} · ${officeName(o.parent_id)}` : o.name }));
+      return firms.map((o) => {
+        const firm = t("owner.firm_label", { name: o.name, what: t(`firmWhat.${o.area ?? "B1"}`) });
+        return { id: o.id, label: me.role === "sm_global" ? `${firm} · ${officeName(o.parent_id)}` : firm };
+      });
     }
     if (effectiveRole === "business_owner") return businesses.map((b) => ({ id: b.id, label: b.name }));
     if (effectiveRole === "franchisee") return orgs.filter((o) => o.kind === "franchise").map((o) => ({ id: o.id, label: o.name }));

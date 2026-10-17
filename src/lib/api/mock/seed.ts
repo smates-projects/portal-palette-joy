@@ -54,7 +54,7 @@ export const ORG_GLOBAL = uuid("0a000000", 10);
 export const organizations: Organization[] = [
   { id: ORG_GLOBAL, name: "SM Global", kind: "sm_global", area: null, specialty: null, city: "Miami, FL", email: "global@strategicmates.com", phone: null, parent_id: null },
   { id: ORG_SM, name: "SM Miami", kind: "sm", area: null, specialty: null, city: "Miami, FL", email: "hola@strategicmates.com", phone: null, default_booking_url: "https://strategicmates.com/MarilynBoraei", parent_id: ORG_GLOBAL, status: "operating", opened_at: "2024-06-03", manager_user_id: U_NICOLAS },
-  { id: ORG_PEREZ, name: "Estudio Pérez Legal", kind: "partner_firm", area: "B6", specialty: "Derecho corporativo, licencias y contratos para franquicias en Florida", city: "Miami, FL", email: "contacto@estudioperez.legal", phone: "+1 305 555 0142", parent_id: ORG_SM },
+  { id: ORG_PEREZ, name: "Estudio Pérez", kind: "partner_firm", area: "B6", specialty: "Derecho corporativo, licencias y contratos para franquicias en Florida", city: "Miami, FL", email: "contacto@estudioperez.legal", phone: "+1 305 555 0142", parent_id: ORG_SM },
   { id: ORG_DELTA, name: "Delta Contadores", kind: "partner_firm", area: "B3", specialty: "Contabilidad, finanzas y fiscal para pymes que se preparan para franquiciar", city: "Miami, FL", email: "hola@deltacontadores.com", phone: "+1 305 555 0171", parent_id: ORG_SM },
   { id: ORG_TECNO, name: "TecnoPyme", kind: "partner_firm", area: "B4", specialty: "CRM, órdenes de servicio y tableros para negocios de servicios", city: "Orlando, FL", email: "equipo@tecnopyme.io", phone: "+1 407 555 0123", parent_id: ORG_SM },
   { id: ORG_OPSLAB, name: "OpsLab Consulting", kind: "partner_firm", area: "B2", specialty: "Procesos, manuales operativos y estándares de servicio", city: "Miami, FL", email: "hola@opslab.co", phone: "+1 305 555 0165", parent_id: ORG_SM },
@@ -153,6 +153,17 @@ const catalog: CatalogItem[] = [
   fromCatalog("B2-02", "design", ORG_OPSLAB, U_ANDRES, "B2-01"),
   fromCatalog("B2-03", "implement", ORG_OPSLAB, U_ANDRES, "B2-02"),
   fromCatalog("B2-05", "design", ORG_OPSLAB, U_ANDRES),
+  // The rest of the "minimo" tasks of B1 and B2. Added at the end so the ids above do not move.
+  // B2-07 and B2-08 apply only to construction and maintenance: Vossler and Prime 10, not Enyermy.
+  fromCatalog("B1-04", "design", ORG_SM, "supervisor", "B1-01"),
+  fromCatalog("B1-05", "design", ORG_SM, "supervisor", "B1-01"),
+  fromCatalog("B2-04", "implement", ORG_OPSLAB, U_ANDRES, "B2-03"),
+  fromCatalog("B2-06", "design", ORG_OPSLAB, U_ANDRES),
+  fromCatalog("B2-07", "design", ORG_OPSLAB, U_ANDRES, "B2-01"),
+  fromCatalog("B2-08", "implement", ORG_OPSLAB, U_ANDRES, "B2-01"),
+  fromCatalog("B2-09", "design", ORG_OPSLAB, U_ANDRES),
+  fromCatalog("B2-16", "design", ORG_OPSLAB, U_ANDRES),
+  fromCatalog("B2-17", "implement", ORG_OPSLAB, U_ANDRES, "B2-05"),
 ];
 type Plan = Record<string, { status: TaskStatus; start: string; due: string; version?: number }>;
 
@@ -194,6 +205,15 @@ const plans: Record<string, Plan> = {
     "B2-02": { status: "in_progress", start: "2026-09-28", due: "2026-10-30" },
     "B2-03": { status: "pending", start: "2026-11-02", due: "2026-12-11" },
     "B2-05": { status: "in_progress", start: "2026-09-21", due: "2026-10-28" },
+    "B1-04": { status: "pending", start: "2026-10-26", due: "2026-11-27" },
+    "B1-05": { status: "pending", start: "2026-11-30", due: "2027-01-15" },
+    "B2-04": { status: "pending", start: "2026-12-14", due: "2027-01-22" },
+    "B2-06": { status: "accepted", start: "2026-08-24", due: "2026-09-25", version: 1 },
+    "B2-07": { status: "submitted", start: "2026-09-14", due: "2026-10-16", version: 1 },
+    "B2-08": { status: "in_progress", start: "2026-10-05", due: "2026-11-13" },
+    "B2-09": { status: "accepted", start: "2026-08-17", due: "2026-09-18", version: 1 },
+    "B2-16": { status: "pending", start: "2026-11-16", due: "2026-12-18" },
+    "B2-17": { status: "pending", start: "2026-12-07", due: "2027-01-15" },
   },
   [BIZ_PRIME]: {
     "B6-01": { status: "changes_requested", start: "2026-09-29", due: "2026-10-16", version: 1 },
@@ -213,6 +233,15 @@ const plans: Record<string, Plan> = {
     "B2-02": { status: "pending", start: "2026-11-09", due: "2026-12-11" },
     "B2-03": { status: "pending", start: "2026-12-14", due: "2027-01-22" },
     "B2-05": { status: "pending", start: "2026-11-16", due: "2026-12-18" },
+    "B1-04": { status: "pending", start: "2026-11-09", due: "2026-12-11" },
+    "B1-05": { status: "pending", start: "2026-12-14", due: "2027-01-22" },
+    "B2-04": { status: "pending", start: "2027-01-25", due: "2027-02-26" },
+    "B2-06": { status: "in_progress", start: "2026-10-05", due: "2026-11-06" },
+    "B2-07": { status: "pending", start: "2026-11-09", due: "2026-12-04" },
+    "B2-08": { status: "pending", start: "2026-11-16", due: "2026-12-18" },
+    "B2-09": { status: "submitted", start: "2026-09-29", due: "2026-10-23", version: 1 },
+    "B2-16": { status: "pending", start: "2026-12-07", due: "2027-01-15" },
+    "B2-17": { status: "pending", start: "2027-01-11", due: "2027-02-12" },
   },
   [BIZ_ENYERMY]: {
     "B6-01": { status: "in_progress", start: "2026-10-12", due: "2026-10-30" },
@@ -232,6 +261,13 @@ const plans: Record<string, Plan> = {
     "B2-02": { status: "pending", start: "2026-11-30", due: "2027-01-08" },
     "B2-03": { status: "pending", start: "2027-01-11", due: "2027-02-12" },
     "B2-05": { status: "pending", start: "2026-11-30", due: "2026-12-23" },
+    "B1-04": { status: "pending", start: "2026-11-30", due: "2027-01-08" },
+    "B1-05": { status: "pending", start: "2027-01-11", due: "2027-02-12" },
+    "B2-04": { status: "pending", start: "2027-02-15", due: "2027-03-19" },
+    "B2-06": { status: "pending", start: "2026-11-02", due: "2026-12-04" },
+    "B2-09": { status: "in_progress", start: "2026-10-12", due: "2026-11-06" },
+    "B2-16": { status: "pending", start: "2026-12-14", due: "2027-01-22" },
+    "B2-17": { status: "pending", start: "2027-01-25", due: "2027-02-26" },
   },
 };
 

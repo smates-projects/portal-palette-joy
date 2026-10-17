@@ -9,6 +9,7 @@ import {
   type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Toaster } from "sonner";
 import appCss from "../styles.css?url";
@@ -16,21 +17,22 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import "../lib/i18n";
 import { AppShell } from "@/components/layout/AppShell";
 
+const primaryBtn =
+  "inline-flex items-center justify-center rounded-[4px] bg-primary px-4 py-2 font-display text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover";
+const secondaryBtn =
+  "inline-flex items-center justify-center rounded-[4px] border border-border bg-surface px-4 py-2 font-display text-sm font-semibold text-foreground transition-colors hover:bg-muted";
+
 function NotFoundComponent() {
+  const { t } = useTranslation();
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
-        </p>
+        <p className="font-display text-5xl font-semibold tabular-nums text-muted-foreground">404</p>
+        <h1 className="mt-4 text-xl font-semibold text-foreground">{t("errors.not_found_title")}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{t("errors.not_found_body")}</p>
         <div className="mt-6">
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Go home
+          <Link to="/" className={primaryBtn}>
+            {t("errors.go_home")}
           </Link>
         </div>
       </div>
@@ -39,7 +41,7 @@ function NotFoundComponent() {
 }
 
 function ErrorComponent({ error, reset }: ErrorComponentProps) {
-  console.error(error);
+  const { t } = useTranslation();
   const router = useRouter();
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
@@ -48,27 +50,20 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
-        </p>
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">{t("errors.load_title")}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{t("errors.load_body")}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
               router.invalidate();
               reset();
             }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className={primaryBtn}
           >
-            Try again
+            {t("errors.retry")}
           </button>
-          <a
-            href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-          >
-            Go home
+          <a href="/" className={secondaryBtn}>
+            {t("errors.go_home")}
           </a>
         </div>
       </div>
