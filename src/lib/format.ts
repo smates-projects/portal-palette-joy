@@ -12,8 +12,9 @@ export function formatRelativeDate(iso: string, lng: string, today: string = TOD
   return new Intl.RelativeTimeFormat(localeTag(lng), { numeric: "auto" }).format(days, "day");
 }
 
+/** Whole amounts without cents ("$150,000"); cents only when the amount has them. */
 export const formatUsd = (amount: number, lng: string) =>
-  new Intl.NumberFormat(localeTag(lng), { style: "currency", currency: "USD" }).format(amount);
+  new Intl.NumberFormat(localeTag(lng), { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: Number.isInteger(amount) ? 0 : 2 }).format(amount);
 
 export const formatShortDate = (iso: string, lng: string) =>
   new Intl.DateTimeFormat(localeTag(lng), { day: "numeric", month: "short" }).format(toDate(iso));
