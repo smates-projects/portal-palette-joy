@@ -147,7 +147,8 @@ export interface LeadsSearch {
 
 const ALL_STAGES: LeadStage[] = [...LEAD_STAGES, "discarded"];
 const BANDS: LeadBand[] = ["high", "mid", "low", "track"];
-// Vertientes de la construcción; para sumar una, agregar aquí y en locales pipeline.industries.
+// Strategic Mates works only with construction trades (same keys as the public assessment). To add a trade, add it
+// here, in LeadIndustry and in locales pipeline.industries.
 export const INDUSTRIES: readonly LeadIndustry[] = ["construction", "remodeling", "installations_repairs", "maintenance", "cleaning", "other_related"];
 export const REVENUES: RevenueRange[] = ["lt_250k", "250k_500k", "500k_750k", "750k_1m", "1m_2m", "gt_2m"];
 const QUICKS: LeadQuick[] = ["week", "uncontacted", "signed_month", "in_review", "review_overdue", "no_investor"];
