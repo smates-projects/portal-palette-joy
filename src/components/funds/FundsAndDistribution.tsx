@@ -10,7 +10,7 @@ import { FundsPanel } from "./FundsPanel";
 export function FundsAndDistribution({ businessId, mode }: { businessId: string; mode: "sm" | "read" | "bishop" }) {
   const { t } = useTranslation();
   return (
-    <section className="space-y-4">
+    <section className="space-y-6">
       <div>
         <h3 className="text-sm font-semibold">{t("funds.section_title")}</h3>
         <p className="mt-0.5 text-xs text-muted-foreground">{t(mode === "bishop" ? "funds.section_hint_bishop" : "funds.section_hint")}</p>

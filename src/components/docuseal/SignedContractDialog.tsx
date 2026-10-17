@@ -37,7 +37,7 @@ export function SignedContractDialog({ contract, onClose }: { contract: Contract
 
         <div className="print-doc space-y-4">
         <div id="signed-document" className="rounded-md border border-border bg-muted/50 p-2 sm:p-4 print:border-0 print:bg-transparent print:p-0">
-          <div className="mx-auto max-w-xl rounded-sm border border-border bg-white px-5 py-6 text-[13px] leading-relaxed text-muted-foreground shadow-sm sm:px-10 sm:py-10 print:max-w-none print:border-0 print:shadow-none">
+          <div className="mx-auto max-w-xl rounded-md border border-border bg-surface px-5 py-6 text-[13px] leading-relaxed text-muted-foreground sm:px-10 sm:py-10 print:max-w-none print:border-0 print:shadow-none">
             <p className="text-center text-lg font-semibold tracking-tight text-foreground">{contract.name}</p>
             <p className="mt-1 text-center text-[11px] uppercase tracking-wide">{t("intake.docuseal.sample")}</p>
             <div className="mx-auto mt-4 h-px w-16 bg-border" />

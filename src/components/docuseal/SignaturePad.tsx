@@ -95,7 +95,7 @@ export function SignaturePad({ signerName, onChange }: { signerName: string; onC
 
       {mode === "drawn" && (
         <div className="space-y-1.5">
-          <div className="relative overflow-hidden rounded-[4px] border border-input bg-white shadow-[inset_0_1px_2px_rgb(0_0_0/0.04)]">
+          <div className="relative overflow-hidden rounded-md border border-input bg-surface">
             <canvas ref={canvas} width={WIDTH} height={HEIGHT} aria-label={t("intake.docuseal.sig_draw_hint")}
               className="block w-full cursor-crosshair touch-none select-none" style={{ aspectRatio: `${WIDTH} / ${HEIGHT}`, minHeight: 120 }}
               onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerLeave={end} onPointerCancel={end} />
@@ -114,7 +114,7 @@ export function SignaturePad({ signerName, onChange }: { signerName: string; onC
       {mode === "typed" && (
         <div className="space-y-1.5">
           <input className={inputCls} value={typed} onChange={(e) => setTyped(e.target.value)} placeholder={t("intake.docuseal.sig_type_placeholder")} autoComplete="off" />
-          <div className="relative flex h-24 items-center justify-center rounded-[4px] border border-input bg-white px-4">
+          <div className="relative flex h-24 items-center justify-center rounded-md border border-input bg-surface px-4">
             <span aria-hidden className="pointer-events-none absolute bottom-5 left-8 right-4 border-b border-border" />
             <span className="truncate text-3xl" style={{ fontFamily: SCRIPT_FONT, color: INK }}>{typed.trim() || " "}</span>
           </div>
@@ -124,14 +124,14 @@ export function SignaturePad({ signerName, onChange }: { signerName: string; onC
       {mode === "uploaded" && (
         <div className="space-y-1.5">
           {uploaded ? (
-            <div className="relative flex h-28 items-center justify-center rounded-[4px] border border-input bg-white p-2">
+            <div className="relative flex h-28 items-center justify-center rounded-md border border-input bg-surface p-2">
               <img src={uploaded} alt="" className="max-h-full max-w-full object-contain" />
               <button type="button" onClick={() => setUploaded(null)} className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-[4px] border border-border bg-surface px-2 py-0.5 text-xs text-muted-foreground hover:text-foreground">
                 <Eraser className="h-3 w-3" />{t("intake.docuseal.sig_clear")}
               </button>
             </div>
           ) : (
-            <label className="flex h-28 cursor-pointer flex-col items-center justify-center gap-1 rounded-[4px] border border-dashed border-input bg-white text-sm text-muted-foreground hover:border-ring">
+            <label className="flex h-28 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-dashed border-input bg-surface text-sm text-muted-foreground hover:border-ring">
               <Upload className="h-4 w-4" />
               <span>{t("intake.docuseal.sig_choose_file")}</span>
               <input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f) pick(f); e.target.value = ""; }} />

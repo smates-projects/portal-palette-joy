@@ -29,10 +29,10 @@ function useLineName() {
 export function DistributionSection({ businessId, readOnly }: { businessId: string; readOnly: boolean }) {
   const { t } = useTranslation();
   const q = useDistribution(businessId);
-  if (q.isLoading) return <Skeleton className="h-48 rounded-md" />;
+  if (q.isLoading) return <div className="space-y-2"><Skeleton className="h-10 rounded-md" /><Skeleton className="h-10 rounded-md" /><Skeleton className="h-10 rounded-md" /><Skeleton className="h-10 rounded-md" /></div>;
   if (q.isError)
     return (
-      <p className="text-sm text-muted-foreground">
+      <p role="alert" className="rounded-md border border-border bg-surface px-4 py-3 text-sm">
         {t("funds.error")} <button onClick={() => void q.refetch()} className="text-link hover:underline">{t("funds.retry")}</button>
       </p>
     );

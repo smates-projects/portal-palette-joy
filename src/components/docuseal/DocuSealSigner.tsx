@@ -70,7 +70,7 @@ export function DocuSealSigner(props: { contract: Contract; party: "owner" | "sm
 
         {/* Sample PDF with the signature field highlighted; once signed it shows the signature itself */}
         <div className="rounded-md border border-border bg-muted/50 p-4">
-          <div className="mx-auto max-w-sm rounded-sm border border-border bg-white p-5 text-xs leading-relaxed text-muted-foreground shadow-sm sm:p-6">
+          <div className="mx-auto max-w-sm rounded-md border border-border bg-surface p-5 text-xs leading-relaxed text-muted-foreground sm:p-6">
             <p className="text-sm font-semibold text-foreground">{props.contract.name}</p>
             <p className="mt-1 text-[11px] uppercase tracking-wide">{t("intake.docuseal.sample")}</p>
             <p className="mt-3">{t("intake.docuseal.pdf_line", { a: props.signerName, b: others.join(", ") })}</p>
