@@ -5,6 +5,7 @@ import { nowIso } from "@/config/app";
 import { canInvite, canManage, canManageFirms, isActiveFirm, isActiveUser, officeOfUser, ownsBusiness, type AccountContext } from "@/lib/accounts/permissions";
 import { isHex } from "@/lib/brand/contrast";
 import { BRAND_TASK_CODE, brandBusinessIdFor, brandFor, canReadBrand, canResetBrand, canSetBrand } from "@/lib/brand/scope";
+import { INDUSTRIES } from "@/lib/leads/pipeline";
 import type { BrandRepository, BusinessProfileRepository, LeadsRepository, OrganizationsRepository, UsersRepository } from "../repositories";
 import type {
   AccountEvent,
@@ -334,12 +335,17 @@ export function createAccounts(ctx: AccountsContext) {
       if (u.role !== "sm_team" || !u.organization_id) throw new Error("sm_only");
       if (!input.contact.name.trim() || !input.business.name.trim()) throw new Error("name_required");
       if (!validEmail(input.contact.email)) throw new Error("invalid_email");
+      // Same answers the public assessment accepts: only construction branches, and the three Hispanic owner options.
+      if (!INDUSTRIES.includes(input.business.industry)) throw new Error("invalid_industry");
+      if (!["yes", "no", "talk"].includes(input.contact.hispanic_owner)) throw new Error("invalid_hispanic_owner");
+      const activityOther = input.business.industry === "other_related" ? input.business.activity_other?.trim() ?? "" : null;
+      if (activityOther === "") throw new Error("activity_other_required");
       const now = nowIso();
       const lead: Lead = {
         id: newId(), office_id: u.organization_id, stage: "evaluated", discarded_from: null, discard_reason: null,
         stage_entered_at: now, submitted_at: now, last_contact_at: now, consultant_user_id: u.id, business_id: null,
         contact: { ...input.contact, name: input.contact.name.trim(), email: input.contact.email.trim() },
-        business: { ...input.business, name: input.business.name.trim() },
+        business: { ...input.business, name: input.business.name.trim(), activity_other: activityOther },
         result: null, know_how_example: null, bishop_user_id: null, bishop_accepted_at: null, source: "manual", assessment_sent_at: null,
         summary_sent_at: null, meeting: null,
       };

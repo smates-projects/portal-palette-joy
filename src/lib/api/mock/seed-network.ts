@@ -1,4 +1,4 @@
-// Seed for the SM network beyond SM Miami: the Orlando office, the Bimbo Tacos franchise network,
+// Seed for the SM network beyond SM Miami: the Orlando office, the Bimbo Remodelaciones franchise network,
 // Business Bishop data and the owner screens (manual, documents, numbers, business).
 // Replaceable sample data. Today is 2026-10-14. Money is in USD, dates are ISO.
 import catalogJson from "@/data/catalogo_metodo180.json";
@@ -92,8 +92,8 @@ export const organizations: Organization[] = [
   { id: ORG_ORL_TECNOLOGIA, name: "Nube Latina", kind: "partner_firm", area: "B4", specialty: "CRM, respaldos y tableros para negocios de servicios", city: "Orlando, FL", email: "soporte@nubelatina.io", phone: "+1 407 555 0204", parent_id: ORG_ORLANDO },
   { id: ORG_ORL_MARKETING, name: "Faro Marketing", kind: "partner_firm", area: "B5", specialty: "Marca, sitios web y posicionamiento local", city: "Kissimmee, FL", email: "hola@faromarketing.com", phone: "+1 407 555 0205", parent_id: ORG_ORLANDO },
   { id: ORG_ORL_LEGAL, name: "Bufete Ramos", kind: "partner_firm", area: "B6", specialty: "Contratos, licencias y propiedad intelectual para franquicias", city: "Orlando, FL", email: "contacto@bufeteramos.legal", phone: "+1 407 555 0206", parent_id: ORG_ORLANDO },
-  { id: FRANCHISE_ORLANDO_SUR, name: "Bimbo Tacos Orlando Sur", kind: "franchise", area: null, specialty: null, city: "Orlando, FL", email: "orlandosur@bimbotacos.com", phone: "+1 407 555 0310", franchisor_business_id: BIZ_BIMBO },
-  { id: FRANCHISE_TAMPA, name: "Bimbo Tacos Tampa", kind: "franchise", area: null, specialty: null, city: "Tampa, FL", email: "tampa@bimbotacos.com", phone: "+1 813 555 0311", franchisor_business_id: BIZ_BIMBO },
+  { id: FRANCHISE_ORLANDO_SUR, name: "Bimbo Remodelaciones Orlando Sur", kind: "franchise", area: null, specialty: null, city: "Orlando, FL", email: "orlandosur@bimboremodelaciones.com", phone: "+1 407 555 0310", franchisor_business_id: BIZ_BIMBO },
+  { id: FRANCHISE_TAMPA, name: "Bimbo Remodelaciones Tampa", kind: "franchise", area: null, specialty: null, city: "Tampa, FL", email: "tampa@bimboremodelaciones.com", phone: "+1 813 555 0311", franchisor_business_id: BIZ_BIMBO },
   { id: ORG_TAMPA, name: "SM Tampa", kind: "sm", area: null, specialty: null, city: "Tampa, FL", email: "tampa@strategicmates.com", phone: null, default_booking_url: "https://strategicmates.com/tampa", parent_id: ORG_GLOBAL, status: "opening", opened_at: "2026-11-02", manager_user_id: U_TAMPA_MANAGER },
   { id: TAMPA_FIRM_IDS.B1, name: "Bahía Estrategia", kind: "partner_firm", area: "B1", specialty: "Modelo de negocio replicable, plan a cinco años y territorios", city: "Tampa, FL", email: "hola@bahiaestrategia.com", phone: "+1 813 555 0401", parent_id: ORG_TAMPA },
   { id: TAMPA_FIRM_IDS.B2, name: "Flujo Operaciones", kind: "partner_firm", area: "B2", specialty: "Procesos, manuales operativos y capacitación del equipo", city: "Tampa, FL", email: "equipo@flujooperaciones.com", phone: "+1 813 555 0402", parent_id: ORG_TAMPA },
@@ -121,8 +121,8 @@ export const users: User[] = [
   person(U_JEFFERSON, "Jefferson Paula", "jefferson@paulainvestments.com", "bishop", null, null, "Business Bishop"),
   person(U_LAURA, "Laura Ortega", "laura@ortegacapital.com", "bishop", null, null, "Business Bishop"),
   person(U_DIEGO, "Diego Rivas", "diego@rivasholdings.com", "bishop", null, null, "Business Bishop"),
-  person(U_LUISA, "Luisa Paredes", "luisa@bimbotacos.com", "franchisee", FRANCHISE_ORLANDO_SUR, null, "Dueña de la franquicia", true),
-  person(U_MARCO, "Marco Ibáñez", "marco@bimbotacos.com", "franchisee", FRANCHISE_TAMPA, null, "Dueño de la franquicia", true),
+  person(U_LUISA, "Luisa Paredes", "luisa@bimboremodelaciones.com", "franchisee", FRANCHISE_ORLANDO_SUR, null, "Dueña de la franquicia", true),
+  person(U_MARCO, "Marco Ibáñez", "marco@bimboremodelaciones.com", "franchisee", FRANCHISE_TAMPA, null, "Dueño de la franquicia", true),
   person(U_TAMPA_MANAGER, "Natalia Escobar", "natalia@strategicmates.com", "sm_team", ORG_TAMPA, null, "Consultora y directora de la oficina", true),
 ];
 
@@ -201,7 +201,7 @@ const orlandoSpecs: LeadSpec[] = [
     path: [["submitted", "2026-06-10"], ["meeting", "2026-06-12"], ["documents", "2026-06-20"], ["accepted", "2026-06-27"], ["in_program", "2026-07-06"]],
     lead: {
       consultant_user_id: U_VALENTINA, business_id: BIZ_SUNSHINE,
-      contact: { name: "Óscar Medina", email: "oscar@sunshineroofing.com", phone: "+1 407 555 0231", city: "Orlando", state: "FL", hispanic_owner: true },
+      contact: { name: "Óscar Medina", email: "oscar@sunshineroofing.com", phone: "+1 407 555 0231", city: "Orlando", state: "FL", hispanic_owner: "yes" },
       business: { name: "Sunshine Roofing", industry: "remodeling", activity: "Techos y remodelaciones", revenue_range: "1m_2m", margin_range: "margin_21_40", team_range: "team_20_plus", years_range: "years_10_plus", has_active_clients: true },
       result: { readiness: "ready", band: "high", score: 82, eligible_program: true, eligibility_gaps: [], blocks: blocks("ssmmsmm"), strengths: ["Más de diez años con clientes que repiten", "Cuadrillas con método propio"], priorities: ["Números por obra", "Contratos y licencias"] },
       know_how_example: null,
@@ -211,7 +211,7 @@ const orlandoSpecs: LeadSpec[] = [
     path: [["submitted", "2026-08-27"], ["meeting", "2026-08-31"], ["documents", "2026-09-08"], ["accepted", "2026-09-14"], ["in_program", "2026-09-21"]],
     lead: {
       consultant_user_id: U_VALENTINA, business_id: BIZ_CASA_LIMPIA,
-      contact: { name: "Marta Quintero", email: "marta@casalimpiaorlando.com", phone: "+1 407 555 0232", city: "Orlando", state: "FL", hispanic_owner: true },
+      contact: { name: "Marta Quintero", email: "marta@casalimpiaorlando.com", phone: "+1 407 555 0232", city: "Orlando", state: "FL", hispanic_owner: "yes" },
       business: { name: "Casa Limpia Orlando", industry: "cleaning", activity: "Limpieza de casas y oficinas", revenue_range: "750k_1m", margin_range: "margin_0_20", team_range: "team_11_20", years_range: "years_6_10", has_active_clients: true },
       result: { readiness: "ready", band: "mid", score: 67, eligible_program: true, eligibility_gaps: [], blocks: blocks("msmmmwm"), strengths: ["Lista de revisión de 40 puntos en cada limpieza", "Contratos mensuales con oficinas"], priorities: ["Margen por servicio", "Sistema de citas"] },
       know_how_example: null,
@@ -221,7 +221,7 @@ const orlandoSpecs: LeadSpec[] = [
     path: [["submitted", "2026-10-12"]],
     lead: {
       consultant_user_id: U_VALENTINA, business_id: null,
-      contact: { name: "Rafael Delgado", email: "rafael@pinturasdelvalle.com", phone: "+1 407 555 0241", city: "Winter Park", state: "FL", hispanic_owner: true },
+      contact: { name: "Rafael Delgado", email: "rafael@pinturasdelvalle.com", phone: "+1 407 555 0241", city: "Winter Park", state: "FL", hispanic_owner: "yes" },
       business: { name: "Pinturas del Valle", industry: "construction", activity: "Pintura residencial y comercial", revenue_range: "500k_750k", margin_range: "margin_21_40", team_range: "team_6_10", years_range: "years_6_10", has_active_clients: true },
       result: { readiness: "ready", band: "mid", score: 69, eligible_program: true, eligibility_gaps: [], blocks: blocks("mmmwsmm"), strengths: ["Acabados que el cliente reconoce", "Equipo estable"], priorities: ["Procesos escritos", "Presupuestos por obra"] },
       know_how_example: null,
@@ -230,13 +230,14 @@ const orlandoSpecs: LeadSpec[] = [
   {
     path: [["submitted", "2026-10-03"], ["meeting", "2026-10-07"]],
     contacted: true,
-    notes: [["2026-10-07", "Quiere saber si puede seguir atendiendo los dos locales durante el programa."]],
+    notes: [["2026-10-07", "Quiere saber si puede seguir atendiendo las obras de sus dos talleres durante el programa."]],
     lead: {
       consultant_user_id: U_VALENTINA, business_id: null,
-      contact: { name: "Yolanda Ortiz", email: "yolanda@saborboricua.com", phone: "+1 407 555 0242", city: "Orlando", state: "FL", hispanic_owner: true },
-      business: { name: "Sabor Boricua", industry: "restaurant", activity: "Restaurante de comida puertorriqueña", revenue_range: "1m_2m", margin_range: "margin_0_20", team_range: "team_20_plus", years_range: "years_10_plus", has_active_clients: true },
-      result: { readiness: "ready", band: "high", score: 80, eligible_program: true, eligibility_gaps: [], blocks: blocks("ssmmsmm"), strengths: ["Recetas medidas por gramos", "Dos locales con el mismo menú"], priorities: ["Manual de operaciones", "Costos por plato"] },
-      know_how_example: "Nuestro mofongo se arma siempre con la misma secuencia de seis pasos y se mide por peso, así sale igual en los dos locales.",
+      contact: { name: "Yolanda Ortiz", email: "yolanda@ortizcarpinteria.com", phone: "+1 407 555 0242", city: "Orlando", state: "FL", hispanic_owner: "yes" },
+      // A branch outside the five named ones: the assessment sends other_related with the owner's own words.
+      business: { name: "Ortiz Carpintería", industry: "other_related", activity_other: "Carpintería y gabinetes a medida", activity: "Carpintería, gabinetes y clósets a medida", revenue_range: "1m_2m", margin_range: "margin_0_20", team_range: "team_20_plus", years_range: "years_10_plus", has_active_clients: true },
+      result: { readiness: "ready", band: "high", score: 80, eligible_program: true, eligibility_gaps: [], blocks: blocks("ssmmsmm"), strengths: ["Medidas y cortes con plantilla propia", "Dos talleres con el mismo catálogo de muebles"], priorities: ["Manual de operaciones", "Costos por proyecto"] },
+      know_how_example: "Cada gabinete se arma siempre con la misma secuencia de seis pasos y plantillas de corte propias, así sale igual en los dos talleres.",
     },
   },
   {
@@ -245,7 +246,7 @@ const orlandoSpecs: LeadSpec[] = [
     notes: [["2026-10-09", "Contrato enviado. Lo está revisando con su contador."]],
     lead: {
       consultant_user_id: U_VALENTINA, business_id: null,
-      contact: { name: "Camilo Arango", email: "camilo@premierclean.com", phone: "+1 407 555 0243", city: "Kissimmee", state: "FL", hispanic_owner: true },
+      contact: { name: "Camilo Arango", email: "camilo@premierclean.com", phone: "+1 407 555 0243", city: "Kissimmee", state: "FL", hispanic_owner: "yes" },
       business: { name: "Limpieza Premier FL", industry: "cleaning", activity: "Limpieza de oficinas y áreas comunes", revenue_range: "750k_1m", margin_range: "margin_21_40", team_range: "team_20_plus", years_range: "years_6_10", has_active_clients: true },
       result: { readiness: "ready", band: "mid", score: 69, eligible_program: true, eligibility_gaps: [], blocks: blocks("smmmmsm"), strengths: ["Contratos recurrentes", "Procesos de limpieza escritos"], priorities: ["Contratos y seguros", "Tablero de calidad"] },
       know_how_example: null,
@@ -260,7 +261,7 @@ const tampaSpecs: LeadSpec[] = [
     path: [["submitted", "2026-10-10"]],
     lead: {
       consultant_user_id: U_TAMPA_MANAGER, business_id: null,
-      contact: { name: "Mariana Soler", email: "mariana@jardinessoler.com", phone: "+1 813 555 0421", city: "Tampa", state: "FL", hispanic_owner: true },
+      contact: { name: "Mariana Soler", email: "mariana@jardinessoler.com", phone: "+1 813 555 0421", city: "Tampa", state: "FL", hispanic_owner: "yes" },
       business: { name: "Jardines Soler", industry: "construction", activity: "Jardinería y paisajismo residencial", revenue_range: "500k_750k", margin_range: "margin_21_40", team_range: "team_11_20", years_range: "years_6_10", has_active_clients: true },
       result: { readiness: "ready", band: "mid", score: 68, eligible_program: true, eligibility_gaps: [], blocks: blocks("smmmsmm"), strengths: ["Clientes con contrato anual", "Cuadrillas con ruta fija"], priorities: ["Procesos escritos", "Precios por servicio"] },
       know_how_example: null,
@@ -271,10 +272,10 @@ const tampaLeads = buildLeads(tampaSpecs, { office_id: ORG_TAMPA, lead_prefix: "
 export const leads = [...orlandoLeads.leads, ...tampaLeads.leads];
 export const leadEvents = [...orlandoLeads.leadEvents, ...tampaLeads.leadEvents];
 
-// ---------- Bimbo Tacos franchise network ----------
+// ---------- Bimbo Remodelaciones franchise network ----------
 export const franchises: Franchise[] = [
-  { id: FRANCHISE_ORLANDO_SUR, franchisor_business_id: BIZ_BIMBO, name: "Bimbo Tacos Orlando Sur", franchisee_user_id: U_LUISA, city: "Orlando", state: "FL", status: "operating", opening_date: "2026-04-15", manual_version: "v1.3" },
-  { id: FRANCHISE_TAMPA, franchisor_business_id: BIZ_BIMBO, name: "Bimbo Tacos Tampa", franchisee_user_id: U_MARCO, city: "Tampa", state: "FL", status: "opening", opening_date: "2026-11-20", manual_version: "v1.3" },
+  { id: FRANCHISE_ORLANDO_SUR, franchisor_business_id: BIZ_BIMBO, name: "Bimbo Remodelaciones Orlando Sur", franchisee_user_id: U_LUISA, city: "Orlando", state: "FL", status: "operating", opening_date: "2026-04-15", manual_version: "v1.3" },
+  { id: FRANCHISE_TAMPA, franchisor_business_id: BIZ_BIMBO, name: "Bimbo Remodelaciones Tampa", franchisee_user_id: U_MARCO, city: "Tampa", state: "FL", status: "opening", opening_date: "2026-11-20", manual_version: "v1.3" },
 ];
 
 /** Monthly gross sales of Orlando Sur. Fees are computed from them, never typed. */
@@ -298,27 +299,27 @@ const check = (franchise_id: string, kind: ChecklistItem["kind"], items: [string
 
 export const checklist: ChecklistItem[] = [
   ...check(FRANCHISE_ORLANDO_SUR, "standard", [
-    ["Recetas según manual", true], ["Uniforme y presentación", true], ["Limpieza de cocina (lista diaria)", true], ["Tiempos de servicio menores a 8 minutos", false],
-    ["Señalética de marca", true], ["Registro de temperaturas", false], ["Atención al cliente según protocolo", true], ["Control de inventario semanal", true],
+    ["Obras según el manual", true], ["Uniforme y presentación", true], ["Obra limpia y ordenada al final de cada día", true], ["Presupuestos entregados en menos de 48 horas", false],
+    ["Señalética de marca en camionetas y carteles de obra", true], ["Registro fotográfico diario de cada obra", false], ["Atención al cliente según protocolo", true], ["Control de inventario semanal", true],
   ], 1),
   ...check(FRANCHISE_TAMPA, "opening", [
-    ["Contrato de franquicia firmado", true], ["Local aprobado por SM", true], ["Permisos municipales", true],
-    ["Equipamiento de cocina instalado", false], ["Capacitación del equipo (40 h)", false], ["Auditoría de apertura", false],
+    ["Contrato de franquicia firmado", true], ["Oficina y depósito aprobados por SM", true], ["Licencia de contratista del condado", true],
+    ["Camioneta y herramientas equipadas", false], ["Capacitación del equipo (40 h)", false], ["Auditoría de apertura", false],
   ], 20),
 ];
 
 export const tickets: SupportTicket[] = [
-  { id: uuid("3f000000", 118), code: "T-118", franchise_id: FRANCHISE_ORLANDO_SUR, subject: "Proveedor de tortillas sin stock", body: "El proveedor nuevo no entregó esta semana. Tenemos tortillas para dos días. ¿Hay otro proveedor aprobado?", state: "open", created_by_user_id: U_LUISA, created_at: "2026-10-07T14:10:00Z", response: null },
-  { id: uuid("3f000000", 112), code: "T-112", franchise_id: FRANCHISE_ORLANDO_SUR, subject: "Duda sobre promoción de octubre", body: "¿La promoción de octubre aplica también a los pedidos por aplicación?", state: "answered", created_by_user_id: U_LUISA, created_at: "2026-10-02T16:40:00Z", response: "Aplica solo en el local y en la web propia. En aplicaciones de terceros no se ofrece." },
-  { id: uuid("3f000000", 104), code: "T-104", franchise_id: FRANCHISE_ORLANDO_SUR, subject: "Falla en POS", body: "La caja dejó de imprimir tickets desde la mañana.", state: "closed", created_by_user_id: U_LUISA, created_at: "2026-09-21T13:05:00Z", response: "Reinicia el terminal y actualiza el controlador. Quedó resuelto con soporte de TecnoPyme." },
-  { id: uuid("3f000000", 120), code: "T-120", franchise_id: FRANCHISE_TAMPA, subject: "Planos de cocina para inspección", body: "Necesito los planos estándar de cocina para presentarlos en la inspección del condado.", state: "open", created_by_user_id: U_MARCO, created_at: "2026-10-08T15:30:00Z", response: null },
+  { id: uuid("3f000000", 118), code: "T-118", franchise_id: FRANCHISE_ORLANDO_SUR, subject: "Proveedor de cerámica sin stock", body: "El proveedor nuevo no entregó esta semana. Tenemos cerámica para dos obras. ¿Hay otro proveedor aprobado?", state: "open", created_by_user_id: U_LUISA, created_at: "2026-10-07T14:10:00Z", response: null },
+  { id: uuid("3f000000", 112), code: "T-112", franchise_id: FRANCHISE_ORLANDO_SUR, subject: "Duda sobre promoción de octubre", body: "¿La promoción de octubre aplica también a los pedidos que llegan por plataformas de terceros?", state: "answered", created_by_user_id: U_LUISA, created_at: "2026-10-02T16:40:00Z", response: "Aplica solo a los pedidos por teléfono y por la web propia. En plataformas de terceros no se ofrece." },
+  { id: uuid("3f000000", 104), code: "T-104", franchise_id: FRANCHISE_ORLANDO_SUR, subject: "Falla en el sistema de presupuestos", body: "El sistema dejó de generar los presupuestos en PDF desde la mañana.", state: "closed", created_by_user_id: U_LUISA, created_at: "2026-09-21T13:05:00Z", response: "Cierra sesión y actualiza la plantilla de presupuestos. Quedó resuelto con soporte de TecnoPyme." },
+  { id: uuid("3f000000", 120), code: "T-120", franchise_id: FRANCHISE_TAMPA, subject: "Planos tipo para la licencia del condado", body: "Necesito los planos tipo de una remodelación de baño para presentarlos con la licencia del condado.", state: "open", created_by_user_id: U_MARCO, created_at: "2026-10-08T15:30:00Z", response: null },
 ];
 
 export const franchiseTasks: FranchiseTask[] = [
   { id: uuid("4a000000", 1), franchise_id: FRANCHISE_ORLANDO_SUR, kind: "report", title: "Enviar el reporte de ventas de octubre", due_date: "2026-11-05", done: false },
   { id: uuid("4a000000", 2), franchise_id: FRANCHISE_ORLANDO_SUR, kind: "audit", title: "Preparar la auditoría de estándares del 22 de octubre", due_date: "2026-10-22", done: false },
   { id: uuid("4a000000", 3), franchise_id: FRANCHISE_ORLANDO_SUR, kind: "manual_read", title: "Leer el manual v1.3, sección Compras (cambió el 28 de septiembre)", due_date: "2026-10-15", done: false },
-  { id: uuid("4a000000", 4), franchise_id: FRANCHISE_TAMPA, kind: "other", title: "Entregar los planos de cocina para la inspección", due_date: "2026-10-30", done: false },
+  { id: uuid("4a000000", 4), franchise_id: FRANCHISE_TAMPA, kind: "other", title: "Entregar los planos tipo para la licencia del condado", due_date: "2026-10-30", done: false },
   { id: uuid("4a000000", 5), franchise_id: FRANCHISE_TAMPA, kind: "other", title: "Completar la capacitación del equipo (40 h)", due_date: "2026-11-13", done: false },
 ];
 
@@ -341,9 +342,9 @@ export const manualSections: ManualSection[] = [
 ];
 
 export const manualVersions: ManualVersion[] = [
-  { id: uuid("6a000000", 4), business_id: BIZ_BIMBO, version: "v1.3", published_at: "2026-09-28", note: "Compras: nuevo proveedor de tortillas y control de inventario semanal", published_by_user_id: U_RODRIGO_BIMBO, section_titles: ["Compras"] },
+  { id: uuid("6a000000", 4), business_id: BIZ_BIMBO, version: "v1.3", published_at: "2026-09-28", note: "Compras: nuevo proveedor de cerámica y control de inventario semanal", published_by_user_id: U_RODRIGO_BIMBO, section_titles: ["Compras"] },
   { id: uuid("6a000000", 3), business_id: BIZ_BIMBO, version: "v1.2", published_at: "2026-07-10", note: "Atención al cliente: protocolo de reclamos", published_by_user_id: U_RODRIGO_BIMBO, section_titles: ["Atención al cliente"] },
-  { id: uuid("6a000000", 2), business_id: BIZ_BIMBO, version: "v1.1", published_at: "2026-05-20", note: "Operación: tiempos de servicio y registro de temperaturas", published_by_user_id: U_RODRIGO_BIMBO, section_titles: ["Operación"] },
+  { id: uuid("6a000000", 2), business_id: BIZ_BIMBO, version: "v1.1", published_at: "2026-05-20", note: "Operación: plazos de presupuesto y registro fotográfico de obra", published_by_user_id: U_RODRIGO_BIMBO, section_titles: ["Operación"] },
   { id: uuid("6a000000", 1), business_id: BIZ_BIMBO, version: "v1.0", published_at: "2026-04-01", note: "Primera versión entregada a Orlando Sur", published_by_user_id: U_RODRIGO_BIMBO, section_titles: [...SECTION_TITLES] },
 ];
 
@@ -368,7 +369,7 @@ export const documents: BusinessDocument[] = [
   doc(5, BIZ_VOSSLER, "B6", "Póliza de seguro general", "requested", "2026-10-01", null),
   doc(6, BIZ_PRIME, "B6", "Licencia de contratista", "requested", "2026-09-23", null),
   doc(7, BIZ_BIMBO, "closing", "Documento de divulgación a franquiciados (FDD)", "reviewed", "2025-08-01", "2025-08-20"),
-  doc(8, BIZ_BIMBO, "B6", "Registro de la marca Bimbo Tacos", "reviewed", "2025-04-10", "2025-04-28"),
+  doc(8, BIZ_BIMBO, "B6", "Registro de la marca Bimbo Remodelaciones", "reviewed", "2025-04-10", "2025-04-28"),
   doc(9, BIZ_SUNSHINE, "B6", "Licencia de techista del condado de Orange", "received", "2026-07-08", "2026-07-15"),
   doc(10, BIZ_CASA_LIMPIA, "B3", "Estados de cuenta de los últimos 12 meses", "requested", "2026-09-22", null),
 ];
@@ -401,10 +402,10 @@ export const financials: FinancialSeries[] = [
     business_id: BIZ_BIMBO, months: MONTHS, revenue: [98000, 104000, 109000, 112000, 118000], margin_pct: [18, 19, 19, 21, 22], cash: [84000, 91000, 97000, 103000, 112000],
     changes: [
       { metric: "Margen neto", before: "9%", now: "22%" },
-      { metric: "Locales propios", before: "1", now: "2" },
+      { metric: "Cuadrillas propias", before: "1", now: "2" },
       { metric: "Franquicias", before: "0", now: "1 operando y 1 en apertura" },
-      { metric: "Regalías cobradas en septiembre", before: "—", now: usd(septemberRoyalty) },
-      { metric: "Horas semanales del dueño en el local", before: "60", now: "12" },
+      { metric: "Regalías cobradas en septiembre", before: usd(0), now: usd(septemberRoyalty) },
+      { metric: "Horas semanales del dueño en obra", before: "60", now: "12" },
     ],
   },
   {
@@ -423,8 +424,8 @@ export const financials: FinancialSeries[] = [
 export const profiles: BusinessProfile[] = [
   { business_id: BIZ_VOSSLER, legal_name: "Vossler Construction LLC", industry: "Construcción residencial", address: "4821 Curry Ford Rd", city: "Orlando", state: "FL", phone: "+1 407 555 0110", email: "carla@vossler.com", website: "https://vosslerbuild.com", years_operating: 11, employees: 14 },
   { business_id: BIZ_PRIME, legal_name: "Prime 10 Solutions Inc.", industry: "Remodelaciones", address: "2210 W Kennedy Blvd", city: "Tampa", state: "FL", phone: "+1 813 555 0133", email: "daniel@prime10solutions.com", website: null, years_operating: 6, employees: 9 },
-  { business_id: BIZ_ENYERMY, legal_name: "Enyermy Hair Studio LLC", industry: "Salón de belleza", address: "1140 SW 8th St", city: "Miami", state: "FL", phone: "+1 305 555 0187", email: "enyermy@enyermyhair.com", website: "https://enyermyhair.com", years_operating: 7, employees: 8 },
-  { business_id: BIZ_BIMBO, legal_name: "Bimbo Tacos Franchising LLC", industry: "Restaurante", address: "900 Brickell Ave", city: "Miami", state: "FL", phone: "+1 305 555 0300", email: "rodrigo@bimbotacos.com", website: "https://bimbotacos.com", years_operating: 9, employees: 31 },
+  { business_id: BIZ_ENYERMY, legal_name: "Enyermy Clean Pro LLC", industry: "Limpieza post-obra y mantenimiento de edificios", address: "1140 SW 8th St", city: "Miami", state: "FL", phone: "+1 305 555 0187", email: "enyermy@enyermycleanpro.com", website: "https://enyermycleanpro.com", years_operating: 7, employees: 8 },
+  { business_id: BIZ_BIMBO, legal_name: "Bimbo Remodelaciones Franchising LLC", industry: "Remodelación residencial", address: "900 Brickell Ave", city: "Miami", state: "FL", phone: "+1 305 555 0300", email: "rodrigo@bimboremodelaciones.com", website: "https://bimboremodelaciones.com", years_operating: 9, employees: 31 },
   { business_id: BIZ_SUNSHINE, legal_name: "Sunshine Roofing Corp.", industry: "Techos y remodelaciones", address: "5300 S Orange Ave", city: "Orlando", state: "FL", phone: "+1 407 555 0231", email: "oscar@sunshineroofing.com", website: "https://sunshineroofing.com", years_operating: 12, employees: 22 },
   { business_id: BIZ_CASA_LIMPIA, legal_name: "Casa Limpia Orlando LLC", industry: "Limpieza de casas y oficinas", address: "3100 E Colonial Dr", city: "Orlando", state: "FL", phone: "+1 407 555 0232", email: "marta@casalimpiaorlando.com", website: null, years_operating: 8, employees: 24 },
 ];
@@ -437,20 +438,20 @@ export const teamMembers: TeamMember[] = [
   member(2, BIZ_VOSSLER, "Ana Vossler", "Administración", "ana@vosslerbuild.com", "active", U_ANA_VOSSLER),
   member(3, BIZ_VOSSLER, "Luis Prado", "Jefe de obra", "luis@vosslerbuild.com", "invited"),
   member(4, BIZ_PRIME, "Daniel Ortiz", "Dueño", "daniel@prime10solutions.com", "active", U_DANIEL),
-  member(5, BIZ_ENYERMY, "Enyermy Rivas", "Dueña", "enyermy@enyermyhair.com", "active", U_ENYERMY),
-  member(6, BIZ_BIMBO, "Rodrigo Bimbo", "Dueño", "rodrigo@bimbotacos.com", "active", U_RODRIGO_BIMBO),
-  member(7, BIZ_BIMBO, "Carla Bimbo", "Operaciones y franquicias", "carla@bimbotacos.com", "active"),
-  member(8, BIZ_BIMBO, "Esteban Ruiz", "Encargado del local de Miami", "esteban@bimbotacos.com", "active"),
+  member(5, BIZ_ENYERMY, "Enyermy Rivas", "Dueña", "enyermy@enyermycleanpro.com", "active", U_ENYERMY),
+  member(6, BIZ_BIMBO, "Rodrigo Bimbo", "Dueño", "rodrigo@bimboremodelaciones.com", "active", U_RODRIGO_BIMBO),
+  member(7, BIZ_BIMBO, "Carla Bimbo", "Operaciones y franquicias", "carla@bimboremodelaciones.com", "active"),
+  member(8, BIZ_BIMBO, "Esteban Ruiz", "Jefe de obra de Miami", "esteban@bimboremodelaciones.com", "active"),
   member(9, BIZ_SUNSHINE, "Óscar Medina", "Dueño", "oscar@sunshineroofing.com", "active", U_OSCAR),
   member(10, BIZ_CASA_LIMPIA, "Marta Quintero", "Dueña", "marta@casalimpiaorlando.com", "active", U_MARTA),
-  member(11, FRANCHISE_ORLANDO_SUR, "Luisa Paredes", "Dueña", "luisa@bimbotacos.com", "active", U_LUISA),
-  member(12, FRANCHISE_ORLANDO_SUR, "Tomás Reyes", "Encargado de turno", "tomas@bimbotacos.com", "active"),
-  member(13, FRANCHISE_ORLANDO_SUR, "Equipo de cocina", "Operación", null, "invited"),
-  member(14, FRANCHISE_TAMPA, "Marco Ibáñez", "Dueño", "marco@bimbotacos.com", "active", U_MARCO),
+  member(11, FRANCHISE_ORLANDO_SUR, "Luisa Paredes", "Dueña", "luisa@bimboremodelaciones.com", "active", U_LUISA),
+  member(12, FRANCHISE_ORLANDO_SUR, "Tomás Reyes", "Jefe de cuadrilla", "tomas@bimboremodelaciones.com", "active"),
+  member(13, FRANCHISE_ORLANDO_SUR, "Cuadrilla de obra", "Operación", null, "invited"),
+  member(14, FRANCHISE_TAMPA, "Marco Ibáñez", "Dueño", "marco@bimboremodelaciones.com", "active", U_MARCO),
 ];
 
 // ---------- Business Bishop ----------
-/** Cumulative recovery of Jefferson's investment in Bimbo Tacos, monthly. Projected comes from the agreement. */
+/** Cumulative recovery of Jefferson's investment in Bimbo Remodelaciones, monthly. Projected comes from the agreement. */
 const RECOVERY_MONTHS = ["2025-12", "2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10", "2026-11", "2026-12", "2027-01", "2027-02", "2027-03", "2027-04"];
 const PROJECTED = [0, 3000, 6000, 9500, 13000, 17000, 21000, 25500, 30000, 35000, 40000, 45500, 51000, 57000, 63000, 69500, 76000];
 const ACTUAL = [0, 2600, 5200, 9000, 12800, 17600, 22400, 27250, 32100, 36950, 41800];
@@ -485,7 +486,7 @@ export const frameworkContracts: Contract[] = [
 ];
 
 export const agreements: BishopAgreement[] = [
-  { id: uuid("9b000000", 1), bishop_user_id: U_JEFFERSON, business_id: BIZ_BIMBO, name: "Acuerdo de participación: Bimbo Tacos", counterparties: "Rodrigo Bimbo, Strategic Mates", state: "signed", signed_at: "2025-11-14", has_file: true, file_name: "Acuerdo_participacion_Bimbo_Tacos.pdf" },
+  { id: uuid("9b000000", 1), bishop_user_id: U_JEFFERSON, business_id: BIZ_BIMBO, name: "Acuerdo de participación: Bimbo Remodelaciones", counterparties: "Rodrigo Bimbo, Strategic Mates", state: "signed", signed_at: "2025-11-14", has_file: true, file_name: "Acuerdo_participacion_Bimbo_Remodelaciones.pdf" },
   // The draft is still with SM's lawyers: no file to open yet.
   { id: uuid("9b000000", 3), bishop_user_id: U_JEFFERSON, business_id: BIZ_VOSSLER, name: "Acuerdo de participación: Vossler", counterparties: "Carla Méndez, Strategic Mates", state: "draft", signed_at: null, has_file: false, file_name: null },
 ];

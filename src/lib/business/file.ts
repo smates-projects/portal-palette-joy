@@ -14,7 +14,7 @@ const PRIORITY_WORDS: [AreaCode, RegExp][] = [
   ["B3", /numero|costo|margen|precio|finanz|dinero|flujo|ganancia|presupuest/],
   ["B4", /herramient|sistema|agenda|software|tecnolog|cita|crm|digital/],
   ["B5", /marca|cliente|venta|presencia|redes|marketing/],
-  ["B2", /proceso|manual|metodo|receta|operaci|equipo|rol|produccion|calidad|obra/],
+  ["B2", /proceso|manual|metodo|operaci|equipo|rol|produccion|calidad|obra/],
 ];
 export const priorityArea = (text: string): AreaCode => PRIORITY_WORDS.find(([, re]) => re.test(norm(text)))?.[0] ?? "B1";
 

@@ -1070,9 +1070,20 @@
     "industries": {
       "construction": "Construction",
       "remodeling": "Remodeling",
+      "installations_repairs": "Installations and repairs",
+      "maintenance": "Maintenance",
       "cleaning": "Cleaning",
-      "restaurant": "Restaurant",
-      "salon": "Salon"
+      "other_related": "Other related"
+    },
+    "hispanic": {
+      "yes": "Hispanic owner",
+      "no": "Not Hispanic",
+      "talk": "Prefers to talk about it"
+    },
+    "hispanic_answers": {
+      "yes": "Yes",
+      "no": "No",
+      "talk": "Prefers to talk about it"
     },
     "revenue_ranges": {
       "lt_250k": "Under 250K",
@@ -1286,7 +1297,9 @@
       "confirm": "Add business",
       "err_required": "Enter the business name and the owner's name.",
       "err_email": "Enter a valid email.",
-      "err_ranges": "Complete the industry, revenue, margin, team and years."
+      "err_ranges": "Complete the industry, revenue, margin, team, years and Hispanic owner.",
+      "activity_other": "Which branch of construction?",
+      "err_activity_other": "Write which branch of construction the business works in."
     }
   },
   "entry": {
@@ -2243,7 +2256,7 @@
       "never_published": "Not published yet",
       "not_approved": "Not approved yet ({{pct}}%). It cannot be published.",
       "note": "What changed?",
-      "note_example": "For example, new tortilla supplier and weekly inventory check",
+      "note_example": "For example, new tile supplier and weekly inventory check",
       "publish": "Publish {{version}}",
       "publish_needs": "Pick at least one section and say what changed.",
       "current_version": "Current version",

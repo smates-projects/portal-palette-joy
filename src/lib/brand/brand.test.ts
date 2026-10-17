@@ -37,7 +37,7 @@ describe("simulated reading of the manual", () => {
     expect(a.manual_file_name).toBe("manual.pdf");
     expect(a.logo_file_name).toBe("logo.png");
     expect(isHex(a.primary_color) && isHex(a.accent_color)).toBe(true);
-    expect(brandFileNames("Bimbo Tacos")).toEqual({ manual: "Bimbo_Tacos_manual_de_marca.pdf", logo: "Bimbo_Tacos_logo.png" });
+    expect(brandFileNames("Bimbo Remodelaciones")).toEqual({ manual: "Bimbo_Remodelaciones_manual_de_marca.pdf", logo: "Bimbo_Remodelaciones_logo.png" });
   });
 });
 

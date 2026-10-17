@@ -209,7 +209,7 @@ describe("manual", () => {
     expect(overview.completion_pct).toBe(100);
     expect(overview.franchises_following).toBe(2);
     const compras = overview.sections.find((s) => s.title === "Compras")!;
-    const published = await api.manual.publish(seed.BIZ_BIMBO, { note: "Compras: proveedor alterno de tortillas", section_ids: [compras.id] });
+    const published = await api.manual.publish(seed.BIZ_BIMBO, { note: "Compras: proveedor alterno de cerámica", section_ids: [compras.id] });
     expect(published).toMatchObject({ version: "v1.4", section_titles: ["Compras"] });
     expect((await api.manual.get()).current_version).toBe("v1.4");
     expect((await api.franchises.list()).every((f) => f.manual_version === "v1.4")).toBe(true);
@@ -323,8 +323,8 @@ describe("network (SM Global)", () => {
     expect(tree.root.kind).toBe("global");
     expect(tree.root.children.map((c) => c.name)).toEqual(["SM Miami", "SM Orlando", "SM Tampa"]);
     const miami = tree.root.children[0]!;
-    const bimbo = miami.children.find((c) => c.name === "Bimbo Tacos")!;
-    expect(bimbo.children.filter((c) => c.kind === "franchise").map((c) => c.name).sort()).toEqual(["Bimbo Tacos Orlando Sur", "Bimbo Tacos Tampa"]);
+    const bimbo = miami.children.find((c) => c.name === "Bimbo Remodelaciones")!;
+    expect(bimbo.children.filter((c) => c.kind === "franchise").map((c) => c.name).sort()).toEqual(["Bimbo Remodelaciones Orlando Sur", "Bimbo Remodelaciones Tampa"]);
     expect(bimbo.children.filter((c) => c.kind === "investor").map((c) => c.name)).toEqual(["Jefferson Paula"]);
     expect(miami.children.filter((c) => c.kind === "firm")).toHaveLength(5);
     const orlando = tree.root.children[1]!;
@@ -431,7 +431,7 @@ describe("Business Bishop", () => {
     const { investments, totals } = await (await asBishop()).bishop.getPortfolio();
     expect(totals).toEqual({ invested: 150000, recovered: 41800, recovered_pct: 28 });
     const bimbo = investments[0]!;
-    expect(bimbo).toMatchObject({ business_name: "Bimbo Tacos", current_share_pct: 50, franchises: 2, estimated_payback_month: "2028-09" });
+    expect(bimbo).toMatchObject({ business_name: "Bimbo Remodelaciones", current_share_pct: 50, franchises: 2, estimated_payback_month: "2028-09" });
     expect(bimbo.recovery.at(-1)).toMatchObject({ month: "2027-04", projected: 76000, actual: null });
     expect(bimbo.recovery.find((p) => p.month === "2026-10")).toMatchObject({ projected: 40000, actual: 41800 });
   });

@@ -423,8 +423,8 @@ export function createMockApi(): ApiClient {
           { user: db.users.find((u) => u.id === seed.U_NICOLAS)!, organization: db.orgs.find((o) => o.id === seed.ORG_SM) ?? null, business: null, enabled: true },
           // SM Miami office admin: manages the team and the partner firms.
           { user: db.users.find((u) => u.id === seed.U_ANDREA)!, organization: db.orgs.find((o) => o.id === seed.ORG_SM) ?? null, business: null, enabled: true },
-          // A business owner still entering (Sazón Criollo, documents in review).
-          ...db.businesses.filter((b) => b.status === "onboarding" && b.name === "Sazón Criollo").map((b) => ({ user: db.users.find((u) => u.id === b.owner_user_id)!, organization: null, business: b, enabled: true })),
+          // A business owner still entering (Castillo Instalaciones, documents in review).
+          ...db.businesses.filter((b) => b.status === "onboarding" && b.name === "Castillo Instalaciones").map((b) => ({ user: db.users.find((u) => u.id === b.owner_user_id)!, organization: null, business: b, enabled: true })),
           // New roles: SM Global, the franchisor (a business owner whose business is a franchisor), Business Bishop and a franchisee.
           { user: db.users.find((u) => u.id === seed.U_MARYLIN)!, organization: db.orgs.find((o) => o.id === seed.ORG_GLOBAL) ?? null, business: null, enabled: true },
           { user: db.users.find((u) => u.id === seed.U_RODRIGO_BIMBO)!, organization: null, business: db.businesses.find((b) => b.id === seed.BIZ_BIMBO) ?? null, enabled: true },

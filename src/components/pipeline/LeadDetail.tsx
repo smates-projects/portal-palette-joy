@@ -148,7 +148,7 @@ export function LeadDetail(props: {
             <h2 className="mt-2 text-xl font-semibold tracking-tight">{lead.business.name}</h2>
             <p className="mt-0.5 text-sm text-muted-foreground">
               {lead.contact.name}
-              {lead.contact.hispanic_owner && <> · {t("pipeline.detail.hispanic")}</>}
+ · {t(`pipeline.hispanic.${lead.contact.hispanic_owner}`)}
             </p>
           </div>
           <button onClick={props.onClose} aria-label={t("pipeline.detail.close")} className="rounded-md p-1 text-muted-foreground hover:bg-muted">
@@ -220,7 +220,12 @@ export function LeadDetail(props: {
         <section>
           <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("pipeline.detail.business_title")}</h3>
           <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 rounded-md border border-border p-4 text-sm">
-            <Item label={t("pipeline.industry")} value={t(`pipeline.industries.${lead.business.industry}`)} />
+            <Item
+              label={t("pipeline.industry")}
+              value={lead.business.industry === "other_related" && lead.business.activity_other
+                ? `${t("pipeline.industries.other_related")}: ${lead.business.activity_other}`
+                : t(`pipeline.industries.${lead.business.industry}`)}
+            />
             <Item label={t("pipeline.detail.activity")} value={lead.business.activity} />
             <Item label={t("pipeline.revenue")} value={t(`pipeline.revenue_ranges.${lead.business.revenue_range}`)} />
             <Item label={t("pipeline.detail.margin")} value={t(`pipeline.margin_ranges.${lead.business.margin_range ?? "unknown"}`)} />

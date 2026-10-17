@@ -23,9 +23,12 @@ export const CLOSING_GATE = { start: 150, end: 180 } as const;
 const STEPS: TaskStep[] = ["survey", "design", "implement", "validate", "document"];
 const CONSTRUCTION_ONLY = "Construcción / mantenimiento";
 
-/** "applies" filter: entries limited to construction only go to construction and remodeling businesses. */
+/** Branches that run jobs on site (change orders, QA/QC, job costing). Cleaning and other_related do not. */
+const SITE_WORK_INDUSTRIES: readonly LeadIndustry[] = ["construction", "remodeling", "installations_repairs", "maintenance"];
+
+/** "applies" filter: entries limited to "Construcción / mantenimiento" only go to the site work branches. */
 export const appliesTo = (entry: CatalogEntry, industry: LeadIndustry) =>
-  entry.applies !== CONSTRUCTION_ONLY || industry === "construction" || industry === "remodeling";
+  entry.applies !== CONSTRUCTION_ONLY || SITE_WORK_INDUSTRIES.includes(industry);
 
 export const addDaysIso = (iso: IsoDate, n: number) => {
   const d = new Date(`${iso}T12:00:00Z`);

@@ -42,7 +42,7 @@ export function SmHomePage({ taskId }: { taskId?: string | undefined }) {
   const openTask = (id: string | undefined) => void navigate({ to: "/", search: id ? { task: id } : {}, replace: true });
   const selected = all.find((x) => x.id === taskId);
 
-  /** "2 en Vossler, 1 en Enyermy Hair Studio" */
+  /** "2 en Vossler, 1 en Enyermy Clean Pro" */
   const context = (items: TaskWithComputed[]) => {
     const by = new Map<string, number>();
     items.forEach((x) => by.set(x.business_id, (by.get(x.business_id) ?? 0) + 1));

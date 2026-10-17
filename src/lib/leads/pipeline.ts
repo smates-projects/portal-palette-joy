@@ -147,7 +147,8 @@ export interface LeadsSearch {
 
 const ALL_STAGES: LeadStage[] = [...LEAD_STAGES, "discarded"];
 const BANDS: LeadBand[] = ["high", "mid", "low", "track"];
-export const INDUSTRIES: LeadIndustry[] = ["construction", "remodeling", "cleaning", "restaurant", "salon"];
+// Vertientes de la construcción; para sumar una, agregar aquí y en locales pipeline.industries.
+export const INDUSTRIES: readonly LeadIndustry[] = ["construction", "remodeling", "installations_repairs", "maintenance", "cleaning", "other_related"];
 export const REVENUES: RevenueRange[] = ["lt_250k", "250k_500k", "500k_750k", "750k_1m", "1m_2m", "gt_2m"];
 const QUICKS: LeadQuick[] = ["week", "uncontacted", "signed_month", "in_review", "review_overdue", "no_investor"];
 const pick = <T extends string>(v: unknown, allowed: readonly T[]) => (typeof v === "string" && (allowed as readonly string[]).includes(v) ? (v as T) : undefined);

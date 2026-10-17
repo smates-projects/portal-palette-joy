@@ -64,7 +64,7 @@ describe("structure tree", () => {
         children: [
           node({ id: "b1", kind: "business", name: "Vossler", health: "red", franchisability: { value: 24, expected: 28 }, detail: { kind: "business", status: "in_program", program_day: 60, consultant_name: null, owner_name: "Ana Vossler" } }),
           node({
-            id: "b2", kind: "business", name: "Bimbo Tacos", detail: { kind: "business", status: "franchisor", program_day: null, consultant_name: null, owner_name: null },
+            id: "b2", kind: "business", name: "Bimbo Remodelaciones", detail: { kind: "business", status: "franchisor", program_day: null, consultant_name: null, owner_name: null },
             children: [
               node({ id: "f1", kind: "franchise", name: "Bimbo Sur", detail: { kind: "franchise", status: "operating", city: "Doral, FL", franchisee_name: "Luisa Gómez" } }),
               node({ id: "i1", kind: "investor", name: "Jefferson Paula", detail: { kind: "investor", invested: 150000, share_pct: 50 } }),
@@ -83,7 +83,7 @@ describe("structure tree", () => {
     const office = view.children[0]!;
     expect(office.children.map((c) => c.name)).toEqual(["global.structure.group_programs", "global.structure.group_franchises", "global.structure.group_firms"]);
     expect(find(office, "o1:programs")?.children.map((c) => c.name)).toEqual(["Vossler"]);
-    expect(find(office, "o1:franchises")?.children.map((c) => c.name)).toEqual(["Bimbo Tacos"]);
+    expect(find(office, "o1:franchises")?.children.map((c) => c.name)).toEqual(["Bimbo Remodelaciones"]);
     expect(find(office, "o1:firms")?.children.map((c) => c.name)).toEqual(["Estudio Pérez"]);
   });
 
@@ -104,7 +104,7 @@ describe("structure tree", () => {
   });
 
   it("matches without caring about case and keeps the children of a match", () => {
-    const filtered = filterTree(view, "BIMBO TACOS")!;
+    const filtered = filterTree(view, "BIMBO REMODELACIONES")!;
     expect(find(filtered, "f1")).toBeDefined();
   });
 

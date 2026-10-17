@@ -32,8 +32,10 @@ describe("task rules", () => {
 });
 
 describe("seed data", () => {
-  it("has 136 tasks (91 in the three running programs + 45 approved ones of Bimbo Tacos) and the required minimums", () => {
-    expect(all).toHaveLength(136);
+  it("has 139 tasks (91 in the three running programs + 48 approved ones of Bimbo Remodelaciones) and the required minimums", () => {
+    expect(all).toHaveLength(139);
+    // Bimbo is a remodeling business: it carries the site work tasks too.
+    expect(all.filter((t) => t.business_id === seed.BIZ_BIMBO).map((t) => t.code)).toEqual(expect.arrayContaining(["B2-07", "B2-08", "B3-02"]));
     expect(all.filter((t) => t.business_id === seed.BIZ_BIMBO).every((t) => t.status === "accepted")).toBe(true);
     expect(all.filter((t) => t.is_blocked).length).toBeGreaterThanOrEqual(2);
     expect(all.filter((t) => t.is_overdue).length).toBeGreaterThanOrEqual(2);
@@ -46,7 +48,7 @@ describe("mock authorization", () => {
   it("a firm only sees its own tasks and switching firm changes the view", async () => {
     const api = createMockApi();
     const perez = await api.tasks.list();
-    // Pérez does B6 for the three running programs (5 each) and did it for Bimbo Tacos too.
+    // Pérez does B6 for the three running programs (5 each) and did it for Bimbo Remodelaciones too.
     expect(perez).toHaveLength(seed.tasks.filter((t) => t.organization_id === seed.ORG_PEREZ).length);
     expect(perez.filter((t) => t.business_id !== seed.BIZ_BIMBO)).toHaveLength(15);
     expect(perez.every((t) => t.organization_id === seed.ORG_PEREZ)).toBe(true);
@@ -81,7 +83,7 @@ describe("mock authorization", () => {
     const codesOf = (biz: string) => seed.tasks.filter((t) => t.business_id === biz && /^B[12]-/.test(t.code)).map((t) => t.code).sort();
     expect(codesOf(seed.BIZ_VOSSLER)).toEqual([...b1b2, ...construction].sort());
     expect(codesOf(seed.BIZ_PRIME)).toEqual([...b1b2, ...construction].sort());
-    // A salon: change orders and QA/QC apply only to construction and maintenance.
+    // A cleaning business: change orders and QA/QC apply only to the site work branches.
     expect(codesOf(seed.BIZ_ENYERMY)).toEqual(b1b2.sort());
     const running = seed.tasks.filter((t) => t.business_id !== seed.BIZ_BIMBO);
     expect(running.filter((t) => t.area === "B1").every((t) => t.organization_id === seed.ORG_SM)).toBe(true);

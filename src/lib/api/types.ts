@@ -453,10 +453,13 @@ export type ActiveLeadStage = (typeof LEAD_STAGES)[number];
 export type LeadStage = ActiveLeadStage | "discarded";
 export type LeadBand = "high" | "mid" | "low" | "track";
 /**
- * El assessment real solo admite construction | remodeling | installations_repairs | maintenance | cleaning |
- * other_related (+ activity_other); restaurant y salon son datos de muestra pendientes de decisión.
+ * Strategic Mates works only with construction businesses and their branches. These are exactly the keys the
+ * public assessment of sm-platform sends (readinessQuestions.js ACTIVITY_OPTIONS); other_related comes with
+ * activity_other as free text.
  */
-export type LeadIndustry = "construction" | "remodeling" | "cleaning" | "restaurant" | "salon";
+export type LeadIndustry = "construction" | "remodeling" | "installations_repairs" | "maintenance" | "cleaning" | "other_related";
+/** Answer to "¿El dueño es hispano?" of the assessment. talk = prefers to talk about it in the meeting. */
+export type HispanicOwner = "yes" | "no" | "talk";
 
 // Range and block keys are exactly the ones the readiness assessment of sm-platform sends to the webhook
 // (readinessQuestions.js and config/assessment_forms.php).
@@ -529,10 +532,12 @@ export interface Lead {
   consultant_user_id: Uuid;
   /** Set when the contract is signed and the business is created. */
   business_id: Uuid | null;
-  contact: { name: string; email: string; phone: string; city: string; state: string; hispanic_owner: boolean };
+  contact: { name: string; email: string; phone: string; city: string; state: string; hispanic_owner: HispanicOwner };
   business: {
     name: string;
     industry: LeadIndustry;
+    /** Free text describing the branch; only relevant when industry is other_related. */
+    activity_other?: string | null;
     /** Free text as the owner wrote it. */
     activity: string;
     revenue_range: RevenueRange;

@@ -75,14 +75,14 @@ const addDays = (date: string, n: number) => {
 
 // Credible sample data for "Simular assessment" (demo only).
 const SAMPLE_BUSINESSES: { name: string; industry: LeadIndustry; activity: string }[] = [
-  { name: "Delicias Caribeñas", industry: "restaurant", activity: "Restaurante de comida dominicana" },
+  { name: "Electricidad Caribeña", industry: "installations_repairs", activity: "Instalaciones eléctricas residenciales" },
   { name: "Brillo Total Cleaning", industry: "cleaning", activity: "Limpieza de casas y oficinas" },
   { name: "Construcciones Herrera", industry: "construction", activity: "Construcción y ampliaciones" },
-  { name: "Estética Valeria", industry: "salon", activity: "Salón de belleza y uñas" },
+  { name: "Mantenimiento Valeria", industry: "maintenance", activity: "Mantenimiento de edificios y condominios" },
   { name: "Cocinas Modernas JR", industry: "remodeling", activity: "Remodelación de cocinas" },
-  { name: "Taquería El Güero", industry: "restaurant", activity: "Taquería y comida para llevar" },
+  { name: "Climas El Güero", industry: "installations_repairs", activity: "Instalación y reparación de aire acondicionado" },
   { name: "Pisos y Acabados Luna", industry: "remodeling", activity: "Instalación de pisos y baños" },
-  { name: "Barbería Los Compadres", industry: "salon", activity: "Barbería" },
+  { name: "Cercas Los Compadres", industry: "other_related", activity: "Cercas y portones de metal" },
 ];
 const SAMPLE_OWNERS = ["Alejandra Ruiz", "Jorge Castro", "Mónica Paredes", "Ricardo Salinas", "Diana Morales", "Fernando Ibarra", "Carolina Vega", "Héctor Lozano"];
 const SAMPLE_PLACES: { city: string; state: string }[] = [
@@ -90,7 +90,7 @@ const SAMPLE_PLACES: { city: string; state: string }[] = [
   { city: "Houston", state: "TX" }, { city: "San Antonio", state: "TX" }, { city: "Atlanta", state: "GA" }, { city: "Charlotte", state: "NC" },
   { city: "Newark", state: "NJ" }, { city: "Phoenix", state: "AZ" },
 ];
-const SAMPLE_STRENGTHS = ["Clientes que vuelven y lo recomiendan", "Equipo estable", "Proceso de trabajo propio", "Buen margen por trabajo", "Marca conocida en su zona", "Recetas o métodos medidos y escritos"];
+const SAMPLE_STRENGTHS = ["Clientes que vuelven y lo recomiendan", "Equipo estable", "Proceso de trabajo propio", "Buen margen por trabajo", "Marca conocida en su zona", "Métodos de trabajo medidos y escritos"];
 const SAMPLE_PRIORITIES = ["Números del negocio", "Procesos escritos", "Contratos y licencias", "Sistema de citas", "Marca y presencia local", "Costos por servicio"];
 const BLOCK_STATUSES: BlockStatus[] = ["strong", "medium", "medium", "weak", "unknown"];
 
@@ -209,9 +209,9 @@ export function createEntry(d: Deps) {
         last_contact_at: null,
         consultant_user_id: consultant.id,
         business_id: null,
-        contact: { name: owner, email: `${owner.split(" ")[0]!.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")}@${slug}.com`, phone: `+1 305 555 0${100 + Math.floor(Math.random() * 899)}`, city: place.city, state: place.state, hispanic_owner: true },
+        contact: { name: owner, email: `${owner.split(" ")[0]!.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")}@${slug}.com`, phone: `+1 305 555 0${100 + Math.floor(Math.random() * 899)}`, city: place.city, state: place.state, hispanic_owner: "yes" },
         business: {
-          name: biz.name, industry: biz.industry, activity: biz.activity,
+          name: biz.name, industry: biz.industry, activity: biz.activity, activity_other: biz.industry === "other_related" ? biz.activity : null,
           revenue_range: revenue,
           // null = "No lo sé", as the assessment sends it.
           margin_range: pick([null, "margin_0_20", "margin_21_40", "margin_41_60"] as (MarginRange | null)[]),

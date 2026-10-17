@@ -57,7 +57,7 @@ const specs: LeadSpec[] = [
     // Funded by Jefferson (Bishop): tripartite signed, funds received, distribution under way (see seed-funds).
     lead: {
       consultant_user_id: U_NICOLAS, business_id: BIZ_VOSSLER, bishop_user_id: U_JEFFERSON_LEAD, bishop_accepted_at: at("2026-07-25"),
-      contact: { name: "Carla Méndez", email: "carla@vossler.com", phone: "+1 407 555 0110", city: "Orlando", state: "FL", hispanic_owner: true },
+      contact: { name: "Carla Méndez", email: "carla@vossler.com", phone: "+1 407 555 0110", city: "Orlando", state: "FL", hispanic_owner: "yes" },
       business: { name: "Vossler", industry: "construction", activity: "Construcción residencial", revenue_range: "1m_2m", margin_range: "margin_21_40", team_range: "team_20_plus", years_range: "years_10_plus", has_active_clients: true },
       result: { readiness: "ready", band: "high", score: 86, eligible_program: true, eligibility_gaps: [], blocks: blocks("ssmmsmm"),
         strengths: ["Proceso de obra probado en más de 200 casas", "Margen estable en los últimos tres años"], priorities: ["Documentar el método de obra", "Ordenar contratos y licencias"] },
@@ -69,7 +69,7 @@ const specs: LeadSpec[] = [
     // Funded by Laura (Bishop).
     lead: {
       consultant_user_id: U_CAMILA, business_id: BIZ_PRIME, bishop_user_id: U_LAURA_LEAD, bishop_accepted_at: at("2026-09-05"),
-      contact: { name: "Daniel Ortiz", email: "daniel@prime10solutions.com", phone: "+1 813 555 0133", city: "Tampa", state: "FL", hispanic_owner: true },
+      contact: { name: "Daniel Ortiz", email: "daniel@prime10solutions.com", phone: "+1 813 555 0133", city: "Tampa", state: "FL", hispanic_owner: "yes" },
       business: { name: "Prime 10 Solutions", industry: "remodeling", activity: "Remodelaciones de cocinas y baños", revenue_range: "750k_1m", margin_range: "margin_21_40", team_range: "team_6_10", years_range: "years_6_10", has_active_clients: true },
       result: { readiness: "ready", band: "mid", score: 69, eligible_program: true, eligibility_gaps: [], blocks: blocks("smmwmwm"),
         strengths: ["Clientes que vuelven y lo recomiendan", "Equipo estable"], priorities: ["Sistema de presupuestos", "Marca y presencia local"] },
@@ -81,10 +81,10 @@ const specs: LeadSpec[] = [
     // Funded by Jefferson (Bishop); he uploaded his own receipt and SM confirmed it.
     lead: {
       consultant_user_id: U_NICOLAS, business_id: BIZ_ENYERMY, bishop_user_id: U_JEFFERSON_LEAD, bishop_accepted_at: at("2026-10-03"),
-      contact: { name: "Enyermy Rivas", email: "enyermy@enyermyhair.com", phone: "+1 305 555 0187", city: "Miami", state: "FL", hispanic_owner: true },
-      business: { name: "Enyermy Hair Studio", industry: "salon", activity: "Salón de belleza y color", revenue_range: "250k_500k", margin_range: "margin_21_40", team_range: "team_6_10", years_range: "years_6_10", has_active_clients: true },
+      contact: { name: "Enyermy Rivas", email: "enyermy@enyermycleanpro.com", phone: "+1 305 555 0187", city: "Miami", state: "FL", hispanic_owner: "yes" },
+      business: { name: "Enyermy Clean Pro", industry: "cleaning", activity: "Limpieza post-obra y mantenimiento de edificios", revenue_range: "250k_500k", margin_range: "margin_21_40", team_range: "team_6_10", years_range: "years_6_10", has_active_clients: true },
       result: { readiness: "ready", band: "mid", score: 68, eligible_program: true, eligibility_gaps: [], blocks: blocks("mmwwsmm"),
-        strengths: ["Marca reconocida en el barrio", "Técnica de color propia"], priorities: ["Números del negocio", "Agenda y sistema de citas"] },
+        strengths: ["Constructoras que la llaman para cada entrega de obra", "Método propio de limpieza final por etapas"], priorities: ["Números del negocio", "Agenda y sistema de turnos de las cuadrillas"] },
       know_how_example: null,
     },
   },
@@ -95,7 +95,7 @@ const specs: LeadSpec[] = [
     notes: [["2026-09-10", "Documentación aprobada. Esperamos que un inversor tome la oportunidad."]],
     lead: {
       consultant_user_id: U_CAMILA, business_id: null,
-      contact: { name: "Gabriela Fuentes", email: "gaby@brisaclean.com", phone: "+1 786 555 0144", city: "Kendall", state: "FL", hispanic_owner: true },
+      contact: { name: "Gabriela Fuentes", email: "gaby@brisaclean.com", phone: "+1 786 555 0144", city: "Kendall", state: "FL", hispanic_owner: "yes" },
       business: { name: "Brisa Clean Services", industry: "cleaning", activity: "Limpieza de oficinas y casas", revenue_range: "750k_1m", margin_range: "margin_0_20", team_range: "team_20_plus", years_range: "years_6_10", has_active_clients: true },
       result: { readiness: "ready", band: "mid", score: 68, eligible_program: true, eligibility_gaps: [], blocks: blocks("msmmmwm"),
         strengths: ["Procesos de limpieza escritos", "Contratos recurrentes con oficinas"], priorities: ["Margen por servicio", "Contratos y seguros"] },
@@ -107,11 +107,11 @@ const specs: LeadSpec[] = [
     contacted: true,
     lead: {
       consultant_user_id: U_NICOLAS, business_id: null,
-      contact: { name: "Ramón Castillo", email: "ramon@sazoncriollo.com", phone: "+1 305 555 0161", city: "Hialeah", state: "FL", hispanic_owner: true },
-      business: { name: "Sazón Criollo", industry: "restaurant", activity: "Restaurante de comida cubana", revenue_range: "1m_2m", margin_range: "margin_0_20", team_range: "team_20_plus", years_range: "years_10_plus", has_active_clients: true },
+      contact: { name: "Ramón Castillo", email: "ramon@castilloinstalaciones.com", phone: "+1 305 555 0161", city: "Hialeah", state: "FL", hispanic_owner: "yes" },
+      business: { name: "Castillo Instalaciones", industry: "installations_repairs", activity: "Plomería y electricidad residencial", revenue_range: "1m_2m", margin_range: "margin_0_20", team_range: "team_20_plus", years_range: "years_10_plus", has_active_clients: true },
       result: { readiness: "ready", band: "high", score: 84, eligible_program: true, eligibility_gaps: [], blocks: blocks("ssmmsmm"),
-        strengths: ["Recetas estandarizadas", "Dos locales funcionando con el mismo menú"], priorities: ["Manual de operaciones", "Control de costos por plato"] },
-      know_how_example: "Nuestro sofrito lo preparamos cada mañana con la receta de mi abuela y lo medimos por gramos. Así el sabor es igual todos los días, en los dos locales.",
+        strengths: ["Instalaciones estandarizadas con lista de verificación", "Dos cuadrillas trabajando con el mismo método"], priorities: ["Manual de operaciones", "Control de costos por trabajo"] },
+      know_how_example: "Cada instalación la probamos con la misma lista de 20 puntos antes de cerrar la pared, la que armé con mi padre. Así el trabajo sale igual en las dos cuadrillas y casi no volvemos por reclamos.",
     },
   },
   {
@@ -122,7 +122,7 @@ const specs: LeadSpec[] = [
     notes: [["2026-10-06", "Reunión agendada para el jueves. Quiere entender cuánto tiempo le va a pedir el programa."]],
     lead: {
       consultant_user_id: U_NICOLAS, business_id: null,
-      contact: { name: "Javier Rivera", email: "javier@riveraroofing.com", phone: "+1 954 555 0129", city: "Fort Lauderdale", state: "FL", hispanic_owner: true },
+      contact: { name: "Javier Rivera", email: "javier@riveraroofing.com", phone: "+1 954 555 0129", city: "Fort Lauderdale", state: "FL", hispanic_owner: "yes" },
       business: { name: "Rivera Roofing & Remodel", industry: "remodeling", activity: "Techos y remodelaciones", revenue_range: "500k_750k", margin_range: "margin_21_40", team_range: "team_6_10", years_range: "years_6_10", has_active_clients: true },
       result: { readiness: "ready", band: "mid", score: 66, eligible_program: true, eligibility_gaps: [], blocks: blocks("msmwmwm"),
         strengths: ["Método de trabajo propio", "Garantía que el cliente valora"], priorities: ["Números por obra", "Licencias por condado"] },
@@ -134,10 +134,10 @@ const specs: LeadSpec[] = [
     contacted: true,
     lead: {
       consultant_user_id: U_CAMILA, business_id: null,
-      contact: { name: "Yesenia Morales", email: "yesenia@glownails.com", phone: "+1 407 555 0176", city: "Kissimmee", state: "FL", hispanic_owner: true },
-      business: { name: "Glow Nails & Spa", industry: "salon", activity: "Uñas y spa", revenue_range: "250k_500k", margin_range: "margin_21_40", team_range: "team_6_10", years_range: "years_3_5", has_active_clients: true },
+      contact: { name: "Yesenia Morales", email: "yesenia@moralespisos.com", phone: "+1 407 555 0176", city: "Kissimmee", state: "FL", hispanic_owner: "yes" },
+      business: { name: "Morales Pisos y Cerámica", industry: "installations_repairs", activity: "Instalación de pisos y cerámica", revenue_range: "250k_500k", margin_range: "margin_21_40", team_range: "team_6_10", years_range: "years_3_5", has_active_clients: true },
       result: { readiness: "ready", band: "mid", score: 62, eligible_program: true, eligibility_gaps: [], blocks: blocks("mmwmsww"),
-        strengths: ["Clientela fiel", "Buena presencia en redes"], priorities: ["Procesos escritos", "Equipo y roles"] },
+        strengths: ["Clientes que la recomiendan", "Buena presencia en redes con fotos de cada obra"], priorities: ["Procesos escritos", "Equipo y roles"] },
       know_how_example: null,
     },
   },
@@ -145,7 +145,7 @@ const specs: LeadSpec[] = [
     path: [["submitted", "2026-10-09"]],
     lead: {
       consultant_user_id: U_NICOLAS, business_id: null,
-      contact: { name: "Luis Torres", email: "luis@torresconcrete.com", phone: "+1 863 555 0102", city: "Lakeland", state: "FL", hispanic_owner: true },
+      contact: { name: "Luis Torres", email: "luis@torresconcrete.com", phone: "+1 863 555 0102", city: "Lakeland", state: "FL", hispanic_owner: "yes" },
       business: { name: "Torres Concrete", industry: "construction", activity: "Concreto y fundaciones", revenue_range: "250k_500k", margin_range: "margin_0_20", team_range: "team_11_20", years_range: "years_6_10", has_active_clients: true },
       result: { readiness: "ready", band: "low", score: 52, eligible_program: true, eligibility_gaps: [], blocks: blocks("wmwwwmm"),
         strengths: ["Experiencia técnica del dueño"], priorities: ["Margen y precios", "Procesos escritos", "Herramientas para el equipo"] },
@@ -156,7 +156,7 @@ const specs: LeadSpec[] = [
     path: [["submitted", "2026-10-13"]],
     lead: {
       consultant_user_id: U_CAMILA, business_id: null,
-      contact: { name: "Patricia Gómez", email: "patricia@limpiezatotal.com", phone: "+1 407 555 0158", city: "Orlando", state: "FL", hispanic_owner: true },
+      contact: { name: "Patricia Gómez", email: "patricia@limpiezatotal.com", phone: "+1 407 555 0158", city: "Orlando", state: "FL", hispanic_owner: "yes" },
       business: { name: "Limpieza Total Orlando", industry: "cleaning", activity: "Limpieza de casas y Airbnb", revenue_range: "250k_500k", margin_range: null, team_range: "team_6_10", years_range: "years_3_5", has_active_clients: true },
       result: { readiness: "ready", band: "mid", score: 63, eligible_program: true, eligibility_gaps: [], blocks: blocks("mmuuumu"),
         strengths: ["Crecimiento constante de clientes"], priorities: ["Conocer sus números", "Herramientas", "Contratos"] },
@@ -167,10 +167,10 @@ const specs: LeadSpec[] = [
     path: [["submitted", "2026-10-12"]],
     lead: {
       consultant_user_id: U_CAMILA, business_id: null,
-      contact: { name: "Lucy Peña", email: "lucy@fondamamalucy.com", phone: "+1 305 555 0119", city: "Doral", state: "FL", hispanic_owner: true },
-      business: { name: "La Fonda de Mamá Lucy", industry: "restaurant", activity: "Fonda de comida venezolana", revenue_range: "250k_500k", margin_range: "margin_0_20", team_range: "team_6_10", years_range: "years_lt1", has_active_clients: true },
+      contact: { name: "Lucy Peña", email: "lucy@pinturasmamalucy.com", phone: "+1 305 555 0119", city: "Doral", state: "FL", hispanic_owner: "yes" },
+      business: { name: "Pinturas Mamá Lucy", industry: "construction", activity: "Pintura residencial", revenue_range: "250k_500k", margin_range: "margin_0_20", team_range: "team_6_10", years_range: "years_lt1", has_active_clients: true },
       result: { readiness: "on_track", band: "track", score: 58, eligible_program: false, eligibility_gaps: ["years_operating"], blocks: blocks("mmwwmwm"),
-        strengths: ["Producto que la gente busca"], priorities: ["Sumar tiempo operando", "Ordenar las finanzas"] },
+        strengths: ["Acabados que los vecinos recomiendan"], priorities: ["Sumar tiempo operando", "Ordenar las finanzas"] },
       know_how_example: null,
     },
   },
@@ -178,7 +178,8 @@ const specs: LeadSpec[] = [
     path: [["submitted", "2026-10-10"]],
     lead: {
       consultant_user_id: U_NICOLAS, business_id: null,
-      contact: { name: "Andrés Quispe", email: "andres@andespainting.com", phone: "+1 321 555 0147", city: "Sanford", state: "FL", hispanic_owner: true },
+      // The owner chose "Prefiere conversarlo" on the Hispanic owner question.
+      contact: { name: "Andrés Quispe", email: "andres@andespainting.com", phone: "+1 321 555 0147", city: "Sanford", state: "FL", hispanic_owner: "talk" },
       // Less than a year operating: the only gap the public form can produce (its revenue range is mandatory).
       business: { name: "Andes Painting", industry: "construction", activity: "Pintura residencial", revenue_range: "lt_250k", margin_range: "margin_21_40", team_range: "team_1", years_range: "years_lt1", has_active_clients: true },
       result: { readiness: "on_track", band: "track", score: 48, eligible_program: false, eligibility_gaps: ["years_operating"], blocks: blocks("wmwwmwm"),
@@ -191,10 +192,10 @@ const specs: LeadSpec[] = [
     contacted: true,
     lead: {
       consultant_user_id: U_NICOLAS, business_id: null, discard_reason: "El dueño decidió vender el negocio este año.",
-      contact: { name: "Miguel Ángel Soto", email: "miguel@cafearoma.com", phone: "+1 305 555 0193", city: "Coral Gables", state: "FL", hispanic_owner: true },
-      business: { name: "Café Aroma", industry: "restaurant", activity: "Cafetería y panadería", revenue_range: "500k_750k", margin_range: "margin_0_20", team_range: "team_6_10", years_range: "years_6_10", has_active_clients: true },
+      contact: { name: "Miguel Ángel Soto", email: "miguel@sotodrywall.com", phone: "+1 305 555 0193", city: "Coral Gables", state: "FL", hispanic_owner: "yes" },
+      business: { name: "Soto Drywall", industry: "construction", activity: "Drywall y terminaciones interiores", revenue_range: "500k_750k", margin_range: "margin_0_20", team_range: "team_6_10", years_range: "years_6_10", has_active_clients: true },
       result: { readiness: "ready", band: "mid", score: 61, eligible_program: true, eligibility_gaps: [], blocks: blocks("mmmwmmw"),
-        strengths: ["Local con buen flujo de clientes"], priorities: ["Procesos y recetas escritas"] },
+        strengths: ["Constructoras que lo contratan todos los meses"], priorities: ["Procesos y estándares de terminación escritos"] },
       know_how_example: null,
     },
   },
@@ -204,7 +205,7 @@ const specs: LeadSpec[] = [
     contacted: true,
     lead: {
       consultant_user_id: U_NICOLAS, business_id: null, bishop_user_id: U_JEFFERSON_LEAD, bishop_accepted_at: at("2026-09-30"),
-      contact: { name: "Héctor Ramírez", email: "hector@solremodeling.com", phone: "+1 305 555 0172", city: "Doral", state: "FL", hispanic_owner: true },
+      contact: { name: "Héctor Ramírez", email: "hector@solremodeling.com", phone: "+1 305 555 0172", city: "Doral", state: "FL", hispanic_owner: "yes" },
       business: { name: "Sol Remodeling", industry: "remodeling", activity: "Remodelación de cocinas y baños", revenue_range: "1m_2m", margin_range: "margin_21_40", team_range: "team_11_20", years_range: "years_6_10", has_active_clients: true },
       result: { readiness: "ready", band: "high", score: 84, eligible_program: true, eligibility_gaps: [], blocks: blocks("ssmssmm"),
         strengths: ["Equipo estable con jefes de obra", "Presupuestos con precios por partida"], priorities: ["Manual de obra", "Marca registrada"] },
@@ -218,11 +219,11 @@ const specs: LeadSpec[] = [
     notes: [["2026-09-26", "Laura transfirió USD 100.000. El resto llega antes de fin de octubre."]],
     lead: {
       consultant_user_id: U_CAMILA, business_id: null, bishop_user_id: U_LAURA_LEAD, bishop_accepted_at: at("2026-09-03"),
-      contact: { name: "Rosa Delgado", email: "rosa@laespigabakery.com", phone: "+1 305 555 0124", city: "Westchester", state: "FL", hispanic_owner: true },
-      business: { name: "Panadería La Espiga", industry: "restaurant", activity: "Panadería y pastelería latina", revenue_range: "750k_1m", margin_range: "margin_21_40", team_range: "team_6_10", years_range: "years_10_plus", has_active_clients: true },
+      contact: { name: "Rosa Delgado", email: "rosa@techosdelgado.com", phone: "+1 305 555 0124", city: "Westchester", state: "FL", hispanic_owner: "yes" },
+      business: { name: "Techos Delgado", industry: "construction", activity: "Techos residenciales y reparación de filtraciones", revenue_range: "750k_1m", margin_range: "margin_21_40", team_range: "team_6_10", years_range: "years_10_plus", has_active_clients: true },
       result: { readiness: "ready", band: "high", score: 81, eligible_program: true, eligibility_gaps: [], blocks: blocks("smsmsmm"),
-        strengths: ["Recetas medidas y escritas", "Ventas a cafeterías todas las semanas"], priorities: ["Manual de producción", "Costos por producto"] },
-      know_how_example: "Horneamos en tandas con tiempos fijos por producto. Un panadero nuevo aprende el turno en dos semanas.",
+        strengths: ["Inspección de techo medida y escrita", "Contratos con administradoras de edificios todas las semanas"], priorities: ["Manual de obra", "Costos por trabajo"] },
+      know_how_example: "Cada techo lo inspeccionamos con la misma planilla de fotos y medidas. Un techista nuevo aprende el método en dos semanas.",
     },
   },
 ];

@@ -27,7 +27,7 @@ export const MANUAL_SECTION_DEFS: ManualSectionDef[] = [
     // B2-01 core system, B2-02 TO-BE processes, B2-03 source manual and SOPs, B2-07 change orders, B2-08 QA/QC, B2-09 safety.
     catalog_codes: ["B2-01", "B2-02", "B2-03", "B2-07", "B2-08", "B2-09"],
     body: [
-      "Para qué sirve: describe cómo se hace el trabajo del día a día para que salga igual en cada local o cuadrilla.",
+      "Para qué sirve: describe cómo se hace el trabajo del día a día para que salga igual en cada obra y en cada cuadrilla.",
       "Pasos clave: 1. Seguir el procedimiento escrito de cada tarea crítica. 2. Revisar la calidad en cada punto de control antes de pasar a la siguiente etapa. 3. Registrar cualquier cambio de alcance y pedir la aprobación del cliente por escrito. 4. Cumplir las normas de seguridad del oficio. 5. Cerrar cada trabajo con su lista de pendientes y su garantía.",
       "Si algo no está en el manual, se consulta a la franquiciadora antes de improvisar.",
     ].join("\n\n"),
@@ -68,7 +68,7 @@ export const MANUAL_SECTION_DEFS: ManualSectionDef[] = [
     catalog_codes: ["B2-04", "B2-05", "B2-17", "B3-15"],
     body: [
       "Para qué sirve: explica quién hace qué, cómo se contrata y cómo se forma a cada persona del equipo.",
-      "Pasos clave: 1. Dejar por escrito el rol y las responsabilidades de cada puesto. 2. Contratar con el perfil y la entrevista definidos. 3. Completar la capacitación inicial antes del primer turno solo. 4. Evaluar al equipo cada trimestre. 5. Mantener al día el alta de empleados y los impuestos de empleador.",
+      "Pasos clave: 1. Dejar por escrito el rol y las responsabilidades de cada puesto. 2. Contratar con el perfil y la entrevista definidos. 3. Completar la capacitación inicial antes del primer trabajo sin supervisión. 4. Evaluar al equipo cada trimestre. 5. Mantener al día el alta de empleados y los impuestos de empleador.",
       "Una persona certificada en los procedimientos puede entrenar a las demás.",
     ].join("\n\n"),
   },

@@ -370,8 +370,8 @@ describe("structure tree computed by the data layer", () => {
     expect(bimbo).toMatchObject({ health: null, franchisability: null, detail: { kind: "business", status: "franchisor", program_day: null } });
     expect(bimbo.children.map((c) => [c.name, c.detail])).toEqual(
       expect.arrayContaining([
-        ["Bimbo Tacos Orlando Sur", { kind: "franchise", status: "operating", city: expect.any(String), franchisee_name: expect.any(String) }],
-        ["Bimbo Tacos Tampa", { kind: "franchise", status: "opening", city: expect.any(String), franchisee_name: expect.any(String) }],
+        ["Bimbo Remodelaciones Orlando Sur", { kind: "franchise", status: "operating", city: expect.any(String), franchisee_name: expect.any(String) }],
+        ["Bimbo Remodelaciones Tampa", { kind: "franchise", status: "opening", city: expect.any(String), franchisee_name: expect.any(String) }],
       ]),
     );
   });

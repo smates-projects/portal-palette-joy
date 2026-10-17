@@ -5,7 +5,7 @@ import { buildBusinessRows, buildTeamRows, businessAreaHealth, expectedFranchise
 const T = "2026-10-14";
 const task = (p: Partial<TaskWithComputed>): TaskWithComputed =>
   ({ id: Math.random().toString(), code: "B1-01", area: "B1", status: "pending", due_date: "2026-12-01", business_id: "a", supervisor_user_id: "nico", organization_id: "sm", is_overdue: false, is_blocked: false, ...p }) as TaskWithComputed;
-const biz = (id: string, name: string, industry = "Salón"): Business => ({ id, name, industry, city: "Miami", state: "FL", owner_user_id: "o", status: "in_program", program_start_date: T, program_day: 90, office_id: "sm", consultant_id: "nico" });
+const biz = (id: string, name: string, industry = "Limpieza"): Business => ({ id, name, industry, city: "Miami", state: "FL", owner_user_id: "o", status: "in_program", program_start_date: T, program_day: 90, office_id: "sm", consultant_id: "nico" });
 const f = (pct: number, missing: string[] = []): Franchisability => ({ business_id: "a", franchisability_pct: pct, franchisability_goal: 85, required_task_codes: [], missing_required: missing, is_ready: pct >= 85 && !missing.length });
 
 describe("negocios", () => {
@@ -24,9 +24,9 @@ describe("negocios", () => {
     expect(businessAreaHealth([], [], T)).toBe("green");
   });
   it("filters by health and industry", () => {
-    const rows = buildBusinessRows([biz("a", "Alfa", "Salón"), biz("b", "Beta", "Obra")], [task({ business_id: "a" }), task({ business_id: "b", is_overdue: true })], [], [], [], T);
+    const rows = buildBusinessRows([biz("a", "Alfa", "Limpieza"), biz("b", "Beta", "Obra")], [task({ business_id: "a" }), task({ business_id: "b", is_overdue: true })], [], [], [], T);
     expect(filterBusinessRows(rows, { health: "red" }).map((r) => r.business.id)).toEqual(["b"]);
-    expect(filterBusinessRows(rows, { industry: "Salón" }).map((r) => r.business.id)).toEqual(["a"]);
+    expect(filterBusinessRows(rows, { industry: "Limpieza" }).map((r) => r.business.id)).toEqual(["a"]);
   });
 });
 

@@ -1,9 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { createMockApi } from "@/lib/api/mock";
 import * as seed from "@/lib/api/mock/seed";
-import { generateProgramTasks, type CatalogEntry } from "@/lib/api/program";
+import { appliesTo, generateProgramTasks, type CatalogEntry } from "@/lib/api/program";
 import catalogJson from "@/data/catalogo_metodo180.json";
-import { buildPipelineCounters, matchesQuick, resolveLeadMove } from "./pipeline";
+import { INDUSTRIES, buildPipelineCounters, matchesQuick, resolveLeadMove } from "./pipeline";
+
+describe("construction branches", () => {
+  it("INDUSTRIES are exactly the six keys of the real assessment, in order", () => {
+    expect(INDUSTRIES).toEqual(["construction", "remodeling", "installations_repairs", "maintenance", "cleaning", "other_related"]);
+  });
+  it("a 'Construcción / mantenimiento' entry applies to installations and repairs, not to cleaning", () => {
+    const entry = (catalogJson as CatalogEntry[]).find((e) => e.applies === "Construcción / mantenimiento")!;
+    expect(appliesTo(entry, "installations_repairs")).toBe(true);
+    expect(appliesTo(entry, "cleaning")).toBe(false);
+  });
+});
 
 describe("pipeline transitions", () => {
   it("allows one step forward and one step back", () => {
@@ -31,18 +42,18 @@ describe("pipeline counters", () => {
   it("counts sample leads on 2026-10-14", async () => {
     await api.session.setViewAs(seed.U_NICOLAS);
     const leads = await api.leads.list();
-    expect(leads).toHaveLength(14); // Part 3 adds Panadería La Espiga (accepted, partial funds)
+    expect(leads).toHaveLength(14); // Part 3 adds Techos Delgado (accepted, partial funds)
     const c = buildPipelineCounters(leads, "2026-10-14");
     expect(c.week).toBe(2); // Oct 12 and Oct 13
     expect(c.uncontacted).toBe(2); // evaluated, never contacted, more than 2 days
-    expect(c.in_review).toBe(2); // Sazón Criollo and Glow Nails
-    expect(c.review_overdue).toBe(1); // Glow Nails, day 17 of 15
+    expect(c.in_review).toBe(2); // Castillo Instalaciones and Morales Pisos y Cerámica
+    expect(c.review_overdue).toBe(1); // Morales Pisos y Cerámica, day 17 of 15
     expect(c.accepted_no_investor).toBe(1); // Brisa Clean (Sol Remodeling has a Bishop)
     expect(c.signed_month).toBe(1); // Enyermy, Oct 9
   });
   it("an evaluated lead submitted exactly 2 days ago is not yet 'sin contactar'", async () => {
     const leads = await api.leads.list();
-    const lucy = leads.find((l) => l.business.name === "La Fonda de Mamá Lucy")!;
+    const lucy = leads.find((l) => l.business.name === "Pinturas Mamá Lucy")!;
     expect(matchesQuick(lucy, "uncontacted", "2026-10-14")).toBe(false);
     expect(matchesQuick(lucy, "uncontacted", "2026-10-15")).toBe(true);
   });

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useCreateManualLead } from "@/lib/api/hooks";
-import type { LeadIndustry, ManualLeadInput, MarginRange, RevenueRange, TeamRange, YearsRange } from "@/lib/api/types";
+import type { HispanicOwner, LeadIndustry, ManualLeadInput, MarginRange, RevenueRange, TeamRange, YearsRange } from "@/lib/api/types";
 import { INDUSTRIES, REVENUES } from "@/lib/leads/pipeline";
 import { Field, inputCls, primaryBtn, secondaryBtn, selectCls, textareaCls } from "@/components/accounts/shared";
 
@@ -13,6 +13,8 @@ type MarginChoice = MarginRange | "unknown";
 const MARGINS: MarginChoice[] = ["margin_0_20", "margin_21_40", "margin_41_60", "margin_60_plus", "unknown"];
 const TEAMS: TeamRange[] = ["team_1", "team_2_5", "team_6_10", "team_11_20", "team_20_plus"];
 const YEARS: YearsRange[] = ["years_lt1", "years_1_2", "years_3_5", "years_6_10", "years_10_plus"];
+/** Same three answers as the assessment question about a Hispanic owner. */
+const HISPANIC_ANSWERS: HispanicOwner[] = ["yes", "no", "talk"];
 
 /**
  * "Agregar negocio": a business that did not come through the assessment (referral, event). Same data the
@@ -22,8 +24,8 @@ export function AddBusinessDialog({ onClose, onCreated }: { onClose: () => void;
   const { t } = useTranslation();
   const create = useCreateManualLead();
   const [f, setF] = useState({
-    name: "", email: "", phone: "", city: "", state: "FL", hispanic: true,
-    business: "", industry: "" as LeadIndustry | "", activity: "", revenue: "" as RevenueRange | "", margin: "" as MarginChoice | "", team: "" as TeamRange | "", years: "" as YearsRange | "", clients: true,
+    name: "", email: "", phone: "", city: "", state: "FL", hispanic: "yes" as HispanicOwner | "",
+    business: "", industry: "" as LeadIndustry | "", activityOther: "", activity: "", revenue: "" as RevenueRange | "", margin: "" as MarginChoice | "", team: "" as TeamRange | "", years: "" as YearsRange | "", clients: true,
     origin: "",
   });
   const [error, setError] = useState<string | null>(null);
@@ -32,11 +34,13 @@ export function AddBusinessDialog({ onClose, onCreated }: { onClose: () => void;
   const submit = () => {
     if (!f.business.trim() || !f.name.trim()) return setError(t("pipeline.manual.err_required"));
     if (!EMAIL.test(f.email.trim())) return setError(t("pipeline.manual.err_email"));
-    if (!f.industry || !f.revenue || !f.margin || !f.team || !f.years) return setError(t("pipeline.manual.err_ranges"));
+    if (!f.industry || !f.revenue || !f.margin || !f.team || !f.years || !f.hispanic) return setError(t("pipeline.manual.err_ranges"));
+    const isOther = f.industry === "other_related";
+    if (isOther && !f.activityOther.trim()) return setError(t("pipeline.manual.err_activity_other"));
     setError(null);
     const input: ManualLeadInput = {
       contact: { name: f.name, email: f.email, phone: f.phone.trim(), city: f.city.trim(), state: f.state.trim() || "FL", hispanic_owner: f.hispanic },
-      business: { name: f.business, industry: f.industry, activity: f.activity.trim(), revenue_range: f.revenue, margin_range: f.margin === "unknown" ? null : f.margin, team_range: f.team, years_range: f.years, has_active_clients: f.clients },
+      business: { name: f.business, industry: f.industry, activity_other: isOther ? f.activityOther.trim() : null, activity: f.activity.trim(), revenue_range: f.revenue, margin_range: f.margin === "unknown" ? null : f.margin, team_range: f.team, years_range: f.years, has_active_clients: f.clients },
       origin_note: f.origin.trim() || null,
     };
     create.mutate(input, {
@@ -68,6 +72,11 @@ export function AddBusinessDialog({ onClose, onCreated }: { onClose: () => void;
           </Field>
           <div className="grid gap-3 sm:grid-cols-2">
             {select(t("pipeline.industry"), f.industry, INDUSTRIES, "pipeline.industries", (v) => set("industry", v))}
+            {f.industry === "other_related" && (
+              <Field label={t("pipeline.manual.activity_other")}>
+                <input className={inputCls} value={f.activityOther} onChange={(e) => set("activityOther", e.target.value)} autoComplete="off" />
+              </Field>
+            )}
             <Field label={t("pipeline.detail.activity")}>
               <input className={inputCls} value={f.activity} onChange={(e) => set("activity", e.target.value)} autoComplete="off" />
             </Field>
@@ -96,10 +105,9 @@ export function AddBusinessDialog({ onClose, onCreated }: { onClose: () => void;
               <input className={inputCls} value={f.city} onChange={(e) => set("city", e.target.value)} autoComplete="off" />
             </Field>
           </div>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={f.hispanic} onChange={(e) => set("hispanic", e.target.checked)} className="h-4 w-4 rounded-[4px] border-input" />
-            {t("pipeline.detail.hispanic")}
-          </label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {select(t("pipeline.detail.hispanic"), f.hispanic, HISPANIC_ANSWERS, "pipeline.hispanic_answers", (v) => set("hispanic", v))}
+          </div>
           <Field label={t("pipeline.manual.origin_note")} hint={t("pipeline.manual.origin_note_hint")}>
             <textarea rows={2} className={textareaCls} value={f.origin} onChange={(e) => set("origin", e.target.value)} />
           </Field>

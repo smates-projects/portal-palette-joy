@@ -78,14 +78,14 @@ export const users: User[] = [
   { id: U_CARLA, full_name: "Carla Méndez", email: "carla@vossler.com", role: "business_owner", organization_id: null, business_id: BIZ_VOSSLER, title: null, google_calendar_email: null, booking_url: null, is_admin: true, status: "active" },
   { id: U_ANA_VOSSLER, full_name: "Ana Vossler", email: "ana@vosslerbuild.com", role: "business_owner", organization_id: null, business_id: BIZ_VOSSLER, title: "Administración", google_calendar_email: null, booking_url: null, status: "active" },
   { id: U_DANIEL, full_name: "Daniel Ortiz", email: "daniel@prime10solutions.com", role: "business_owner", organization_id: null, business_id: BIZ_PRIME, title: null, google_calendar_email: null, booking_url: null, is_admin: true, status: "active" },
-  { id: U_ENYERMY, full_name: "Enyermy Rivas", email: "enyermy@enyermyhair.com", role: "business_owner", organization_id: null, business_id: BIZ_ENYERMY, title: null, google_calendar_email: null, booking_url: null, is_admin: true, status: "active" },
+  { id: U_ENYERMY, full_name: "Enyermy Rivas", email: "enyermy@enyermycleanpro.com", role: "business_owner", organization_id: null, business_id: BIZ_ENYERMY, title: null, google_calendar_email: null, booking_url: null, is_admin: true, status: "active" },
   { id: U_RODRIGO, full_name: "Rodrigo Salas", email: "rodrigo@deltacontadores.com", role: "partner_firm", organization_id: ORG_DELTA, business_id: null, title: "Contador socio", google_calendar_email: null, booking_url: null, is_admin: true, status: "active" },
   { id: U_MARIANA, full_name: "Mariana Ruiz", email: "mariana@tecnopyme.io", role: "partner_firm", organization_id: ORG_TECNO, business_id: null, title: "Líder de implementación", google_calendar_email: null, booking_url: null, is_admin: true, status: "active" },
   { id: U_ANDRES, full_name: "Andrés Molina", email: "andres@opslab.co", role: "partner_firm", organization_id: ORG_OPSLAB, business_id: null, title: "Consultor de operaciones", google_calendar_email: null, booking_url: null, is_admin: true, status: "active" },
   { id: U_MARYLIN, full_name: "Marilyn Boraei", email: "marilyn@strategicmates.com", role: "sm_global", organization_id: ORG_GLOBAL, business_id: null, title: "Directora", google_calendar_email: null, booking_url: null, is_admin: true, status: "active" },
   { id: U_ANDREA, full_name: "Andrea Salazar", email: "andrea@strategicmates.com", role: "sm_team", organization_id: ORG_SM, business_id: null, title: "Administradora de la oficina", google_calendar_email: null, booking_url: null, is_admin: true, status: "active" },
   { id: U_CAMILA, full_name: "Camila Soto", email: "camila@strategicmates.com", role: "sm_team", organization_id: ORG_SM, business_id: null, title: "Consultora", google_calendar_email: null, booking_url: null, status: "active" },
-  { id: U_RODRIGO_BIMBO, full_name: "Rodrigo Bimbo", email: "rodrigo@bimbotacos.com", role: "business_owner", organization_id: null, business_id: BIZ_BIMBO, title: "Fundador de Bimbo Tacos", google_calendar_email: null, booking_url: null, is_admin: true, status: "active" },
+  { id: U_RODRIGO_BIMBO, full_name: "Rodrigo Bimbo", email: "rodrigo@bimboremodelaciones.com", role: "business_owner", organization_id: null, business_id: BIZ_BIMBO, title: "Fundador de Bimbo Remodelaciones", google_calendar_email: null, booking_url: null, is_admin: true, status: "active" },
   { id: U_NICOLAS, full_name: "Nicolás García", email: "nicolas@strategicmates.com", role: "sm_team", organization_id: ORG_SM, business_id: null, title: "Consultor", google_calendar_email: null, booking_url: null, status: "active" },
 ];
 
@@ -93,8 +93,8 @@ export const businesses: Business[] = [
   { id: BIZ_VOSSLER, name: "Vossler", industry: "Construcción residencial", city: "Orlando", state: "FL", owner_user_id: U_CARLA, status: "in_program", program_start_date: "2026-08-02", program_day: 74, office_id: ORG_SM, consultant_id: U_NICOLAS },
   { id: BIZ_PRIME, name: "Prime 10 Solutions", industry: "Remodelaciones", city: "Tampa", state: "FL", owner_user_id: U_DANIEL, status: "in_program", program_start_date: "2026-09-14", program_day: 31, office_id: ORG_SM, consultant_id: U_CAMILA },
   /** Franchisor: finished the program (day 180) and reached franchisability. Its tasks are generated below. */
-  { id: BIZ_BIMBO, name: "Bimbo Tacos", industry: "Restaurante", city: "Miami", state: "FL", owner_user_id: U_RODRIGO_BIMBO, status: "franchisor", program_start_date: "2025-03-02", program_day: 180, office_id: ORG_SM, consultant_id: U_NICOLAS },
-  { id: BIZ_ENYERMY, name: "Enyermy Hair Studio", industry: "Salón de belleza", city: "Miami", state: "FL", owner_user_id: U_ENYERMY, status: "in_program", program_start_date: "2026-10-09", program_day: 6, office_id: ORG_SM, consultant_id: U_NICOLAS },
+  { id: BIZ_BIMBO, name: "Bimbo Remodelaciones", industry: "Remodelación residencial", city: "Miami", state: "FL", owner_user_id: U_RODRIGO_BIMBO, status: "franchisor", program_start_date: "2025-03-02", program_day: 180, office_id: ORG_SM, consultant_id: U_NICOLAS },
+  { id: BIZ_ENYERMY, name: "Enyermy Clean Pro", industry: "Limpieza post-obra y mantenimiento de edificios", city: "Miami", state: "FL", owner_user_id: U_ENYERMY, status: "in_program", program_start_date: "2026-10-09", program_day: 6, office_id: ORG_SM, consultant_id: U_NICOLAS },
 ];
 
 // Seed tasks take name and acceptance from the official catalog file (src/data/catalogo_metodo180.json), never typed by hand.
@@ -155,7 +155,7 @@ const catalog: CatalogItem[] = [
   fromCatalog("B2-03", "implement", ORG_OPSLAB, U_ANDRES, "B2-02"),
   fromCatalog("B2-05", "design", ORG_OPSLAB, U_ANDRES),
   // The rest of the "minimo" tasks of B1 and B2. Added at the end so the ids above do not move.
-  // B2-07 and B2-08 apply only to construction and maintenance: Vossler and Prime 10, not Enyermy.
+  // B2-07 and B2-08 apply only to the site work branches: Vossler and Prime 10, not Enyermy (cleaning).
   fromCatalog("B1-04", "design", ORG_SM, "supervisor", "B1-01"),
   fromCatalog("B1-05", "design", ORG_SM, "supervisor", "B1-01"),
   fromCatalog("B2-04", "implement", ORG_OPSLAB, U_ANDRES, "B2-03"),
@@ -319,11 +319,11 @@ export const miamiFirmFor = (area: Task["area"]) =>
     B6: { organization_id: ORG_PEREZ, assignee_user_id: U_LUCIA },
   })[area];
 
-// Bimbo Tacos finished its program: every task generated from the catalog is approved, so franchisability is reached.
+// Bimbo Remodelaciones finished its program: every task generated from the catalog is approved, so franchisability is reached.
 let bimboTaskCount = 0;
 const bimboTasks: Task[] = generateProgramTasks(catalogJson as CatalogEntry[], {
   business_id: BIZ_BIMBO,
-  industry: "restaurant",
+  industry: "remodeling",
   start_date: "2025-03-02",
   supervisor_user_id: U_NICOLAS,
   firmFor: miamiFirmFor,

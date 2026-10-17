@@ -14,9 +14,9 @@ const leadNamed = async (api: Awaited<ReturnType<typeof as>>, name: string) => (
 const receipt = { file_name: "comprobante.pdf", size_kb: 120 };
 
 describe("sample data", () => {
-  it("Panadería La Espiga: tripartite signed, funds partial USD 100,000 of 150,000, next step record funds", async () => {
+  it("Techos Delgado: tripartite signed, funds partial USD 100,000 of 150,000, next step record funds", async () => {
     const api = await as(seed.U_CAMILA);
-    const lead = await leadNamed(api, "Panadería La Espiga");
+    const lead = await leadNamed(api, "Techos Delgado");
     expect(lead).toMatchObject({ stage: "accepted", tripartite: "signed", funds: { status: "partial", ready_to_start: false } });
     const f = (await api.funds.get(lead.business_id!))!;
     expect(f).toMatchObject({ total: 150000, received: 100000, status: "partial", bishop_name: "Laura Ortega", completed_on: null });
@@ -41,12 +41,12 @@ describe("sample data", () => {
 describe("recording funds and confirming the start (day 1)", () => {
   it("cannot start with partial funds; the payment that completes them proposes the later date as day 1", async () => {
     const api = await as(seed.U_CAMILA);
-    const lead = await leadNamed(api, "Panadería La Espiga");
+    const lead = await leadNamed(api, "Techos Delgado");
     await expect(api.leads.confirmProgramStart(lead.id, "2026-10-14")).rejects.toThrow("funds_incomplete");
     await expect(api.funds.recordPayment(lead.business_id!, { amount: 60000, paid_on: "2026-10-10", method: "wire", reference: null, receipt })).rejects.toThrow("invalid_over_total");
     const f = await api.funds.recordPayment(lead.business_id!, { amount: 50000, paid_on: "2026-10-10", method: "wire", reference: "WIRE-1", receipt });
     expect(f).toMatchObject({ status: "received", received: 150000, completed_on: "2026-10-10" });
-    const after = await leadNamed(api, "Panadería La Espiga");
+    const after = await leadNamed(api, "Techos Delgado");
     // Tripartite signed on Sep 15, funds complete on Oct 10: the later one is day 1.
     expect(after.funds).toMatchObject({ ready_to_start: true, proposed_day1: "2026-10-10" });
     await expect(api.leads.confirmProgramStart(lead.id, "2026-10-09")).rejects.toThrow("invalid_date");
@@ -61,7 +61,7 @@ describe("recording funds and confirming the start (day 1)", () => {
   });
   it("SM can pick a later day 1, never start without the tripartite signed", async () => {
     const api = await as(seed.U_CAMILA);
-    const lead = await leadNamed(api, "Panadería La Espiga");
+    const lead = await leadNamed(api, "Techos Delgado");
     await api.funds.recordPayment(lead.business_id!, { amount: 50000, paid_on: "2026-10-01", method: "transfer", reference: null, receipt: null });
     const r = await api.leads.confirmProgramStart(lead.id, "2026-10-20");
     const biz = (await api.businesses.list()).find((b) => b.id === r.business_id)!;
@@ -71,7 +71,7 @@ describe("recording funds and confirming the start (day 1)", () => {
   });
   it("undo of a recorded payment removes it", async () => {
     const api = await as(seed.U_CAMILA);
-    const lead = await leadNamed(api, "Panadería La Espiga");
+    const lead = await leadNamed(api, "Techos Delgado");
     const f = await api.funds.recordPayment(lead.business_id!, { amount: 20000, paid_on: "2026-10-12", method: "other", reference: null, receipt: null });
     const back = await api.funds.removePayment(lead.business_id!, f.payments.at(-1)!.id);
     expect(back.received).toBe(100000);
@@ -89,23 +89,23 @@ describe("recording funds and confirming the start (day 1)", () => {
     const lead = await leadNamed(api, "Sol Remodeling");
     expect((await api.funds.get(lead.business_id!))!.total).toBe(160000);
     // Signed before the change: keeps its amount.
-    expect((await api.funds.get((await leadNamed(api, "Panadería La Espiga")).business_id!))!.total).toBe(150000);
+    expect((await api.funds.get((await leadNamed(api, "Techos Delgado")).business_id!))!.total).toBe(150000);
   });
 });
 
 describe("the Bishop uploads his receipt and SM confirms it", () => {
   it("reported payments do not count until SM confirms; SM hears about it in the bell", async () => {
     const api = await as(seed.U_CAMILA);
-    const businessId = (await leadNamed(api, "Panadería La Espiga")).business_id!;
+    const businessId = (await leadNamed(api, "Techos Delgado")).business_id!;
     await api.session.setViewAs(net.U_LAURA);
     await expect(api.funds.reportPayment(businessId, { amount: 50000, paid_on: "2026-10-13", method: "wire", reference: null, receipt: null })).rejects.toThrow("invalid_receipt");
     const f = await api.funds.reportPayment(businessId, { amount: 50000, paid_on: "2026-10-13", method: "wire", reference: "W-99", receipt });
     expect(f).toMatchObject({ received: 100000, to_confirm: 50000, status: "partial" });
-    expect((await api.funds.listMine()).map((x) => x.business_name)).toEqual(expect.arrayContaining(["Panadería La Espiga", "Prime 10 Solutions"]));
+    expect((await api.funds.listMine()).map((x) => x.business_name)).toEqual(expect.arrayContaining(["Techos Delgado", "Prime 10 Solutions"]));
     await api.session.setViewAs(seed.U_CAMILA);
     const bell = await api.notifications.list();
-    expect(bell.find((n) => n.kind === "funds_reported")).toMatchObject({ business_name: "Panadería La Espiga", actor_name: "Laura Ortega" });
-    expect((await leadNamed(api, "Panadería La Espiga")).funds?.to_confirm).toBe(true);
+    expect(bell.find((n) => n.kind === "funds_reported")).toMatchObject({ business_name: "Techos Delgado", actor_name: "Laura Ortega" });
+    expect((await leadNamed(api, "Techos Delgado")).funds?.to_confirm).toBe(true);
     const reported = (await api.funds.get(businessId))!.payments.find((p) => p.status === "reported")!;
     const done = await api.funds.confirmPayment(businessId, reported.id);
     expect(done).toMatchObject({ status: "received", completed_on: "2026-10-13" });
@@ -189,9 +189,9 @@ describe("who receives money: owners, firms and franchisees never do", () => {
   }, 30_000);
   it("nothing an owner or a firm can read carries an amount of the program, the funds or the distribution", async () => {
     const api = createMockApi();
-    // An owner in program funded by a Bishop (Carla), an owner still entering with partial funds (Panadería La Espiga), and firms.
+    // An owner in program funded by a Bishop (Carla), an owner still entering with partial funds (Techos Delgado), and firms.
     await api.session.setViewAs(seed.U_CAMILA);
-    const espiga = await leadNamed(api, "Panadería La Espiga");
+    const espiga = await leadNamed(api, "Techos Delgado");
     const espigaOwner = (await api.users.list()).find((u) => u.business_id === espiga.business_id)!.id;
     for (const id of [seed.U_CARLA, espigaOwner, seed.U_LUCIA, seed.U_RODRIGO]) {
       await api.session.setViewAs(id);

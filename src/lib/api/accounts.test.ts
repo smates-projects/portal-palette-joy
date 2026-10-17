@@ -155,7 +155,7 @@ describe("manual leads", () => {
   it("SM adds a business by hand in Evaluado with source manual and no result; sending the assessment leaves it pending", async () => {
     const api = await as(seed.U_NICOLAS);
     const lead = await api.leads.createManual({
-      contact: { name: "Pedro Referido", email: "pedro@referido.com", phone: "+1 305 555 0000", city: "Miami", state: "FL", hispanic_owner: true },
+      contact: { name: "Pedro Referido", email: "pedro@referido.com", phone: "+1 305 555 0000", city: "Miami", state: "FL", hispanic_owner: "yes" },
       business: { name: "Referido SA", industry: "cleaning", activity: "Limpieza", revenue_range: "500k_750k", margin_range: "margin_0_20", team_range: "team_6_10", years_range: "years_6_10", has_active_clients: true },
       origin_note: "Referido de Carla Méndez",
     });

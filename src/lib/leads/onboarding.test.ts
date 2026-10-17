@@ -74,20 +74,20 @@ describe("entry flow in the mock", () => {
     await api.documents.signContract(contracts.find((c) => c.kind === "nda")!.id);
     expect((await api.documents.uploadDocument(documents[0]!.id, "banco.pdf")).state).toBe("received");
   });
-  it("sample data: Sazón paused with 5 of 7 uploaded and 3 accepted; Glow at day 17 of 15", async () => {
+  it("sample data: Castillo paused with 5 of 7 uploaded and 3 accepted; Morales at day 17 of 15", async () => {
     const api = createMockApi();
     await api.session.setViewAs(seed.U_NICOLAS);
     const leads = await api.leads.list();
-    const sazon = leads.find((l) => l.business.name === "Sazón Criollo")!.intake!;
+    const sazon = leads.find((l) => l.business.name === "Castillo Instalaciones")!.intake!;
     expect(sazon).toMatchObject({ uploaded: 5, accepted: 3, required_total: 7 });
     expect(sazon.clock.status).toBe("paused");
-    const glow = leads.find((l) => l.business.name === "Glow Nails & Spa")!.intake!;
+    const glow = leads.find((l) => l.business.name === "Morales Pisos y Cerámica")!.intake!;
     expect(glow.clock).toMatchObject({ day: 17, total: 15, tone: "red" });
   });
   it("only an admin approves, and only when everything is signed and accepted", async () => {
     const api = createMockApi();
     await api.session.setViewAs(seed.U_NICOLAS);
-    const glow = (await api.leads.list()).find((l) => l.business.name === "Glow Nails & Spa")!;
+    const glow = (await api.leads.list()).find((l) => l.business.name === "Morales Pisos y Cerámica")!;
     const { documents } = (await api.leads.getIntake(glow.id))!;
     for (const d of documents.filter((x) => x.state === "received")) await api.leads.acceptDocument(glow.id, d.id, "Verificado");
     await expect(api.leads.approveDocuments(glow.id)).rejects.toThrow("admin_only");

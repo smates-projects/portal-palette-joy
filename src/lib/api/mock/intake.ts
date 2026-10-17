@@ -125,7 +125,7 @@ export function createIntake(db: IntakeDb, newId: () => string) {
       const signedOn = addDays(ndaOn, 2);
       const upload = (d: BusinessDocument, on: string) => Object.assign(d, { state: "received", received_at: on, file_name: `${d.name.split(" (")[0]}.pdf` });
       const accept = (d: BusinessDocument, on: string) => Object.assign(d, { state: "reviewed", reviewed_at: on, verified_fact: d.verified_hint ?? null });
-      if (lead.business.name === "Sazón Criollo") {
+      if (lead.business.name === "Castillo Instalaciones") {
         // 5 of 7 uploaded, 3 accepted, 1 asked again (clock paused), 2 still missing.
         docs.forEach((d, i) => {
           if (i <= 2) { upload(d, addDays(signedOn, 1)); accept(d, addDays(signedOn, 2)); }
@@ -135,7 +135,7 @@ export function createIntake(db: IntakeDb, newId: () => string) {
             Object.assign(d, { state: "rejected", reviewed_at: addDays(signedOn, 2), review_comment: "La póliza venció en agosto. Sube la póliza renovada, por favor.", pauses: [{ from: addDays(signedOn, 2), to: null }] });
           }
         });
-      } else if (lead.business.name === "Glow Nails & Spa") {
+      } else if (lead.business.name === "Morales Pisos y Cerámica") {
         // Everything uploaded on Sep 27: review day 17 of 15 on Oct 14.
         docs.forEach((d, i) => { upload(d, "2026-09-27"); if (i <= 3) accept(d, "2026-10-01"); });
         r.review_started_at = "2026-09-27";

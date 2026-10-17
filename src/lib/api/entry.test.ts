@@ -66,7 +66,7 @@ describe("ficha del negocio (mock)", () => {
     await api.session.setViewAs(seed.U_NICOLAS);
     const s = await api.businessFile.getSnapshot(seed.BIZ_ENYERMY);
     expect(s).toMatchObject({ business_id: seed.BIZ_ENYERMY, result: { score: 68, band: "mid" } });
-    expect(s!.priorities).toEqual([{ text: "Números del negocio", area: "B3" }, { text: "Agenda y sistema de citas", area: "B4" }]);
+    expect(s!.priorities).toEqual([{ text: "Números del negocio", area: "B3" }, { text: "Agenda y sistema de turnos de las cuadrillas", area: "B4" }]);
     expect(await api.businessFile.getSnapshot(seed.BIZ_BIMBO)).toBeNull();
     await api.session.setViewAs(seed.U_MARYLIN);
     expect((await api.businessFile.getSnapshot(seed.BIZ_ENYERMY))!.result.score).toBe(68);

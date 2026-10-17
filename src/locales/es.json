@@ -1070,9 +1070,20 @@
     "industries": {
       "construction": "Construcción",
       "remodeling": "Remodelación",
+      "installations_repairs": "Instalaciones y reparaciones",
+      "maintenance": "Mantenimiento",
       "cleaning": "Limpieza",
-      "restaurant": "Restaurante",
-      "salon": "Salón"
+      "other_related": "Otra relacionada"
+    },
+    "hispanic": {
+      "yes": "Dueño hispano",
+      "no": "No hispano",
+      "talk": "Prefiere conversarlo"
+    },
+    "hispanic_answers": {
+      "yes": "Sí",
+      "no": "No",
+      "talk": "Prefiere conversarlo"
     },
     "revenue_ranges": {
       "lt_250k": "Menos de 250 mil",
@@ -1286,7 +1297,9 @@
       "confirm": "Agregar negocio",
       "err_required": "Escribe el nombre del negocio y el del dueño.",
       "err_email": "Escribe un correo válido.",
-      "err_ranges": "Completa el rubro, las ventas, el margen, el equipo y los años."
+      "err_ranges": "Completa el rubro, las ventas, el margen, el equipo, los años y si el dueño es hispano.",
+      "activity_other": "¿Qué vertiente de la construcción?",
+      "err_activity_other": "Escribe en qué vertiente de la construcción trabaja el negocio."
     }
   },
   "entry": {
@@ -2243,7 +2256,7 @@
       "never_published": "Aún no se ha publicado",
       "not_approved": "Aún no está aprobada ({{pct}}%). No se puede publicar.",
       "note": "¿Qué cambió?",
-      "note_example": "Por ejemplo, nuevo proveedor de tortillas y control de inventario semanal",
+      "note_example": "Por ejemplo, nuevo proveedor de cerámica y control de inventario semanal",
       "publish": "Publicar {{version}}",
       "publish_needs": "Elige al menos una sección y cuenta qué cambió.",
       "current_version": "Versión actual",
