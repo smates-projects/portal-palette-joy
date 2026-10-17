@@ -5,6 +5,7 @@ import type {
   BrandPalette,
   BusinessProfilePatch,
   CatalogItemInput,
+  ContractSignature,
   CreateFirmInput,
   CreateOfficeInput,
   DistributionLineInput,
@@ -244,7 +245,7 @@ export const useRejectDocuments = () => useIntakeMutation((v: { id: string; reas
 export const useIntake = (businessId?: string) =>
   useQuery({ queryKey: ["documents", "intake", businessId ?? "own"], queryFn: () => api.documents.getIntake(businessId) });
 export const useOpenContract = () => useIntakeMutation((contractId: string) => api.documents.openContract(contractId));
-export const useSignContract = () => useIntakeMutation((contractId: string) => api.documents.signContract(contractId));
+export const useSignContract = () => useIntakeMutation((v: { contractId: string; signature: ContractSignature }) => api.documents.signContract(v.contractId, v.signature));
 export const useDeclineContract = () => useIntakeMutation((v: { contractId: string; reason: string }) => api.documents.declineContract(v.contractId, v.reason));
 /** True when the current user owns a business still entering (NDA and MOU sent, not in program yet). */
 export function useIsOnboarding(): boolean {

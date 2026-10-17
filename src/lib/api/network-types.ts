@@ -436,6 +436,16 @@ export type ContractState = "draft" | "sent" | "opened" | "signed" | "declined";
 
 export type SignerStatus = "sent" | "opened" | "signed" | "declined";
 
+/**
+ * The visible signature: drawn on screen, typed (rendered in a script font) or an uploaded image. image_url is a
+ * data URL in the mock; in production DocuSeal keeps it inside the sealed PDF together with the audit trail
+ * (who, when, from which IP, document hash), which is what gives the signature its legal weight, not the drawing.
+ */
+export interface ContractSignature {
+  kind: "drawn" | "typed" | "uploaded";
+  image_url: string;
+}
+
 export interface Signer {
   name: string;
   role: string;
@@ -446,6 +456,7 @@ export interface Signer {
   status?: SignerStatus | undefined;
   history?: { status: SignerStatus; at: IsoDate }[] | undefined;
   decline_reason?: string | null | undefined;
+  signature?: ContractSignature | null | undefined;
 }
 
 export interface Contract {

@@ -40,7 +40,7 @@ export function BrandPanel({ businessId, mode }: { businessId?: string; mode: "o
   };
   const setBrand = useSetBrand();
   const setBack = (prev: BusinessBrand) =>
-    setBrand.mutate({ businessId: prev.business_id, palette: { primary_color: prev.primary_color, accent_color: prev.accent_color, font_family: prev.font_family, logo_file_name: prev.logo_file_name } }, { onError: fail });
+    setBrand.mutate({ businessId: prev.business_id, palette: { primary_color: prev.primary_color, accent_color: prev.accent_color, font_family: prev.font_family, logo_file_name: prev.logo_file_name, logo_url: prev.logo_url } }, { onError: fail });
   const describe = (e: BrandEvent) => t(`brand.events.${e.kind}`, { actor: name(e.actor_user_id) });
 
   return (
@@ -61,7 +61,17 @@ export function BrandPanel({ businessId, mode }: { businessId?: string; mode: "o
               <Swatch label={t("brand.primary")} color={brand.primary_color} />
               <Swatch label={t("brand.accent")} color={brand.accent_color} />
               <div><dt className="text-muted-foreground">{t("brand.font")}</dt><dd className="mt-0.5">{brand.font_family ?? t("brand.font_default")}</dd></div>
-              <div><dt className="text-muted-foreground">{t("brand.logo_file")}</dt><dd className="mt-0.5 truncate">{brand.logo_file_name ?? t("brand.no_logo")}</dd></div>
+              <div>
+                <dt className="text-muted-foreground">{t("brand.logo_file")}</dt>
+                <dd className="mt-0.5 truncate">
+                  {brand.logo_url ? (
+                    // Shown on the primary color: most logos for a dark rail are white or light.
+                    <span className="inline-flex h-10 items-center rounded-[4px] px-2" style={{ backgroundColor: brand.primary_color }}><img src={brand.logo_url} alt={brand.logo_file_name ?? ""} className="h-7 max-w-[8rem] object-contain" /></span>
+                  ) : (
+                    brand.logo_file_name ?? t("brand.no_logo")
+                  )}
+                </dd>
+              </div>
             </dl>
             <p className="text-xs text-muted-foreground">{t(mode === "owner" ? "brand.applies_to_owner" : "brand.applies_to_sm")}</p>
             <div className="flex flex-wrap items-center gap-3 border-t border-border pt-3">
@@ -110,7 +120,7 @@ function ManualBrandDialog({ businessId, businessName, current, onClose }: { bus
   const { t } = useTranslation();
   const setBrand = useSetBrand();
   const [proposal, setProposal] = useState<BrandProposal | null>(null);
-  const initial: BrandProposal | null = current ? { primary_color: current.primary_color, accent_color: current.accent_color, font_family: current.font_family, logo_file_name: current.logo_file_name, manual_file_name: current.manual_file_name ?? "" } : null;
+  const initial: BrandProposal | null = current ? { primary_color: current.primary_color, accent_color: current.accent_color, font_family: current.font_family, logo_file_name: current.logo_file_name, logo_url: current.logo_url, manual_file_name: current.manual_file_name ?? "" } : null;
   const submit = () => {
     if (!proposal) return;
     const { manual_file_name: _m, ...palette } = proposal;

@@ -64,16 +64,28 @@ function Rail({ collapsed, onToggle, brand }: { collapsed: boolean; onToggle: ()
     >
       <div className={cn("flex h-14 items-center gap-2.5 border-b border-sidebar-border", collapsed ? "justify-center px-0" : "px-4")}>
         {brand ? (
-          // The business brand: its wordmark on top of the rail, the role under it.
-          <div className="flex min-w-0 items-center gap-2.5">
-            <BrandLogo name={brandName} palette={brand} compact />
-            {!collapsed && (
-              <div className="min-w-0 leading-tight">
-                <div className="truncate font-display text-sm font-semibold" style={brand.font_family ? { fontFamily: `${brand.font_family}, Inter, sans-serif` } : undefined}>{brandName}</div>
-                <div className="text-[11px] text-sidebar-muted">{t(franchisor ? "roles.franchisor" : `roles.${me?.role ?? "partner_firm"}`)}</div>
-              </div>
-            )}
-          </div>
+          // The business brand on top of the rail. With a logo image, the logo alone (it already carries the name)
+          // and the role under it; without one, the initials square next to the name and the role.
+          brand.logo_url && !collapsed ? (
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <BrandLogo name={brandName} palette={brand} compact />
+              <span className="text-[11px] text-sidebar-muted">{t(franchisor ? "roles.franchisor" : `roles.${me?.role ?? "partner_firm"}`)}</span>
+            </div>
+          ) : (
+            <div className="flex min-w-0 items-center gap-2.5">
+              {brand.logo_url ? (
+                <span aria-hidden className="flex h-8 w-8 items-center justify-center rounded-[4px] font-display text-xs font-bold" style={{ backgroundColor: brand.accent_color, color: brand.primary_color }}>{brandName.slice(0, 1).toUpperCase()}</span>
+              ) : (
+                <BrandLogo name={brandName} palette={brand} compact />
+              )}
+              {!collapsed && (
+                <div className="min-w-0 leading-tight">
+                  <div className="truncate font-display text-sm font-semibold" style={brand.font_family ? { fontFamily: `${brand.font_family}, Inter, sans-serif` } : undefined}>{brandName}</div>
+                  <div className="text-[11px] text-sidebar-muted">{t(franchisor ? "roles.franchisor" : `roles.${me?.role ?? "partner_firm"}`)}</div>
+                </div>
+              )}
+            </div>
+          )
         ) : (
           <>
             <Logo variant="isotype" className="h-8 w-8" />

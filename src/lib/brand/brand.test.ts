@@ -41,7 +41,7 @@ describe("simulated reading of the manual", () => {
   });
 });
 
-const brand: BusinessBrand = { business_id: "bimbo", primary_color: "#1f4e3d", accent_color: "#d9a441", font_family: null, logo_file_name: null, source: "b5_13", version: 1, applied_at: "2026-10-10T11:20:00Z", applied_by_user_id: null, manual_file_name: null };
+const brand: BusinessBrand = { business_id: "bimbo", primary_color: "#1f4e3d", accent_color: "#d9a441", font_family: null, logo_file_name: null, logo_url: null, source: "b5_13", version: 1, applied_at: "2026-10-10T11:20:00Z", applied_by_user_id: null, manual_file_name: null };
 const franchises = [{ id: "unit-1", franchisor_business_id: "bimbo" }, { id: "unit-2", franchisor_business_id: "other" }];
 const business = { id: "bimbo", office_id: "miami", owner_user_id: "rodrigo" };
 

@@ -1,17 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FileText, Image, Loader2, Paperclip, X } from "lucide-react";
 import type { BrandPalette, BrandProposal } from "@/lib/api/types";
 import { checkAccent, checkPrimary, isHex } from "@/lib/brand/contrast";
-import { brandFileNames, detectBrandFromManual, READING_DELAY_MS } from "@/lib/brand/detect";
+import { brandFileNames, detectBrandFromManual, readImageAsDataUrl, READING_DELAY_MS } from "@/lib/brand/detect";
 import { SecondaryButton } from "@/components/tasks/detail/dialogs";
 import { inputCls } from "@/components/accounts/shared";
 import { BrandPreview } from "./BrandPreview";
 
 /**
  * Brand capture used in the B5-13 delivery ("Diagnóstico de marca y manual básico de uso") and by SM when it
- * loads a brand by hand. With the manual attached, the app "reads" it (simulated) and prefills the palette; the
- * firm corrects it before sending. Contrast is checked against AA with a darker tone proposed when it falls short.
+ * loads a brand by hand. The firm picks the manual PDF and the logo image from its computer; the app "reads" the
+ * manual (simulated) and prefills the palette, the logo shows at once in the preview. The firm corrects the palette
+ * before sending. Contrast is checked against AA with a darker tone proposed when it falls short.
  */
 export function BrandCaptureSection({ businessName, value, onChange, mode = "delivery" }: {
   businessName: string;
@@ -23,17 +24,17 @@ export function BrandCaptureSection({ businessName, value, onChange, mode = "del
   const { t } = useTranslation();
   const names = brandFileNames(businessName);
   const [manual, setManual] = useState<string | null>(value?.manual_file_name ?? (mode === "manual" ? names.manual : null));
-  const [logo, setLogo] = useState<string | null>(value?.logo_file_name ?? null);
+  const [logo, setLogo] = useState<{ name: string; url: string } | null>(value?.logo_file_name ? { name: value.logo_file_name, url: value.logo_url ?? "" } : null);
   const [reading, setReading] = useState(false);
-  const [palette, setPalette] = useState<BrandPalette | null>(value ? { primary_color: value.primary_color, accent_color: value.accent_color, font_family: value.font_family, logo_file_name: value.logo_file_name } : null);
+  const [palette, setPalette] = useState<BrandPalette | null>(value ? { primary_color: value.primary_color, accent_color: value.accent_color, font_family: value.font_family, logo_file_name: value.logo_file_name, logo_url: value.logo_url } : null);
 
   // Attaching the manual starts the (simulated) reading; the palette appears when it ends.
   useEffect(() => {
     if (!manual || palette || mode !== "delivery") return;
     setReading(true);
     const id = setTimeout(() => {
-      const d = detectBrandFromManual(businessName, manual, logo);
-      setPalette({ primary_color: d.primary_color, accent_color: d.accent_color, font_family: d.font_family, logo_file_name: logo });
+      const d = detectBrandFromManual(businessName, manual, logo?.name ?? null, logo?.url ?? null);
+      setPalette({ primary_color: d.primary_color, accent_color: d.accent_color, font_family: d.font_family, logo_file_name: d.logo_file_name, logo_url: d.logo_url });
       setReading(false);
     }, READING_DELAY_MS);
     return () => clearTimeout(id);
@@ -43,20 +44,26 @@ export function BrandCaptureSection({ businessName, value, onChange, mode = "del
   useEffect(() => {
     if (mode === "manual" && !palette) {
       const d = detectBrandFromManual(businessName, names.manual, null);
-      setPalette({ primary_color: d.primary_color, accent_color: d.accent_color, font_family: d.font_family, logo_file_name: null });
+      setPalette({ primary_color: d.primary_color, accent_color: d.accent_color, font_family: d.font_family, logo_file_name: null, logo_url: null });
     }
   }, [mode, palette, businessName, names.manual]);
 
   // Tell the parent whenever the proposal is complete and valid.
   useEffect(() => {
     if (!manual || !palette || !isHex(palette.primary_color) || !isHex(palette.accent_color)) return onChange(null);
-    onChange({ ...palette, logo_file_name: logo, manual_file_name: manual });
+    onChange({ ...palette, logo_file_name: logo?.name ?? null, logo_url: logo?.url || null, manual_file_name: manual });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [manual, logo, palette]);
 
+  const attachLogo = async (file: File) => setLogo({ name: file.name, url: await readImageAsDataUrl(file) });
   const set = (k: keyof BrandPalette, v: string) => setPalette((p) => (p ? { ...p, [k]: v } : p));
   const primary = palette && isHex(palette.primary_color) ? checkPrimary(palette.primary_color) : null;
   const accent = palette && isHex(palette.accent_color) ? checkAccent(palette.accent_color) : null;
+  const withLogo = palette ? { ...palette, logo_file_name: logo?.name ?? null, logo_url: logo?.url || null } : null;
+
+  const logoRow = (
+    <FileRow label={t("brand.logo_file")} file={logo?.name ?? null} accept="image/png,image/svg+xml,image/jpeg,image/webp" icon={<Image className="h-4 w-4 text-muted-foreground" />} onAttach={attachLogo} onRemove={() => setLogo(null)} attachLabel={t("brand.attach_logo")} hint={t("brand.logo_hint")} />
+  );
 
   return (
     <section className="space-y-4 rounded-[4px] border border-border p-3">
@@ -67,13 +74,11 @@ export function BrandCaptureSection({ businessName, value, onChange, mode = "del
 
       {mode === "delivery" && (
         <div className="space-y-2">
-          <FileRow label={t("brand.manual_file")} file={manual} icon={<FileText className="h-4 w-4 text-muted-foreground" />} onAttach={() => setManual(names.manual)} onRemove={() => { setManual(null); setPalette(null); }} attachLabel={t("brand.attach_manual")} />
-          <FileRow label={t("brand.logo_file")} file={logo} icon={<Image className="h-4 w-4 text-muted-foreground" />} onAttach={() => setLogo(names.logo)} onRemove={() => setLogo(null)} attachLabel={t("brand.attach_logo")} />
+          <FileRow label={t("brand.manual_file")} file={manual} accept="application/pdf" icon={<FileText className="h-4 w-4 text-muted-foreground" />} onAttach={(f) => setManual(f.name)} onRemove={() => { setManual(null); setPalette(null); }} attachLabel={t("brand.attach_manual")} />
+          {logoRow}
         </div>
       )}
-      {mode === "manual" && (
-        <FileRow label={t("brand.logo_file")} file={logo} icon={<Image className="h-4 w-4 text-muted-foreground" />} onAttach={() => setLogo(names.logo)} onRemove={() => setLogo(null)} attachLabel={t("brand.attach_logo")} />
-      )}
+      {mode === "manual" && logoRow}
 
       {reading && (
         <p role="status" className="flex items-center gap-2 rounded-[4px] border border-border bg-muted px-3 py-2 text-sm">
@@ -81,26 +86,28 @@ export function BrandCaptureSection({ businessName, value, onChange, mode = "del
         </p>
       )}
 
-      {palette && !reading && (
+      {withLogo && !reading && (
         <div className="space-y-3">
           <p className="text-xs text-muted-foreground">{t(mode === "delivery" ? "brand.detected_hint" : "brand.palette_hint")}</p>
           <div className="grid gap-3 sm:grid-cols-2">
-            <ColorField label={t("brand.primary")} hint={t("brand.primary_hint")} value={palette.primary_color} onChange={(v) => set("primary_color", v)} check={primary} fix={t("brand.use_darker")} />
-            <ColorField label={t("brand.accent")} hint={t("brand.accent_hint")} value={palette.accent_color} onChange={(v) => set("accent_color", v)} check={accent} fix={t("brand.use_darker")} />
+            <ColorField label={t("brand.primary")} hint={t("brand.primary_hint")} value={withLogo.primary_color} onChange={(v) => set("primary_color", v)} check={primary} fix={t("brand.use_darker")} />
+            <ColorField label={t("brand.accent")} hint={t("brand.accent_hint")} value={withLogo.accent_color} onChange={(v) => set("accent_color", v)} check={accent} fix={t("brand.use_darker")} />
           </div>
           <label className="block space-y-1.5">
             <span className="text-sm font-medium">{t("brand.font")}</span>
-            <input className={inputCls} value={palette.font_family ?? ""} onChange={(e) => set("font_family", e.target.value)} placeholder={t("brand.font_placeholder")} autoComplete="off" />
+            <input className={inputCls} value={withLogo.font_family ?? ""} onChange={(e) => set("font_family", e.target.value)} placeholder={t("brand.font_placeholder")} autoComplete="off" />
           </label>
-          <BrandPreview name={businessName} palette={{ ...palette, logo_file_name: logo }} />
+          <BrandPreview name={businessName} palette={withLogo} />
         </div>
       )}
     </section>
   );
 }
 
-function FileRow({ label, file, icon, onAttach, onRemove, attachLabel }: { label: string; file: string | null; icon: React.ReactNode; onAttach: () => void; onRemove: () => void; attachLabel: string }) {
+/** One file of the delivery: a real file picker (hidden input) and the chosen file name with a remove button. */
+function FileRow({ label, file, accept, icon, onAttach, onRemove, attachLabel, hint }: { label: string; file: string | null; accept: string; icon: React.ReactNode; onAttach: (file: File) => void; onRemove: () => void; attachLabel: string; hint?: string }) {
   const { t } = useTranslation();
+  const input = useRef<HTMLInputElement>(null);
   return (
     <div className="space-y-1">
       <span className="block text-xs font-medium">{label}</span>
@@ -111,7 +118,11 @@ function FileRow({ label, file, icon, onAttach, onRemove, attachLabel }: { label
           <button type="button" aria-label={t("taskDetail.d_remove_file")} onClick={onRemove} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
         </div>
       ) : (
-        <SecondaryButton onClick={onAttach}><Paperclip className="h-3.5 w-3.5" />{attachLabel}</SecondaryButton>
+        <>
+          <input ref={input} type="file" accept={accept} className="sr-only" aria-label={label} onChange={(e) => { const f = e.target.files?.[0]; if (f) onAttach(f); e.target.value = ""; }} />
+          <SecondaryButton onClick={() => input.current?.click()}><Paperclip className="h-3.5 w-3.5" />{attachLabel}</SecondaryButton>
+          {hint && <span className="block text-xs text-muted-foreground">{hint}</span>}
+        </>
       )}
     </div>
   );

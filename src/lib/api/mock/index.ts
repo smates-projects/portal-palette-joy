@@ -314,9 +314,11 @@ export function createMockApi(): ApiClient {
           if (s && s.status === "sent") intake.setSignerStatus(c, party, "opened");
           return delay(c);
         },
-        signContract: async (contractId) => {
+        signContract: async (contractId, signature) => {
           const { c, party } = contractInScope(contractId);
           intake.setSignerStatus(c, party, "signed");
+          const signer = c.signers.find((x) => x.party === party);
+          if (signer) signer.signature = signature ?? null;
           // Tripartite signed by the three: the Bishop funds open with today's program amount.
           if (c.kind === "tripartite" && c.state === "signed") {
             const l = db.leads.find((x) => x.business_id === c.business_id);

@@ -200,7 +200,7 @@ describe("business brand (white label)", () => {
     // The firm starts and delivers B5-13 with the manual, the logo and the palette it read.
     await api.session.setViewAs(seed.U_TOMAS);
     await api.tasks.start(b513.id);
-    const palette = { primary_color: "#5a2a83", accent_color: "#f2b134", font_family: "Poppins", logo_file_name: "Enyermy_logo.png", manual_file_name: "Enyermy_manual.pdf" };
+    const palette = { primary_color: "#5a2a83", accent_color: "#f2b134", font_family: "Poppins", logo_file_name: "Enyermy_logo.png", logo_url: null, manual_file_name: "Enyermy_manual.pdf" };
     await api.tasks.submitVersion(b513.id, { note: "Manual de marca", file_names: ["Enyermy_manual.pdf", "Enyermy_logo.png"], brand: palette });
     await api.session.setViewAs(seed.U_ENYERMY);
     expect(await api.brand.getMine()).toBeNull();
@@ -215,11 +215,11 @@ describe("business brand (white label)", () => {
     await api.brand.reset(seed.BIZ_ENYERMY);
     expect(await api.brand.getMine()).toBeNull();
     await api.session.setViewAs(seed.U_CAMILA);
-    const manual = await api.brand.set(seed.BIZ_ENYERMY, { primary_color: "#264653", accent_color: "#e9c46a", font_family: null, logo_file_name: null });
+    const manual = await api.brand.set(seed.BIZ_ENYERMY, { primary_color: "#264653", accent_color: "#e9c46a", font_family: null, logo_file_name: null, logo_url: null });
     expect(manual.source).toBe("manual_sm");
-    await expect(api.brand.set(seed.BIZ_ENYERMY, { primary_color: "red", accent_color: "#e9c46a", font_family: null, logo_file_name: null })).rejects.toThrow("invalid_color");
+    await expect(api.brand.set(seed.BIZ_ENYERMY, { primary_color: "red", accent_color: "#e9c46a", font_family: null, logo_file_name: null, logo_url: null })).rejects.toThrow("invalid_color");
     await api.session.setViewAs(seed.U_CARLA);
-    await expect(api.brand.set(seed.BIZ_ENYERMY, { primary_color: "#264653", accent_color: "#e9c46a", font_family: null, logo_file_name: null })).rejects.toThrow("forbidden");
+    await expect(api.brand.set(seed.BIZ_ENYERMY, { primary_color: "#264653", accent_color: "#e9c46a", font_family: null, logo_file_name: null, logo_url: null })).rejects.toThrow("forbidden");
     await expect(api.brand.reset(seed.BIZ_ENYERMY)).rejects.toThrow("forbidden");
   });
   it("approving B5-13 without a brand attached changes nothing", async () => {
@@ -236,13 +236,13 @@ describe("business brand (white label)", () => {
     const luisa = await as(net.U_LUISA);
     expect(await luisa.brand.getMine()).toBeNull();
     await luisa.session.setViewAs(seed.U_NICOLAS);
-    await luisa.brand.set(seed.BIZ_BIMBO, { primary_color: "#8c2f39", accent_color: "#e8b04b", font_family: "Lato", logo_file_name: "Bimbo_logo.png" });
+    await luisa.brand.set(seed.BIZ_BIMBO, { primary_color: "#8c2f39", accent_color: "#e8b04b", font_family: "Lato", logo_file_name: "Bimbo_logo.png", logo_url: null });
     await luisa.session.setViewAs(net.U_LUISA);
     const inherited = await luisa.brand.getMine();
     expect(inherited?.business_id).toBe(seed.BIZ_BIMBO);
     expect(inherited?.primary_color).toBe("#8c2f39");
     expect((await luisa.brand.get())?.business_id).toBe(seed.BIZ_BIMBO);
-    await expect(luisa.brand.set(seed.BIZ_BIMBO, { primary_color: "#000000", accent_color: "#e8b04b", font_family: null, logo_file_name: null })).rejects.toThrow("forbidden");
+    await expect(luisa.brand.set(seed.BIZ_BIMBO, { primary_color: "#000000", accent_color: "#e8b04b", font_family: null, logo_file_name: null, logo_url: null })).rejects.toThrow("forbidden");
     await expect(luisa.brand.reset(seed.BIZ_BIMBO)).rejects.toThrow("forbidden");
     // The franchisor resets: the franchise follows.
     await luisa.session.setViewAs(seed.U_RODRIGO_BIMBO);

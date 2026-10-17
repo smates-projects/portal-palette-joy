@@ -247,12 +247,17 @@ export interface TaskVersion {
 
 // ---------- Business brand (white label) ----------
 
-/** Colors as #rrggbb. The logo is a simulated upload: only its file name is kept and the portal draws a wordmark. */
+/**
+ * Colors as #rrggbb. logo_url is the image the portal shows on the rail: in the mock a data URL read in the browser
+ * (or a sample under /brand/samples); in production the backend stores the uploaded file and returns its URL.
+ * Without a logo the portal draws the initials of the business.
+ */
 export interface BrandPalette {
   primary_color: string;
   accent_color: string;
   font_family: string | null;
   logo_file_name: string | null;
+  logo_url: string | null;
 }
 
 /** What the firm sends with B5-13: the manual, the logo and the palette it read from the manual (corrected by hand if needed). */

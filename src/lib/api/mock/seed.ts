@@ -1,5 +1,6 @@
 import type { ExternalCalendarEvent, NotificationKind, TaskChange,
   BrandEvent,
+  BrandPalette,
   BrandProposal,
   Business,
   BusinessBrand,
@@ -479,16 +480,17 @@ ownerRequests.push(
 meetings.push({ id: uuid("1b000000", 910), task_id: TASK_B402_VOSSLER, proposed_by_user_id: U_MARIANA, topic: "Demo del CRM con tus etapas de venta", starts_at: "2026-10-16T18:00:00Z", duration_minutes: 45, status: "proposed" });
 // Vossler brand (white label): read from the manual delivered with B5-13 and applied when Carla approved it.
 export const VOSSLER_BRAND: BrandProposal = {
-  primary_color: "#1f4e3d", accent_color: "#d9a441", font_family: "Montserrat", logo_file_name: "Vossler_logo.png", manual_file_name: "Vossler_manual_de_marca.pdf",
+  primary_color: "#1f4e3d", accent_color: "#d9a441", font_family: "Montserrat", logo_file_name: "Vossler_logo.svg", logo_url: "/brand/samples/vossler-logo.svg", manual_file_name: "Vossler_manual_de_marca.pdf",
 };
 const b513Version = versions.find((v) => v.task_id === TASK_B513_VOSSLER);
 if (b513Version) b513Version.brand = VOSSLER_BRAND;
 const B513_APPROVED_AT = events.find((e) => e.task_id === TASK_B513_VOSSLER && e.kind === "approved")?.created_at ?? "2026-10-10T11:20:00Z";
+const VOSSLER_PALETTE: BrandPalette = { primary_color: VOSSLER_BRAND.primary_color, accent_color: VOSSLER_BRAND.accent_color, font_family: VOSSLER_BRAND.font_family, logo_file_name: VOSSLER_BRAND.logo_file_name, logo_url: VOSSLER_BRAND.logo_url };
 export const brands: BusinessBrand[] = [
-  { business_id: BIZ_VOSSLER, primary_color: VOSSLER_BRAND.primary_color, accent_color: VOSSLER_BRAND.accent_color, font_family: VOSSLER_BRAND.font_family, logo_file_name: VOSSLER_BRAND.logo_file_name, source: "b5_13", version: 1, applied_at: B513_APPROVED_AT, applied_by_user_id: U_CARLA, manual_file_name: VOSSLER_BRAND.manual_file_name },
+  { business_id: BIZ_VOSSLER, ...VOSSLER_PALETTE, source: "b5_13", version: 1, applied_at: B513_APPROVED_AT, applied_by_user_id: U_CARLA, manual_file_name: VOSSLER_BRAND.manual_file_name },
 ];
 export const brandEvents: BrandEvent[] = [
-  { id: uuid("1a100000", 1), business_id: BIZ_VOSSLER, kind: "applied_from_b5_13", actor_user_id: U_CARLA, created_at: B513_APPROVED_AT, palette: { primary_color: VOSSLER_BRAND.primary_color, accent_color: VOSSLER_BRAND.accent_color, font_family: VOSSLER_BRAND.font_family, logo_file_name: VOSSLER_BRAND.logo_file_name } },
+  { id: uuid("1a100000", 1), business_id: BIZ_VOSSLER, kind: "applied_from_b5_13", actor_user_id: U_CARLA, created_at: B513_APPROVED_AT, palette: VOSSLER_PALETTE },
 ];
 notifications.push(
   { id: uuid("1f000000", 25), user_id: U_CARLA, kind: "brand_applied", task_id: TASK_B513_VOSSLER, actor_user_id: null, created_at: B513_APPROVED_AT, read: true },

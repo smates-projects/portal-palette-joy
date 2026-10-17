@@ -375,7 +375,7 @@ export function createAccounts(ctx: AccountsContext) {
   const upsertBrand = (b: Business, palette: BrandPalette, extra: Pick<BusinessBrand, "source" | "version" | "manual_file_name">): BusinessBrand => {
     const brand: BusinessBrand = {
       business_id: b.id, primary_color: palette.primary_color.toLowerCase(), accent_color: palette.accent_color.toLowerCase(),
-      font_family: palette.font_family, logo_file_name: palette.logo_file_name, ...extra, applied_at: nowIso(), applied_by_user_id: me().id,
+      font_family: palette.font_family, logo_file_name: palette.logo_file_name, logo_url: palette.logo_url, ...extra, applied_at: nowIso(), applied_by_user_id: me().id,
     };
     const i = db.brands.findIndex((x) => x.business_id === b.id);
     if (i >= 0) db.brands[i] = brand;

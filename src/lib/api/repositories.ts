@@ -15,6 +15,7 @@ import type {
   CatalogItemInput,
   ChecklistItem,
   Contract,
+  ContractSignature,
   CreateOfficeInput,
   FinancialSeries,
   FranchiseDetail,
@@ -381,7 +382,8 @@ export interface DocumentsRepository {
    * Owner signs as owner; any SM person of the office signs as Strategic Mates.
    */
   openContract(contractId: Uuid): Promise<Contract>;
-  signContract(contractId: Uuid): Promise<Contract>;
+  /** The signature the person drew, typed or uploaded (DocuSeal collects it in production). */
+  signContract(contractId: Uuid, signature?: ContractSignature): Promise<Contract>;
   declineContract(contractId: Uuid, reason: string): Promise<Contract>;
 }
 

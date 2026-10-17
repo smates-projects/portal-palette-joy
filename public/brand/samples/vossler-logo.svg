@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 96" width="360" height="96" role="img" aria-label="Vossler">
+  <!-- Sample logo for the demo business Vossler (residential construction): gold roof mark, white wordmark for dark rails. -->
+  <g fill="none" stroke="#d9a441" stroke-width="8" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M14 56 L48 20 L82 56" />
+    <path d="M26 50 V84 H70 V50" />
+  </g>
+  <rect x="42" y="62" width="12" height="22" fill="#d9a441" />
+  <text x="104" y="60" font-family="Montserrat, Inter, Arial, sans-serif" font-size="44" font-weight="700" letter-spacing="4" fill="#ffffff">VOSSLER</text>
+  <text x="106" y="82" font-family="Inter, Arial, sans-serif" font-size="13" letter-spacing="3" fill="#d9a441">CONSTRUCCIÓN RESIDENCIAL</text>
+</svg>
