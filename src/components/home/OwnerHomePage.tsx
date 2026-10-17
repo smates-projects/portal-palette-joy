@@ -106,11 +106,11 @@ export function OwnerHomePage({ taskId }: { taskId?: string | undefined }) {
       );
     const late = it.kind !== "meeting" && it.date < TODAY;
     return (
-      <li key={it.key} className="flex items-center gap-3 px-4 py-3">
+      <li key={it.key} className="flex flex-wrap items-center gap-3 px-4 py-3 sm:flex-nowrap">
         <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
         <button onClick={() => openTask(it.task.id)} className="min-w-0 flex-1 text-left">
           <p className="text-sm font-medium">{what}</p>
-          <p className="truncate text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground sm:truncate">
             <span className="inline-flex items-center gap-1.5 font-display tabular-nums text-foreground"><AreaSquare area={it.task.area} />{it.task.code}</span> · {detail}
           </p>
         </button>
@@ -119,7 +119,7 @@ export function OwnerHomePage({ taskId }: { taskId?: string | undefined }) {
             {when(it.date)}
           </span>
         )}
-        <div className="shrink-0">{action}</div>
+        <div className="w-full shrink-0 sm:w-auto [&>*]:w-full sm:[&>*]:w-auto">{action}</div>
       </li>
     );
   };

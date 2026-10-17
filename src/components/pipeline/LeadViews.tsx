@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { LEAD_STAGES, type LeadStage, type LeadWithComputed } from "@/lib/api/types";
@@ -116,9 +116,22 @@ export function LeadBoard(props: ViewProps & { onDrop?: (lead: LeadWithComputed,
     if (to) props.onDrop?.(lead, to);
   };
   const discarded = props.leads.filter((l) => l.stage === "discarded").sort(byTimeInStage);
+  // Fade on the right edge while there are columns past the visible width.
+  const scroller = useRef<HTMLDivElement>(null);
+  const [moreRight, setMoreRight] = useState(false);
+  const measure = () => {
+    const el = scroller.current;
+    if (el) setMoreRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  };
+  useEffect(() => {
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  });
 
   return (
-    <div className="flex min-h-0 gap-3 overflow-x-auto pb-2">
+    <div className="relative">
+    <div ref={scroller} onScroll={measure} className="scrollbar-visible flex max-h-[calc(100vh-15rem)] min-h-0 items-start gap-3 overflow-auto pb-2">
       {LEAD_STAGES.map((stage) => {
         const items = props.leads.filter((l) => l.stage === stage).sort(byNewThenTime());
         return (
@@ -169,6 +182,8 @@ export function LeadBoard(props: ViewProps & { onDrop?: (lead: LeadWithComputed,
           <span className="[writing-mode:vertical-rl]">{t("pipeline.discarded_column", { count: discarded.length })}</span>
         </button>
       )}
+    </div>
+    <div aria-hidden className={cn("pointer-events-none absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-background to-transparent transition-opacity", moreRight ? "opacity-100" : "opacity-0")} />
     </div>
   );
 }

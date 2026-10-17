@@ -63,7 +63,25 @@ export function OpportunitiesPage() {
           {items.length === 0 ? (
             <p className="px-4 py-6 text-sm text-muted-foreground">{t("bishop.opportunities.empty_filter")}</p>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            {/* Small screens: one card per row with the same data, nothing hidden off-screen. */}
+            <ul className="divide-y divide-border md:hidden">
+              {items.map((o) => (
+                <li key={o.id} className={o.decision === "passed" ? "space-y-2 px-4 py-3 text-muted-foreground" : "space-y-2 px-4 py-3"}>
+                  <div className="flex items-start justify-between gap-3">
+                    <Link to="/oportunidades/$opportunityId" params={{ opportunityId: o.id }} className="min-w-0 font-medium text-link hover:underline">{title(o)}</Link>
+                    <DecisionTag decision={o.decision} />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2"><PhaseTag phase={o.phase} /><ReviewDay o={o} /></div>
+                  <dl className="grid grid-cols-3 gap-2 text-xs">
+                    <div><dt className="text-muted-foreground">{t("bishop.opportunities.col_score")}</dt><dd className="font-display text-sm tabular-nums">{o.score}</dd></div>
+                    <div><dt className="text-muted-foreground">{t("bishop.opportunities.col_investment")}</dt><dd className="text-sm tabular-nums">{formatUsd(o.investment, lng)}</dd></div>
+                    <div><dt className="text-muted-foreground">{t("bishop.opportunities.col_share")}</dt><dd className="text-sm tabular-nums">{t("bishop.opportunities.share_values", { year1: o.share_year1_pct, stable: o.share_stable_pct })}</dd></div>
+                  </dl>
+                </li>
+              ))}
+            </ul>
+            <div className="hidden overflow-x-auto md:block">
               <table className="w-full min-w-[880px] text-left text-sm">
                 <thead className="bg-muted/50 text-xs text-muted-foreground">
                   <tr>
@@ -97,6 +115,7 @@ export function OpportunitiesPage() {
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </Panel>
         <p className="mt-3 text-xs text-muted-foreground">{t("bishop.opportunities.share_note")}</p>

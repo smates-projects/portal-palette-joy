@@ -107,13 +107,13 @@ function ProfileForm({ profile }: { profile: BusinessProfile }) {
       const pending = pendingFor(f);
       return (
         <Field label={label}>
-          <div className="flex min-h-9 items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-1.5 text-sm">
-            <span className="min-w-0 flex-1 truncate">{values[name]}</span>
-            <span className="rounded-[4px] border border-status-success-border bg-status-success-bg px-1.5 py-0.5 text-[11px] font-medium text-status-success-fg">{t("owner_extra.business.verified")}</span>
+          <div className="flex min-h-9 flex-wrap items-center gap-x-2 gap-y-1 rounded-md border border-border bg-muted/50 px-3 py-1.5 text-sm">
+            <span className="min-w-0 flex-1 basis-40 break-words">{values[name]}</span>
+            <span className="shrink-0 rounded-[4px] border border-status-success-border bg-status-success-bg px-1.5 py-0.5 text-[11px] font-medium text-status-success-fg">{t("owner_extra.business.verified")}</span>
             {pending ? (
               <span className="rounded-[4px] border border-status-warning-border bg-status-warning-bg px-1.5 py-0.5 text-[11px] font-medium text-status-warning-fg" title={pending.new_value}>{t("owner_extra.business.status_pending")}</span>
             ) : (
-              <button type="button" onClick={() => setRequesting(f)} className="text-xs text-link hover:underline">{t("owner_extra.business.request_change")}</button>
+              <button type="button" onClick={() => setRequesting(f)} className="shrink-0 whitespace-nowrap text-xs text-link hover:underline">{t("owner_extra.business.request_change")}</button>
             )}
           </div>
         </Field>
@@ -151,11 +151,11 @@ function ProfileForm({ profile }: { profile: BusinessProfile }) {
         </dl>
         {field("legal_name", t("owner_extra.business.legal_name"))}
         {field("address", t("owner_extra.business.address"), { autoComplete: "street-address" })}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid gap-4 sm:grid-cols-2">
           {field("city", t("owner_extra.business.city"))}
           {field("state", t("owner_extra.business.state"))}
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid gap-4 sm:grid-cols-2">
           {field("phone", t("owner_extra.business.phone"), { type: "tel", inputMode: "tel", autoComplete: "tel" })}
           {field("employees", t("owner_extra.business.employees"), { inputMode: "numeric" })}
         </div>
@@ -168,10 +168,10 @@ function ProfileForm({ profile }: { profile: BusinessProfile }) {
       {!!requestsQ.data?.length && (
         <div className="border-t border-border p-4">
           <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("owner_extra.business.pending_title")}</h3>
-          <ul className="mt-2 space-y-1.5 text-xs">
+          <ul className="mt-2 divide-y divide-border text-xs">
             {requestsQ.data.map((r: ProfileChangeRequest) => (
-              <li key={r.id} className="flex flex-wrap items-center gap-2">
-                <span>{t("owner_extra.business.request_line", { field: t(`owner_extra.business.${r.field}`), from: r.current_value, to: r.new_value })}</span>
+              <li key={r.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 py-2 first:pt-0">
+                <span className="min-w-0 basis-full break-words sm:basis-auto">{t("owner_extra.business.request_line", { field: t(`owner_extra.business.${r.field}`), from: r.current_value, to: r.new_value })}</span>
                 <ToneBadge tone={r.status === "pending" ? "warning" : r.status === "applied" ? "success" : "neutral"}>{t(`owner_extra.business.status_${r.status}`)}</ToneBadge>
                 <span className="text-muted-foreground">{formatDateTime(r.resolved_at ?? r.created_at, i18n.language)}</span>
                 {r.resolution_note && <span className="w-full text-muted-foreground">{r.resolution_note}</span>}
@@ -207,9 +207,9 @@ function RequestChangeDialog({ field, current, onClose }: { field: VerifiedProfi
           <DialogTitle>{t("owner_extra.business.request_title")}</DialogTitle>
           <DialogDescription>{t("owner_extra.business.request_body")}</DialogDescription>
         </DialogHeader>
-        <dl className="grid grid-cols-2 gap-3 text-sm">
+        <dl className="grid gap-3 rounded-md border border-border bg-muted/50 p-3 text-sm sm:grid-cols-2">
           <div><dt className="text-xs text-muted-foreground">{t("owner_extra.business.request_field")}</dt><dd className="mt-0.5 font-medium">{t(`owner_extra.business.${field}`)}</dd></div>
-          <div><dt className="text-xs text-muted-foreground">{t("owner_extra.business.request_current")}</dt><dd className="mt-0.5 truncate">{current}</dd></div>
+          <div><dt className="text-xs text-muted-foreground">{t("owner_extra.business.request_current")}</dt><dd className="mt-0.5 break-words">{current}</dd></div>
         </dl>
         <Field label={t("owner_extra.business.request_new_value")}>
           <input autoFocus className={inputCls} value={value} onChange={(e) => setValue(e.target.value)} />

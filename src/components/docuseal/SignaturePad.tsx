@@ -77,16 +77,16 @@ export function SignaturePad({ signerName, onChange }: { signerName: string; onC
 
   const tab = (k: ContractSignature["kind"], label: string) => (
     <button key={k} type="button" role="tab" aria-selected={mode === k} onClick={() => setMode(k)}
-      className={cn("rounded-[4px] px-3 py-1 text-sm", mode === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}>
+      className={cn("rounded-[4px] px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", mode === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground")}>
       {label}
     </button>
   );
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <span className="text-sm font-medium">{t("intake.docuseal.sig_title")}</span>
-        <div role="tablist" className="inline-flex rounded-md border border-border bg-surface p-0.5">
+        <div role="tablist" className="grid w-full grid-cols-3 rounded-md border border-border bg-muted/50 p-0.5 sm:inline-grid sm:w-auto">
           {tab("drawn", t("intake.docuseal.sig_draw"))}
           {tab("typed", t("intake.docuseal.sig_type"))}
           {tab("uploaded", t("intake.docuseal.sig_upload"))}
@@ -95,11 +95,12 @@ export function SignaturePad({ signerName, onChange }: { signerName: string; onC
 
       {mode === "drawn" && (
         <div className="space-y-1.5">
-          <div className="relative rounded-[4px] border border-input bg-white">
+          <div className="relative overflow-hidden rounded-[4px] border border-input bg-white shadow-[inset_0_1px_2px_rgb(0_0_0/0.04)]">
             <canvas ref={canvas} width={WIDTH} height={HEIGHT} aria-label={t("intake.docuseal.sig_draw_hint")}
-              className="block w-full touch-none" style={{ aspectRatio: `${WIDTH} / ${HEIGHT}` }}
+              className="block w-full cursor-crosshair touch-none select-none" style={{ aspectRatio: `${WIDTH} / ${HEIGHT}`, minHeight: 120 }}
               onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerLeave={end} onPointerCancel={end} />
-            <span aria-hidden className="pointer-events-none absolute inset-x-6 bottom-7 border-b border-dashed border-border" />
+            <span aria-hidden className="pointer-events-none absolute bottom-6 left-4 font-display text-sm text-muted-foreground">×</span>
+            <span aria-hidden className="pointer-events-none absolute bottom-7 left-8 right-4 border-b border-border" />
             {drawnUrl && (
               <button type="button" onClick={clear} className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-[4px] border border-border bg-surface px-2 py-0.5 text-xs text-muted-foreground hover:text-foreground">
                 <Eraser className="h-3 w-3" />{t("intake.docuseal.sig_clear")}
@@ -113,7 +114,8 @@ export function SignaturePad({ signerName, onChange }: { signerName: string; onC
       {mode === "typed" && (
         <div className="space-y-1.5">
           <input className={inputCls} value={typed} onChange={(e) => setTyped(e.target.value)} placeholder={t("intake.docuseal.sig_type_placeholder")} autoComplete="off" />
-          <div className="flex h-20 items-center justify-center rounded-[4px] border border-input bg-white px-4">
+          <div className="relative flex h-24 items-center justify-center rounded-[4px] border border-input bg-white px-4">
+            <span aria-hidden className="pointer-events-none absolute bottom-5 left-8 right-4 border-b border-border" />
             <span className="truncate text-3xl" style={{ fontFamily: SCRIPT_FONT, color: INK }}>{typed.trim() || " "}</span>
           </div>
         </div>

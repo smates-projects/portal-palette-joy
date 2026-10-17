@@ -1,7 +1,8 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { ChevronsLeft, ChevronsRight, Search, Check, Eye } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, Search, Check, Eye, Menu } from "lucide-react";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { Logo } from "@/components/brand/Logo";
 import { BrandLogo } from "@/components/brand/BrandLogo";
@@ -45,7 +46,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 const initials = (name: string) =>
   name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 
-function Rail({ collapsed, onToggle, brand }: { collapsed: boolean; onToggle: () => void; brand: BusinessBrand | null }) {
+function Rail({ collapsed, onToggle, brand, mobile = false }: { collapsed: boolean; onToggle: () => void; brand: BusinessBrand | null; mobile?: boolean }) {
   const { t } = useTranslation();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const view = useRouterState({ select: (s) => (s.location.search as Record<string, unknown>)["view"] });
@@ -58,8 +59,9 @@ function Rail({ collapsed, onToggle, brand }: { collapsed: boolean; onToggle: ()
   return (
     <aside
       className={cn(
-        "flex shrink-0 flex-col bg-sidebar text-sidebar-foreground transition-[width] duration-200",
-        collapsed ? "w-16" : "w-60",
+        "shrink-0 flex-col bg-sidebar text-sidebar-foreground transition-[width] duration-200",
+        mobile ? "flex h-full w-full" : "hidden md:flex",
+        !mobile && (collapsed ? "w-16" : "w-60"),
       )}
     >
       <div className={cn("flex h-14 items-center gap-2.5 border-b border-sidebar-border", collapsed ? "justify-center px-0" : "px-4")}>
@@ -137,6 +139,10 @@ function Rail({ collapsed, onToggle, brand }: { collapsed: boolean; onToggle: ()
           {!collapsed && <span>{t("brand.with_sm")}</span>}
         </div>
       )}
+      {mobile ? (
+        // On small screens the language switch lives in the menu panel so the top bar keeps its width.
+        <div className="border-t border-sidebar-border p-3"><LanguageSwitch /></div>
+      ) : (
       <button
         onClick={onToggle}
         className={cn(
@@ -148,6 +154,7 @@ function Rail({ collapsed, onToggle, brand }: { collapsed: boolean; onToggle: ()
         {collapsed ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
         {!collapsed && t("nav.collapse")}
       </button>
+      )}
     </aside>
   );
 }
@@ -224,7 +231,7 @@ function ViewAs() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger aria-label={`${t("topbar.view_as")}: ${currentOpt ? label(currentOpt) : ""}`} className="flex h-8 min-w-0 max-w-[11rem] items-center gap-2 rounded-md border border-border bg-surface px-2.5 text-sm hover:bg-muted sm:max-w-none md:min-w-60">
+      <DropdownMenuTrigger aria-label={`${t("topbar.view_as")}: ${currentOpt ? label(currentOpt) : ""}`} className="flex h-8 min-w-[7.5rem] max-w-[13rem] items-center gap-2 rounded-md border border-border bg-surface px-2.5 text-sm hover:bg-muted sm:max-w-none md:min-w-60">
         <Eye className="h-3.5 w-3.5 text-muted-foreground" />
         <span className="hidden text-muted-foreground sm:inline">{t("topbar.view_as")}:</span>
         <span className="truncate font-medium">{currentOpt ? label(currentOpt) : "…"}</span>
@@ -305,7 +312,7 @@ function ViewAs() {
   );
 }
 
-function TopBar() {
+function TopBar({ onMenu }: { onMenu: () => void }) {
   const { t } = useTranslation();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const view = useRouterState({ select: (s) => (s.location.search as Record<string, unknown>)["view"] });
@@ -316,6 +323,9 @@ function TopBar() {
   const current = items.find((n) => isNavActive(n, items, pathname, view));
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-surface px-3 sm:gap-4 sm:px-6">
+      <button onClick={onMenu} aria-label={t("nav.main")} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:hidden">
+        <Menu className="h-4 w-4" />
+      </button>
       <div className="min-w-0 flex-1 truncate font-semibold">{current ? t(`pages.${current.key}.title`) : pathname === "/perfil" ? t("pages.profile.title") : ""}</div>
       <label className="relative hidden w-72 md:block">
         <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -326,7 +336,7 @@ function TopBar() {
         />
       </label>
       <NotificationBell />
-      <LanguageSwitch />
+      <div className="hidden shrink-0 md:block"><LanguageSwitch /></div>
       <ViewAs />
       {me?.role === "sm_team" ? (
         // SM has no "Mi perfil" in the menu: the avatar opens it (booking link lives there).
@@ -352,15 +362,15 @@ function TopBar() {
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [collapsed, setCollapsed] = useState(false);
   // Brand of the current user's business (owner, team, franchisor, franchises); null keeps the SM brand.
   const brand = useMyBrand().data ?? null;
 
-  // Small screens start with the rail collapsed so the work area keeps its width.
-  useEffect(() => {
-    if (window.matchMedia("(max-width: 767px)").matches) setCollapsed(true);
-  }, []);
+  // Small screens hide the rail; the menu button opens the same menu as a side panel.
+  const [menuOpen, setMenuOpen] = useState(false);
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  useEffect(() => setMenuOpen(false), [pathname]);
 
   // Restore saved language after hydration to avoid SSR mismatches.
   useEffect(() => {
@@ -375,8 +385,14 @@ export function AppShell({ children }: { children: ReactNode }) {
     <TooltipProvider delayDuration={200}>
       <div key={i18n.language} className="lang-fade flex h-screen overflow-hidden bg-background" style={brandStyle(brand)} data-brand={brand ? brand.business_id : undefined}>
         <Rail collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} brand={brand} />
+        <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+          <SheetContent side="left" className="w-64 border-0 p-0 [&>button]:text-sidebar-foreground" style={brandStyle(brand)}>
+            <SheetTitle className="sr-only">{t("nav.main")}</SheetTitle>
+            <Rail mobile collapsed={false} onToggle={() => setMenuOpen(false)} brand={brand} />
+          </SheetContent>
+        </Sheet>
         <div className="flex min-w-0 flex-1 flex-col">
-          <TopBar />
+          <TopBar onMenu={() => setMenuOpen(true)} />
           <main className="min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]">{children}</main>
         </div>
       </div>

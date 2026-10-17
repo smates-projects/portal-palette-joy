@@ -191,7 +191,7 @@ export function PersonActions({ user, orgs, onDeactivate, onHistory }: { user: U
   const status = userStatus(user);
   const fail = (e: unknown) => toast.error(accountError(t, e));
   return (
-    <div className="flex flex-wrap items-center justify-end gap-3">
+    <div className="flex flex-wrap items-center justify-start gap-3 md:flex-nowrap md:justify-end [&_button]:whitespace-nowrap">
       {manages && status === "invited" && (
         <button className={linkBtn} disabled={accept.isPending} onClick={() => accept.mutate(user.id, { onSuccess: () => toast.success(t("accounts.t_accepted", { name: user.full_name })), onError: fail })}>
           {t("accounts.simulate_acceptance")}
