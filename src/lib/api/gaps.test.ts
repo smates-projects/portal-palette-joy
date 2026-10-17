@@ -51,8 +51,8 @@ describe("manual sections", () => {
 
   it("a business that just signed gets the six empty sections with their codes", async () => {
     const api = await as(net.U_VALENTINA);
-    const lead = (await api.leads.list()).find((l) => l.stage === "contract")!;
-    const { business_id } = await api.leads.markContractSigned(lead.id, "2026-10-14");
+    const lead = (await api.leads.list()).find((l) => l.stage === "accepted")!;
+    const { business_id } = await api.leads.startProgram(lead.id, "2026-10-14");
     const owner = (await api.businesses.list()).find((b) => b.id === business_id)!.owner_user_id;
     await api.session.setViewAs(owner);
     const manual = await api.manual.get();
@@ -268,7 +268,7 @@ describe("office and network numbers", () => {
     const offices = await (await asGlobal()).network.listOffices();
     const stats = (id: string) => offices.find((o) => o.office.id === id)!.stats;
     // Miami: 7 assessments in October and Enyermy signed on Oct 9, so 1 of 7.
-    expect(stats(seed.ORG_SM)).toMatchObject({ leads_this_month: 7, conversion_month: 14, ready_to_franchise: 0 });
+    expect(stats(seed.ORG_SM)).toMatchObject({ leads_this_month: 6, conversion_month: 17, ready_to_franchise: 0 });
     expect(stats(net.ORG_ORLANDO)).toMatchObject({ leads_this_month: 2, conversion_month: 0 });
     // Tampa received one assessment and signed none: 0%. An office with no assessments has no conversion.
     expect(stats(net.ORG_TAMPA)).toMatchObject({ leads_this_month: 1, conversion_month: 0 });
@@ -279,7 +279,7 @@ describe("office and network numbers", () => {
     const summary = await api.network.getSummary();
     const offices = await api.network.listOffices();
     expect(summary.leads_this_month).toBe(offices.reduce((a, o) => a + o.stats.leads_this_month, 0));
-    expect(summary).toMatchObject({ leads_this_month: 10, conversion_month: 10, ready_to_franchise: 0 });
+    expect(summary).toMatchObject({ leads_this_month: 9, conversion_month: 11, ready_to_franchise: 0 });
   });
 
   it("ready to franchise follows the rules: with a low goal the businesses that have approved work count", async () => {
@@ -303,7 +303,7 @@ describe("office and network numbers", () => {
     const miami = await as(seed.U_NICOLAS);
     const [only] = await miami.network.listOffices();
     expect(only!.office.id).toBe(seed.ORG_SM);
-    expect(only!.stats).toMatchObject({ leads_this_month: 7, conversion_month: 14 });
+    expect(only!.stats).toMatchObject({ leads_this_month: 6, conversion_month: 17 });
     await expect(miami.network.getSummary()).rejects.toThrow("global_only");
   });
 });
@@ -334,11 +334,11 @@ describe("leads: SM Global reads every office, read only", () => {
   it("every write stays forbidden for SM Global", async () => {
     const api = await asGlobal();
     const evaluated = (await api.leads.list()).find((l) => l.stage === "evaluated")!;
-    const contract = (await api.leads.list()).find((l) => l.stage === "contract")!;
+    const contract = (await api.leads.list()).find((l) => l.stage === "accepted")!;
     await expect(api.leads.move(evaluated.id, "meeting")).rejects.toThrow("sm_only");
     await expect(api.leads.discard(evaluated.id, "No responde")).rejects.toThrow("sm_only");
     await expect(api.leads.addNote(evaluated.id, "Llamar mañana")).rejects.toThrow("sm_only");
-    await expect(api.leads.markContractSigned(contract.id, "2026-10-14")).rejects.toThrow("sm_only");
+    await expect(api.leads.startProgram(contract.id, "2026-10-14")).rejects.toThrow("sm_only");
     // Nothing changed.
     expect((await api.leads.list()).find((l) => l.id === evaluated.id)?.stage).toBe("evaluated");
   });

@@ -16,6 +16,17 @@ export const DEFAULT_PLATFORM_RULES: PlatformRules = {
   required_task_codes: DEFAULT_REQUIRED_TASK_CODES,
   area_amber_days: DEFAULT_AREA_AMBER_DAYS,
   franchisability_amber_tolerance: DEFAULT_AMBER_TOLERANCE_POINTS,
+  document_review_days: 15,
+  // Entry documents (to validate with Melany). SM Global edits them in Reglas.
+  intake_documents: [
+    { id: "a1000000-0000-4000-8000-000000000001", name: "Facturación del último año (estados de cuenta bancarios de 12 meses o P&L)", required: true, only_if_llc: false, verified_hint: "USD 640.000 en 12 meses", archived: false },
+    { id: "a1000000-0000-4000-8000-000000000002", name: "Documento de constitución (Articles of Organization o Incorporation)", required: true, only_if_llc: false, verified_hint: "LLC activa en Florida desde 2016", archived: false },
+    { id: "a1000000-0000-4000-8000-000000000003", name: "EIN (carta del IRS)", required: true, only_if_llc: false, verified_hint: "EIN verificado", archived: false },
+    { id: "a1000000-0000-4000-8000-000000000004", name: "Operating Agreement", required: true, only_if_llc: true, verified_hint: "Dueño con 100% de la LLC", archived: false },
+    { id: "a1000000-0000-4000-8000-000000000005", name: "Licencias del negocio", required: true, only_if_llc: false, verified_hint: "Licencia vigente hasta 09/2027", archived: false },
+    { id: "a1000000-0000-4000-8000-000000000006", name: "Último impuesto presentado", required: true, only_if_llc: false, verified_hint: "Declaración 2025 presentada", archived: false },
+    { id: "a1000000-0000-4000-8000-000000000007", name: "Seguro vigente", required: true, only_if_llc: false, verified_hint: "Vigente hasta 03/2027", archived: false },
+  ],
 };
 /** Statuses that don't count toward the program total. */
 const EXCLUDED = new Set(["cancelled", "with_third_party", "excluded"]);

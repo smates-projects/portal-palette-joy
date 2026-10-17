@@ -134,8 +134,8 @@ export interface MockContext {
 
 type NetworkApi = Pick<
   ApiClient,
-  "network" | "rules" | "catalog" | "franchises" | "manual" | "documents" | "financials" | "businessProfile" | "bishop" | "franchisee"
->;
+  "network" | "rules" | "catalog" | "franchises" | "manual" | "financials" | "businessProfile" | "bishop" | "franchisee"
+> & { documents: Pick<ApiClient["documents"], "listDocuments" | "listContracts" | "uploadDocument"> };
 
 const PRIORITIES = ["minimo", "alto_valor", "opcional", "tercero", "fuera"];
 const AREA_KEY_BY_CODE = Object.fromEntries(Object.entries(AREA_BY_KEY).map(([key, code]) => [code, key])) as Record<AreaCode, string>;
@@ -225,7 +225,7 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
   };
 
   const officeStats = (office: Organization, all: ReturnType<typeof computedTasks>): OfficeStats => {
-    const biz = db.businesses.filter((b) => b.office_id === office.id);
+    const biz = db.businesses.filter((b) => b.office_id === office.id && b.status !== "onboarding");
     const programs = biz.filter((b) => b.status === "in_program");
     const ids = new Set(biz.map((b) => b.id));
     const tasks = all.filter((t) => ids.has(t.business_id) && t.status !== "cancelled");
@@ -297,12 +297,12 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       const office = officeOf(id);
       if (!office || (u.role === "sm_team" && office.id !== u.organization_id)) return delay(null);
       const all = computedTasks();
-      const biz = db.businesses.filter((b) => b.office_id === id);
+      const biz = db.businesses.filter((b) => b.office_id === id && b.status !== "onboarding");
       const matrix = buildNetworkMatrix(all.filter((t) => t.status !== "cancelled"), db.versions, biz, TODAY, db.rules.area_amber_days);
       const businesses: OfficeBusinessRow[] = biz.map((b) => ({
         business_id: b.id,
         name: b.name,
-        status: b.status,
+        status: b.status as OfficeBusinessRow["status"],
         program_day: b.program_day,
         health: b.status === "franchisor" ? "grey" : matrix.find((r) => r.business.id === b.id)?.health ?? "grey",
         franchisability_pct: franchisabilityOf(b).franchisability_pct,
@@ -329,7 +329,7 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       const worst = (healths: StructureHealth[]): StructureHealth =>
         (["red", "amber", "green"] as const).find((h) => healths.includes(h)) ?? "grey";
       const officeNode = (o: Organization): StructureNode => {
-        const own = db.businesses.filter((b) => b.office_id === o.id);
+        const own = db.businesses.filter((b) => b.office_id === o.id && b.status !== "onboarding");
         const businessNodes = own.map((b): StructureNode => {
           const inProgram = b.status === "in_program";
           const f = franchisabilityOf(b);
@@ -487,6 +487,8 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       if (!Number.isInteger(next.franchisability_goal) || next.franchisability_goal < 1 || next.franchisability_goal > 100) throw new Error("invalid_goal");
       if (!Number.isInteger(next.area_amber_days) || next.area_amber_days < 1) throw new Error("invalid_amber_days");
       if (!Number.isInteger(next.franchisability_amber_tolerance) || next.franchisability_amber_tolerance < 0 || next.franchisability_amber_tolerance > 100) throw new Error("invalid_tolerance");
+      if (!Number.isInteger(next.document_review_days) || next.document_review_days < 1) throw new Error("invalid_review_days");
+      if (next.intake_documents.some((d) => !d.name.trim())) throw new Error("name_required");
       const known = new Set(db.catalog.filter((c) => !c.archived).map((c) => c.code));
       if (new Set(next.required_task_codes).size !== next.required_task_codes.length || next.required_task_codes.some((c) => !known.has(c))) throw new Error("unknown_task_code");
       const fields = Object.keys(next) as (keyof PlatformRules)[];
@@ -734,7 +736,7 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
 
   // ---------- Documents, financials, business profile ----------
   const businessIdsInScope = (businessId?: Uuid) => (businessId ? [pickBusiness(businessId).id] : readableBusinesses().map((b) => b.id));
-  const documents: DocumentsRepository = {
+  const documents: Pick<DocumentsRepository, "listDocuments" | "listContracts" | "uploadDocument"> = {
     listDocuments: async (businessId) => {
       const ids = new Set(businessIdsInScope(businessId));
       return delay(db.documents.filter((d) => ids.has(d.business_id)));

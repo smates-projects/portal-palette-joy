@@ -135,17 +135,45 @@ function useLeadMutation<V, R>(fn: (v: V) => Promise<R>) {
   return useMutation({ mutationFn: fn, onSuccess: () => qc.invalidateQueries({ queryKey: ["leads"] }) });
 }
 export const useMoveLead = () =>
-  useLeadMutation((v: { id: string; to: "evaluated" | "meeting" | "accepted" | "contract" }) => api.leads.move(v.id, v.to));
+  useLeadMutation((v: { id: string; to: "evaluated" | "meeting" | "documents" | "accepted" }) => api.leads.move(v.id, v.to));
 export const useDiscardLead = () => useLeadMutation((v: { id: string; reason: string }) => api.leads.discard(v.id, v.reason));
 export const useAddLeadNote = () => useLeadMutation((v: { id: string; body: string }) => api.leads.addNote(v.id, v.body));
 /** Creates a business and its tasks: refresh everything. */
 export function useSignLeadContract() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (v: { id: string; signed_on: string }) => api.leads.markContractSigned(v.id, v.signed_on),
+    mutationFn: (v: { id: string; signed_on: string }) => api.leads.startProgram(v.id, v.signed_on),
     onSuccess: () => qc.invalidateQueries(),
   });
 }
+// ---------- Entry (NDA, MOU, documents) ----------
+/** LeadIntake | null: summary (clock, counts, approval), NDA/MOU with signer status, and the entry documents. */
+export const useLeadIntake = (id: string | undefined) =>
+  useQuery({ queryKey: ["leads", "intake", id], queryFn: () => api.leads.getIntake(id!), enabled: !!id });
+/** Entry writes touch leads, documents and contracts: refresh both roots. */
+function useIntakeMutation<V, R>(fn: (v: V) => Promise<R>) {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: fn, onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: ["leads"] }), qc.invalidateQueries({ queryKey: ["documents"] })]) });
+}
+export const useSendNdaMou = () => useIntakeMutation((id: string) => api.leads.sendNdaMou(id));
+export const useAcceptDocument = () => useIntakeMutation((v: { id: string; documentId: string; fact: string }) => api.leads.acceptDocument(v.id, v.documentId, v.fact));
+export const useRequestDocument = () => useIntakeMutation((v: { id: string; documentId: string; comment: string }) => api.leads.requestDocument(v.id, v.documentId, v.comment));
+export const useResendContract = () => useIntakeMutation((v: { id: string; contractId: string }) => api.leads.resendContract(v.id, v.contractId));
+export const useApproveDocuments = () => useIntakeMutation((id: string) => api.leads.approveDocuments(id));
+export const useRejectDocuments = () => useIntakeMutation((v: { id: string; reason: string }) => api.leads.rejectDocuments(v.id, v.reason));
+/** IntakeSummary | null of a business in onboarding (owner: own). */
+export const useIntake = (businessId?: string) =>
+  useQuery({ queryKey: ["documents", "intake", businessId ?? "own"], queryFn: () => api.documents.getIntake(businessId) });
+export const useOpenContract = () => useIntakeMutation((contractId: string) => api.documents.openContract(contractId));
+export const useSignContract = () => useIntakeMutation((contractId: string) => api.documents.signContract(contractId));
+export const useDeclineContract = () => useIntakeMutation((v: { contractId: string; reason: string }) => api.documents.declineContract(v.contractId, v.reason));
+/** True when the current user owns a business still entering (NDA and MOU sent, not in program yet). */
+export function useIsOnboarding(): boolean {
+  const me = useCurrentUser().data;
+  const businesses = useBusinesses().data;
+  return me?.role === "business_owner" && businesses?.find((b) => b.id === me.business_id)?.status === "onboarding";
+}
+
 export function useSetBookingUrl() {
   const qc = useQueryClient();
   return useMutation({
@@ -252,7 +280,7 @@ export const useDocuments = (businessId?: string) =>
 export const useContracts = (businessId?: string) =>
   useQuery({ queryKey: ["documents", "contracts", businessId ?? "all"], queryFn: () => api.documents.listContracts(businessId) });
 export const useUploadDocument = () =>
-  useNetworkMutation((v: { documentId: string; fileName: string }) => api.documents.uploadDocument(v.documentId, v.fileName), ["documents"]);
+  useNetworkMutation((v: { documentId: string; fileName: string }) => api.documents.uploadDocument(v.documentId, v.fileName), ["documents", "leads"]);
 /** FinancialSeries | null: months, revenue, margin %, cash and the before/now table. */
 export const useFinancials = (businessId?: string) =>
   useQuery({ queryKey: ["financials", businessId ?? "own"], queryFn: () => api.financials.get(businessId) });

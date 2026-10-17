@@ -190,7 +190,7 @@ export const events: TaskEvent[] = [];
 // ---------- Orlando: leads ----------
 const orlandoSpecs: LeadSpec[] = [
   {
-    path: [["submitted", "2026-06-10"], ["meeting", "2026-06-12"], ["accepted", "2026-06-20"], ["contract", "2026-06-27"], ["in_program", "2026-07-06"]],
+    path: [["submitted", "2026-06-10"], ["meeting", "2026-06-12"], ["documents", "2026-06-20"], ["accepted", "2026-06-27"], ["in_program", "2026-07-06"]],
     lead: {
       consultant_user_id: U_VALENTINA, business_id: BIZ_SUNSHINE,
       contact: { name: "Óscar Medina", email: "oscar@sunshineroofing.com", phone: "+1 407 555 0231", city: "Orlando", state: "FL", hispanic_owner: true },
@@ -200,7 +200,7 @@ const orlandoSpecs: LeadSpec[] = [
     },
   },
   {
-    path: [["submitted", "2026-08-27"], ["meeting", "2026-08-31"], ["accepted", "2026-09-08"], ["contract", "2026-09-14"], ["in_program", "2026-09-21"]],
+    path: [["submitted", "2026-08-27"], ["meeting", "2026-08-31"], ["documents", "2026-09-08"], ["accepted", "2026-09-14"], ["in_program", "2026-09-21"]],
     lead: {
       consultant_user_id: U_VALENTINA, business_id: BIZ_CASA_LIMPIA,
       contact: { name: "Marta Quintero", email: "marta@casalimpiaorlando.com", phone: "+1 407 555 0232", city: "Orlando", state: "FL", hispanic_owner: true },
@@ -232,7 +232,7 @@ const orlandoSpecs: LeadSpec[] = [
     },
   },
   {
-    path: [["submitted", "2026-09-22"], ["meeting", "2026-09-25"], ["accepted", "2026-10-02"], ["contract", "2026-10-09"]],
+    path: [["submitted", "2026-09-22"], ["meeting", "2026-09-25"], ["documents", "2026-10-02"], ["accepted", "2026-10-09"]],
     contacted: true,
     notes: [["2026-10-09", "Contrato enviado. Lo está revisando con su contador."]],
     lead: {

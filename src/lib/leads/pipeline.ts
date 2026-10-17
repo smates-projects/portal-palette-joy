@@ -6,6 +6,7 @@ import {
   type LeadBand,
   type LeadIndustry,
   type LeadStage,
+  type IntakeSummary,
   type RevenueRange,
 } from "@/lib/api/types";
 
@@ -19,12 +20,15 @@ export const daysSince = (iso: string, today: string = TODAY) =>
   Math.round((Date.parse(`${today}T12:00:00Z`) - Date.parse(`${day(iso)}T12:00:00Z`)) / 86_400_000);
 
 export type LeadMove =
-  | { ok: true; action: "move" | "restore" | "discard" | "sign" }
-  | { ok: false; reason: "same" | "skip" | "locked" | "restore_only" };
+  | { ok: true; action: "move" | "restore" | "discard" }
+  | { ok: false; reason: "same" | "skip" | "locked" | "restore_only" | "action_only" };
+
+/** Stages reached only through their action (Enviar NDA y MOU, Aprobar documentación, start of the program). */
+const ACTION_ONLY: LeadStage[] = ["documents", "accepted", "in_program"];
 
 /**
- * Valid moves: one step forward or one step back. Discard from any stage but En programa (needs a reason).
- * En programa is reached only by marking the contract as signed, and never left.
+ * Valid moves: one step back, or Evaluado → Reunión. Documentación, Aceptado and En programa are reached only with
+ * their action, never by dragging. Discard from any active stage (needs a reason). En programa is never left.
  * A discarded lead can only be reactivated to Evaluado.
  */
 export function resolveLeadMove(from: LeadStage, to: LeadStage): LeadMove {
@@ -32,20 +36,26 @@ export function resolveLeadMove(from: LeadStage, to: LeadStage): LeadMove {
   if (from === "in_program") return { ok: false, reason: "locked" };
   if (from === "discarded") return to === "evaluated" ? { ok: true, action: "restore" } : { ok: false, reason: "restore_only" };
   if (to === "discarded") return { ok: true, action: "discard" };
-  if (to === "in_program") return from === "contract" ? { ok: true, action: "sign" } : { ok: false, reason: "skip" };
-  const diff = LEAD_STAGES.indexOf(to) - LEAD_STAGES.indexOf(from);
-  return Math.abs(diff) === 1 ? { ok: true, action: "move" } : { ok: false, reason: "skip" };
+  const diff = LEAD_STAGES.indexOf(to as ActiveLeadStage) - LEAD_STAGES.indexOf(from);
+  if (diff === -1) return { ok: true, action: "move" };
+  if (diff === 1) return ACTION_ONLY.includes(to) ? { ok: false, reason: "action_only" } : { ok: true, action: "move" };
+  return { ok: false, reason: "skip" };
 }
 
-export type LeadPrimaryAction = "schedule" | "accept" | "send_contract" | "sign" | "view_program" | "restore";
+export type LeadPrimaryAction =
+  | "schedule" | "send_nda" | "review_docs" | "approve_docs" | "wait_investor" | "send_tripartite" | "record_funds" | "view_program" | "restore";
 
-export const primaryActionFor = (stage: LeadStage): LeadPrimaryAction =>
-  ({ evaluated: "schedule", meeting: "accept", accepted: "send_contract", contract: "sign", in_program: "view_program", discarded: "restore" } as const)[stage];
-
-/** Stage each primary action moves to (null: no stage change from the action itself). */
-export const actionTarget: Record<LeadPrimaryAction, LeadStage | null> = {
-  schedule: "meeting", accept: "accepted", send_contract: "contract", sign: "in_program", view_program: null, restore: "evaluated",
-};
+/** One primary action per stage, from the next pending step. Accepted actions depend on the Bishop (part 2). */
+export function primaryActionFor(lead: Pick<Lead, "stage"> & { intake?: IntakeSummary | null }): LeadPrimaryAction {
+  switch (lead.stage) {
+    case "evaluated": return "schedule";
+    case "meeting": return "send_nda";
+    case "documents": return lead.intake && lead.intake.to_review > 0 ? "review_docs" : "approve_docs";
+    case "accepted": return "wait_investor";
+    case "in_program": return "view_program";
+    case "discarded": return "restore";
+  }
+}
 
 const mondayOf = (today: string) => {
   const d = new Date(`${today}T12:00:00Z`);
@@ -55,9 +65,14 @@ const mondayOf = (today: string) => {
 };
 const sameMonth = (iso: string, today: string) => iso.slice(0, 7) === today.slice(0, 7);
 
-export type LeadQuick = "week" | "uncontacted" | "signed_month";
+export type LeadQuick = "week" | "uncontacted" | "signed_month" | "in_review" | "review_overdue" | "no_investor";
 
-export function matchesQuick(lead: Lead, quick: LeadQuick, today: string = TODAY) {
+type WithIntake = Lead & { intake?: IntakeSummary | null };
+
+export function matchesQuick(lead: WithIntake, quick: LeadQuick, today: string = TODAY) {
+  if (quick === "in_review") return lead.stage === "documents";
+  if (quick === "review_overdue") return lead.stage === "documents" && lead.intake?.clock.tone === "red";
+  if (quick === "no_investor") return lead.stage === "accepted";
   if (quick === "week") return day(lead.submitted_at) >= mondayOf(today) && day(lead.submitted_at) <= today;
   if (quick === "uncontacted") return lead.stage === "evaluated" && !lead.last_contact_at && daysSince(lead.submitted_at, today) > UNCONTACTED_DAYS;
   return lead.stage === "in_program" && sameMonth(lead.stage_entered_at, today);
@@ -66,20 +81,27 @@ export function matchesQuick(lead: Lead, quick: LeadQuick, today: string = TODAY
 export interface PipelineCounters {
   week: number;
   uncontacted: number;
-  contracts: number;
+  /** In Documentación with the review clock running or paused. */
+  in_review: number;
+  /** Review past the SM Global deadline. */
+  review_overdue: number;
+  /** Accepted, waiting for an investor (part 2 adds the Bishop; today every accepted lead counts). */
+  accepted_no_investor: number;
   signed_month: number;
   /** Assessments submitted this month and how many of all leads entered the program this month. */
   month_assessments: number;
   conversion_pct: number | null;
 }
 
-export function buildPipelineCounters(leads: Lead[], today: string = TODAY): PipelineCounters {
+export function buildPipelineCounters(leads: WithIntake[], today: string = TODAY): PipelineCounters {
   const signed = leads.filter((l) => matchesQuick(l, "signed_month", today)).length;
   const monthAssessments = leads.filter((l) => sameMonth(l.submitted_at, today)).length;
   return {
     week: leads.filter((l) => matchesQuick(l, "week", today)).length,
     uncontacted: leads.filter((l) => matchesQuick(l, "uncontacted", today)).length,
-    contracts: leads.filter((l) => l.stage === "contract").length,
+    in_review: leads.filter((l) => matchesQuick(l, "in_review", today)).length,
+    review_overdue: leads.filter((l) => matchesQuick(l, "review_overdue", today)).length,
+    accepted_no_investor: leads.filter((l) => matchesQuick(l, "no_investor", today)).length,
     signed_month: signed,
     month_assessments: monthAssessments,
     conversion_pct: monthAssessments === 0 ? null : Math.round((signed / monthAssessments) * 100),
@@ -103,7 +125,7 @@ const ALL_STAGES: LeadStage[] = [...LEAD_STAGES, "discarded"];
 const BANDS: LeadBand[] = ["high", "mid", "low", "track"];
 export const INDUSTRIES: LeadIndustry[] = ["construction", "remodeling", "cleaning", "restaurant", "salon"];
 export const REVENUES: RevenueRange[] = ["lt_250k", "250k_500k", "500k_1m", "1m_3m", "gt_3m"];
-const QUICKS: LeadQuick[] = ["week", "uncontacted", "signed_month"];
+const QUICKS: LeadQuick[] = ["week", "uncontacted", "signed_month", "in_review", "review_overdue", "no_investor"];
 const pick = <T extends string>(v: unknown, allowed: readonly T[]) => (typeof v === "string" && (allowed as readonly string[]).includes(v) ? (v as T) : undefined);
 
 export function validateLeadsSearch(raw: Record<string, unknown>): LeadsSearch {
@@ -125,7 +147,7 @@ export function validateLeadsSearch(raw: Record<string, unknown>): LeadsSearch {
   return out;
 }
 
-export function filterLeads<T extends Lead>(leads: T[], s: LeadsSearch, today: string = TODAY): T[] {
+export function filterLeads<T extends WithIntake>(leads: T[], s: LeadsSearch, today: string = TODAY): T[] {
   return leads.filter(
     (l) =>
       (!s.stage || l.stage === s.stage) &&

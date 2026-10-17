@@ -19,8 +19,8 @@ const BLOCK: Record<BlockStatus, string> = {
 export const STAGE_BAR: Record<LeadStage, string> = {
   evaluated: "bg-status-neutral-border",
   meeting: "bg-status-info-border",
-  accepted: "bg-status-info-fg",
-  contract: "bg-primary",
+  documents: "bg-status-info-fg",
+  accepted: "bg-primary",
   in_program: "bg-status-success-border",
   discarded: "bg-status-neutral-border",
 };

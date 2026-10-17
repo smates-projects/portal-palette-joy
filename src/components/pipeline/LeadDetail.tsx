@@ -2,7 +2,9 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Mail, MapPin, Phone, X } from "lucide-react";
-import { useAddLeadNote, useLeadDetail, useUsers } from "@/lib/api/hooks";
+import { useAddLeadNote, useApproveDocuments, useCurrentUser, useLeadDetail, useRejectDocuments, useUsers } from "@/lib/api/hooks";
+import { isDocsAdmin } from "@/lib/leads/onboarding";
+import { IntakeChecklist, RejectDocsDialog } from "./IntakeChecklist";
 import type { LeadEvent, LeadWithComputed } from "@/lib/api/types";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { primaryActionFor } from "@/lib/leads/pipeline";
@@ -28,6 +30,10 @@ export function LeadDetail(props: {
   const usersQ = useUsers();
   const addNote = useAddLeadNote();
   const [note, setNote] = useState("");
+  const [rejecting, setRejecting] = useState(false);
+  const meQ = useCurrentUser();
+  const approve = useApproveDocuments();
+  const reject = useRejectDocuments();
   const userName = (id: string | null) => (id ? usersQ.data?.find((u) => u.id === id)?.full_name ?? "" : "");
 
   if (q.isLoading)
@@ -41,10 +47,27 @@ export function LeadDetail(props: {
     );
 
   const { lead, events } = q.data;
-  const action = primaryActionFor(lead.stage);
+  const action = primaryActionFor(lead);
+  const admin = isDocsAdmin(meQ.data, lead.office_id);
+  const approval = lead.intake?.approval;
+  // Why the primary action is disabled (shown under it), or null when it can be used.
+  const blockedHint =
+    action === "wait_investor" ? "" :
+    action === "approve_docs" && !admin ? t("intake.admin_only") :
+    action === "approve_docs" && approval && !approval.ok
+      ? t(approval.reason === "contracts" ? "intake.missing_contracts" : "intake.missing_docs", { list: approval.missing.join(", ") })
+      : null;
+  const fail = () => toast.error(t("pipeline.t_error"));
+  const runPrimary = () => {
+    if (action === "review_docs") return document.getElementById("intake-docs")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (action === "approve_docs")
+      return approve.mutate(lead.id, { onSuccess: () => toast.success(t("pipeline.t_docs_approved", { name: lead.business.name })), onError: fail });
+    props.onPrimary?.(lead);
+  };
+  const showGlobalApprove = props.readOnly && action === "approve_docs" && admin;
   const consultant = usersQ.data?.find((u) => u.id === lead.consultant_user_id);
   const fromOffice = action === "schedule" && consultant && !consultant.booking_url;
-  const canDiscard = lead.stage !== "in_program" && lead.stage !== "discarded";
+  const canDiscard = lead.stage !== "in_program" && lead.stage !== "discarded" && lead.stage !== "documents";
 
   const describe = (e: LeadEvent) => {
     const actor = userName(e.actor_user_id);
@@ -87,22 +110,30 @@ export function LeadDetail(props: {
         {lead.stage === "discarded" && lead.discard_reason && (
           <p className="mt-3 rounded-md border border-border bg-muted px-3 py-2 text-sm">{t("pipeline.detail.discard_reason", { reason: lead.discard_reason })}</p>
         )}
-        {props.readOnly ? (
+        {props.readOnly && !showGlobalApprove ? (
           <p className="mt-4 rounded-[4px] border border-border bg-muted px-2 py-1 text-xs text-muted-foreground">{t("pipeline.detail.read_only")}</p>
         ) : (
           <>
             <div className="mt-4 flex flex-wrap items-center gap-3">
-              <PrimaryButton onClick={() => props.onPrimary?.(lead)} disabled={props.pending ?? false}>{t(`pipeline.actions.${action}`)}</PrimaryButton>
-              {canDiscard && (
+              <PrimaryButton onClick={runPrimary} disabled={(props.pending ?? false) || approve.isPending || blockedHint !== null}>
+                {t(`pipeline.actions.${action}`, { count: lead.intake?.to_review ?? 0 })}
+              </PrimaryButton>
+              {canDiscard && !props.readOnly && (
                 <button onClick={() => props.onDiscard?.(lead)} className="text-sm text-muted-foreground hover:text-foreground hover:underline">{t("pipeline.actions.discard")}</button>
               )}
+              {lead.stage === "documents" && !props.readOnly && (
+                <button onClick={() => setRejecting(true)} className="text-sm text-muted-foreground hover:text-foreground hover:underline">{t("intake.reject")}</button>
+              )}
             </div>
+            {blockedHint && <p className="mt-2 text-xs text-muted-foreground">{blockedHint}</p>}
             {fromOffice && <p className="mt-2 text-xs text-muted-foreground">{t("pipeline.detail.booking_from_office", { name: consultant.full_name })}</p>}
           </>
         )}
       </header>
 
       <div className="flex-1 space-y-6 px-6 py-5">
+        {/* 1b. Entry checklist (from NDA + MOU on) */}
+        {lead.intake && <IntakeChecklist leadId={lead.id} readOnly={!!props.readOnly} />}
         {/* 2. Assessment result as the owner saw it */}
         <section>
           <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("pipeline.detail.result_title")}</h3>
@@ -199,6 +230,14 @@ export function LeadDetail(props: {
           )}
         </section>
       </div>
+      {rejecting && (
+        <RejectDocsDialog
+          name={lead.business.name}
+          pending={reject.isPending}
+          onClose={() => setRejecting(false)}
+          onConfirm={(reason) => reject.mutate({ id: lead.id, reason }, { onSuccess: () => { setRejecting(false); toast.success(t("intake.t_rejected", { name: lead.business.name })); }, onError: fail })}
+        />
+      )}
     </div>
   );
 }

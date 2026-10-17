@@ -20,7 +20,7 @@ export interface LeadSpec {
 
 const specs: LeadSpec[] = [
   {
-    path: [["submitted", "2026-07-08"], ["meeting", "2026-07-10"], ["accepted", "2026-07-17"], ["contract", "2026-07-24"], ["in_program", "2026-08-02"]],
+    path: [["submitted", "2026-07-08"], ["meeting", "2026-07-10"], ["documents", "2026-07-17"], ["accepted", "2026-07-24"], ["in_program", "2026-08-02"]],
     lead: {
       consultant_user_id: U_NICOLAS, business_id: BIZ_VOSSLER,
       contact: { name: "Carla Méndez", email: "carla@vossler.com", phone: "+1 407 555 0110", city: "Orlando", state: "FL", hispanic_owner: true },
@@ -31,7 +31,7 @@ const specs: LeadSpec[] = [
     },
   },
   {
-    path: [["submitted", "2026-08-20"], ["meeting", "2026-08-24"], ["accepted", "2026-08-31"], ["contract", "2026-09-04"], ["in_program", "2026-09-14"]],
+    path: [["submitted", "2026-08-20"], ["meeting", "2026-08-24"], ["documents", "2026-08-31"], ["accepted", "2026-09-04"], ["in_program", "2026-09-14"]],
     lead: {
       consultant_user_id: U_CAMILA, business_id: BIZ_PRIME,
       contact: { name: "Daniel Ortiz", email: "daniel@prime10solutions.com", phone: "+1 813 555 0133", city: "Tampa", state: "FL", hispanic_owner: true },
@@ -42,7 +42,7 @@ const specs: LeadSpec[] = [
     },
   },
   {
-    path: [["submitted", "2026-09-21"], ["meeting", "2026-09-23"], ["accepted", "2026-09-28"], ["contract", "2026-10-02"], ["in_program", "2026-10-09"]],
+    path: [["submitted", "2026-09-21"], ["meeting", "2026-09-23"], ["documents", "2026-09-28"], ["accepted", "2026-10-02"], ["in_program", "2026-10-09"]],
     lead: {
       consultant_user_id: U_NICOLAS, business_id: BIZ_ENYERMY,
       contact: { name: "Enyermy Rivas", email: "enyermy@enyermyhair.com", phone: "+1 305 555 0187", city: "Miami", state: "FL", hispanic_owner: true },
@@ -53,9 +53,9 @@ const specs: LeadSpec[] = [
     },
   },
   {
-    path: [["submitted", "2026-09-25"], ["meeting", "2026-09-29"], ["accepted", "2026-10-03"], ["contract", "2026-10-07"]],
+    path: [["submitted", "2026-09-25"], ["meeting", "2026-09-29"], ["documents", "2026-10-03"], ["accepted", "2026-10-07"]],
     contacted: true,
-    notes: [["2026-10-08", "Le mandé el contrato. Quiere revisarlo con su contador antes de firmar."]],
+    notes: [["2026-10-08", "Documentación aprobada. Esperamos que un inversor tome la oportunidad."]],
     lead: {
       consultant_user_id: U_CAMILA, business_id: null,
       contact: { name: "Gabriela Fuentes", email: "gaby@brisaclean.com", phone: "+1 786 555 0144", city: "Kendall", state: "FL", hispanic_owner: true },
@@ -66,7 +66,7 @@ const specs: LeadSpec[] = [
     },
   },
   {
-    path: [["submitted", "2026-10-01"], ["meeting", "2026-10-03"], ["accepted", "2026-10-09"]],
+    path: [["submitted", "2026-10-01"], ["meeting", "2026-10-03"], ["documents", "2026-10-09"]],
     contacted: true,
     lead: {
       consultant_user_id: U_NICOLAS, business_id: null,
@@ -91,7 +91,7 @@ const specs: LeadSpec[] = [
     },
   },
   {
-    path: [["submitted", "2026-10-05"], ["meeting", "2026-10-07"]],
+    path: [["submitted", "2026-09-10"], ["meeting", "2026-09-12"], ["documents", "2026-09-15"]],
     contacted: true,
     lead: {
       consultant_user_id: U_CAMILA, business_id: null,
