@@ -24,6 +24,8 @@ import catalogJson from "@/data/catalogo_metodo180.json";
 import { DEFAULT_PLATFORM_RULES } from "../franchisability";
 import { AREA_BY_KEY, generateProgramTasks, type CatalogEntry } from "../program";
 import { resolveLeadMove } from "@/lib/leads/pipeline";
+import { DEFAULT_ASSESSMENT_AREA_MAP } from "@/lib/leads/prevalidation";
+import { createEntry } from "./entry";
 import type { AreaCode, Business, BusinessEvent, CatalogAdminItem, Lead, LeadEvent, LeadWithComputed } from "../types";
 
 const delay = <T,>(v: T, ms = 120) => new Promise<T>((r) => setTimeout(() => r(structuredClone(v)), ms));
@@ -49,7 +51,7 @@ export function createMockApi(): ApiClient {
     businessEvents: [] as BusinessEvent[],
     intakes: [] as IntakeRecord[],
     // Network data (SM Global, franchises, manual, owner screens, Bishop). Read and written by ./network.
-    rules: structuredClone(DEFAULT_PLATFORM_RULES),
+    rules: structuredClone({ ...DEFAULT_PLATFORM_RULES, assessment_area_map: DEFAULT_ASSESSMENT_AREA_MAP }),
     rulesHistory: [] as NetworkDb["rulesHistory"],
     catalog: (catalogJson as (CatalogEntry & { owner: string; support: string })[]).map(
       (e): CatalogAdminItem => ({
@@ -113,12 +115,19 @@ export function createMockApi(): ApiClient {
   };
   const notify = (user_id: string, kind: AppNotification["kind"], task_id: string, change: TaskChange | null = null) =>
     notifs.push({ id: newId(), user_id, kind, task_id, actor_user_id: currentUserId, created_at: nowIso(), read: false, change });
-  const leadNotifs: { id: string; user_id: string; kind: NotificationKind; lead_id: string; actor_user_id: string; created_at: string; read: boolean }[] = [];
+  const leadNotifs: {
+    id: string; user_id: string; kind: NotificationKind; lead_id: string; actor_user_id: string | null; created_at: string; read: boolean;
+    /** Automatic entry: who did it (the owner, not a user), the lead's place and the meeting time. */
+    actor_name?: string | undefined; place?: string | undefined; meeting_at?: string | undefined;
+  }[] = [];
   /** Every SM person of the lead's office hears about it (the review and the funds are team work). */
   const notifyLead = (l: Lead, kind: NotificationKind) => {
     for (const u of db.users.filter((x) => x.role === "sm_team" && x.organization_id === l.office_id && x.id !== currentUserId))
       leadNotifs.push({ id: newId(), user_id: u.id, kind, lead_id: l.id, actor_user_id: currentUserId, created_at: nowIso(), read: false });
   };
+  /** Automatic entry: only the lead's consultant hears about it, even when the demo runs as him. */
+  const notifyConsultant = (l: Lead, kind: NotificationKind, extra: { place?: string; meeting_at?: string; actor_name?: string }) =>
+    leadNotifs.push({ id: newId(), user_id: l.consultant_user_id, kind, lead_id: l.id, actor_user_id: null, created_at: nowIso(), read: false, ...extra });
   let currentUserId = seed.U_LUCIA;
 
   const me = (): User => db.users.find((u) => u.id === currentUserId)!;
@@ -219,6 +228,8 @@ export function createMockApi(): ApiClient {
   const accounts = createAccounts({
     db, me, newId, delay, notify, recordTaskChange: recordChange, personLabel, pushLeadEvent, withBooking: (l) => withBooking(l), findLead,
   });
+  const entry = createEntry({ db, me, newId, delay, findLead, visibleLeads, withBooking: (l) => withBooking(l), findTask, computed, notifyConsultant });
+  entry.seed(seed.ORG_SM);
 
   /**
    * accepted → in_program: business from onboarding to in_program with day 1 = day1, and its tasks from the live
@@ -241,6 +252,9 @@ export function createMockApi(): ApiClient {
     db.tasks.push(...created);
     setStage(l, "in_program");
     l.business_id = b.id;
+    // The business keeps a copy of the assessment, and the tasks of its strong areas start as "A validar".
+    entry.takeSnapshot(l, b.id, nowIso());
+    entry.markBusiness(l, b.id);
     pushLeadEvent({ lead_id: l.id, kind: eventKind, from: "accepted", to: "in_program", body: null, signed_on: day1 });
     return { lead: l, business_id: b.id, task_count: created.length };
   };
@@ -334,6 +348,8 @@ export function createMockApi(): ApiClient {
   return {
     funds: fundsMod.funds,
     distribution: fundsMod.distribution,
+    routing: entry.routing,
+    businessFile: entry.businessFile,
     notifications: {
       list: () => {
         const u = me();
@@ -361,7 +377,8 @@ export function createMockApi(): ApiClient {
             if (!l) return [];
             return [{
               id: n.id, user_id: n.user_id, kind: n.kind, task_id: "", task_code: "", task_name: "", business_id: l.business_id ?? "", business_name: l.business.name,
-              actor_user_id: n.actor_user_id, actor_name: name(n.actor_user_id), created_at: n.created_at, read_at: n.read ? n.created_at : null, change: null, lead_id: l.id,
+              actor_user_id: n.actor_user_id, actor_name: n.actor_name ?? name(n.actor_user_id), created_at: n.created_at, read_at: n.read ? n.created_at : null, change: null, lead_id: l.id,
+              lead_place: n.place ?? null, meeting_at: n.meeting_at ?? null,
             }];
           });
         const enabled = new Set(prefsOf(u.id).filter((p) => p.in_app).map((p) => p.kind));
@@ -515,6 +532,7 @@ export function createMockApi(): ApiClient {
     leads: {
       ...opps.leads,
       ...accounts.leads,
+      ...entry.leads,
       list: async (opts) => delay(readableLeads().filter((l) => !opts?.office_id || l.office_id === opts.office_id).map(withBooking)),
       get: async (id) => {
         const l = readableLeads().find((x) => x.id === id);
@@ -618,6 +636,7 @@ export function createMockApi(): ApiClient {
       },
     },
     tasks: {
+      resolvePreValidation: entry.resolvePreValidation,
       list: (opts) =>
         delay(visibleTasks().filter((t) => opts?.include_cancelled || t.status !== "cancelled").map(computed)),
       update: async (ids, patch) => {

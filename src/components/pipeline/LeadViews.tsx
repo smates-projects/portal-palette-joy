@@ -2,9 +2,37 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { LEAD_STAGES, type LeadStage, type LeadWithComputed } from "@/lib/api/types";
-import { STALE_STAGE_DAYS, byTimeInStage, daysSince } from "@/lib/leads/pipeline";
+import { STALE_STAGE_DAYS, byNewThenTime, byTimeInStage, daysSince } from "@/lib/leads/pipeline";
+import { entryPhase, isNewLead, unbookedDays } from "@/lib/leads/entry";
+import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { AssessmentBadge, BandBadge, STAGE_BAR, StageBadge } from "./LeadBadges";
+
+/**
+ * Entry sub-state inside Evaluado and Reunión, the same words as the line of phases of the detail: "Nuevo",
+ * "Resumen enviado" (amber "Sin reservar hace N días" after 2 days), "Reunión el …", "Reunión hecha".
+ */
+export function EntryState({ lead }: { lead: LeadWithComputed }) {
+  const { t, i18n } = useTranslation();
+  // Added by hand: the assessment badge already tells where it is; the automatic phases do not apply.
+  if ((lead.stage !== "evaluated" && lead.stage !== "meeting") || lead.source === "manual") return null;
+  const phase = entryPhase(lead);
+  const unbooked = unbookedDays(lead);
+  return (
+    <span className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs">
+      {isNewLead(lead) && (
+        <span className="rounded-[4px] border border-status-info-border bg-status-info-bg px-1.5 py-0.5 font-medium leading-none text-status-info-fg">{t("entry.new")}</span>
+      )}
+      {unbooked !== null ? (
+        <span className="text-status-warning-fg">{t("entry.unbooked", { count: unbooked })}</span>
+      ) : phase === "meeting_scheduled" && lead.meeting ? (
+        <span className="text-muted-foreground">{t("entry.meeting_on", { date: formatDateTime(lead.meeting.starts_at, i18n.language) })}</span>
+      ) : (
+        <span className="text-muted-foreground">{t(`entry.phases.${phase}`)}</span>
+      )}
+    </span>
+  );
+}
 
 interface ViewProps {
   leads: LeadWithComputed[];
@@ -49,6 +77,7 @@ function LeadCard({ lead, selected, consultantName, readOnly, onOpen, onDragStar
       <p className="mt-1.5 text-xs text-muted-foreground">
         {t(`pipeline.industries.${lead.business.industry}`)} · {t(`pipeline.revenue_ranges.${lead.business.revenue_range}`)}
       </p>
+      <EntryState lead={lead} />
       <div className="mt-2 flex items-center justify-between gap-2 border-t border-border pt-2 text-xs">
         <span className="truncate text-muted-foreground">{consultantName}</span>
         <DaysInStage lead={lead} />
@@ -91,7 +120,7 @@ export function LeadBoard(props: ViewProps & { onDrop?: (lead: LeadWithComputed,
   return (
     <div className="flex min-h-0 gap-3 overflow-x-auto pb-2">
       {LEAD_STAGES.map((stage) => {
-        const items = props.leads.filter((l) => l.stage === stage).sort(byTimeInStage);
+        const items = props.leads.filter((l) => l.stage === stage).sort(byNewThenTime());
         return (
           <section key={stage} {...zone(stage)} className={cn("flex w-64 shrink-0 flex-col rounded-md border bg-muted/50", over === stage ? "border-ring bg-accent/40" : "border-border")}>
             <header className="flex items-center gap-2 border-b border-border px-3 py-2">
@@ -149,7 +178,7 @@ export function LeadTable(props: ViewProps) {
   const rows = [...props.leads].sort((a, b) => {
     const ia = a.stage === "discarded" ? 99 : LEAD_STAGES.indexOf(a.stage);
     const ib = b.stage === "discarded" ? 99 : LEAD_STAGES.indexOf(b.stage);
-    return ia - ib || byTimeInStage(a, b);
+    return ia - ib || byNewThenTime()(a, b);
   });
   return (
     <div className="overflow-x-auto rounded-md border border-border bg-surface">
@@ -172,7 +201,7 @@ export function LeadTable(props: ViewProps) {
               <td className="whitespace-nowrap px-3 py-2.5">{t(`pipeline.industries.${l.business.industry}`)}</td>
               <td className="whitespace-nowrap px-3 py-2.5 tabular-nums">{t(`pipeline.revenue_ranges.${l.business.revenue_range}`)}</td>
               <td className="px-3 py-2.5">{l.result ? <BandBadge band={l.result.band} score={l.result.score} /> : <AssessmentBadge lead={l} />}</td>
-              <td className="px-3 py-2.5"><StageBadge stage={l.stage} /></td>
+              <td className="px-3 py-2.5"><StageBadge stage={l.stage} /><EntryState lead={l} /></td>
               <td className="whitespace-nowrap px-3 py-2.5">{props.consultantName(l.consultant_user_id)}</td>
               <td className="whitespace-nowrap px-3 py-2.5 text-xs"><DaysInStage lead={l} /></td>
             </tr>

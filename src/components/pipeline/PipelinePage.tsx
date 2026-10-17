@@ -23,6 +23,7 @@ import { LeadBoard, LeadTable } from "./LeadViews";
 import { LeadDetail } from "./LeadDetail";
 import { DiscardLeadDialog } from "./LeadDialogs";
 import { AddBusinessDialog } from "./AddBusinessDialog";
+import { SimulateEntry } from "./SimulateEntry";
 
 type SearchPatch = { [K in keyof LeadsSearch]?: LeadsSearch[K] | undefined };
 type MoveTarget = "evaluated" | "meeting" | "documents" | "accepted";
@@ -194,6 +195,7 @@ export function PipelinePage({ search }: { search: LeadsSearch }) {
             {t("pipeline.filters.clear")}
           </button>
         )}
+        <SimulateEntry leads={all} selectedId={search.lead} onOpen={(id) => setSearch({ lead: id })} />
       </div>
 
       <div className="mt-4">

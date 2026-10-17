@@ -2,11 +2,11 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 import { TODAY } from "@/config/app";
-import { useBusinesses, useFranchisability, useOrganizations, useRules, useTasks, useUsers, useVersions } from "@/lib/api/hooks";
+import { useBusinesses, useOrganizations, useRules, useTasks, useVersions } from "@/lib/api/hooks";
 import type { OfficeStatus } from "@/lib/api/types";
 import { formatDateTime } from "@/lib/format";
-import { expectedFranchisePct } from "@/lib/tasks/office";
-import { AREAS, type Health } from "@/lib/tasks/owner";
+import type { Health } from "@/lib/tasks/owner";
+import { BusinessFile } from "@/components/business/BusinessFile";
 import { buildNetworkMatrix } from "@/lib/tasks/sm";
 import { cn } from "@/lib/utils";
 import { DOT } from "@/components/office/shared";
@@ -90,12 +90,10 @@ export function BusinessSheet({ businessId, onClose }: { businessId: string | nu
   const bizQ = useBusinesses();
   const tasksQ = useTasks();
   const versionsQ = useVersions();
-  const usersQ = useUsers();
   const orgsQ = useOrganizations();
   const rulesQ = useRules();
-  const fQ = useFranchisability(businessId ?? undefined);
   const business = businessId ? bizQ.data?.find((b) => b.id === businessId) : undefined;
-  const loading = bizQ.isLoading || tasksQ.isLoading || versionsQ.isLoading || rulesQ.isLoading || fQ.isLoading;
+  const loading = bizQ.isLoading || tasksQ.isLoading || versionsQ.isLoading || rulesQ.isLoading;
   const failed = bizQ.isError || tasksQ.isError || versionsQ.isError || rulesQ.isError;
   const retry = () => { void bizQ.refetch(); void tasksQ.refetch(); void versionsQ.refetch(); void rulesQ.refetch(); };
 
@@ -109,16 +107,8 @@ export function BusinessSheet({ businessId, onClose }: { businessId: string | nu
 
     const tasks = (tasksQ.data ?? []).filter((x) => x.status !== "cancelled");
     const row = buildNetworkMatrix(tasks, versionsQ.data ?? [], [business], TODAY, rulesQ.data?.area_amber_days)[0];
-    const f = fQ.data;
     const inProgram = business.status === "in_program";
-    const person = (id: string | null) => (id ? usersQ.data?.find((u) => u.id === id)?.full_name : undefined);
     const office = orgsQ.data?.find((o) => o.id === business.office_id)?.name ?? "";
-    const facts: { label: string; value: string }[] = [
-      { label: t("global.business.office"), value: office },
-      { label: t("global.business.owner"), value: person(business.owner_user_id) ?? t("global.business.none") },
-      { label: t("global.business.consultant"), value: person(business.consultant_id) ?? t("global.structure.no_consultant") },
-      { label: t("global.business.location"), value: `${business.city}, ${business.state}` },
-    ];
 
     return (
       <div className="flex min-h-full flex-col">
@@ -138,48 +128,11 @@ export function BusinessSheet({ businessId, onClose }: { businessId: string | nu
           <p className="mt-3 rounded-[4px] border border-border bg-muted px-2 py-1 text-xs text-muted-foreground">{t("global.business.read_only")}</p>
         </header>
 
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-3 border-b border-border px-6 py-4 text-sm">
-          {facts.map((x) => (
-            <div key={x.label}>
-              <dt className="text-xs text-muted-foreground">{x.label}</dt>
-              <dd className="mt-0.5 font-medium">{x.value}</dd>
-            </div>
-          ))}
-        </dl>
-
-        {inProgram && f && (
-          <section className="border-b border-border px-6 py-4">
-            <h3 className="text-sm font-semibold">{t("global.business.franchisability")}</h3>
-            <p className="mt-1 font-display text-sm font-semibold tabular-nums">
-              {t("global.structure.franchisability", { pct: f.franchisability_pct, expected: expectedFranchisePct(business.program_day, f.franchisability_goal) })}
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {f.is_ready
-                ? t("global.business.ready")
-                : f.missing_required.length
-                  ? t("global.business.missing", { count: f.missing_required.length, codes: f.missing_required.join(", ") })
-                  : t("global.business.required_done")}
-            </p>
-          </section>
-        )}
-
-        {inProgram && row && (
-          <section className="px-6 py-4">
-            <h3 className="text-sm font-semibold">{t("global.business.areas")}</h3>
-            <ul className="mt-2 divide-y divide-border rounded-md border border-border">
-              {AREAS.map((area) => {
-                const cell = row.cells.find((c) => c.area === area);
-                return (
-                  <li key={area} className="flex items-center gap-3 px-3 py-2 text-sm">
-                    <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", DOT[cell?.health ?? "grey"])} />
-                    <span className="min-w-0 flex-1 truncate"><span className="font-display text-xs font-semibold">{area}</span> {t(`areas.${area}`)}</span>
-                    <span className="shrink-0 text-xs text-muted-foreground">{t("global.business.area_counts", { open: cell?.open ?? 0, overdue: cell?.overdue ?? 0 })}</span>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        )}
+        {/* Ficha del negocio (same five parts the office sees), read only. */}
+        <div className="px-6 py-4">
+          <p className="mb-4 text-xs text-muted-foreground">{t("global.business.office")}: <span className="font-medium text-foreground">{office}</span></p>
+          <BusinessFile businessId={business.id} variant="sm" />
+        </div>
 
         {/* Bishop funds and distribution to the firms: SM Global reads, never edits. */}
         {inProgram && (
@@ -193,7 +146,7 @@ export function BusinessSheet({ businessId, onClose }: { businessId: string | nu
 
   return (
     <Sheet open={!!businessId} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent className="w-full overflow-y-auto bg-surface p-0 sm:max-w-md [&>button]:hidden">
+      <SheetContent className="w-full overflow-y-auto bg-surface p-0 sm:max-w-xl [&>button]:hidden">
         <SheetTitle className="sr-only">{business?.name ?? t("global.business.title")}</SheetTitle>
         <SheetDescription className="sr-only">{t("global.business.read_only")}</SheetDescription>
         {businessId && body()}

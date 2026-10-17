@@ -27,6 +27,7 @@ const HEALTH_DOT: Record<Health, string> = {
 };
 
 import { AreaSquare } from "@/components/AreaTag";
+import { ExistingWorkNote } from "@/components/business/BusinessFile";
 import { areaColorVar } from "@/lib/tasks/area-color";
 
 export function OwnerHomePage({ taskId }: { taskId?: string | undefined }) {
@@ -247,6 +248,7 @@ export function OwnerHomePage({ taskId }: { taskId?: string | undefined }) {
                   </div>
                 </div>
                 <p className="mt-3 text-xs text-muted-foreground">{t("owner.fran_rule")}</p>
+                <ExistingWorkNote tasks={tasks} />
               </>
             )}
           </aside>

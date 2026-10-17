@@ -341,6 +341,7 @@ export function createAccounts(ctx: AccountsContext) {
         contact: { ...input.contact, name: input.contact.name.trim(), email: input.contact.email.trim() },
         business: { ...input.business, name: input.business.name.trim() },
         result: null, know_how_example: null, bishop_user_id: null, bishop_accepted_at: null, source: "manual", assessment_sent_at: null,
+        summary_sent_at: null, meeting: null,
       };
       db.leads.push(lead);
       ctx.pushLeadEvent({ lead_id: lead.id, kind: "created_manual", from: null, to: "evaluated", body: null });

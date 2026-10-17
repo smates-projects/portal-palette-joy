@@ -77,6 +77,13 @@ import type {
   User,
   Uuid,
   ViewAsOption,
+  AssessmentSnapshot,
+  BusinessMilestone,
+  LeadMeetingItem,
+  PreValidationInput,
+  RoutingRules,
+  ZoneRule,
+  ZoneRuleInput,
 } from "./types";
 
 export interface SessionRepository {
@@ -204,6 +211,36 @@ export interface LeadsRepository {
   createManual(input: ManualLeadInput): Promise<LeadWithComputed>;
   /** SM team: sends the assessment link to a manual lead (simulated); it shows "Assessment pendiente" until the result arrives. */
   sendAssessment(id: Uuid): Promise<LeadWithComputed>;
+  /** After the meeting: the consultant's note. Next step: Enviar NDA y MOU (accept) or Descartar. */
+  addMeetingNote(id: Uuid, body: string): Promise<LeadEvent>;
+  /** Booked meetings of the current SM person's leads (consultant), soonest first. */
+  listMeetings(): Promise<LeadMeetingItem[]>;
+  /**
+   * Demo only (in production these come by webhook). SM team. A new assessment with credible data, routed by zone,
+   * in Evaluado with the summary sent; and a booking on an evaluated lead, which moves it to Reunión by itself.
+   */
+  simulateAssessment(): Promise<LeadWithComputed>;
+  simulateBooking(id: Uuid): Promise<LeadWithComputed>;
+}
+
+/** Which office gets a new lead. Everyone in SM reads it; only SM Global changes it. */
+export interface RoutingRepository {
+  getRules(): Promise<RoutingRules>;
+  /** Adds or updates a zone (state, or city inside a state) → office. */
+  setRule(input: ZoneRuleInput): Promise<ZoneRule>;
+  removeRule(id: Uuid): Promise<void>;
+  setDefaultOffice(officeId: Uuid): Promise<RoutingRules>;
+}
+
+/**
+ * Ficha del negocio. The SM team of its office and SM Global read everything; the owner reads his own snapshot
+ * without the score; partner firms, Bishops and franchisees get nothing.
+ */
+export interface BusinessFileRepository {
+  /** Null when the business entered before the assessment existed. Owner: own business (businessId optional). */
+  getSnapshot(businessId?: Uuid): Promise<AssessmentSnapshot | null>;
+  /** Milestones newest first. SM only. */
+  listMilestones(businessId: Uuid): Promise<BusinessMilestone[]>;
 }
 
 export interface TaskDetail {
@@ -253,6 +290,11 @@ export interface TasksRepository {
   answerOwnerRequest(requestId: Uuid, input: { file_name: string; note: string }): Promise<OwnerRequest>;
   /** Owner only: confirm a meeting proposed by a firm. */
   confirmMeeting(meetingId: Uuid): Promise<Meeting>;
+  /**
+   * SM team: decide a task marked "A validar". existing = approved as "Ya existía" without the firm; needed = normal
+   * flow; pending = undo of either.
+   */
+  resolvePreValidation(id: Uuid, input: PreValidationInput): Promise<TaskWithComputed>;
 }
 
 export interface NotificationsRepository {
@@ -460,4 +502,6 @@ export interface ApiClient {
   funds: FundsRepository;
   distribution: DistributionRepository;
   brand: BrandRepository;
+  routing: RoutingRepository;
+  businessFile: BusinessFileRepository;
 }

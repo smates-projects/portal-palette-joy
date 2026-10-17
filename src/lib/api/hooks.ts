@@ -168,6 +168,28 @@ export function useConfirmProgramStart() {
   });
 }
 
+// ---------- Automatic entry, zones, "Ya lo tenía", ficha del negocio ----------
+/** LeadMeetingItem[]: booked meetings of the current consultant's leads (SM team; empty for anyone else). */
+export const useLeadMeetings = (enabled = true) => useQuery({ queryKey: ["leads", "meetings"], queryFn: api.leads.listMeetings, enabled });
+export const useAddMeetingNote = () => useLeadMutation((v: { id: string; body: string }) => api.leads.addMeetingNote(v.id, v.body));
+/** Demo: they also notify the consultant, so the bell refreshes too. */
+export const useSimulateAssessment = () => useNetworkMutation((_: void) => api.leads.simulateAssessment(), ["leads", "notifications"]);
+export const useSimulateBooking = () => useNetworkMutation((id: string) => api.leads.simulateBooking(id), ["leads", "notifications"]);
+/** RoutingRules: zones (state or city → office) and the default office. SM team and SM Global. */
+export const useRoutingRules = () => useQuery({ queryKey: ["routing"], queryFn: api.routing.getRules });
+export const useSetZone = () => useNetworkMutation((input: import("./types").ZoneRuleInput) => api.routing.setRule(input), ["routing"]);
+export const useRemoveZone = () => useNetworkMutation((id: string) => api.routing.removeRule(id), ["routing"]);
+export const useSetDefaultOffice = () => useNetworkMutation((officeId: string) => api.routing.setDefaultOffice(officeId), ["routing"]);
+/** "Ya lo tenía" / "Hay que hacerla" / undo, on a task marked "A validar". */
+export const useResolvePreValidation = () =>
+  useNetworkMutation((v: { id: string; input: import("./types").PreValidationInput }) => api.tasks.resolvePreValidation(v.id, v.input), ["tasks", "business-file", "notifications"]);
+/** AssessmentSnapshot | null of a business (owner: own, without the score). */
+export const useBusinessSnapshot = (businessId?: string) =>
+  useQuery({ queryKey: ["business-file", "snapshot", businessId ?? "own"], queryFn: () => api.businessFile.getSnapshot(businessId) });
+/** BusinessMilestone[] newest first (SM only). */
+export const useBusinessMilestones = (businessId: string, enabled = true) =>
+  useQuery({ queryKey: ["business-file", "milestones", businessId], queryFn: () => api.businessFile.listMilestones(businessId), enabled });
+
 // ---------- Bishop funds and distribution (SM and that Bishop only) ----------
 /** Funds and distribution writes also change the lead (action, activity) and the Bishop screens. */
 const MONEY_ROOTS = ["funds", "distribution", "leads", "bishop", "notifications"];

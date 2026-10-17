@@ -1,4 +1,4 @@
-import type { ExternalCalendarEvent, Meeting, TaskWithComputed } from "@/lib/api/types";
+import type { ExternalCalendarEvent, LeadMeetingItem, Meeting, TaskWithComputed } from "@/lib/api/types";
 import { addDays } from "./roadmap";
 
 export const CAL_MODES = ["month", "week"] as const;
@@ -32,16 +32,18 @@ export const localDay = (iso: string) => {
 export type CalItem =
   | { kind: "due"; day: string; task: TaskWithComputed }
   | { kind: "meeting"; day: string; at: string; meeting: Meeting; task: TaskWithComputed }
-  | { kind: "google"; day: string; at: string; event: ExternalCalendarEvent };
+  | { kind: "google"; day: string; at: string; event: ExternalCalendarEvent }
+  | { kind: "lead"; day: string; at: string; item: LeadMeetingItem };
 
 /**
- * Due dates of the visible tasks, meetings only of those tasks, plus the user's Google events.
- * Per day: timed items by hour first, then due dates by code.
+ * Due dates of the visible tasks, meetings only of those tasks, plus the user's Google events and the entry
+ * meetings booked with the consultant (leads). Per day: timed items by hour first, then due dates by code.
  */
 export function buildCalendarItems(
   tasks: TaskWithComputed[],
   meetings: Meeting[],
   events: ExternalCalendarEvent[],
+  leadMeetings: LeadMeetingItem[] = [],
 ): Map<string, CalItem[]> {
   const byId = new Map(tasks.map((t) => [t.id, t]));
   const items: CalItem[] = [
@@ -53,6 +55,7 @@ export function buildCalendarItems(
         : [];
     }),
     ...events.map((event) => ({ kind: "google" as const, day: localDay(event.starts_at), at: event.starts_at, event })),
+    ...leadMeetings.map((item) => ({ kind: "lead" as const, day: localDay(item.meeting.starts_at), at: item.meeting.starts_at, item })),
   ];
   const map = new Map<string, CalItem[]>();
   for (const it of items) map.set(it.day, [...(map.get(it.day) ?? []), it]);

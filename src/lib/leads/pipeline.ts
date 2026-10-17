@@ -1,8 +1,10 @@
-import { TODAY } from "@/config/app";
+import { TODAY, nowIso } from "@/config/app";
+import { isNewLead, meetingHeld } from "./entry";
 import {
   LEAD_STAGES,
   type ActiveLeadStage,
   type Lead,
+  type LeadMeeting,
   type TripartiteState,
   type LeadBand,
   type LeadIndustry,
@@ -44,12 +46,13 @@ export function resolveLeadMove(from: LeadStage, to: LeadStage): LeadMove {
 }
 
 export type LeadPrimaryAction =
-  | "schedule" | "send_nda" | "review_docs" | "approve_docs" | "wait_investor" | "send_tripartite" | "wait_signatures"
+  | "schedule" | "join_meet" | "meeting_note" | "send_nda" | "review_docs" | "approve_docs" | "wait_investor" | "send_tripartite" | "wait_signatures"
   | "record_funds" | "start_program" | "view_program" | "restore";
 
 /**
- * One primary action per stage, from the next pending step. In Aceptado: wait for a Bishop, send the tripartite
- * contract, wait for the three signatures, record the funds, and once everything is in, confirm the start (day 1).
+ * One primary action per stage, from the next pending step. In Reunión with a booked meeting: join it until it is
+ * over, then write the meeting note, then accept (Enviar NDA y MOU). In Aceptado: wait for a Bishop, send the
+ * tripartite contract, wait for the three signatures, record the funds, and once everything is in, confirm the start.
  */
 export function primaryActionFor(
   lead: Pick<Lead, "stage"> & {
@@ -57,11 +60,16 @@ export function primaryActionFor(
     bishop_user_id?: string | null;
     tripartite?: TripartiteState;
     funds?: { ready_to_start: boolean } | null;
+    meeting?: LeadMeeting | null;
   },
+  now: string = nowIso(),
 ): LeadPrimaryAction {
   switch (lead.stage) {
     case "evaluated": return "schedule";
-    case "meeting": return "send_nda";
+    case "meeting":
+      if (lead.meeting && !meetingHeld(lead.meeting, now)) return "join_meet";
+      if (lead.meeting && !lead.meeting.notes_at) return "meeting_note";
+      return "send_nda";
     case "documents": return lead.intake && lead.intake.to_review > 0 ? "review_docs" : "approve_docs";
     case "accepted":
       if (!lead.bishop_user_id) return "wait_investor";
@@ -177,5 +185,12 @@ export function filterLeads<T extends WithIntake>(leads: T[], s: LeadsSearch, to
 
 /** Board/table order: longest in stage first. */
 export const byTimeInStage = (a: Lead, b: Lead) => a.stage_entered_at.localeCompare(b.stage_entered_at);
+
+/** Board column order: leads that just arrived ("Nuevo") on top, newest first; then longest in stage. */
+export const byNewThenTime = (today: string = TODAY) => (a: Lead, b: Lead) => {
+  const na = isNewLead(a, today), nb = isNewLead(b, today);
+  if (na !== nb) return na ? -1 : 1;
+  return na ? b.submitted_at.localeCompare(a.submitted_at) : byTimeInStage(a, b);
+};
 
 export const isActiveStage = (s: LeadStage): s is ActiveLeadStage => s !== "discarded";

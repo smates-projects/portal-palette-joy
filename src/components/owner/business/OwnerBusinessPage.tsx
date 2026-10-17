@@ -5,6 +5,7 @@ import { useBusinesses, useBusinessProfile, useBusinessTeam, useCurrentUser, use
 import type { BusinessProfile, BusinessProfilePatch, TeamMember } from "@/lib/api/types";
 import { BrandPanel } from "@/components/brand/BrandPanel";
 import { EmptyState, ErrorState, Field, inputCls, LoadingState, PageHeader, Panel, primaryButtonCls, ToneBadge } from "../shared";
+import { OwnerBusinessFile } from "@/components/business/BusinessFile";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -34,6 +35,7 @@ export function OwnerBusinessPage() {
           </div>
         </div>
       )}
+      <OwnerBusinessFile />
     </div>
   );
 }

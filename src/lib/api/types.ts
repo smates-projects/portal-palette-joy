@@ -213,6 +213,13 @@ export interface Task {
   updated_at: IsoDateTime;
   /** When the owner approved it (null/absent if not approved). */
   accepted_at?: IsoDateTime | null;
+  /**
+   * Set when the program starts, on tasks of the areas the assessment rated "strong": pending = "A validar: el negocio
+   * ya lo tendría"; existing = the consultant confirmed it already existed; needed = it has to be done. Null otherwise.
+   */
+  pre_validation?: PreValidation | null;
+  /** How it got approved: a deliverable the owner approved, or "Ya existía" (evidence shown in the Diagnóstico). */
+  approval_source?: ApprovalSource | null;
 }
 
 export interface TaskFile {
@@ -365,9 +372,12 @@ export const NOTIFICATION_KINDS = [
   "funds_reported",
   // Owner: "Tu portal ya tiene tu marca" (B5-13 approved with a brand).
   "brand_applied",
+  // Automatic entry (to the lead's consultant): a new assessment arrived, the owner booked the meeting.
+  "lead_assessment",
+  "meeting_booked",
 ] as const;
 /** Kinds about a lead of the Embudo. Only the SM team of the lead's office gets them. */
-export const LEAD_NOTIFICATION_KINDS: readonly NotificationKind[] = ["bishop_accepted", "funds_reported"];
+export const LEAD_NOTIFICATION_KINDS: readonly NotificationKind[] = ["bishop_accepted", "funds_reported", "lead_assessment", "meeting_booked"];
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 export type NotificationChannel = "in_app" | "email";
 
@@ -389,6 +399,10 @@ export interface AppNotification {
   change?: TaskChange | null;
   /** Lead notifications (bishop_accepted, funds_reported): the lead to open. Task fields are empty then. */
   lead_id?: Uuid | null;
+  /** lead_assessment: "Miami, FL". */
+  lead_place?: string | null;
+  /** meeting_booked: when the meeting starts. */
+  meeting_at?: IsoDateTime | null;
 }
 
 export interface NotificationPreference {
@@ -442,8 +456,8 @@ export const ASSESSMENT_BLOCKS = ["time_team", "work_quality", "money", "clients
 export type AssessmentBlock = (typeof ASSESSMENT_BLOCKS)[number];
 export type BlockStatus = "strong" | "medium" | "weak" | "unknown";
 export type EligibilityGap = "years" | "revenue";
-/** assessment: came from the public readiness assessment. manual: SM added it by hand (referral, event). */
-export type LeadSource = "assessment" | "manual";
+/** landing: came from the public readiness assessment of the landing. manual: SM added it by hand (referral, event). */
+export type LeadSource = "landing" | "manual";
 
 export interface LeadResult {
   band: LeadBand;
@@ -463,10 +477,23 @@ export interface ManualLeadInput {
   origin_note: string | null;
 }
 
+/**
+ * A lead enters by itself. In production the assessment of strategicmates.com (outside this app) posts the lead
+ * to a webhook of the Laravel API with its result and sends the summary email; the meeting arrives later from the
+ * consultant's booking calendar (Google Calendar), also by webhook. The office comes from the zone rules
+ * (RoutingRepository). The entry phase shown on screen is derived from the stage plus summary_sent_at and
+ * meeting (see lib/leads/entry.ts): there is no separate "phase" field.
+ */
 export interface Lead {
   id: Uuid;
   /** SM office that receives the lead. */
   office_id: Uuid;
+  /** Where it came from: the public assessment of the landing, or added by hand by SM. */
+  source: LeadSource;
+  /** When the summary email (headline, score, strengths, priorities, "Agendar mi reunión") went out. */
+  summary_sent_at: IsoDateTime | null;
+  /** Meeting the owner booked from that email; null while not booked (or when SM moved it by hand). */
+  meeting: LeadMeeting | null;
   stage: LeadStage;
   /** Stage the lead was in when discarded (null otherwise). */
   discarded_from: ActiveLeadStage | null;
@@ -493,8 +520,6 @@ export interface Lead {
   /** Null for a business added by hand that has not done the assessment yet. */
   result: LeadResult | null;
   know_how_example: string | null;
-  /** Absent = assessment. */
-  source?: LeadSource | undefined;
   /** Manual leads: when SM sent the assessment link ("Assessment pendiente"); null until then. */
   assessment_sent_at?: IsoDateTime | null | undefined;
   /** Bishop who accepted the opportunity (null while nobody took it, or after SM released it). */
@@ -553,7 +578,9 @@ export type LeadEventKind =
   | "bishop_accepted" | "bishop_released" | "tripartite_sent"
   | "funds_recorded" | "funds_reported" | "funds_confirmed" | "funds_removed" | "program_started"
   // Business added by hand and the assessment sent to it afterwards.
-  | "created_manual" | "assessment_sent";
+  | "created_manual" | "assessment_sent"
+  // Automatic entry (actor null): summary email sent, meeting booked by the owner. meeting_note: the consultant's note after it.
+  | "summary_sent" | "meeting_booked" | "meeting_note";
 
 export interface LeadEvent {
   id: Uuid;
@@ -571,4 +598,6 @@ export interface LeadEvent {
 
 export * from "./network-types";
 import type { FundsStatus } from "./network-types";
+export * from "./entry-types";
+import type { ApprovalSource, LeadMeeting, PreValidation } from "./entry-types";
 

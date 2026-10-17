@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { TaskDetail } from "@/components/tasks/detail/TaskDetail";
+import { LeadMeetingsToday } from "./LeadMeetingsToday";
 import type { TasksSearch } from "@/lib/tasks/table";
 
 const CARDS: { key: keyof SmSummary; search: TasksSearch; match: (t: TaskWithComputed) => boolean }[] = [
@@ -102,6 +103,7 @@ export function SmHomePage({ taskId }: { taskId?: string | undefined }) {
             </div>
           )}
 
+          <LeadMeetingsToday />
           <DocReviews />
           <section className="mt-6 rounded-md border border-border bg-surface">
             <div className="flex items-center justify-between border-b border-border px-4 py-3">

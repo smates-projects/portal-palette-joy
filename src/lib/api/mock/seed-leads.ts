@@ -14,7 +14,7 @@ export const blocks = (s: string): LeadResult["blocks"] => {
 };
 
 export interface LeadSpec {
-  lead: Omit<Lead, "id" | "office_id" | "stage" | "stage_entered_at" | "submitted_at" | "discarded_from" | "discard_reason" | "last_contact_at" | "bishop_user_id" | "bishop_accepted_at"> & {
+  lead: Omit<Lead, "id" | "office_id" | "stage" | "stage_entered_at" | "submitted_at" | "discarded_from" | "discard_reason" | "last_contact_at" | "bishop_user_id" | "bishop_accepted_at" | "source" | "summary_sent_at" | "meeting"> & {
     discard_reason?: string;
     bishop_user_id?: string | null;
     bishop_accepted_at?: string | null;
@@ -23,6 +23,32 @@ export interface LeadSpec {
   path: [LeadStage | "submitted", string][];
   contacted?: boolean;
   notes?: [string, string][];
+  /**
+   * Leads still in Reunión: the meeting the owner booked (start time). Leads that went further get a past meeting
+   * built from their path; a lead in Reunión without it was moved there by hand.
+   */
+  meeting_at?: string;
+}
+
+const addDays = (date: string, n: number) => {
+  const d = new Date(`${date}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+};
+const dayGap = (from: string, to: string) => Math.round((Date.parse(`${to}T12:00:00Z`) - Date.parse(`${from}T12:00:00Z`)) / 86_400_000);
+const meetUrl = (n: number) => `https://meet.google.com/smp-${String(1000 + n).slice(-4)}-dmo`;
+
+/** The booking of a seeded lead: as it would have come from the consultant's calendar. */
+function seededMeeting(s: LeadSpec, n: number): Lead["meeting"] {
+  const i = s.path.findIndex(([st]) => st === "meeting");
+  if (i < 0) return null;
+  const booked = s.path[i]![1];
+  const next = s.path[i + 1];
+  const base = { duration_minutes: 30, meet_url: meetUrl(n), consultant_user_id: s.lead.consultant_user_id, booked_at: at(booked, "13:30:00") };
+  if (!next) return s.meeting_at ? { ...base, starts_at: s.meeting_at, notes_at: null } : null;
+  // Went further: the meeting happened before the next step, and the consultant wrote the note right after it.
+  const day = addDays(booked, Math.min(2, dayGap(booked, next[1])));
+  return { ...base, starts_at: at(day, "14:00:00"), notes_at: at(day, "15:00:00") };
 }
 
 const specs: LeadSpec[] = [
@@ -90,6 +116,8 @@ const specs: LeadSpec[] = [
   },
   {
     path: [["submitted", "2026-10-02"], ["meeting", "2026-10-06"]],
+    // Booked from the summary email for Thursday 15 at 10:00 (Miami).
+    meeting_at: "2026-10-15T14:00:00Z",
     contacted: true,
     notes: [["2026-10-06", "Reunión agendada para el jueves. Quiere entender cuánto tiempo le va a pedir el programa."]],
     lead: {
@@ -216,13 +244,18 @@ export function buildLeads(leadSpecs: LeadSpec[], opts: LeadSeedOptions): { lead
     const last = s.path.at(-1)!;
     const stage: LeadStage = last[0] === "submitted" ? "evaluated" : last[0];
     const { discard_reason, bishop_user_id, bishop_accepted_at, ...rest } = s.lead;
+    const meeting = seededMeeting(s, i + 1);
     leadEvents.push({ id: uuid(opts.event_prefix, ++ev), lead_id: id, kind: "submitted", actor_user_id: null, created_at: at(submitted, "13:00:00"), from: null, to: "evaluated", body: null });
+    // The landing sends the summary email a few minutes after the assessment (automatic).
+    leadEvents.push({ id: uuid(opts.event_prefix, ++ev), lead_id: id, kind: "summary_sent", actor_user_id: null, created_at: at(submitted, "13:05:00"), from: null, to: null, body: null });
     let prev: LeadStage = "evaluated";
     for (const [to, date] of s.path.slice(1)) {
       const st = to as LeadStage;
+      // A booked meeting moved the lead to Reunión by itself.
+      const booked = st === "meeting" && !!meeting;
       leadEvents.push({
-        id: uuid(opts.event_prefix, ++ev), lead_id: id, actor_user_id: s.lead.consultant_user_id, created_at: at(date), from: prev, to: st,
-        kind: st === "discarded" ? "discarded" : st === "in_program" ? "contract_signed" : "stage_changed",
+        id: uuid(opts.event_prefix, ++ev), lead_id: id, actor_user_id: booked ? null : s.lead.consultant_user_id, created_at: booked ? meeting.booked_at : at(date), from: prev, to: st,
+        kind: st === "discarded" ? "discarded" : st === "in_program" ? "contract_signed" : booked ? "meeting_booked" : "stage_changed",
         body: st === "discarded" ? discard_reason ?? null : null, signed_on: st === "in_program" ? date : null,
       });
       prev = st;
@@ -234,6 +267,9 @@ export function buildLeads(leadSpecs: LeadSpec[], opts: LeadSeedOptions): { lead
       ...rest,
       id,
       office_id: opts.office_id,
+      source: "landing",
+      summary_sent_at: at(submitted, "13:05:00"),
+      meeting,
       stage,
       discarded_from: stage === "discarded" && before && before[0] !== "submitted" ? (before[0] as Lead["discarded_from"]) : stage === "discarded" ? "evaluated" : null,
       discard_reason: discard_reason ?? null,
