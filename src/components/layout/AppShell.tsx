@@ -231,7 +231,7 @@ function ViewAs() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger aria-label={`${t("topbar.view_as")}: ${currentOpt ? label(currentOpt) : ""}`} className="flex h-8 min-w-[7.5rem] max-w-[13rem] items-center gap-2 rounded-md border border-border bg-surface px-2.5 text-sm hover:bg-muted sm:max-w-none md:min-w-60">
+      <DropdownMenuTrigger aria-label={`${t("topbar.view_as")}: ${currentOpt ? label(currentOpt) : ""}`} className="flex h-8 min-w-0 max-w-[8.5rem] items-center gap-2 rounded-md border border-border bg-surface px-2.5 text-sm hover:bg-muted sm:max-w-none md:min-w-60">
         <Eye className="h-3.5 w-3.5 text-muted-foreground" />
         <span className="hidden text-muted-foreground sm:inline">{t("topbar.view_as")}:</span>
         <span className="truncate font-medium">{currentOpt ? label(currentOpt) : "…"}</span>
@@ -326,7 +326,8 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
       <button onClick={onMenu} aria-label={t("nav.main")} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:hidden">
         <Menu className="h-4 w-4" />
       </button>
-      <div className="min-w-0 flex-1 truncate font-semibold">{current ? t(`pages.${current.key}.title`) : pathname === "/perfil" ? t("pages.profile.title") : ""}</div>
+      {/* The screen name keeps a readable minimum on phones; "Ver como" shrinks instead. */}
+      <div className="min-w-[5.5rem] flex-1 truncate font-semibold">{current ? t(`pages.${current.key}.title`) : pathname === "/perfil" ? t("pages.profile.title") : ""}</div>
       <label className="relative hidden w-72 md:block">
         <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <input
