@@ -360,3 +360,7 @@
   .print-doc { position: absolute !important; inset: 0 auto auto 0 !important; width: 100% !important; box-shadow: none !important; border: 0 !important; overflow: visible !important; max-height: none !important; }
   .no-print { display: none !important; }
 }
+@media print {
+  html, body { overflow: visible !important; height: auto !important; }
+  [role="dialog"]:has(.print-doc) { position: static !important; transform: none !important; max-height: none !important; overflow: visible !important; width: 100% !important; max-width: none !important; }
+}

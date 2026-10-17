@@ -61,7 +61,7 @@ export function DocuSealSigner(props: { contract: Contract; party: "owner" | "sm
 
   return (
     <Dialog open onOpenChange={(o) => !o && props.onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto bg-surface sm:max-w-lg">
+      <DialogContent className="max-h-[92vh] w-[calc(100vw-1.5rem)] overflow-y-auto bg-surface p-4 sm:max-w-lg sm:p-6">
         <DialogHeader>
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("intake.docuseal.header")}</p>
           <DialogTitle>{props.contract.name}</DialogTitle>
@@ -70,7 +70,7 @@ export function DocuSealSigner(props: { contract: Contract; party: "owner" | "sm
 
         {/* Sample PDF with the signature field highlighted; once signed it shows the signature itself */}
         <div className="rounded-md border border-border bg-muted/50 p-4">
-          <div className="mx-auto max-w-sm rounded-sm border border-border bg-surface p-5 text-xs leading-relaxed text-muted-foreground">
+          <div className="mx-auto max-w-sm rounded-sm border border-border bg-white p-5 text-xs leading-relaxed text-muted-foreground shadow-sm sm:p-6">
             <p className="text-sm font-semibold text-foreground">{props.contract.name}</p>
             <p className="mt-1 text-[11px] uppercase tracking-wide">{t("intake.docuseal.sample")}</p>
             <p className="mt-3">{t("intake.docuseal.pdf_line", { a: props.signerName, b: others.join(", ") })}</p>
@@ -81,8 +81,11 @@ export function DocuSealSigner(props: { contract: Contract; party: "owner" | "sm
                 <span className="mt-1 inline-flex items-center gap-1.5 text-[11px] font-medium"><PenLine className="h-3 w-3" />{props.signerName}{me?.signed_at ? ` · ${me.signed_at}` : ""}</span>
               </div>
             ) : (
-              <div className="mt-5 rounded-[4px] border-2 border-dashed border-gold bg-gold/10 px-3 py-2 text-foreground">
-                {signature ? <img src={signature.image_url} alt="" className="h-12 max-w-full object-contain object-left" /> : <span className="inline-flex items-center gap-1.5 font-medium"><PenLine className="h-3.5 w-3.5" />{t("intake.docuseal.field")}</span>}
+              <div className="mt-6">
+                <div className="flex h-14 items-end rounded-t-[4px] border-2 border-b-0 border-dashed border-gold bg-gold/10 px-3 pb-1 text-foreground">
+                  {signature ? <img src={signature.image_url} alt="" className="h-12 max-w-full object-contain object-left" /> : <span className="inline-flex items-center gap-1.5 pb-1 font-medium"><PenLine className="h-3.5 w-3.5" />{t("intake.docuseal.field")}</span>}
+                </div>
+                <div className="border-t border-foreground/60 pt-1 text-[11px] text-foreground">{props.signerName}</div>
               </div>
             )}
           </div>
@@ -114,7 +117,7 @@ export function DocuSealSigner(props: { contract: Contract; party: "owner" | "sm
             <SignaturePad signerName={props.signerName} onChange={(s) => { setSignature(s); if (s) setMissing(false); }} />
             {missing && !signature && <p className="text-xs text-status-danger-fg">{t("intake.docuseal.sig_required")}</p>}
             <p className="text-xs text-muted-foreground">{t("intake.docuseal.sig_consent")}</p>
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-col-reverse gap-2 border-t border-border pt-3 sm:flex-row sm:items-center sm:justify-between">
               <button onClick={() => setDeclining(true)} className="text-sm text-muted-foreground hover:text-foreground hover:underline">{t("intake.docuseal.decline")}</button>
               <PrimaryButton onClick={doSign} disabled={sign.isPending}>{t("intake.docuseal.sign")}</PrimaryButton>
             </div>
