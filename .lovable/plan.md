@@ -13,8 +13,8 @@ Mis tareas, detalle de tarea, Inicio del dueño, tablero del Embudo, detalle del
 
 ## Paso 1: lista de diferencias
 Antes de tocar nada, recorro cada archivo y entrego en el chat la lista "archivo → patrón que no coincide". Ya detectado en una primera revisión:
-- `docuseal/DocuSealSigner.tsx`, `SignaturePad.tsx`, `SignedContractDialog.tsx`: `bg-white` fijo y `shadow-sm` (fuera de tokens y de la regla "sin sombras"); papel con `rounded-sm` en vez de `rounded-md`.
-- `brand/BrandPreview.tsx`: `text-white` fijo sobre el color del negocio (se evalúa si es intencional por ser vista previa de la marca del cliente; si lo es, se deja y se anota).
+- `docuseal/DocuSealSigner.tsx`, `SignaturePad.tsx`, `SignedContractDialog.tsx`: el papel del documento y el lienzo de firma pasan de `bg-white` a `bg-surface` y de `rounded-sm` a `rounded-md`, sin sombra; deben seguir viéndose blancos (es un documento).
+- `brand/BrandPreview.tsx`: el texto blanco sobre el color del negocio es intencional (vista previa de la marca del cliente). No se toca ni se anota.
 - `funds/FundsPanel.tsx`, `DistributionSection.tsx`: carga como un solo bloque de skeleton y error propio; alinear con skeleton por filas y caja de error común.
 - `funds/FundsAndDistribution.tsx`: jerarquía h3/h4 y espaciado a revisar contra las secciones del detalle del lead.
 - `global/people/PeoplePage.tsx`, `accounts/*`: filtros, tabla y botones a comparar con Mis tareas.
