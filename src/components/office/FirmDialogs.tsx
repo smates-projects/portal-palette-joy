@@ -8,7 +8,8 @@ import { useCreateFirm, useDeactivateFirm, useFirmEvents, useOrganizations, useR
 import type { AreaCode, CreateFirmInput, FirmEvent, OpenTasksPolicy, Organization } from "@/lib/api/types";
 import { formatDateTime } from "@/lib/format";
 import { AREAS } from "@/lib/tasks/owner";
-import { accountError, Field, inputCls, primaryBtn, secondaryBtn, selectCls, textareaCls } from "@/components/accounts/shared";
+import { accountError } from "@/lib/accounts/errors";
+import { Field, inputCls, primaryBtn, secondaryBtn, selectCls, textareaCls } from "@/components/accounts/shared";
 import { firmName } from "./shared";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

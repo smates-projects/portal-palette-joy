@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { GlobalCatalogPage } from "@/components/global/catalog/GlobalCatalogPage";
-import { CatalogTeamPage, validateCatalogSearch } from "@/components/office/CatalogTeamPage";
+import { CatalogTeamPage } from "@/components/office/CatalogTeamPage";
+import { validateCatalogSearch } from "@/lib/tasks/catalog-search";
 import { useCurrentUser } from "@/lib/api/hooks";
 import { tStatic } from "@/lib/i18n";
 

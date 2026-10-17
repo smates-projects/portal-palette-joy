@@ -5,7 +5,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useBusinesses, useCurrentUser, useDeactivateUser, useInviteUser, useOrganizations, useReactivateUser, useSimulateAcceptance, useUsersWithInactive } from "@/lib/api/hooks";
 import type { Organization, User, UserRole } from "@/lib/api/types";
 import { canManage, invitableRoles, isActiveFirm, isActiveUser, isFirmAdmin, isOfficeAdmin } from "@/lib/accounts/permissions";
-import { accountError, Field, inputCls, linkBtn, primaryBtn, secondaryBtn, selectCls, textareaCls, userStatus } from "./shared";
+import { accountError } from "@/lib/accounts/errors";
+import { Field, inputCls, linkBtn, primaryBtn, secondaryBtn, selectCls, textareaCls, userStatus } from "./shared";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

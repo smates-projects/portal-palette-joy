@@ -15,14 +15,8 @@ import { DeactivatePersonDialog, InvitePersonDialog, PersonActions } from "@/com
 import { DeactivateFirmDialog, FirmFormDialog, FirmHistorySheet } from "./FirmDialogs";
 import { firmName } from "./shared";
 
-export type CatalogTab = "catalog" | "firms" | "team";
-export interface CatalogSearch { tab?: CatalogTab | undefined; q?: string | undefined }
-export const validateCatalogSearch = (raw: Record<string, unknown>): CatalogSearch => {
-  const s: CatalogSearch = {};
-  if (raw["tab"] === "firms" || raw["tab"] === "team") s.tab = raw["tab"];
-  if (typeof raw["q"] === "string" && raw["q"]) s.q = raw["q"];
-  return s;
-};
+import type { CatalogSearch, CatalogTab } from "@/lib/tasks/catalog-search";
+export type { CatalogSearch, CatalogTab };
 
 function ErrorBox({ onRetry }: { onRetry: () => void }) {
   const { t } = useTranslation();

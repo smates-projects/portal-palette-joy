@@ -85,12 +85,6 @@ export function officeNameOf(u: User, orgs: Organization[], businesses: Business
   return "";
 }
 
-/** Error code from the mock → sentence for the toast. */
-export const accountError = (t: TFunction, err: unknown) => {
-  const code = err instanceof Error ? err.message : "";
-  return t(`accounts.errors.${code}`, { defaultValue: t("accounts.errors.generic") });
-};
-
 /** Account history of one person, in a side sheet. */
 export function AccountHistorySheet({ user, onClose }: { user: User | null; onClose: () => void }) {
   const { t, i18n } = useTranslation();
