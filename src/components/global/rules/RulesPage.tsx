@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useCatalogAdmin, useRules, useRulesHistory, useUpdateRules, useUsers } from "@/lib/api/hooks";
-import type { PlatformRules } from "@/lib/api/network-types";
+import type { IntakeDocRule, PlatformRules } from "@/lib/api/network-types";
+import { IntakeDocsEditor } from "./IntakeDocsEditor";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PrimaryButton } from "@/components/tasks/detail/dialogs";
@@ -39,7 +40,11 @@ export function RulesPage() {
 
   const authorName = (id: string) => usersQ.data?.find((u) => u.id === id)?.full_name ?? "";
   const show = (field: keyof PlatformRules, value: unknown) =>
-    Array.isArray(value)
+    field === "intake_documents"
+      ? t("intake.rules.count", { count: (value as IntakeDocRule[]).filter((d) => !d.archived).length })
+      : field === "document_review_days"
+        ? t("global.rules.days", { count: Number(value) })
+        : Array.isArray(value)
       ? value.length ? value.join(", ") : t("global.rules.required_none")
       : field === "franchisability_goal"
         ? t("global.rules.percent", { value })
@@ -61,6 +66,7 @@ export function RulesPage() {
       <p className="mt-4 rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground">{t("global.rules.notice")}</p>
       {/* Re-keyed by the stored rules so the form starts from what was just saved. */}
       <RulesEditor key={JSON.stringify(rulesQ.data)} rules={rulesQ.data} catalog={catalogQ.data ?? []} />
+      <IntakeDocsEditor key={`docs-${JSON.stringify(rulesQ.data.intake_documents)}`} rules={rulesQ.data} />
       {historyQ.isError ? (
         <div className="mt-6"><ErrorBox onRetry={() => void historyQ.refetch()} /></div>
       ) : (
@@ -81,7 +87,7 @@ function RulesEditor({ rules, catalog }: { rules: PlatformRules; catalog: { code
   const errors = tried ? validateRules(form) : {};
   const patch = Object.keys(validateRules(form)).length === 0 ? rulesPatch(rules, form) : {};
   const dirty = JSON.stringify(form) !== JSON.stringify(formFromRules(rules));
-  const setField = (key: "franchisability_goal" | "area_amber_days" | "franchisability_amber_tolerance", value: string) => setForm((f) => ({ ...f, [key]: value }));
+  const setField = (key: "franchisability_goal" | "area_amber_days" | "franchisability_amber_tolerance" | "document_review_days", value: string) => setForm((f) => ({ ...f, [key]: value }));
   const err = (key: keyof typeof errors) => (errors[key] ? t(`global.rules.error_${errors[key]}`) : null);
 
   const needle = search.trim().toLowerCase();
@@ -104,6 +110,17 @@ function RulesEditor({ rules, catalog }: { rules: PlatformRules; catalog: { code
 
   return (
     <div className="mt-4 space-y-4">
+      {/* Document review deadline */}
+      <section className="rounded-md border border-border bg-surface p-4">
+        <h2 className="text-sm font-semibold">{t("intake.rules.days_title")}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{t("intake.rules.days_hint")}</p>
+        <label className="mt-3 flex items-center gap-2 text-sm">
+          <input type="number" min={1} value={form.document_review_days} onChange={(e) => setField("document_review_days", e.target.value)} aria-label={t("intake.rules.days_title")} className={cn(inputCls, errors.document_review_days && "border-status-danger-fg")} />
+          <span>{t("global.rules.days", { count: Number(form.document_review_days) || 0 }).replace(/^\S+\s/, "")}</span>
+        </label>
+        {err("document_review_days") && <p className="mt-1 text-xs text-status-danger-fg">{err("document_review_days")}</p>}
+      </section>
+
       {/* Franchisability goal */}
       <section className="rounded-md border border-border bg-surface p-4">
         <h2 className="text-sm font-semibold">{t("global.rules.goal_title")}</h2>

@@ -8,7 +8,7 @@ import { isNavActive, navFor } from "./nav";
 import { NotificationBell } from "./NotificationBell";
 import { cn } from "@/lib/utils";
 import { LANGUAGE_STORAGE_KEY, type Language } from "@/lib/i18n";
-import { useCurrentUser, useIsFranchisor, useSetViewAs, useViewAsOptions } from "@/lib/api/hooks";
+import { useCurrentUser, useIsFranchisor, useIsOnboarding, useSetViewAs, useViewAsOptions } from "@/lib/api/hooks";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,7 +28,8 @@ function Rail({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => voi
   const view = useRouterState({ select: (s) => (s.location.search as Record<string, unknown>)["view"] });
   const { data: me } = useCurrentUser();
   const franchisor = useIsFranchisor();
-  const items = navFor(me?.role, { franchisor });
+  const onboarding = useIsOnboarding();
+  const items = navFor(me?.role, { franchisor, onboarding });
   return (
     <aside
       className={cn(
@@ -245,7 +246,8 @@ function TopBar() {
   const view = useRouterState({ select: (s) => (s.location.search as Record<string, unknown>)["view"] });
   const { data: me } = useCurrentUser();
   const franchisor = useIsFranchisor();
-  const items = navFor(me?.role, { franchisor });
+  const onboarding = useIsOnboarding();
+  const items = navFor(me?.role, { franchisor, onboarding });
   const current = items.find((n) => isNavActive(n, items, pathname, view));
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-surface px-3 sm:gap-4 sm:px-6">

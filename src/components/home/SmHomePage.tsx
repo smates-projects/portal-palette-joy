@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { useBusinesses, useCurrentUser, useOrganizations, useTasks } from "@/lib/api/hooks";
+import { useBusinesses, useCurrentUser, useLeads, useOrganizations, useTasks } from "@/lib/api/hooks";
+import { ClockLabel } from "@/components/pipeline/IntakeChecklist";
 import type { TaskWithComputed } from "@/lib/api/types";
 import { buildAttention, buildSmSummary, type SmSummary } from "@/lib/tasks/sm";
 import { isStaleSubmission } from "@/lib/tasks/table";
@@ -101,6 +102,7 @@ export function SmHomePage({ taskId }: { taskId?: string | undefined }) {
             </div>
           )}
 
+          <DocReviews />
           <section className="mt-6 rounded-md border border-border bg-surface">
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <h2 className="text-sm font-semibold">{t("sm.attention_title")}</h2>
@@ -149,5 +151,34 @@ export function SmHomePage({ taskId }: { taskId?: string | undefined }) {
         </SheetContent>
       </Sheet>
     </div>
+  );
+}
+
+/** Document reviews of the office: Strategic Mates team work, shown like a task with a deadline. */
+function DocReviews() {
+  const { t } = useTranslation();
+  const leadsQ = useLeads();
+  const reviews = (leadsQ.data ?? []).filter((l) => l.stage === "documents" && l.intake);
+  if (reviews.length === 0) return null;
+  const order = { red: 0, amber: 1, ok: 2 } as const;
+  reviews.sort((a, b) => order[a.intake!.clock.tone] - order[b.intake!.clock.tone] || b.intake!.clock.day - a.intake!.clock.day);
+  return (
+    <section className="mt-6 rounded-md border border-border bg-surface">
+      <h2 className="border-b border-border px-4 py-3 text-sm font-semibold">{t("intake.home_title")}</h2>
+      <ul className="divide-y divide-border">
+        {reviews.slice(0, MAX_ITEMS).map((l) => {
+          const c = l.intake!.clock;
+          const key = c.status === "paused" ? "intake.home_item_paused" : c.status === "waiting_upload" ? "intake.home_item_waiting" : "intake.home_item";
+          return (
+            <li key={l.id}>
+              <Link to="/embudo" search={{ lead: l.id }} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-muted/60">
+                <span className="min-w-0 flex-1">{t(key, { name: l.business.name, day: c.day, total: c.total })}</span>
+                <ClockLabel clock={c} />
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }

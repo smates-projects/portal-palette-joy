@@ -5,15 +5,17 @@ export interface RulesForm {
   franchisability_goal: string;
   area_amber_days: string;
   franchisability_amber_tolerance: string;
+  document_review_days: string;
   required_task_codes: string[];
 }
 
-export type RulesFormErrors = Partial<Record<"franchisability_goal" | "area_amber_days" | "franchisability_amber_tolerance", "invalid_goal" | "invalid_days" | "invalid_tolerance">>;
+export type RulesFormErrors = Partial<Record<"franchisability_goal" | "area_amber_days" | "franchisability_amber_tolerance" | "document_review_days", "invalid_goal" | "invalid_days" | "invalid_tolerance" | "invalid_review_days">>;
 
 export const formFromRules = (rules: PlatformRules): RulesForm => ({
   franchisability_goal: String(rules.franchisability_goal),
   area_amber_days: String(rules.area_amber_days),
   franchisability_amber_tolerance: String(rules.franchisability_amber_tolerance),
+  document_review_days: String(rules.document_review_days),
   required_task_codes: [...rules.required_task_codes],
 });
 
@@ -27,6 +29,8 @@ export function validateRules(form: RulesForm): RulesFormErrors {
   if (goal === null || goal < 1 || goal > 100) errors.franchisability_goal = "invalid_goal";
   if (days === null || days < 1) errors.area_amber_days = "invalid_days";
   if (tolerance === null || tolerance < 0 || tolerance > 100) errors.franchisability_amber_tolerance = "invalid_tolerance";
+  const review = wholeNumber(form.document_review_days);
+  if (review === null || review < 1) errors.document_review_days = "invalid_review_days";
   return errors;
 }
 
@@ -39,6 +43,8 @@ export function rulesPatch(rules: PlatformRules, form: RulesForm): Partial<Platf
   if (goal !== rules.franchisability_goal) patch.franchisability_goal = goal;
   if (days !== rules.area_amber_days) patch.area_amber_days = days;
   if (tolerance !== rules.franchisability_amber_tolerance) patch.franchisability_amber_tolerance = tolerance;
+  const review = Number(form.document_review_days);
+  if (review !== rules.document_review_days) patch.document_review_days = review;
   const same = form.required_task_codes.length === rules.required_task_codes.length && form.required_task_codes.every((c) => rules.required_task_codes.includes(c));
   if (!same) patch.required_task_codes = form.required_task_codes;
   return patch;
