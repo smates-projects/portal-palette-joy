@@ -1,14 +1,36 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { ChevronsLeft, ChevronsRight, Search, Check, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { Logo } from "@/components/brand/Logo";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { isNavActive, navFor } from "./nav";
 import { NotificationBell } from "./NotificationBell";
 import { cn } from "@/lib/utils";
+import { hoverOf } from "@/lib/brand/contrast";
+import type { BusinessBrand } from "@/lib/api/types";
 import { LANGUAGE_STORAGE_KEY, type Language } from "@/lib/i18n";
-import { useCurrentUser, useIsFranchisor, useIsOnboarding, useSetViewAs, useViewAsOptions } from "@/lib/api/hooks";
+import { useBusinesses, useCurrentUser, useIsFranchisor, useIsOnboarding, useMyBrand, useSetViewAs, useViewAsOptions } from "@/lib/api/hooks";
+
+/**
+ * White label: the business brand replaces the SM blue on the rail and the primary buttons and the gold on the
+ * indicators, through the same CSS variables the design system reads. Only set for the owner, the team, the
+ * franchisor and its franchises (the mock returns null for everyone else).
+ */
+export const brandStyle = (brand: BusinessBrand | null | undefined): CSSProperties | undefined =>
+  brand
+    ? ({
+        "--primary": brand.primary_color,
+        "--primary-hover": hoverOf(brand.primary_color),
+        "--sidebar": brand.primary_color,
+        "--sidebar-accent": hoverOf(brand.primary_color),
+        "--sidebar-border": hoverOf(brand.primary_color),
+        "--gold": brand.accent_color,
+        "--ring": brand.primary_color,
+        "--link": brand.primary_color,
+      } as CSSProperties)
+    : undefined;
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,14 +44,16 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 const initials = (name: string) =>
   name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 
-function Rail({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
+function Rail({ collapsed, onToggle, brand }: { collapsed: boolean; onToggle: () => void; brand: BusinessBrand | null }) {
   const { t } = useTranslation();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const view = useRouterState({ select: (s) => (s.location.search as Record<string, unknown>)["view"] });
   const { data: me } = useCurrentUser();
+  const { data: businesses } = useBusinesses();
   const franchisor = useIsFranchisor();
   const onboarding = useIsOnboarding();
   const items = navFor(me?.role, { franchisor, onboarding });
+  const brandName = brand ? businesses?.find((b) => b.id === brand.business_id)?.name ?? "" : "";
   return (
     <aside
       className={cn(
@@ -38,12 +62,27 @@ function Rail({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => voi
       )}
     >
       <div className={cn("flex h-14 items-center gap-2.5 border-b border-sidebar-border", collapsed ? "justify-center px-0" : "px-4")}>
-        <Logo variant="isotype" className="h-8 w-8" />
-        {!collapsed && (
-          <div className="leading-tight">
-            <div className="font-display text-sm font-semibold">{t("app.name")}</div>
-            <div className="text-[11px] text-sidebar-muted">{t(franchisor ? "roles.franchisor" : `roles.${me?.role ?? "partner_firm"}`)}</div>
+        {brand ? (
+          // The business brand: its wordmark on top of the rail, the role under it.
+          <div className="flex min-w-0 items-center gap-2.5">
+            <BrandLogo name={brandName} palette={brand} compact />
+            {!collapsed && (
+              <div className="min-w-0 leading-tight">
+                <div className="truncate font-display text-sm font-semibold" style={brand.font_family ? { fontFamily: `${brand.font_family}, Inter, sans-serif` } : undefined}>{brandName}</div>
+                <div className="text-[11px] text-sidebar-muted">{t(franchisor ? "roles.franchisor" : `roles.${me?.role ?? "partner_firm"}`)}</div>
+              </div>
+            )}
           </div>
+        ) : (
+          <>
+            <Logo variant="isotype" className="h-8 w-8" />
+            {!collapsed && (
+              <div className="leading-tight">
+                <div className="font-display text-sm font-semibold">{t("app.name")}</div>
+                <div className="text-[11px] text-sidebar-muted">{t(franchisor ? "roles.franchisor" : `roles.${me?.role ?? "partner_firm"}`)}</div>
+              </div>
+            )}
+          </>
         )}
       </div>
       <nav aria-label={t("nav.main")} className="flex-1 space-y-0.5 p-2">
@@ -78,6 +117,13 @@ function Rail({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => voi
           );
         })}
       </nav>
+      {brand && (
+        // Under the brand, small: the portal runs on Strategic Mates.
+        <div className={cn("flex items-center gap-2 border-t border-sidebar-border px-4 py-2 text-[11px] text-sidebar-muted", collapsed && "justify-center px-0")} title={t("brand.with_sm")}>
+          <Logo variant="isotype" className="h-4 w-4 opacity-80" />
+          {!collapsed && <span>{t("brand.with_sm")}</span>}
+        </div>
+      )}
       <button
         onClick={onToggle}
         className={cn(
@@ -139,17 +185,20 @@ function ViewAs() {
   const smGlobal = enabled.filter((o) => o.user.role === "sm_global");
   const bishops = enabled.filter((o) => o.user.role === "bishop");
   const franchisees = enabled.filter((o) => o.user.role === "franchisee");
+  const isTeamMember = (o: (typeof enabled)[number]) => o.user.role === "business_owner" && !!o.business && o.business.owner_user_id !== o.user.id;
   const label = (o: (typeof enabled)[number]) => {
     switch (o.user.role) {
-      case "sm_team": return `${o.user.full_name} (${o.organization?.name ?? ""})`;
+      case "sm_team": return `${o.user.full_name} (${o.organization?.name ?? ""}${o.user.is_admin ? `, ${t("topbar.admin")}` : ""})`;
       case "sm_global": return `${t("topbar.role_global")} (${o.user.full_name})`;
       case "bishop": return `${t("topbar.role_bishop")} (${o.user.full_name})`;
       case "franchisee": return `${t("topbar.role_franchisee")} (${o.user.full_name})`;
       case "business_owner":
         return o.business?.status === "franchisor"
           ? `${t("topbar.role_small_business")} · ${o.business.name} (${t("topbar.franchisor")}, ${o.user.full_name})`
-          : o.organization?.name ?? `${o.user.full_name} (${o.business?.name ?? ""})`;
-      default: return o.organization?.name ?? `${o.user.full_name} (${o.business?.name ?? ""})`;
+          : isTeamMember(o)
+            ? `${o.business?.name ?? ""} (${t("topbar.team_member")}, ${o.user.full_name})`
+            : o.organization?.name ?? `${o.user.full_name} (${o.business?.name ?? ""})`;
+      default: return `${o.organization?.name ?? ""} (${o.user.full_name}${o.user.is_admin ? `, ${t("topbar.admin")}` : ""})`;
     }
   };
   const currentOpt = enabled.find((o) => o.user.id === me?.id);
@@ -178,7 +227,7 @@ function ViewAs() {
             <div>
               <div className="font-medium">{o.organization?.name}</div>
               <div className="text-xs text-muted-foreground">
-                {o.user.full_name} · {o.organization?.area ? t(`areas.${o.organization.area}`) : ""}
+                {o.user.full_name}{o.user.is_admin ? ` (${t("topbar.admin")})` : ""} · {o.organization?.area ? t(`areas.${o.organization.area}`) : ""}
               </div>
             </div>
           </DropdownMenuItem>
@@ -190,7 +239,9 @@ function ViewAs() {
             <Check className={cn("mt-0.5 h-4 w-4", o.user.id === me?.id ? "opacity-100" : "opacity-0")} />
             <div>
               <div className="font-medium">{o.user.full_name}</div>
-              <div className="text-xs text-muted-foreground">{o.business?.status === "franchisor" ? `${o.business.name} · ${t("topbar.franchisor")}` : o.business?.name}</div>
+              <div className="text-xs text-muted-foreground">
+                {o.business?.status === "franchisor" ? `${o.business.name} · ${t("topbar.franchisor")}` : isTeamMember(o) ? `${o.business?.name} · ${t("topbar.team_member")}` : o.business?.name}
+              </div>
             </div>
           </DropdownMenuItem>
         ))}
@@ -201,7 +252,7 @@ function ViewAs() {
             <Check className={cn("mt-0.5 h-4 w-4", o.user.id === me?.id ? "opacity-100" : "opacity-0")} />
             <div>
               <div className="font-medium">{o.user.full_name}</div>
-              <div className="text-xs text-muted-foreground">{o.organization?.name}</div>
+              <div className="text-xs text-muted-foreground">{o.organization?.name}{o.user.is_admin ? ` · ${t("topbar.admin")}` : ""}</div>
             </div>
           </DropdownMenuItem>
         ))}
@@ -289,6 +340,8 @@ function TopBar() {
 export function AppShell({ children }: { children: ReactNode }) {
   const { i18n } = useTranslation();
   const [collapsed, setCollapsed] = useState(false);
+  // Brand of the current user's business (owner, team, franchisor, franchises); null keeps the SM brand.
+  const brand = useMyBrand().data ?? null;
 
   // Small screens start with the rail collapsed so the work area keeps its width.
   useEffect(() => {
@@ -306,8 +359,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div key={i18n.language} className="lang-fade flex h-screen overflow-hidden bg-background">
-        <Rail collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} />
+      <div key={i18n.language} className="lang-fade flex h-screen overflow-hidden bg-background" style={brandStyle(brand)} data-brand={brand ? brand.business_id : undefined}>
+        <Rail collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} brand={brand} />
         <div className="flex min-w-0 flex-1 flex-col">
           <TopBar />
           <main className="min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]">{children}</main>

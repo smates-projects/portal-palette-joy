@@ -2,7 +2,9 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FileText, Paperclip, X } from "lucide-react";
 import { TODAY } from "@/config/app";
+import type { BrandProposal } from "@/lib/api/types";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { BrandCaptureSection } from "@/components/brand/BrandCaptureSection";
 
 const inputCls =
   "h-9 w-full rounded-md border border-input bg-surface px-3 text-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30";
@@ -52,15 +54,21 @@ export function SubmitDeliverableDialog(props: {
   ownerName: string;
   changesQuote: string | null;
   pending: boolean;
-  onSubmit: (v: { note: string; file_names: string[] }) => void;
+  /** B5-13 only: the firm uploads the brand manual and the logo; the palette read from it travels with the version. */
+  brandCapture?: { businessName: string } | undefined;
+  onSubmit: (v: { note: string; file_names: string[]; brand?: BrandProposal | null }) => void;
 }) {
   const { t } = useTranslation();
   const [files, setFiles] = useState<string[]>([]);
   const [note, setNote] = useState("");
+  const [brand, setBrand] = useState<BrandProposal | null>(null);
   const attach = () => {
     const base = props.defaultFileName.replace(/\.pdf$/, "");
     setFiles((f) => [...f, f.length === 0 ? props.defaultFileName : `${base}_anexo_${f.length}.pdf`]);
   };
+  // The manual and the logo of the brand count as files of the deliverable.
+  const allFiles = brand ? [...files, brand.manual_file_name, ...(brand.logo_file_name ? [brand.logo_file_name] : [])] : files;
+  const canSend = allFiles.length > 0 && (!props.brandCapture || !!brand);
   return (
     <Dialog
       open={props.open}
@@ -69,16 +77,18 @@ export function SubmitDeliverableDialog(props: {
         if (!o) {
           setFiles([]);
           setNote("");
+          setBrand(null);
         }
       }}
     >
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
             {props.isResubmit ? t("taskDetail.d_resubmit_title", { version: props.nextVersion }) : t("taskDetail.d_submit_title")}
           </DialogTitle>
           <DialogDescription className="sr-only">{t("taskDetail.d_files_hint")}</DialogDescription>
         </DialogHeader>
+        {props.brandCapture && <BrandCaptureSection businessName={props.brandCapture.businessName} value={brand} onChange={setBrand} />}
         {props.changesQuote && (
           <blockquote className="rounded-md border-l-2 border-status-warning-border bg-status-warning-bg px-3 py-2 text-sm">
             <p className="text-xs font-medium text-status-warning-fg">{t("taskDetail.d_changes_quote", { name: props.ownerName })}</p>
@@ -106,7 +116,8 @@ export function SubmitDeliverableDialog(props: {
               <Paperclip className="h-3.5 w-3.5" />
               {t("taskDetail.d_attach")}
             </SecondaryButton>
-            {files.length === 0 && <p className="text-xs text-muted-foreground">{t("taskDetail.d_files_hint")}</p>}
+            {allFiles.length === 0 && <p className="text-xs text-muted-foreground">{t("taskDetail.d_files_hint")}</p>}
+            {props.brandCapture && !brand && <p className="text-xs text-muted-foreground">{t("brand.required_hint")}</p>}
           </div>
           <Field label={t("taskDetail.d_note", { name: props.ownerName })}>
             <textarea rows={4} value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("taskDetail.d_note_placeholder")} className={textareaCls} />
@@ -114,7 +125,7 @@ export function SubmitDeliverableDialog(props: {
         </div>
         <DialogFooter>
           <SecondaryButton onClick={() => props.onOpenChange(false)}>{t("taskDetail.d_cancel")}</SecondaryButton>
-          <PrimaryButton disabled={files.length === 0 || props.pending} onClick={() => props.onSubmit({ note: note.trim(), file_names: files })}>
+          <PrimaryButton disabled={!canSend || props.pending} onClick={() => props.onSubmit({ note: note.trim(), file_names: allFiles, brand })}>
             {t("taskDetail.d_send")}
           </PrimaryButton>
         </DialogFooter>

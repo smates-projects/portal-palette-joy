@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { DOT, TEXT, firmName } from "./shared";
 import { FundsAndDistribution } from "@/components/funds/FundsAndDistribution";
+import { BrandPanel } from "@/components/brand/BrandPanel";
 
 const ALL = "__all";
 
@@ -289,6 +290,8 @@ function BusinessProfile({ row }: { row: BusinessRow }) {
         <div className="mt-6 border-t border-border pt-6">
           <FundsAndDistribution businessId={b.id} mode={me?.role === "sm_team" ? "sm" : "read"} />
         </div>
+        {/* Brand of the business portal (white label): applied with B5-13 or loaded by hand by SM. */}
+        <div className="mt-6"><BrandPanel businessId={b.id} mode="sm" /></div>
         <BusinessActivity businessId={b.id} />
       </div>
     </div>

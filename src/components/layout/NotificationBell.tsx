@@ -25,6 +25,7 @@ const DOT: Record<NotificationKind, string> = {
   task_updated: "bg-link",
   bishop_accepted: "bg-status-success-fg",
   funds_reported: "bg-primary",
+  brand_applied: "bg-gold",
 };
 
 export function NotificationBell() {

@@ -12,6 +12,7 @@ import {
   useSubmitVersion, useTaskDetail, useTasks, useUsers,
 } from "@/lib/api/hooks";
 import type { TaskComment, TaskEvent, User, VisibleTaskStatus } from "@/lib/api/types";
+import { BRAND_TASK_CODE } from "@/lib/brand/scope";
 import { firstName, formatDate, formatDateTime, formatShortDate } from "@/lib/format";
 import { daysBetween } from "@/lib/tasks/table";
 import { cn } from "@/lib/utils";
@@ -560,6 +561,7 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
         ownerName={ownerFirst}
         changesQuote={status === "changes_requested" ? latestChanges?.body ?? null : null}
         pending={submit.isPending}
+        brandCapture={task.code === BRAND_TASK_CODE ? { businessName: business?.name ?? "" } : undefined}
         onSubmit={(v) =>
           submit.mutate(
             { id: task.id, ...v },
