@@ -29,10 +29,12 @@ import { createEntry } from "./entry";
 import type { AreaCode, Business, BusinessEvent, CatalogAdminItem, Lead, LeadEvent, LeadWithComputed } from "../types";
 
 const delay = <T,>(v: T, ms = 120) => new Promise<T>((r) => setTimeout(() => r(structuredClone(v)), ms));
-const newId = () =>
-  typeof crypto !== "undefined" && "randomUUID" in crypto
-    ? crypto.randomUUID()
-    : `${Date.now().toString(16).padStart(8, "0")}-0000-4000-8000-${Math.random().toString(16).slice(2, 14).padEnd(12, "0")}`;
+// Deterministic ids: the seed runs at module scope during SSR, where Cloudflare Workers disallow randomness.
+let idCounter = 0;
+const newId = () => {
+  idCounter += 1;
+  return `00000000-0000-4000-8000-${idCounter.toString(16).padStart(12, "0")}`;
+};
 
 /** In-memory backend; filters by current user to simulate API authorization. */
 export function createMockApi(): ApiClient {
