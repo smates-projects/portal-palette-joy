@@ -138,6 +138,143 @@ export const organizationFixture = (overrides: Record<string, unknown> = {}) => 
   ...overrides,
 });
 
+/** LeadWithComputedSchema: a lead in Reunión with its booked meeting. */
+export const leadFixture = (overrides: Record<string, unknown> = {}) => ({
+  id: IDS.request,
+  office_id: IDS.office,
+  source: "landing",
+  summary_sent_at: "2026-10-10T15:00:00.000Z",
+  meeting: {
+    starts_at: "2026-10-20T15:00:00.000Z",
+    duration_minutes: 30,
+    meet_url: "https://meet.google.com/abc-defg-hij",
+    consultant_user_id: IDS.andrea,
+    booked_at: "2026-10-10T15:00:00.000Z",
+    notes_at: null,
+  },
+  stage: "meeting",
+  discarded_from: null,
+  discard_reason: null,
+  stage_entered_at: "2026-10-10T15:00:00.000Z",
+  submitted_at: "2026-10-09T12:00:00.000Z",
+  last_contact_at: null,
+  consultant_user_id: IDS.andrea,
+  business_id: null,
+  contact: {
+    name: "Ramón Castillo",
+    email: "ramon@castillo.com",
+    phone: "+1 305 555 0123",
+    city: "Miami",
+    state: "FL",
+    hispanic_owner: "yes",
+  },
+  business: {
+    name: "Castillo Instalaciones",
+    industry: "installations_repairs",
+    activity_other: null,
+    activity: "Instalaciones eléctricas",
+    revenue_range: "500k_750k",
+    margin_range: "margin_21_40",
+    team_range: "team_6_10",
+    years_range: "years_6_10",
+    has_active_clients: true,
+  },
+  result: null,
+  know_how_example: null,
+  assessment_sent_at: null,
+  bishop_user_id: null,
+  bishop_accepted_at: null,
+  booking_url: "https://calendar.app.google/andrea",
+  intake: null,
+  tripartite: "none",
+  funds: null,
+  ...overrides,
+});
+
+/** LeadEventSchema. */
+export const leadEventFixture = (overrides: Record<string, unknown> = {}) => ({
+  id: IDS.event,
+  lead_id: IDS.request,
+  kind: "note",
+  actor_user_id: IDS.andrea,
+  created_at: "2026-10-11T12:00:00.000Z",
+  from: null,
+  to: null,
+  body: "Llamó para confirmar",
+  ...overrides,
+});
+
+/** IntakeDocumentSchema: an entry document SM asked for. */
+export const documentFixture = (overrides: Record<string, unknown> = {}) => ({
+  id: IDS.member,
+  business_id: IDS.business,
+  area: "intake",
+  name: "Estados de cuenta bancarios",
+  state: "requested",
+  requested_at: "2026-10-12",
+  received_at: null,
+  file_name: null,
+  required: true,
+  ...overrides,
+});
+
+/** ContractSchema: the NDA waiting for the owner. */
+export const contractFixture = (overrides: Record<string, unknown> = {}) => ({
+  id: IDS.newFirm,
+  business_id: IDS.business,
+  area: "intake",
+  kind: "nda",
+  name: "NDA",
+  state: "sent",
+  sent_at: "2026-10-12",
+  signed_at: null,
+  signers: [
+    {
+      name: "Ramón Castillo",
+      role: "Dueño",
+      signed_at: null,
+      party: "owner",
+      user_id: IDS.carla,
+      status: "sent",
+    },
+  ],
+  ...overrides,
+});
+
+/** IntakeSummarySchema. */
+export const intakeSummaryFixture = (overrides: Record<string, unknown> = {}) => ({
+  business_id: IDS.business,
+  required_total: 8,
+  uploaded: 3,
+  accepted: 1,
+  to_review: 2,
+  nda_signed: true,
+  mou_signed: false,
+  nda_signed_by_owner: true,
+  clock: { status: "running", day: 2, total: 5, tone: "ok" },
+  approval: { ok: false, reason: "contracts", missing: ["MOU"] },
+  approved_at: null,
+  ...overrides,
+});
+
+/** NotificationSchema: a task notification. */
+export const notificationFixture = (overrides: Record<string, unknown> = {}) => ({
+  id: IDS.event,
+  user_id: IDS.carla,
+  kind: "submitted_for_approval",
+  task_id: IDS.member,
+  task_code: "B1-01",
+  task_name: "Contrato de franquicia",
+  business_id: IDS.business,
+  business_name: "Vossler",
+  actor_user_id: IDS.lucia,
+  actor_name: "Lucía Pérez",
+  created_at: "2026-10-15T12:00:00.000Z",
+  read_at: null,
+  change: null,
+  ...overrides,
+});
+
 /** BusinessSchema. */
 export const businessFixture = (overrides: Record<string, unknown> = {}) => ({
   id: IDS.business,

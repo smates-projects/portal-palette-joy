@@ -13,6 +13,8 @@ import { cn } from "@/lib/utils";
 import { brandStyle } from "@/lib/brand/style";
 import type { BusinessBrand } from "@/lib/api/types";
 import { LANGUAGE_STORAGE_KEY, type Language } from "@/lib/i18n";
+import { loginSearchFor } from "@/lib/auth/redirect";
+import { onSessionExpired } from "@/lib/api/http/session-events";
 import { useBusinesses, useCurrentUser, useIsAuthenticated, useIsFranchisor, useIsOnboarding, useLogout, useMyBrand, useSetViewAs, useViewAsOptions } from "@/lib/api/hooks";
 import {
   DropdownMenu,
@@ -305,9 +307,16 @@ function RouteGuard({ children }: { children: ReactNode }) {
   const { data: me } = useCurrentUser();
   const franchisor = useIsFranchisor();
   const onboarding = useIsOnboarding();
+  const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const href = useRouterState({ select: (s) => s.location.href });
-  if (!authenticated) return <Navigate to="/login" search={href === "/" ? {} : { next: href }} replace />;
+  // A 401 from any HTTP adapter means the session ended (expired or revoked elsewhere): back to /login, keeping
+  // where the person was. The mock never emits it.
+  useEffect(
+    () => onSessionExpired(() => void navigate({ to: "/login", search: loginSearchFor(href), replace: true })),
+    [navigate, href],
+  );
+  if (!authenticated) return <Navigate to="/login" search={loginSearchFor(href)} replace />;
   if (!me) return <>{children}</>;
   const allowed = [...navFor(me.role, { franchisor, onboarding }).map((i) => i.to), "/perfil", "/tareas"];
   const ok = pathname === "/" || allowed.some((p) => p !== "/" && (pathname === p || pathname.startsWith(`${p}/`)));

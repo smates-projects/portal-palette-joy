@@ -385,9 +385,9 @@ describe("owner data", () => {
   it("uploading a requested document, editing the profile and inviting a person", async () => {
     const carla = await as(seed.U_CARLA);
     const requested = (await carla.documents.listDocuments()).find((d) => d.state === "requested")!;
-    const up = await carla.documents.uploadDocument(requested.id, "estados_agosto.pdf");
+    const up = await carla.documents.uploadDocument(requested.id, { name: "estados_agosto.pdf" });
     expect(up).toMatchObject({ state: "received", file_name: "estados_agosto.pdf", received_at: "2026-10-14" });
-    await expect(carla.documents.uploadDocument(requested.id, "otra.pdf")).rejects.toThrow("invalid_state");
+    await expect(carla.documents.uploadDocument(requested.id, { name: "otra.pdf" })).rejects.toThrow("invalid_state");
     expect((await carla.businessProfile.update({ phone: "+1 407 555 0999", employees: 15 })).employees).toBe(15);
     await expect(carla.businessProfile.update({ email: "no-es-un-correo" })).rejects.toThrow("invalid_email");
     const invited = await carla.businessProfile.inviteMember({ name: "Rosa Peña", role: "Compras", email: "rosa@vosslerbuild.com" });

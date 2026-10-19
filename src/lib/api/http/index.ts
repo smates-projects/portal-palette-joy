@@ -5,8 +5,12 @@
 import i18n from "@/lib/i18n";
 import type { ApiClient } from "../repositories";
 import { createHttpClient, type HttpClient, type HttpClientConfig } from "./client";
+import { createHttpBusinessFileRepository } from "./business-file";
 import { createHttpBusinessProfileRepository } from "./business-profile";
 import { createHttpBusinessesRepository } from "./businesses";
+import { createHttpDocumentsRepository } from "./documents";
+import { createHttpLeadsRepository } from "./leads";
+import { createHttpNotificationsRepository } from "./notifications";
 import { createHttpOrganizationsRepository } from "./organizations";
 import { createHttpRoutingRepository } from "./routing";
 import { createHttpSessionRepository } from "./session";
@@ -22,6 +26,10 @@ export const HTTP_REPOSITORIES = {
   businesses: "BUSINESSES",
   businessProfile: "BUSINESS_PROFILE",
   routing: "ROUTING",
+  leads: "LEADS",
+  documents: "DOCUMENTS",
+  notifications: "NOTIFICATIONS",
+  businessFile: "BUSINESS_FILE",
 } as const satisfies Partial<Record<keyof ApiClient, string>>;
 
 export type HttpRepositoryKey = keyof typeof HTTP_REPOSITORIES;
@@ -54,6 +62,10 @@ export function createHttpRepositories(client: HttpClient): HttpRepositories {
     businesses: createHttpBusinessesRepository(client),
     businessProfile: createHttpBusinessProfileRepository(client),
     routing: createHttpRoutingRepository(client),
+    leads: createHttpLeadsRepository(client),
+    documents: createHttpDocumentsRepository(client),
+    notifications: createHttpNotificationsRepository(client),
+    businessFile: createHttpBusinessFileRepository(client),
   };
 }
 

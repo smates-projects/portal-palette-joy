@@ -734,7 +734,9 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       const ids = new Set(businessIdsInScope(businessId));
       return delay(db.contracts.filter((c) => ids.has(c.business_id)));
     },
-    uploadDocument: async (documentId, fileName) => {
+    uploadDocument: async (documentId, file) => {
+      // The mock keeps only the name of the file.
+      const fileName = file.name;
       const b = ownOwnerBusiness();
       const d = db.documents.find((x) => x.id === documentId && x.business_id === b.id);
       if (!d) throw new Error("not_found");

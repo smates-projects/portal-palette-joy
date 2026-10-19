@@ -401,11 +401,17 @@ export interface ManualRepository {
   approveSection(sectionId: Uuid): Promise<ManualSection>;
 }
 
+/**
+ * What the owner uploads: the File picked in the input. The mock only keeps its name, so `{ name }` is enough there;
+ * the HTTP adapter needs the real File (it sends the bytes) and rejects anything else with "invalid_file".
+ */
+export type DocumentUpload = File | { name: string };
+
 export interface DocumentsRepository {
   listDocuments(businessId?: Uuid): Promise<BusinessDocument[]>;
   listContracts(businessId?: Uuid): Promise<Contract[]>;
-  /** Owner only: answers a requested document with a file (simulated). */
-  uploadDocument(documentId: Uuid, fileName: string): Promise<BusinessDocument>;
+  /** Owner only: answers a requested document with a file. */
+  uploadDocument(documentId: Uuid, file: DocumentUpload): Promise<BusinessDocument>;
   /** Entry checklist of a business in onboarding (owner: own). Null when it has none. */
   getIntake(businessId?: Uuid): Promise<IntakeSummary | null>;
   /**

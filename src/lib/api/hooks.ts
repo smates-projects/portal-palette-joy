@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./index";
-import type { SubmitVersionInput } from "./repositories";
+import type { DocumentUpload, SubmitVersionInput } from "./repositories";
 import type {
   BrandPalette,
   BusinessProfilePatch,
@@ -456,7 +456,7 @@ export const useDocuments = (businessId?: string) =>
 export const useContracts = (businessId?: string) =>
   useQuery({ queryKey: ["documents", "contracts", businessId ?? "all"], queryFn: () => api.documents.listContracts(businessId) });
 export const useUploadDocument = () =>
-  useNetworkMutation((v: { documentId: string; fileName: string }) => api.documents.uploadDocument(v.documentId, v.fileName), ["documents", "leads"]);
+  useNetworkMutation((v: { documentId: string; file: DocumentUpload }) => api.documents.uploadDocument(v.documentId, v.file), ["documents", "leads"]);
 /** FinancialSeries | null: months, revenue, margin %, cash and the before/now table. */
 export const useFinancials = (businessId?: string) =>
   useQuery({ queryKey: ["financials", businessId ?? "own"], queryFn: () => api.financials.get(businessId) });

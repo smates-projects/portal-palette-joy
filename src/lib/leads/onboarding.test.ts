@@ -70,9 +70,9 @@ describe("entry flow in the mock", () => {
     const { documents, contracts } = (await api.leads.getIntake(rivera.id))!;
     const owner = (await api.users.list()).find((u) => u.email === rivera.contact.email)!;
     await api.session.setViewAs(owner.id);
-    await expect(api.documents.uploadDocument(documents[0]!.id, "banco.pdf")).rejects.toThrow("nda_required");
+    await expect(api.documents.uploadDocument(documents[0]!.id, { name: "banco.pdf" })).rejects.toThrow("nda_required");
     await api.documents.signContract(contracts.find((c) => c.kind === "nda")!.id);
-    expect((await api.documents.uploadDocument(documents[0]!.id, "banco.pdf")).state).toBe("received");
+    expect((await api.documents.uploadDocument(documents[0]!.id, { name: "banco.pdf" })).state).toBe("received");
   });
   it("sample data: Castillo paused with 5 of 7 uploaded and 3 accepted; Navarro at day 17 of 15", async () => {
     const api = createMockApi();

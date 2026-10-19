@@ -52,7 +52,7 @@ export function OwnerDocumentsPage() {
     if (fileInput.current) fileInput.current.value = "";
     if (!file || !documentId) return setUploadingId(null);
     upload.mutate(
-      { documentId, fileName: file.name },
+      { documentId, file },
       {
         onSuccess: () => toast.success(t("owner_extra.documents.t_uploaded", { name: file.name })),
         onError: () => toast.error(t("owner_extra.common.t_error")),

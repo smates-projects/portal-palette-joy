@@ -306,10 +306,11 @@ export function createMockApi(): MockApi {
       ...net,
       documents: {
         ...net.documents,
-        uploadDocument: async (documentId, fileName) => {
+        uploadDocument: async (documentId, file) => {
           const u = me();
+          const fileName = file.name;
           const d = db.documents.find((x) => x.id === documentId);
-          if (d?.area !== "intake") return net.documents.uploadDocument(documentId, fileName);
+          if (d?.area !== "intake") return net.documents.uploadDocument(documentId, file);
           if (u.role !== "business_owner" || u.business_id !== d.business_id) throw new Error("not_found");
           if (!fileName.trim()) throw new Error("file_required");
           return delay(intake.upload(d.business_id, d, fileName.trim()));

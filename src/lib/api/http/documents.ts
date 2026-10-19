@@ -1,0 +1,120 @@
+// DocumentsRepository over the real API: entry documents (pipeline module, business-entry.controller.ts) and the
+// simulated DocuSeal signing (signing module, contracts.controller.ts). Files travel through the files module
+// (./files.ts): the adapter uploads the bytes first and then attaches the returned file_id.
+import type { DocumentUpload, DocumentsRepository } from "../repositories";
+import type { BusinessDocument, Contract, IntakeSummary, IsoDateTime, Uuid } from "../types";
+import { ApiError, getOrNull, type HttpClient } from "./client";
+import { signatureToPng, uploadFile } from "./files";
+import { ensureCurrentUser } from "./session";
+
+type Party = "owner" | "sm" | "bishop";
+type SignerStatus = "sent" | "opened" | "signed" | "declined";
+
+/** GET /contracts/{id}/signed-document: the sealed text, its fingerprint and the audit trail. */
+export interface SignedDocument {
+  contract_id: Uuid;
+  kind: "nda" | "mou" | "tripartite" | "framework" | "other";
+  name: string;
+  text: string;
+  fingerprint: string | null;
+  signers: {
+    party: Party;
+    name: string;
+    status: SignerStatus;
+    signed_at: IsoDateTime | null;
+    signature: { kind: "drawn" | "typed" | "uploaded"; image_url: string } | null;
+  }[];
+  audit_trail: {
+    party: Party;
+    name: string;
+    status: SignerStatus;
+    at: IsoDateTime;
+    reason: string | null;
+  }[];
+}
+
+/** The API's signed document has no place in the front's contract yet (the dialog draws it from the Contract). */
+export interface HttpDocumentsRepository extends DocumentsRepository {
+  getSignedDocument(contractId: Uuid): Promise<SignedDocument>;
+}
+
+const businessPath = (id: Uuid) => `/businesses/${encodeURIComponent(id)}`;
+const contractPath = (id: Uuid) => `/contracts/${encodeURIComponent(id)}`;
+
+/** A real File (or Blob with a name) from the input; `{ name }` alone is the mock's simulated upload. */
+const isRealFile = (file: DocumentUpload): file is File =>
+  typeof Blob !== "undefined" && file instanceof Blob;
+
+export function createHttpDocumentsRepository(client: HttpClient): HttpDocumentsRepository {
+  /** The given business, or the signed-in person's own; null when the person has none. */
+  const businessIdOrOwn = async (businessId?: Uuid): Promise<Uuid | null> =>
+    businessId ?? (await ensureCurrentUser(client)).business_id;
+
+  return {
+    listDocuments: async (businessId) => {
+      const id = await businessIdOrOwn(businessId);
+      return id ? client.get<BusinessDocument[]>(`${businessPath(id)}/documents`) : [];
+    },
+
+    listContracts: async (businessId) => {
+      const id = await businessIdOrOwn(businessId);
+      return id ? client.get<Contract[]>(`${businessPath(id)}/contracts`) : [];
+    },
+
+    /** presign → PUT the bytes → complete → POST /documents/{id}/upload { file_id }. */
+    uploadDocument: async (documentId, file) => {
+      if (!isRealFile(file)) {
+        throw new ApiError({
+          code: "invalid_file",
+          status: 422,
+          detail: "Pick the file to upload.",
+        });
+      }
+      const fileId = await uploadFile(client, file, {
+        context: "intake_document",
+        name: file.name,
+        businessId: client.session().user?.business_id ?? null,
+      });
+      return client.post<BusinessDocument>(`/documents/${encodeURIComponent(documentId)}/upload`, {
+        file_id: fileId,
+      });
+    },
+
+    getIntake: async (businessId) => {
+      const id = await businessIdOrOwn(businessId);
+      return id ? getOrNull<IntakeSummary>(client, `${businessPath(id)}/intake`) : null;
+    },
+
+    openContract: (contractId) => client.post<Contract>(`${contractPath(contractId)}/open`),
+
+    /**
+     * The SignaturePad gives a data URL; the API wants the image stored first (context contract_signature, PNG
+     * only) and its id. Pressing "Firmar" after reading the consent text is the consent the API records.
+     */
+    signContract: async (contractId, signature) => {
+      if (!signature) {
+        throw new ApiError({
+          code: "signature_required",
+          status: 422,
+          detail: "Draw, type or upload the signature first.",
+        });
+      }
+      const png = await signatureToPng(signature.image_url);
+      const fileId = await uploadFile(client, png, {
+        context: "contract_signature",
+        name: "signature.png",
+      });
+      return client.post<Contract>(`${contractPath(contractId)}/sign`, {
+        signature_file_id: fileId,
+        signature_kind: signature.kind,
+        consent: true,
+      });
+    },
+
+    declineContract: (contractId, reason) =>
+      client.post<Contract>(`${contractPath(contractId)}/decline`, { reason }),
+
+    getSignedDocument: (contractId) =>
+      client.get<SignedDocument>(`${contractPath(contractId)}/signed-document`),
+  };
+}

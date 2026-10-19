@@ -53,6 +53,10 @@ export class ApiError extends Error {
 
 export const isApiError = (error: unknown): error is ApiError => error instanceof ApiError;
 
+/** What an adapter method throws, without calling the API, when the API has no endpoint for it yet. */
+export const notImplemented = (detail: string): ApiError =>
+  new ApiError({ code: "not_implemented", status: 501, detail });
+
 /** Pagination block of a list envelope (PLAN_BACKEND 4.3): cursor (`?cursor=`) for feeds, offset (`?page=`) for tables. */
 export interface PageMeta {
   next_cursor?: string | null | undefined;

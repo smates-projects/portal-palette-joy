@@ -28,6 +28,15 @@ export function safeNextPath(raw: unknown): string | null {
   return raw;
 }
 
+/**
+ * Search of the redirect to /login from a screen of the app: ?next= keeps where the person was, so signing in
+ * again goes back there. The home and the sign-in screens themselves need no ?next=.
+ */
+export function loginSearchFor(href: string): { next?: string } {
+  const pathname = href.split(/[?#]/)[0] ?? "";
+  return href === "/" || isPublicAuthPath(pathname) ? {} : { next: href };
+}
+
 /** History state the sign-in screens pass between them (kept out of the URL so the email never lands in logs). */
 export interface AuthHistoryState {
   /** The email the person just used, shown back on the next screen. */
