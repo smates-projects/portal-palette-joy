@@ -32,6 +32,7 @@ export function EntryTimeline({ lead }: { lead: LeadWithComputed }) {
             {i < 3 && s.state !== "pending" && <span>{t("entry.auto")}</span>}
           </span>
           <span className={cn("mt-1 block text-xs", s.state === "current" ? "font-semibold text-foreground" : "font-medium")}>{t(`entry.phases.${s.phase}`)}</span>
+          {s.phase === "summary_sent" && <span className="block text-[11px] leading-snug text-muted-foreground">{t("entry.phase_hints.summary_sent")}</span>}
           <span className="mt-0.5 block text-[11px] tabular-nums text-muted-foreground">{s.at ? formatDate(s.at, i18n.language) : t("entry.phase_pending")}</span>
         </li>
       ))}
@@ -39,17 +40,21 @@ export function EntryTimeline({ lead }: { lead: LeadWithComputed }) {
   );
 }
 
-/** Read-only preview of the summary email the person got (subject, headline, score, strengths, priorities, booking). */
+/**
+ * Read-only preview of the summary email the person got when booking (subject, headline, score, strengths,
+ * priorities, and the date, time and Meet link of the meeting). The assessment itself sends no email.
+ */
 export function SummaryEmail({ lead }: { lead: LeadWithComputed }) {
   const { t, i18n } = useTranslation();
   const first = lead.contact.name.split(" ")[0] ?? lead.contact.name;
   const result = lead.result;
+  const m = lead.meeting;
   // Added by hand without an assessment: there is no summary email to show.
   if (!result) return null;
   return (
     <section>
       <h3 className={sectionTitle}>{t("entry.email.title")}</h3>
-      {!lead.summary_sent_at ? (
+      {!lead.summary_sent_at || !m ? (
         <p className="mt-2 rounded-md border border-dashed border-border px-3 py-3 text-sm text-muted-foreground">{t("entry.email.not_sent")}</p>
       ) : (
         <div className="mt-2 rounded-md border border-border">
@@ -57,7 +62,7 @@ export function SummaryEmail({ lead }: { lead: LeadWithComputed }) {
             <dt className="text-muted-foreground">{t("entry.email.to")}</dt>
             <dd className="truncate">{lead.contact.email}</dd>
             <dt className="text-muted-foreground">{t("entry.email.subject_label")}</dt>
-            <dd className="font-medium">{t("entry.email.subject", { name: first })}</dd>
+            <dd className="font-medium">{t("entry.email.subject", { name: first, date: formatDate(m.starts_at, i18n.language) })}</dd>
             <dt className="text-muted-foreground">{t("entry.email.sent_label")}</dt>
             <dd className="tabular-nums">{formatDateTime(lead.summary_sent_at, i18n.language)}</dd>
           </dl>
@@ -73,8 +78,14 @@ export function SummaryEmail({ lead }: { lead: LeadWithComputed }) {
               <p className="text-xs font-medium text-muted-foreground">{t("entry.email.priorities")}</p>
               <ul className="mt-1 list-disc space-y-0.5 pl-4">{emailItems(result.priorities).map((s) => <li key={s}>{s}</li>)}</ul>
             </div>
-            {/* Shown as in the email; inert here (read only). */}
-            <span aria-disabled className="inline-flex h-8 items-center rounded-[4px] bg-primary px-3 font-display text-xs font-semibold text-primary-foreground">{t("entry.email.cta")}</span>
+            <div className="rounded-[4px] border border-border px-3 py-2">
+              <p className="text-xs font-medium text-muted-foreground">{t("entry.email.meeting_title")}</p>
+              <p className="mt-0.5 font-medium tabular-nums">{t("entry.email.meeting_when", { date: formatDateTime(m.starts_at, i18n.language), minutes: m.duration_minutes })}</p>
+              <p className="mt-0.5 text-xs">
+                <span className="text-muted-foreground">{t("entry.email.meeting_link")}: </span>
+                <span className="break-all">{m.meet_url}</span>
+              </p>
+            </div>
           </div>
           <p className="border-t border-border px-4 py-2 text-[11px] text-muted-foreground">{t("entry.email.read_only")}</p>
         </div>

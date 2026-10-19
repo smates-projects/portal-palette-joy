@@ -199,7 +199,8 @@ export function createEntry(d: Deps) {
         id: newId(),
         office_id: officeId,
         source: "landing",
-        summary_sent_at: now,
+        // The assessment sends no email: the summary goes out when the person books (simulateBooking).
+        summary_sent_at: null,
         meeting: null,
         stage: "evaluated",
         discarded_from: null,
@@ -230,7 +231,6 @@ export function createEntry(d: Deps) {
       };
       db.leads.push(l);
       autoEvent({ lead_id: l.id, kind: "submitted", created_at: now, from: null, to: "evaluated", body: null });
-      autoEvent({ lead_id: l.id, kind: "summary_sent", created_at: now, from: null, to: null, body: null });
       d.notifyConsultant(l, "lead_assessment", { place: `${place.city}, ${place.state}`, actor_name: owner });
       return delay(d.withBooking(l));
     },
@@ -250,7 +250,10 @@ export function createEntry(d: Deps) {
       // Automatic: SM did not contact the owner, so last_contact_at stays as it was.
       l.stage = "meeting";
       l.stage_entered_at = now;
+      // The booking sends the summary email with the date, time and Meet link.
+      l.summary_sent_at = now;
       autoEvent({ lead_id: l.id, kind: "meeting_booked", created_at: now, from: "evaluated", to: "meeting", body: null });
+      autoEvent({ lead_id: l.id, kind: "summary_sent", created_at: now, from: null, to: null, body: null });
       d.notifyConsultant(l, "meeting_booked", { meeting_at: l.meeting.starts_at, actor_name: l.contact.name });
       return delay(d.withBooking(l));
     },

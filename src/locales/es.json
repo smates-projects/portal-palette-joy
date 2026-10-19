@@ -1247,7 +1247,7 @@
       "program_started": "{{actor}} confirmó el inicio del programa con día 1 el {{date}}.",
       "created_manual": "{{actor}} agregó el negocio a mano",
       "assessment_sent": "{{actor}} envió el assessment",
-      "summary_sent": "Automático: se envió el resumen a {{owner}}",
+      "summary_sent": "Automático: se envió el resumen a {{owner}} con el link de la reunión",
       "meeting_booked": "Automático: reunión agendada por {{owner}}",
       "meeting_note": "{{actor}} cargó la nota de la reunión"
     },
@@ -1306,13 +1306,17 @@
     "phases_title": "Cómo entró",
     "phases": {
       "assessment": "Assessment completado",
-      "summary_sent": "Resumen enviado",
       "meeting_scheduled": "Reunión agendada",
+      "summary_sent": "Resumen enviado",
       "meeting_held": "Reunión hecha"
+    },
+    "phase_hints": {
+      "summary_sent": "con fecha, hora y link de la reunión"
     },
     "phase_pending": "Pendiente",
     "auto": "Automático",
     "new": "Nuevo",
+    "awaiting_booking": "Esperando reserva",
     "unbooked_one": "Sin reservar hace {{count}} día",
     "unbooked_other": "Sin reservar hace {{count}} días",
     "meeting_on": "Reunión el {{date}}",
@@ -1320,15 +1324,17 @@
       "title": "Mail enviado",
       "to": "Para",
       "subject_label": "Asunto",
-      "subject": "{{name}}, este es el resultado de tu assessment",
+      "subject": "{{name}}, tu resultado y tu reunión del {{date}}",
       "sent_label": "Enviado",
       "greeting": "Hola, {{name}}:",
       "score": "Tu puntaje: {{score}}",
       "strengths": "Lo que ya tienes a favor",
       "priorities": "Dónde podemos ayudarte primero",
-      "cta": "Agendar mi reunión",
+      "meeting_title": "Tu reunión",
+      "meeting_when": "{{date}} · {{minutes}} min",
+      "meeting_link": "Link de Google Meet",
       "read_only": "Vista previa de lo que recibió. Solo lectura.",
-      "not_sent": "El resumen todavía no salió."
+      "not_sent": "Todavía no hay mail. El resumen sale cuando la persona agenda su reunión."
     },
     "meeting": {
       "title": "Reunión",
@@ -1356,7 +1362,7 @@
       "booking": "Simular reserva",
       "booking_for": "Para {{name}}",
       "open": "Abrir lead",
-      "t_assessment": "Llegó el assessment de {{name}} ({{place}}). Está en Evaluado con el resumen enviado.",
+      "t_assessment": "Llegó el assessment de {{name}} ({{place}}). Está en Evaluado, esperando que reserve su reunión.",
       "t_other_office": "Llegó el assessment de {{name}} ({{place}}) y fue a {{office}} por su zona.",
       "t_booking": "{{owner}} agendó reunión para el {{date}}.",
       "no_evaluated": "No hay leads en Evaluado sin reunión."

@@ -9,8 +9,8 @@ import { cn } from "@/lib/utils";
 import { AssessmentBadge, BandBadge, STAGE_BAR, StageBadge } from "./LeadBadges";
 
 /**
- * Entry sub-state inside Evaluado and Reunión, the same words as the line of phases of the detail: "Nuevo",
- * "Resumen enviado" (amber "Sin reservar hace N días" after 2 days), "Reunión el …", "Reunión hecha".
+ * Entry sub-state inside Evaluado and Reunión: "Nuevo", "Esperando reserva" (amber "Sin reservar hace N días"
+ * 2 days after the assessment), "Reunión el …", "Reunión hecha".
  */
 export function EntryState({ lead }: { lead: LeadWithComputed }) {
   const { t, i18n } = useTranslation();
@@ -25,8 +25,10 @@ export function EntryState({ lead }: { lead: LeadWithComputed }) {
       )}
       {unbooked !== null ? (
         <span className="text-status-warning-fg">{t("entry.unbooked", { count: unbooked })}</span>
-      ) : phase === "meeting_scheduled" && lead.meeting ? (
+      ) : (phase === "meeting_scheduled" || phase === "summary_sent") && lead.meeting ? (
         <span className="text-muted-foreground">{t("entry.meeting_on", { date: formatDateTime(lead.meeting.starts_at, i18n.language) })}</span>
+      ) : phase === "assessment" ? (
+        <span className="text-muted-foreground">{t("entry.awaiting_booking")}</span>
       ) : (
         <span className="text-muted-foreground">{t(`entry.phases.${phase}`)}</span>
       )}

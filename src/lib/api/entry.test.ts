@@ -1,15 +1,24 @@
 import { describe, expect, it } from "vitest";
 import { createMockApi } from "./mock";
 import * as seed from "./mock/seed";
+import { entryPhase } from "@/lib/leads/entry";
 
 describe("automatic entry (mock)", () => {
-  it("seed leads carry the summary and, past Reunión, the meeting the owner booked", async () => {
+  it("seed leads: the summary only exists with a booked meeting, sent on or after the booking", async () => {
     const api = createMockApi();
     await api.session.setViewAs(seed.U_NICOLAS);
     const leads = await api.leads.list();
-    expect(leads.every((l) => l.source === "landing" && !!l.summary_sent_at)).toBe(true);
+    expect(leads.every((l) => l.source === "landing")).toBe(true);
+    for (const l of leads) {
+      if (l.summary_sent_at) expect(l.meeting && l.summary_sent_at >= l.meeting.booked_at).toBe(true);
+      else expect(l.meeting).toBeNull();
+    }
+    // Evaluated without a booking: no email yet.
+    for (const name of ["Torres Concrete", "Andes Painting", "Pinturas Mamá Lucy", "Limpieza Total Orlando"])
+      expect(leads.find((l) => l.business.name === name)).toMatchObject({ stage: "evaluated", meeting: null, summary_sent_at: null });
     const rivera = leads.find((l) => l.business.name === "Rivera Roofing & Remodel")!;
     expect(rivera).toMatchObject({ stage: "meeting", meeting: { starts_at: "2026-10-15T14:00:00Z", duration_minutes: 30, notes_at: null } });
+    expect(rivera.summary_sent_at).not.toBeNull();
     expect((await api.leads.listMeetings()).map((m) => m.business_name)).toEqual(["Rivera Roofing & Remodel"]);
     const events = (await api.leads.get(rivera.id))!.events;
     expect(events.find((e) => e.kind === "meeting_booked")).toMatchObject({ actor_user_id: null, to: "meeting" });
@@ -17,12 +26,13 @@ describe("automatic entry (mock)", () => {
     await expect(api.leads.addMeetingNote(rivera.id, "Hablamos")).rejects.toThrow("invalid_transition");
   });
 
-  it("Simular assessment: routed by zone to SM Miami, in Evaluado with the summary sent, and the consultant hears about it", async () => {
+  it("Simular assessment: routed by zone to SM Miami, in Evaluado with no email sent, and the consultant hears about it", async () => {
     const api = createMockApi();
     await api.session.setViewAs(seed.U_NICOLAS);
     const l = await api.leads.simulateAssessment();
-    expect(l).toMatchObject({ stage: "evaluated", office_id: seed.ORG_SM, consultant_user_id: seed.U_NICOLAS, meeting: null, last_contact_at: null });
-    expect(l.summary_sent_at).not.toBeNull();
+    expect(l).toMatchObject({ stage: "evaluated", office_id: seed.ORG_SM, consultant_user_id: seed.U_NICOLAS, meeting: null, last_contact_at: null, summary_sent_at: null });
+    expect(entryPhase(l)).toBe("assessment");
+    expect((await api.leads.get(l.id))!.events.some((e) => e.kind === "summary_sent")).toBe(false);
     expect((await api.leads.list()).some((x) => x.id === l.id)).toBe(true);
     const n = (await api.notifications.list()).find((x) => x.kind === "lead_assessment");
     expect(n).toMatchObject({ lead_id: l.id, business_name: l.business.name, lead_place: `${l.contact.city}, ${l.contact.state}` });
@@ -41,6 +51,19 @@ describe("automatic entry (mock)", () => {
     expect(day > "2026-10-14" && day <= "2026-10-21").toBe(true);
     expect((await api.notifications.list()).some((x) => x.kind === "meeting_booked" && x.lead_id === l.id && !!x.meeting_at)).toBe(true);
     await expect(api.leads.simulateBooking(l.id)).rejects.toThrow("invalid_transition");
+  });
+
+  it("Simular reserva sends the summary with the meeting: summary_sent_at is set and the phase is summary_sent", async () => {
+    const api = createMockApi();
+    await api.session.setViewAs(seed.U_NICOLAS);
+    const l = await api.leads.simulateAssessment();
+    const booked = await api.leads.simulateBooking(l.id);
+    expect(booked.summary_sent_at).not.toBeNull();
+    expect(booked.summary_sent_at! >= booked.meeting!.booked_at).toBe(true);
+    expect(entryPhase(booked)).toBe("summary_sent");
+    const kinds = (await api.leads.get(l.id))!.events.map((e) => e.kind);
+    expect(kinds).toContain("meeting_booked");
+    expect(kinds).toContain("summary_sent");
   });
 
   it("zones: SM reads them, only SM Global changes them", async () => {

@@ -262,9 +262,9 @@ export function buildLeads(leadSpecs: LeadSpec[], opts: LeadSeedOptions): { lead
     const stage: LeadStage = last[0] === "submitted" ? "evaluated" : last[0];
     const { discard_reason, bishop_user_id, bishop_accepted_at, ...rest } = s.lead;
     const meeting = seededMeeting(s, i + 1);
+    // The assessment sends no email; the booking sends the summary a few minutes later, with the meeting.
+    const summarySentAt = meeting ? at(meeting.booked_at.slice(0, 10), "13:35:00") : null;
     leadEvents.push({ id: uuid(opts.event_prefix, ++ev), lead_id: id, kind: "submitted", actor_user_id: null, created_at: at(submitted, "13:00:00"), from: null, to: "evaluated", body: null });
-    // The landing sends the summary email a few minutes after the assessment (automatic).
-    leadEvents.push({ id: uuid(opts.event_prefix, ++ev), lead_id: id, kind: "summary_sent", actor_user_id: null, created_at: at(submitted, "13:05:00"), from: null, to: null, body: null });
     let prev: LeadStage = "evaluated";
     for (const [to, date] of s.path.slice(1)) {
       const st = to as LeadStage;
@@ -275,6 +275,8 @@ export function buildLeads(leadSpecs: LeadSpec[], opts: LeadSeedOptions): { lead
         kind: st === "discarded" ? "discarded" : st === "in_program" ? "contract_signed" : booked ? "meeting_booked" : "stage_changed",
         body: st === "discarded" ? discard_reason ?? null : null, signed_on: st === "in_program" ? date : null,
       });
+      if (booked && summarySentAt)
+        leadEvents.push({ id: uuid(opts.event_prefix, ++ev), lead_id: id, kind: "summary_sent", actor_user_id: null, created_at: summarySentAt, from: null, to: null, body: null });
       prev = st;
     }
     for (const [date, body] of s.notes ?? [])
@@ -285,7 +287,7 @@ export function buildLeads(leadSpecs: LeadSpec[], opts: LeadSeedOptions): { lead
       id,
       office_id: opts.office_id,
       source: "landing",
-      summary_sent_at: at(submitted, "13:05:00"),
+      summary_sent_at: summarySentAt,
       meeting,
       stage,
       discarded_from: stage === "discarded" && before && before[0] !== "submitted" ? (before[0] as Lead["discarded_from"]) : stage === "discarded" ? "evaluated" : null,

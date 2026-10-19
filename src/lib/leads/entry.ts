@@ -7,13 +7,15 @@ const daysSince = (iso: string, today: string) =>
   Math.round((Date.parse(`${today}T12:00:00Z`) - Date.parse(`${iso.slice(0, 10)}T12:00:00Z`)) / 86_400_000);
 
 /**
- * 1 Assessment completado · 2 Resumen enviado (both in Evaluado) · 3 Reunión agendada · 4 Reunión hecha (both in
- * Reunión). 1 to 3 happen by themselves; after 4 the consultant writes a note and accepts (NDA y MOU) or discards.
+ * 1 Assessment completado (Evaluado) · 2 Reunión agendada · 3 Resumen enviado · 4 Reunión hecha (Reunión).
+ * The assessment sends no email: the person sees the result on screen and books with the consultant's calendar.
+ * Only the booking sends the summary email, with the date, time and Meet link, so summary_sent_at never exists
+ * without a meeting. 1 to 3 happen by themselves; after 4 the consultant writes a note and accepts or discards.
  */
-export const ENTRY_PHASES = ["assessment", "summary_sent", "meeting_scheduled", "meeting_held"] as const;
+export const ENTRY_PHASES = ["assessment", "meeting_scheduled", "summary_sent", "meeting_held"] as const;
 export type EntryPhase = (typeof ENTRY_PHASES)[number];
 
-/** Evaluated with the summary sent and no booking for this many days: "Sin reservar hace N días" (SM calls). */
+/** Evaluated with no booking this many days after the assessment: "Sin reservar hace N días" (SM calls). */
 export const UNBOOKED_DAYS = 2;
 
 /** The meeting is over once its start plus its duration has passed. */
@@ -25,12 +27,17 @@ type EntryLead = Pick<Lead, "stage" | "discarded_from" | "summary_sent_at" | "me
 /** Stage the entry phase is read from: a discarded lead keeps the phase it had when SM discarded it. */
 const baseStage = (l: Pick<Lead, "stage" | "discarded_from">) => (l.stage === "discarded" ? l.discarded_from ?? "evaluated" : l.stage);
 
-/** Last entry phase reached, from the stage plus summary_sent_at and meeting. Past Reunión every phase is done. */
+/**
+ * Last entry phase reached, from the stage plus meeting and summary_sent_at. Past Reunión every phase is done.
+ * Booked and not yet emailed ("meeting_scheduled" with a meeting) lasts minutes; moved to Reunión by hand
+ * (no meeting) also stays there.
+ */
 export function entryPhase(lead: EntryLead, now: string = nowIso()): EntryPhase {
   const stage = baseStage(lead);
-  if (stage === "evaluated") return lead.summary_sent_at ? "summary_sent" : "assessment";
-  if (stage === "meeting") return lead.meeting && meetingHeld(lead.meeting, now) ? "meeting_held" : "meeting_scheduled";
-  return "meeting_held";
+  if (stage !== "evaluated" && stage !== "meeting") return "meeting_held";
+  if (!lead.meeting) return stage === "meeting" ? "meeting_scheduled" : "assessment";
+  if (stage === "meeting" && meetingHeld(lead.meeting, now)) return "meeting_held";
+  return lead.summary_sent_at ? "summary_sent" : "meeting_scheduled";
 }
 
 export type EntryStepState = "done" | "current" | "pending";
@@ -51,9 +58,9 @@ export function entryTimeline(lead: EntryLead & Pick<Lead, "submitted_at" | "sta
   const m = lead.meeting;
   const dates: Record<EntryPhase, string | null> = {
     assessment: lead.submitted_at,
-    summary_sent: lead.summary_sent_at,
     // Moved to Reunión by hand (no booking): the day it entered the stage.
     meeting_scheduled: m?.booked_at ?? (baseStage(lead) === "meeting" ? lead.stage_entered_at : null),
+    summary_sent: lead.summary_sent_at,
     meeting_held: m && meetingHeld(m, now) ? m.starts_at : null,
   };
   return ENTRY_PHASES.map((phase, i) => ({
@@ -63,10 +70,11 @@ export function entryTimeline(lead: EntryLead & Pick<Lead, "submitted_at" | "sta
   }));
 }
 
-/** Days an evaluated lead has had its summary without booking (null when it does not apply or is under 2 days). */
-export function unbookedDays(lead: Pick<Lead, "stage" | "summary_sent_at" | "meeting">, today: string = TODAY): number | null {
-  if (lead.stage !== "evaluated" || lead.meeting || !lead.summary_sent_at) return null;
-  const d = daysSince(lead.summary_sent_at, today);
+/** Days since the assessment of an evaluated lead without booking (null when it does not apply or is under 2 days). */
+export function unbookedDays(lead: Pick<Lead, "stage" | "submitted_at" | "meeting"> & Partial<Pick<Lead, "source">>, today: string = TODAY): number | null {
+  // Added by hand: there was no on-screen result with a booking button, so there is nothing to wait for.
+  if (lead.stage !== "evaluated" || lead.meeting || lead.source === "manual") return null;
+  const d = daysSince(lead.submitted_at, today);
   return d >= UNBOOKED_DAYS ? d : null;
 }
 

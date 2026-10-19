@@ -506,10 +506,11 @@ export interface ManualLeadInput {
 
 /**
  * A lead enters by itself. In production the assessment of strategicmates.com (outside this app) posts the lead
- * to a webhook of the Laravel API with its result and sends the summary email; the meeting arrives later from the
- * consultant's booking calendar (Google Calendar), also by webhook. The office comes from the zone rules
- * (RoutingRepository). The entry phase shown on screen is derived from the stage plus summary_sent_at and
- * meeting (see lib/leads/entry.ts): there is no separate "phase" field.
+ * to a webhook of the Laravel API with its result; the person sees the result on screen (no email) with the
+ * "Agendar mi reunión" button. The meeting arrives later from the consultant's booking calendar (Google Calendar),
+ * also by webhook, and only then the summary email goes out with the meeting. The office comes from the zone
+ * rules (RoutingRepository). The entry phase shown on screen is derived from the stage plus meeting and
+ * summary_sent_at (see lib/leads/entry.ts): there is no separate "phase" field.
  */
 export interface Lead {
   id: Uuid;
@@ -517,9 +518,12 @@ export interface Lead {
   office_id: Uuid;
   /** Where it came from: the public assessment of the landing, or added by hand by SM. */
   source: LeadSource;
-  /** When the summary email (headline, score, strengths, priorities, "Agendar mi reunión") went out. */
+  /**
+   * When the summary email (headline, score, strengths, priorities, plus the date, time and Meet link) went out.
+   * It is sent on booking, so it is null whenever meeting is null.
+   */
   summary_sent_at: IsoDateTime | null;
-  /** Meeting the owner booked from that email; null while not booked (or when SM moved it by hand). */
+  /** Meeting the owner booked from the on-screen result; null while not booked (or when SM moved it by hand). */
   meeting: LeadMeeting | null;
   stage: LeadStage;
   /** Stage the lead was in when discarded (null otherwise). */

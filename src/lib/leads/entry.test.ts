@@ -8,32 +8,43 @@ const meeting = (starts_at: string, notes_at: string | null = null): LeadMeeting
 });
 type EntryLead = Pick<Lead, "stage" | "discarded_from" | "summary_sent_at" | "meeting" | "submitted_at" | "stage_entered_at">;
 const lead = (patch: Partial<EntryLead>): EntryLead => ({
-  stage: "evaluated", discarded_from: null, summary_sent_at: "2026-10-12T13:05:00Z", meeting: null,
+  stage: "evaluated", discarded_from: null, summary_sent_at: null, meeting: null,
   submitted_at: "2026-10-12T13:00:00Z", stage_entered_at: "2026-10-12T13:00:00Z", ...patch,
 });
+/** Booked on Oct 13: the summary email goes out with the booking. */
+const booked = (starts_at: string, patch: Partial<EntryLead> = {}) =>
+  lead({ stage: "meeting", meeting: meeting(starts_at), summary_sent_at: "2026-10-13T15:05:00Z", ...patch });
 const NOW = "2026-10-14T16:00:00Z";
 
 describe("entry phase inside the stage", () => {
-  it("Evaluado holds phases 1 and 2: assessment completed, then summary sent", () => {
-    expect(entryPhase(lead({ summary_sent_at: null }), NOW)).toBe("assessment");
-    expect(entryPhase(lead({}), NOW)).toBe("summary_sent");
+  it("Evaluado without a meeting is phase 1 (the assessment sends no email)", () => {
+    expect(entryPhase(lead({}), NOW)).toBe("assessment");
   });
-  it("Reunión holds phases 3 and 4: booked until the meeting is over, then held", () => {
-    expect(entryPhase(lead({ stage: "meeting", meeting: meeting("2026-10-15T14:00:00Z") }), NOW)).toBe("meeting_scheduled");
+  it("an evaluated lead without a meeting stays in assessment however many days pass", () => {
+    expect(entryPhase(lead({ submitted_at: "2026-10-01T13:00:00Z" }), NOW)).toBe("assessment");
+    expect(unbookedDays(lead({ submitted_at: "2026-10-01T13:00:00Z" }), "2026-10-14")).toBe(13);
+  });
+  it("Reunión: booked, then summary sent with the meeting, then held when it is over", () => {
+    // Booked and the email not out yet (a window of minutes).
+    expect(entryPhase(booked("2026-10-15T14:00:00Z", { summary_sent_at: null }), NOW)).toBe("meeting_scheduled");
+    expect(entryPhase(booked("2026-10-15T14:00:00Z"), NOW)).toBe("summary_sent");
     // Over at start + 30 minutes.
-    expect(entryPhase(lead({ stage: "meeting", meeting: meeting("2026-10-14T15:30:00Z") }), NOW)).toBe("meeting_held");
-    expect(entryPhase(lead({ stage: "meeting", meeting: meeting("2026-10-14T15:45:00Z") }), NOW)).toBe("meeting_scheduled");
-    // Moved to Reunión by hand: no booking, still "Reunión agendada".
+    expect(entryPhase(booked("2026-10-14T15:30:00Z"), NOW)).toBe("meeting_held");
+    expect(entryPhase(booked("2026-10-14T15:45:00Z"), NOW)).toBe("summary_sent");
+    // Moved to Reunión by hand: no booking and no email, still "Reunión agendada".
     expect(entryPhase(lead({ stage: "meeting" }), NOW)).toBe("meeting_scheduled");
   });
   it("past Reunión every phase is done; a discarded lead keeps the phase it had", () => {
     expect(entryPhase(lead({ stage: "documents" }), NOW)).toBe("meeting_held");
-    expect(entryPhase(lead({ stage: "discarded", discarded_from: "evaluated" }), NOW)).toBe("summary_sent");
+    expect(entryPhase(lead({ stage: "discarded", discarded_from: "evaluated" }), NOW)).toBe("assessment");
+    expect(entryPhase(booked("2026-10-15T14:00:00Z", { stage: "discarded", discarded_from: "meeting" }), NOW)).toBe("summary_sent");
   });
-  it("the line of phases marks done, current and pending with their dates", () => {
-    const steps = entryTimeline(lead({ stage: "meeting", meeting: meeting("2026-10-15T14:00:00Z") }), NOW);
+  it("the line of phases marks done, current and pending with their dates, the summary after the booking", () => {
+    const steps = entryTimeline(booked("2026-10-15T14:00:00Z"), NOW);
+    expect(steps.map((s) => s.phase)).toEqual(["assessment", "meeting_scheduled", "summary_sent", "meeting_held"]);
     expect(steps.map((s) => s.state)).toEqual(["done", "done", "current", "pending"]);
-    expect(steps.map((s) => s.at)).toEqual(["2026-10-12T13:00:00Z", "2026-10-12T13:05:00Z", "2026-10-13T15:00:00Z", null]);
+    expect(steps.map((s) => s.at)).toEqual(["2026-10-12T13:00:00Z", "2026-10-13T15:00:00Z", "2026-10-13T15:05:00Z", null]);
+    expect(entryTimeline(lead({}), NOW).map((s) => s.state)).toEqual(["current", "pending", "pending", "pending"]);
     expect(entryTimeline(lead({ stage: "accepted", meeting: meeting("2026-10-01T14:00:00Z", "2026-10-01T15:00:00Z") }), NOW).every((s) => s.state === "done")).toBe(true);
   });
   it("one primary action at a time in Reunión: join, then the note, then NDA and MOU", () => {
@@ -49,10 +60,14 @@ describe("entry phase inside the stage", () => {
 });
 
 describe("Evaluado without booking", () => {
-  it("shows 'Sin reservar hace N días' from the second day after the summary", () => {
-    expect(unbookedDays(lead({ summary_sent_at: "2026-10-13T13:05:00Z" }), "2026-10-14")).toBeNull();
-    expect(unbookedDays(lead({ summary_sent_at: "2026-10-12T13:05:00Z" }), "2026-10-14")).toBe(2);
+  it("shows 'Sin reservar hace N días' from the second day after the assessment (submitted_at)", () => {
+    expect(unbookedDays(lead({ submitted_at: "2026-10-13T13:00:00Z" }), "2026-10-14")).toBeNull();
+    expect(unbookedDays(lead({ submitted_at: "2026-10-12T13:00:00Z" }), "2026-10-14")).toBe(2);
+    // No summary_sent_at is needed: the count runs from the assessment.
+    expect(unbookedDays(lead({ submitted_at: "2026-10-10T13:00:00Z", summary_sent_at: null }), "2026-10-14")).toBe(4);
     expect(unbookedDays(lead({ stage: "meeting" }), "2026-10-20")).toBeNull();
+    expect(unbookedDays({ ...lead({}), meeting: meeting("2026-10-15T14:00:00Z") }, "2026-10-20")).toBeNull();
+    expect(unbookedDays({ ...lead({}), source: "manual" }, "2026-10-20")).toBeNull();
   });
   it("'Nuevo' only for a lead that arrived today and nobody touched", () => {
     const base = { stage: "evaluated" as const, submitted_at: "2026-10-14T09:00:00Z", last_contact_at: null };

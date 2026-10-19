@@ -220,7 +220,8 @@ export interface LeadsRepository {
   listMeetings(): Promise<LeadMeetingItem[]>;
   /**
    * Demo only (in production these come by webhook). SM team. A new assessment with credible data, routed by zone,
-   * in Evaluado with the summary sent; and a booking on an evaluated lead, which moves it to Reunión by itself.
+   * in Evaluado with no email sent; and a booking on an evaluated lead, which moves it to Reunión by itself and
+   * sends the summary email with the meeting.
    */
   simulateAssessment(): Promise<LeadWithComputed>;
   simulateBooking(id: Uuid): Promise<LeadWithComputed>;

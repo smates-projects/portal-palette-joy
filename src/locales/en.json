@@ -1247,7 +1247,7 @@
       "program_started": "{{actor}} confirmed the program start with day 1 on {{date}}.",
       "created_manual": "{{actor}} added the business by hand",
       "assessment_sent": "{{actor}} sent the assessment",
-      "summary_sent": "Automatic: summary sent to {{owner}}",
+      "summary_sent": "Automatic: summary sent to {{owner}} with the meeting link",
       "meeting_booked": "Automatic: meeting booked by {{owner}}",
       "meeting_note": "{{actor}} added the meeting note"
     },
@@ -1306,13 +1306,17 @@
     "phases_title": "How it came in",
     "phases": {
       "assessment": "Assessment completed",
-      "summary_sent": "Summary sent",
       "meeting_scheduled": "Meeting booked",
+      "summary_sent": "Summary sent",
       "meeting_held": "Meeting held"
+    },
+    "phase_hints": {
+      "summary_sent": "with the date, time and link of the meeting"
     },
     "phase_pending": "Pending",
     "auto": "Automatic",
     "new": "New",
+    "awaiting_booking": "Waiting for booking",
     "unbooked_one": "Not booked for {{count}} day",
     "unbooked_other": "Not booked for {{count}} days",
     "meeting_on": "Meeting on {{date}}",
@@ -1320,15 +1324,17 @@
       "title": "Email sent",
       "to": "To",
       "subject_label": "Subject",
-      "subject": "{{name}}, here is your assessment result",
+      "subject": "{{name}}, your result and your meeting on {{date}}",
       "sent_label": "Sent",
       "greeting": "Hi {{name}},",
       "score": "Your score: {{score}}",
       "strengths": "What you already have going for you",
       "priorities": "Where we can help you first",
-      "cta": "Book my meeting",
+      "meeting_title": "Your meeting",
+      "meeting_when": "{{date}} · {{minutes}} min",
+      "meeting_link": "Google Meet link",
       "read_only": "Preview of what they got. Read only.",
-      "not_sent": "The summary has not gone out yet."
+      "not_sent": "No email yet. The summary goes out when the person books their meeting."
     },
     "meeting": {
       "title": "Meeting",
@@ -1356,7 +1362,7 @@
       "booking": "Simulate booking",
       "booking_for": "For {{name}}",
       "open": "Open lead",
-      "t_assessment": "The assessment of {{name}} ({{place}}) arrived. It is in Evaluated with the summary sent.",
+      "t_assessment": "The assessment of {{name}} ({{place}}) arrived. It is in Evaluated, waiting for them to book their meeting.",
       "t_other_office": "The assessment of {{name}} ({{place}}) arrived and went to {{office}} by its zone.",
       "t_booking": "{{owner}} booked a meeting for {{date}}.",
       "no_evaluated": "There are no evaluated leads without a meeting."
