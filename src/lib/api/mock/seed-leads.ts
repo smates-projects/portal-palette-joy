@@ -130,7 +130,8 @@ const specs: LeadSpec[] = [
     },
   },
   {
-    path: [["submitted", "2026-09-10"], ["meeting", "2026-09-12"], ["documents", "2026-09-15"]],
+    // Owner still entering: NDA signed by both, MOU signed by SM and waiting for her (see intake seed).
+    path: [["submitted", "2026-09-29"], ["meeting", "2026-10-01"], ["documents", "2026-10-06"]],
     contacted: true,
     lead: {
       consultant_user_id: U_CAMILA, business_id: null,
@@ -224,6 +225,20 @@ const specs: LeadSpec[] = [
       result: { readiness: "ready", band: "high", score: 81, eligible_program: true, eligibility_gaps: [], blocks: blocks("smsmsmm"),
         strengths: ["Inspección de techo medida y escrita", "Contratos con administradoras de edificios todas las semanas"], priorities: ["Manual de obra", "Costos por trabajo"] },
       know_how_example: "Cada techo lo inspeccionamos con la misma planilla de fotos y medidas. Un techista nuevo aprende el método en dos semanas.",
+    },
+  },
+  {
+    // Everything uploaded on Sep 27 and SM has not finished the review: day 17 of 15 on Oct 14 (overdue).
+    // Appended last so the ids of the leads above stay the same.
+    path: [["submitted", "2026-09-10"], ["meeting", "2026-09-12"], ["documents", "2026-09-15"]],
+    contacted: true,
+    lead: {
+      consultant_user_id: U_CAMILA, business_id: null,
+      contact: { name: "Ernesto Navarro", email: "ernesto@navarrocercas.com", phone: "+1 786 555 0138", city: "Homestead", state: "FL", hispanic_owner: "yes" },
+      business: { name: "Navarro Cercas y Portones", industry: "construction", activity: "Cercas, portones y barandas de aluminio", revenue_range: "500k_750k", margin_range: "margin_21_40", team_range: "team_11_20", years_range: "years_6_10", has_active_clients: true },
+      result: { readiness: "ready", band: "mid", score: 64, eligible_program: true, eligibility_gaps: [], blocks: blocks("mmmwmww"),
+        strengths: ["Instalación con medidas y plantillas propias", "Constructoras que lo contratan en cada obra nueva"], priorities: ["Procesos escritos", "Costos por trabajo"] },
+      know_how_example: null,
     },
   },
 ];

@@ -42,12 +42,12 @@ describe("pipeline counters", () => {
   it("counts sample leads on 2026-10-14", async () => {
     await api.session.setViewAs(seed.U_NICOLAS);
     const leads = await api.leads.list();
-    expect(leads).toHaveLength(14); // Part 3 adds Techos Delgado (accepted, partial funds)
+    expect(leads).toHaveLength(15); // Part 3 adds Techos Delgado (accepted, partial funds); then Navarro Cercas y Portones
     const c = buildPipelineCounters(leads, "2026-10-14");
     expect(c.week).toBe(2); // Oct 12 and Oct 13
     expect(c.uncontacted).toBe(2); // evaluated, never contacted, more than 2 days
-    expect(c.in_review).toBe(2); // Castillo Instalaciones and Morales Pisos y Cerámica
-    expect(c.review_overdue).toBe(1); // Morales Pisos y Cerámica, day 17 of 15
+    expect(c.in_review).toBe(3); // Castillo Instalaciones, Morales Pisos y Cerámica and Navarro Cercas y Portones
+    expect(c.review_overdue).toBe(1); // Navarro Cercas y Portones, day 17 of 15
     expect(c.accepted_no_investor).toBe(1); // Brisa Clean (Sol Remodeling has a Bishop)
     expect(c.signed_month).toBe(1); // Enyermy, Oct 9
   });

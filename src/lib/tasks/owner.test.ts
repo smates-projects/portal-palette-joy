@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { areaHealth, buildOwnerInbox, gateState } from "./owner";
 import type { Meeting, OwnerRequest, TaskVersion, TaskWithComputed } from "@/lib/api/types";
+import { createMockApi } from "@/lib/api/mock";
+import * as seed from "@/lib/api/mock/seed";
 
 const task = (id: string, status: string, due_date: string, is_overdue = false) =>
   ({ id, code: id, status, due_date, is_overdue }) as TaskWithComputed;
@@ -14,6 +16,14 @@ describe("owner inbox", () => {
       { id: "m2", task_id: "B", status: "proposed", proposed_by_user_id: "owner", starts_at: "2026-10-17T15:00:00Z" } as Meeting,
     ];
     expect(buildOwnerInbox(tasks, requests, meetings, "owner").map((i) => i.kind)).toEqual(["request", "meeting", "approve"]);
+  });
+  it("sample data: Carla (Vossler) sees Mariana's CRM demo to confirm among the first 5 items", async () => {
+    const api = createMockApi();
+    await api.session.setViewAs(seed.U_CARLA);
+    const [tasks, requests, meetings] = await Promise.all([api.tasks.list(), api.tasks.listOpenOwnerRequests(), api.tasks.listMeetings()]);
+    const inbox = buildOwnerInbox(tasks, requests, meetings, seed.U_CARLA).slice(0, 5);
+    const demo = inbox.find((i) => i.kind === "meeting" && i.meeting.proposed_by_user_id === seed.U_MARIANA);
+    expect(demo?.kind === "meeting" && demo.meeting.topic).toBe("Demo del CRM con tus etapas de venta");
   });
 });
 

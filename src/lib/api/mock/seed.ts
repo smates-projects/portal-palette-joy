@@ -477,7 +477,8 @@ ownerRequests.push(
   { id: uuid("1a000000", 910), task_id: TASK_B303_VOSSLER, requested_by_user_id: U_RODRIGO, question: "Estados de cuenta bancarios de enero 2024 a septiembre 2026, en PDF.", due_date: "2026-10-17", answer: null, status: "open", created_at: "2026-10-09T15:00:00Z", resolved_at: null },
   { id: uuid("1a000000", 911), task_id: TASK_B402_VOSSLER, requested_by_user_id: U_MARIANA, question: "Exportación de clientes y trabajos de tu sistema actual (Excel o CSV).", due_date: "2026-10-15", answer: null, status: "open", created_at: "2026-10-10T13:30:00Z", resolved_at: null },
 );
-meetings.push({ id: uuid("1b000000", 910), task_id: TASK_B402_VOSSLER, proposed_by_user_id: U_MARIANA, topic: "Demo del CRM con tus etapas de venta", starts_at: "2026-10-16T18:00:00Z", duration_minutes: 45, status: "proposed" });
+// Tomorrow (Oct 15): soon enough to sit among the first 5 items of Carla's "Te toca a ti".
+meetings.push({ id: uuid("1b000000", 910), task_id: TASK_B402_VOSSLER, proposed_by_user_id: U_MARIANA, topic: "Demo del CRM con tus etapas de venta", starts_at: "2026-10-15T18:00:00Z", duration_minutes: 45, status: "proposed" });
 // Vossler brand (white label): read from the manual delivered with B5-13 and applied when Carla approved it.
 export const VOSSLER_BRAND: BrandProposal = {
   primary_color: "#1f4e3d", accent_color: "#d9a441", font_family: "Montserrat", logo_file_name: "Vossler_logo.svg", logo_url: "/brand/samples/vossler-logo.svg", manual_file_name: "Vossler_manual_de_marca.pdf",

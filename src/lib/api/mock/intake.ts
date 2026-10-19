@@ -108,17 +108,23 @@ export function createIntake(db: IntakeDb, newId: () => string) {
     if (docsOf(r.business_id).filter((d) => d.required).every((d) => d.state !== "requested")) r.review_started_at = today;
   };
 
+  /**
+   * Leads added after the first sample set get a fixed slot, so the owner and business ids of every other lead
+   * (numbered in list order) do not shift.
+   */
+  const FIXED_SLOTS: Record<string, number> = { "Navarro Cercas y Portones": 900 };
+
   /** Sample entry data for leads already in Documentación or Aceptado. Same ids every run. */
   const seed = () => {
     let n = 0;
     for (const lead of db.leads) {
       if (lead.business_id || (lead.stage !== "documents" && lead.stage !== "accepted")) continue;
-      n++;
+      const slot = FIXED_SLOTS[lead.business.name] ?? ++n;
       const docsOn = lead.stage_entered_at.slice(0, 10);
       const accepted = lead.stage === "accepted";
       const ndaOn = accepted ? addDays(docsOn, -10) : addDays(docsOn, 0);
       const r = open(lead, {
-        sentOn: ndaOn, ownerId: sid("0d100000", n), businessId: sid("0b100000", n),
+        sentOn: ndaOn, ownerId: sid("0d100000", slot), businessId: sid("0b100000", slot),
         ownerSteps: ["opened", "signed"], smSteps: ["signed"],
       });
       const docs = docsOf(r.business_id);
@@ -136,6 +142,21 @@ export function createIntake(db: IntakeDb, newId: () => string) {
           }
         });
       } else if (lead.business.name === "Morales Pisos y Cerámica") {
+        // Owner side of the signature: SM already signed the MOU and it waits for her (she opened it, did not sign).
+        const mou = contractsOf(r.business_id).find((c) => c.kind === "mou")!;
+        mou.signers = mou.signers.map((s) => (s.party === "owner" ? signer("owner", lead.contact.name, s.user_id ?? null, ndaOn, ["opened"]) : s));
+        mou.state = contractState(mou);
+        mou.signed_at = null;
+        // 3 of 7 uploaded (one accepted, one waiting for review, one asked again); 4 still missing, so the clock has not started.
+        docs.forEach((d, i) => {
+          if (i === 2) { upload(d, addDays(signedOn, 1)); accept(d, addDays(signedOn, 2)); }
+          if (i === 4) upload(d, addDays(signedOn, 4));
+          if (i === 6) {
+            upload(d, addDays(signedOn, 1));
+            Object.assign(d, { state: "rejected", reviewed_at: addDays(signedOn, 2), review_comment: "El seguro está a nombre de otra empresa. Sube la póliza a nombre de Morales Pisos y Cerámica, por favor.", pauses: [{ from: addDays(signedOn, 2), to: null }] });
+          }
+        });
+      } else if (lead.business.name === "Navarro Cercas y Portones") {
         // Everything uploaded on Sep 27: review day 17 of 15 on Oct 14.
         docs.forEach((d, i) => { upload(d, "2026-09-27"); if (i <= 3) accept(d, "2026-10-01"); });
         r.review_started_at = "2026-09-27";

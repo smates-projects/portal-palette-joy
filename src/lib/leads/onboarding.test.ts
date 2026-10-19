@@ -74,20 +74,43 @@ describe("entry flow in the mock", () => {
     await api.documents.signContract(contracts.find((c) => c.kind === "nda")!.id);
     expect((await api.documents.uploadDocument(documents[0]!.id, "banco.pdf")).state).toBe("received");
   });
-  it("sample data: Castillo paused with 5 of 7 uploaded and 3 accepted; Morales at day 17 of 15", async () => {
+  it("sample data: Castillo paused with 5 of 7 uploaded and 3 accepted; Navarro at day 17 of 15", async () => {
     const api = createMockApi();
     await api.session.setViewAs(seed.U_NICOLAS);
     const leads = await api.leads.list();
     const sazon = leads.find((l) => l.business.name === "Castillo Instalaciones")!.intake!;
     expect(sazon).toMatchObject({ uploaded: 5, accepted: 3, required_total: 7 });
     expect(sazon.clock.status).toBe("paused");
-    const glow = leads.find((l) => l.business.name === "Morales Pisos y Cerámica")!.intake!;
+    const glow = leads.find((l) => l.business.name === "Navarro Cercas y Portones")!.intake!;
     expect(glow.clock).toMatchObject({ day: 17, total: 15, tone: "red" });
+  });
+  it("sample data: Yesenia Morales signed the NDA, the MOU waits for her and 3 of 7 documents are uploaded", async () => {
+    const api = createMockApi();
+    const owner = (await api.session.getViewAsOptions()).find((o) => o.business?.name === "Morales Pisos y Cerámica")!;
+    expect(owner.user).toMatchObject({ full_name: "Yesenia Morales", role: "business_owner" });
+    expect(owner.user.is_admin).toBeFalsy();
+    expect(owner.business?.status).toBe("onboarding");
+    await api.session.setViewAs(owner.user.id);
+    const contracts = (await api.documents.listContracts()).filter((c) => c.area === "intake");
+    const nda = contracts.find((c) => c.kind === "nda")!;
+    const mou = contracts.find((c) => c.kind === "mou")!;
+    expect(nda.state).toBe("signed");
+    expect(mou.signers.find((s) => s.party === "sm")!.status).toBe("signed");
+    expect(mou.signers.find((s) => s.party === "owner")!.status).toBe("opened");
+    await api.session.setViewAs(seed.U_NICOLAS);
+    const intake = (await api.leads.list()).find((l) => l.business.name === "Morales Pisos y Cerámica")!.intake!;
+    expect(intake).toMatchObject({ uploaded: 3, accepted: 1, required_total: 7 });
+    // Not everything is uploaded: the 15-day clock has not started (day 0); it shows as paused while a document is asked again.
+    expect(intake.clock).toMatchObject({ day: 0, status: "paused", tone: "ok" });
+    const docs = (await api.leads.getIntake((await api.leads.list()).find((l) => l.business.name === "Morales Pisos y Cerámica")!.id))!.documents;
+    expect(docs.map((d) => d.state).sort()).toEqual(["received", "rejected", "requested", "requested", "requested", "requested", "reviewed"]);
+    expect(docs.find((d) => d.state === "reviewed")!.verified_fact).toBeTruthy();
+    expect(docs.find((d) => d.state === "rejected")!.review_comment).toBeTruthy();
   });
   it("only an admin approves, and only when everything is signed and accepted", async () => {
     const api = createMockApi();
     await api.session.setViewAs(seed.U_NICOLAS);
-    const glow = (await api.leads.list()).find((l) => l.business.name === "Morales Pisos y Cerámica")!;
+    const glow = (await api.leads.list()).find((l) => l.business.name === "Navarro Cercas y Portones")!;
     const { documents } = (await api.leads.getIntake(glow.id))!;
     for (const d of documents.filter((x) => x.state === "received")) await api.leads.acceptDocument(glow.id, d.id, "Verificado");
     await expect(api.leads.approveDocuments(glow.id)).rejects.toThrow("admin_only");
