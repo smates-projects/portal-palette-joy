@@ -39,6 +39,7 @@ Screens (`src/components`):
 - `docuseal/`: `SignaturePad` (draw, type, upload), `DocuSealSigner`, `SignedContractDialog`.
 - `brand/`: `Logo` (SM marks from `public/brand`), `BrandLogo`, `BrandPanel`, `BrandCaptureSection`, `BrandPreview`.
 - `tasks/`: list, calendar, detail (one component used everywhere), SM actions, pre-validation.
+- `auth/`: public screens outside the rail (`AuthLayout`): login (password or magic link), magic link sent / exchange, accept invitation, forgot and reset password. Routes `/login`, `/enlace-enviado`, `/enlace/$token`, `/invitacion/$token`, `/recuperar`, `/restablecer/$token`. Pure helpers in `src/lib/auth/` (safe `next` redirect, form validation).
 
 ## Industries
 
@@ -76,7 +77,8 @@ The small business pays nothing. The Bishop pays SM the program amount (SM Globa
 
 - Tree: SM Global, SM offices by zone (Miami, Orlando, Tampa), businesses, their franchises. Partner firms belong to an office.
 - Roles: `sm_global`, `sm_team`, `partner_firm`, `business_owner`, `bishop`, `franchisee`, plus `User.is_admin`.
-- SM Global creates anyone anywhere; the office admin creates consultants of the office and partner firms (one active firm per area; "Reemplazar firma" chooses what happens with open tasks); the firm admin invites its people; the owner invites their team and can hand the business over. Nobody is deleted: people are deactivated with a reason and can be reactivated; everything stays in a history. Invitations are simulated.
+- SM Global creates anyone anywhere; the office admin creates consultants of the office and partner firms (one active firm per area; "Reemplazar firma" chooses what happens with open tasks); the firm admin invites its people; the owner invites their team and can hand the business over. Nobody is deleted: people are deactivated with a reason and can be reactivated; everything stays in a history.
+- Access: the `Session` repository has `login`, `logout`, `logoutAll`, `requestMagicLink`, `exchangeMagicLink`, `exchangeInvitation`, `acceptInvitation`, `forgotPassword`, `resetPassword`, `isAuthenticated`. The mock starts logged in (demo, tutorials, Lovable preview) and "Ver como" still switches the user; after `logout` the guard sends to `/login?next=`. Every seeded account logs in with `Demo1234!`; demo tokens live in `src/lib/api/mock/session.ts` (`invite-yesenia`, `invite-expired`, `invite-used`, `magic-carla`, `reset-carla`). Error codes: `invalid_credentials`, `account_inactive`, `token_invalid`, `token_expired`, `token_used`, `weak_password` (under 12 characters), `terms_required`, `name_required`. A failed login always shows a bordered message with what to do.
 - Scope: SM team sees everything in its office; the owner only their business; a firm only the tasks assigned to it (or where it collaborates), never the business numbers, manual or documents.
 - Route guard: each role reaches only the screens of its menu, plus Mi perfil and the task detail. Typing another role's URL goes back home.
 - Verified business data (legal name, address, city, state): the owner edits them only during onboarding. Afterwards they are read-only with the mark "Verificado"; the owner asks for a change with a reason and SM applies or rejects it from the ficha, with a note for the owner. The data layer rejects direct edits (`locked_field`).
