@@ -679,6 +679,12 @@ export interface Receipt {
   size_kb: number;
 }
 
+/**
+ * A receipt the person attaches: the File picked in the input, or its `{ file_name, size_kb }` as the mock keeps it.
+ * The HTTP adapters need the real File (they upload the bytes) and reject the placeholder with "invalid_file".
+ */
+export type ReceiptUpload = File | Receipt;
+
 /** Pending: nothing confirmed. Partial: some confirmed, less than the total. Received: the total is confirmed. */
 export type FundsStatus = "pending" | "partial" | "received";
 
@@ -724,7 +730,7 @@ export interface FundPaymentInput {
   paid_on: IsoDate;
   method: PaymentMethod;
   reference: string | null;
-  receipt: Receipt | null;
+  receipt: ReceiptUpload | null;
 }
 
 /** One-time payment, installments with dates, or milestones described with a short text. */
@@ -791,7 +797,7 @@ export interface MarkPaidInput {
   paid_on: IsoDate;
   method: PaymentMethod;
   reference: string | null;
-  receipt: Receipt | null;
+  receipt: ReceiptUpload | null;
 }
 
 // ---------- Franchisee ----------

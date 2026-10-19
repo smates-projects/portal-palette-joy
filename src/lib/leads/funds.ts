@@ -1,6 +1,7 @@
 // Bishop funds, start of the program and distribution to the firms. Pure rules shared by the mock and the screens;
 // the Laravel backend applies the same ones.
 import { TODAY } from "@/config/app";
+import { receiptFileName, type NamedReceipt } from "@/lib/funds/receipt";
 import type {
   Contract,
   DistributionLineInput,
@@ -43,7 +44,7 @@ export type FundPaymentError = "amount" | "over_total" | "date" | "future" | "me
  * a real date not in the future, a method, and a receipt (PDF or image) when the Bishop reports it.
  */
 export function validateFundPayment(
-  input: { amount: number; paid_on: string; method: string; receipt: { file_name: string } | null },
+  input: { amount: number; paid_on: string; method: string; receipt: NamedReceipt | null },
   remaining: number,
   opts: { receiptRequired?: boolean; today?: string } = {},
 ): FundPaymentError | null {
@@ -53,7 +54,7 @@ export function validateFundPayment(
   if (!isIsoDate(input.paid_on)) return "date";
   if (input.paid_on > today) return "future";
   if (!["transfer", "wire", "other"].includes(input.method)) return "method";
-  if (input.receipt && !isReceiptFile(input.receipt.file_name)) return "receipt";
+  if (input.receipt && !isReceiptFile(receiptFileName(input.receipt))) return "receipt";
   if (opts.receiptRequired && !input.receipt) return "receipt";
   return null;
 }

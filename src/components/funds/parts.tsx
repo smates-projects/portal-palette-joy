@@ -48,7 +48,7 @@ export function ReceiptLink({ receipt }: { receipt: Receipt }) {
 }
 
 /** File picker for a receipt (PDF or image). The upload is simulated: only name and size are kept. */
-export function ReceiptPicker({ value, onChange, required }: { value: Receipt | null; onChange: (r: Receipt | null) => void; required?: boolean }) {
+export function ReceiptPicker({ value, onChange, required }: { value: File | null; onChange: (r: File | null) => void; required?: boolean }) {
   const { t } = useTranslation();
   const [wrongType, setWrongType] = useState(false);
   return (
@@ -66,11 +66,11 @@ export function ReceiptPicker({ value, onChange, required }: { value: Receipt | 
               if (!f) return;
               const ok = isReceiptFile(f.name);
               setWrongType(!ok);
-              onChange(ok ? { file_name: f.name, size_kb: Math.max(1, Math.round(f.size / 1024)) } : null);
+              onChange(ok ? f : null);
             }}
           />
         </label>
-        {value && <span className="text-xs text-muted-foreground">{value.file_name}</span>}
+        {value && <span className="text-xs text-muted-foreground" title={t("funds.receipt_size", { kb: fileSizeKb(value.size) })}>{value.name}</span>}
       </div>
       {wrongType && <p className="text-xs text-status-danger-fg">{t("funds.form.receipt_type")}</p>}
       <p className="text-xs text-muted-foreground">{t("funds.form.receipt_hint")}</p>
@@ -83,7 +83,7 @@ export interface PaymentFormValue {
   paid_on: string;
   method: PaymentMethod;
   reference: string | null;
-  receipt: Receipt | null;
+  receipt: File | null;
 }
 
 /**

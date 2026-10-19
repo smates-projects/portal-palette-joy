@@ -77,6 +77,25 @@ describe("repository selection (VITE_API_MODE and VITE_API_MODE_<REPO>)", () => 
     });
   });
 
+  it("phase 3 repositories have their own override", () => {
+    expect(
+      resolveRepositoryModes({
+        VITE_API_MODE_BISHOP: "http",
+        VITE_API_MODE_FUNDS: "http",
+        VITE_API_MODE_DISTRIBUTION: "http",
+        VITE_API_MODE_RULES: "http",
+        VITE_API_MODE_CATALOG: "http",
+      }),
+    ).toMatchObject({
+      bishop: "http",
+      funds: "http",
+      distribution: "http",
+      rules: "http",
+      catalog: "http",
+      leads: "mock",
+    });
+  });
+
   it("unknown values fall back to the mock", () => {
     expect(
       resolveRepositoryModes({ VITE_API_MODE: "laravel", VITE_API_MODE_USERS: " HTTP " }),

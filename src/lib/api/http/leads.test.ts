@@ -298,6 +298,67 @@ describe("http leads", () => {
     expect(calls[0]).toMatchObject({ method: "GET", path: "/unmatched-calendar-events" });
   });
 
+  it("sendTripartite: POST /send-tripartite with an Idempotency-Key; the contract back, the lead's version dropped", async () => {
+    const tripartite = contractFixture({ kind: "tripartite", name: "Contrato tripartito" });
+    const { calls } = stubFetch(dataResponse(tripartite));
+    const { leads, client } = setup();
+    client.etags.set(LEAD_PATH, '"5"');
+    expect(await leads.sendTripartite(LEAD)).toEqual(tripartite);
+    expect(calls[0]).toMatchObject({
+      method: "POST",
+      path: `${LEAD_PATH}/send-tripartite`,
+      body: undefined,
+    });
+    expect(calls[0]?.headers["Idempotency-Key"]).toBeTruthy();
+    expect(client.etags.has(LEAD_PATH)).toBe(false);
+  });
+
+  it("releaseOpportunity: POST /release-opportunity with the reason; the lead's new ETag is kept", async () => {
+    const released = leadFixture({ stage: "accepted", bishop_user_id: null });
+    const { calls } = stubFetch(dataResponse(released, 200, { ETag: '"8"' }));
+    const { leads, client } = setup();
+    expect(await leads.releaseOpportunity(LEAD, "Sin respuesta del inversor")).toEqual(released);
+    expect(calls[0]).toMatchObject({
+      method: "POST",
+      path: `${LEAD_PATH}/release-opportunity`,
+      body: { reason: "Sin respuesta del inversor" },
+    });
+    expect(client.etags.get(LEAD_PATH)).toBe('"8"');
+  });
+
+  it("confirmProgramStart: reads the lead for its ETag, then POST /confirm-program-start with If-Match and day1", async () => {
+    const started = leadFixture({ stage: "in_program", business_id: IDS.business });
+    const { calls } = stubFetch(
+      dataResponse(detailFixture({ stage: "accepted" }), 200, { ETag: '"10"' }),
+      dataResponse(
+        { lead: started, business_id: IDS.business, task_count: 87, day1: "2026-11-02" },
+        200,
+        { ETag: '"11"' },
+      ),
+    );
+    const { leads, client } = setup();
+    // The API's day1 is dropped: the front's contract is { lead, business_id, task_count }.
+    expect(await leads.confirmProgramStart(LEAD, "2026-11-02")).toEqual({
+      lead: started,
+      business_id: IDS.business,
+      task_count: 87,
+    });
+    expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual([
+      `GET ${LEAD_PATH}`,
+      `POST ${LEAD_PATH}/confirm-program-start`,
+    ]);
+    expect(calls[1]?.headers["If-Match"]).toBe('"10"');
+    expect(calls[1]?.body).toEqual({ day1: "2026-11-02" });
+    expect(client.etags.get(LEAD_PATH)).toBe('"11"');
+  });
+
+  it("confirmProgramStart: funds not complete answer the API's code", async () => {
+    stubFetch(problemResponse(409, "not_ready"));
+    const { leads, client } = setup();
+    client.etags.set(LEAD_PATH, '"10"');
+    await expect(leads.confirmProgramStart(LEAD, "2026-11-02")).rejects.toThrow("not_ready");
+  });
+
   it.each([
     [
       "simulateAssessment",
@@ -308,20 +369,9 @@ describe("http leads", () => {
       (r: ReturnType<typeof createHttpLeadsRepository>) => r.simulateBooking(LEAD),
     ],
     [
-      "confirmProgramStart",
-      (r: ReturnType<typeof createHttpLeadsRepository>) =>
-        r.confirmProgramStart(LEAD, "2026-11-02"),
-    ],
-    [
       "startProgram",
       (r: ReturnType<typeof createHttpLeadsRepository>) => r.startProgram(LEAD, "2026-11-02"),
     ],
-    [
-      "releaseOpportunity",
-      (r: ReturnType<typeof createHttpLeadsRepository>) =>
-        r.releaseOpportunity(LEAD, "Sin respuesta"),
-    ],
-    ["sendTripartite", (r: ReturnType<typeof createHttpLeadsRepository>) => r.sendTripartite(LEAD)],
   ])("%s (gap): rejects with not_implemented without calling the API", async (_name, call) => {
     const { calls } = stubFetch();
     await expect(call(setup().leads)).rejects.toThrow("not_implemented");

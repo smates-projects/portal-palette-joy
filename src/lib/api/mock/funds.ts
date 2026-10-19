@@ -31,6 +31,8 @@ import type {
   NotificationKind,
   Organization,
   PaymentPlanKind,
+  Receipt,
+  ReceiptUpload,
   Task,
   User,
   Uuid,
@@ -74,6 +76,16 @@ interface Deps {
   pushLeadEvent: (e: Omit<LeadEvent, "id" | "actor_user_id" | "created_at">) => LeadEvent;
   notifyLead: (l: Lead, kind: NotificationKind) => void;
 }
+
+/** The mock only keeps name and size: a picked File becomes its placeholder. */
+const receiptOf = (upload: ReceiptUpload | null): Receipt | null => {
+  if (!upload) return null;
+  if (typeof Blob !== "undefined" && upload instanceof Blob) {
+    const name = typeof File !== "undefined" && upload instanceof File ? upload.name : "receipt";
+    return { file_name: name, size_kb: Math.max(1, Math.round(upload.size / 1024)) };
+  }
+  return upload as Receipt;
+};
 
 /** Program amount used when the rules have none (never in practice: SM Global always has one). */
 const FALLBACK_PROGRAM_AMOUNT = 150_000;
@@ -164,13 +176,16 @@ export function createFunds(d: Deps) {
     return r;
   };
 
-  const cleanInput = (input: FundPaymentInput): FundPaymentInput => ({
-    amount: Math.round(input.amount * 100) / 100,
-    paid_on: input.paid_on,
-    method: input.method,
-    reference: input.reference?.trim() || null,
-    receipt: input.receipt && input.receipt.file_name.trim() ? { file_name: input.receipt.file_name.trim(), size_kb: Math.max(1, Math.round(input.receipt.size_kb)) } : null,
-  });
+  const cleanInput = (input: FundPaymentInput): Omit<FundPaymentInput, "receipt"> & { receipt: Receipt | null } => {
+    const receipt = receiptOf(input.receipt);
+    return {
+      amount: Math.round(input.amount * 100) / 100,
+      paid_on: input.paid_on,
+      method: input.method,
+      reference: input.reference?.trim() || null,
+      receipt: receipt && receipt.file_name.trim() ? { file_name: receipt.file_name.trim(), size_kb: Math.max(1, Math.round(receipt.size_kb)) } : null,
+    };
+  };
 
   const funds: FundsRepository = {
     get: async (businessId) => {
@@ -342,10 +357,11 @@ export function createFunds(d: Deps) {
       if (p.status !== "pending") throw new Error("invalid_state");
       if (!/^\d{4}-\d{2}-\d{2}$/.test(input.paid_on) || input.paid_on > TODAY) throw new Error("invalid_date");
       if (!["transfer", "wire", "other"].includes(input.method)) throw new Error("invalid_method");
-      if (input.receipt && !isReceiptFile(input.receipt.file_name)) throw new Error("invalid_receipt");
+      const receipt = receiptOf(input.receipt);
+      if (receipt && !isReceiptFile(receipt.file_name)) throw new Error("invalid_receipt");
       Object.assign(p, {
         status: "paid", paid_on: input.paid_on as IsoDate, method: input.method, reference: input.reference?.trim() || null,
-        receipt: input.receipt ? { file_name: input.receipt.file_name.trim(), size_kb: Math.max(1, Math.round(input.receipt.size_kb)) } : null,
+        receipt: receipt ? { file_name: receipt.file_name.trim(), size_kb: Math.max(1, Math.round(receipt.size_kb)) } : null,
       });
       return d.delay(toDistribution(b, l, r));
     },

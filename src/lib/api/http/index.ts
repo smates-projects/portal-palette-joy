@@ -5,14 +5,19 @@
 import i18n from "@/lib/i18n";
 import type { ApiClient } from "../repositories";
 import { createHttpClient, type HttpClient, type HttpClientConfig } from "./client";
+import { createHttpBishopRepository } from "./bishop";
 import { createHttpBusinessFileRepository } from "./business-file";
 import { createHttpBusinessProfileRepository } from "./business-profile";
 import { createHttpBusinessesRepository } from "./businesses";
+import { createHttpCatalogRepository } from "./catalog";
+import { createHttpDistributionRepository } from "./distribution";
 import { createHttpDocumentsRepository } from "./documents";
+import { createHttpFundsRepository } from "./funds";
 import { createHttpLeadsRepository } from "./leads";
 import { createHttpNotificationsRepository } from "./notifications";
 import { createHttpOrganizationsRepository } from "./organizations";
 import { createHttpRoutingRepository } from "./routing";
+import { createHttpRulesRepository } from "./rules";
 import { createHttpSessionRepository } from "./session";
 import { createHttpUsersRepository } from "./users";
 
@@ -30,6 +35,11 @@ export const HTTP_REPOSITORIES = {
   documents: "DOCUMENTS",
   notifications: "NOTIFICATIONS",
   businessFile: "BUSINESS_FILE",
+  bishop: "BISHOP",
+  funds: "FUNDS",
+  distribution: "DISTRIBUTION",
+  rules: "RULES",
+  catalog: "CATALOG",
 } as const satisfies Partial<Record<keyof ApiClient, string>>;
 
 export type HttpRepositoryKey = keyof typeof HTTP_REPOSITORIES;
@@ -66,6 +76,11 @@ export function createHttpRepositories(client: HttpClient): HttpRepositories {
     documents: createHttpDocumentsRepository(client),
     notifications: createHttpNotificationsRepository(client),
     businessFile: createHttpBusinessFileRepository(client),
+    bishop: createHttpBishopRepository(client),
+    funds: createHttpFundsRepository(client),
+    distribution: createHttpDistributionRepository(client),
+    rules: createHttpRulesRepository(client),
+    catalog: createHttpCatalogRepository(client),
   };
 }
 

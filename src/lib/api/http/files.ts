@@ -4,11 +4,12 @@
 //    the URL is presigned and the storage host is not the API (sending credentials there would fail CORS).
 // 3. POST /files/{id}/complete: the API queues the verification (magic bytes, scanner).
 // The caller then attaches the returned file_id to its resource (document upload, contract signature).
-import type { Uuid } from "../types";
+import type { ReceiptUpload, Uuid } from "../types";
 import { ApiError, type HttpClient } from "./client";
 
 /** `files.owner_type` values the front uploads to today (FILE_CONTEXTS of the API). */
-export type FileContext = "intake_document" | "contract_signature";
+export type FileContext =
+  "intake_document" | "contract_signature" | "fund_payment" | "distribution_payment";
 
 interface PresignedFile {
   file_id: Uuid;
@@ -86,6 +87,30 @@ export async function uploadFile(
 
   await client.post(`/files/${encodeURIComponent(presigned.file_id)}/complete`);
   return presigned.file_id;
+}
+
+// ---------- Payment receipts ----------
+
+/**
+ * The receipt of a fund or distribution payment as the API wants it: the id of a file uploaded first. A real File
+ * is uploaded; the `{ file_name, size_kb }` placeholder (the mock's simulated upload) has no bytes to send, so it is
+ * invalid_file without calling the API. No receipt is null.
+ */
+export async function uploadReceipt(
+  client: HttpClient,
+  receipt: ReceiptUpload | null,
+  context: Extract<FileContext, "fund_payment" | "distribution_payment">,
+  businessId: Uuid,
+): Promise<Uuid | null> {
+  if (!receipt) return null;
+  if (typeof Blob === "undefined" || !(receipt instanceof Blob)) {
+    throw new ApiError({
+      code: "invalid_file",
+      status: 422,
+      detail: "Pick the receipt file to upload.",
+    });
+  }
+  return uploadFile(client, receipt, { context, businessId });
 }
 
 // ---------- Signature images ----------

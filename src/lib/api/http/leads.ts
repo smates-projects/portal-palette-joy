@@ -22,6 +22,14 @@ interface LeadDetailResponse extends LeadDetail {
   intake?: LeadIntake | null;
 }
 
+/** POST /leads/{id}/confirm-program-start: the front's result plus the day 1 the API set. */
+interface ProgramStartResponse {
+  lead: LeadWithComputed;
+  business_id: Uuid;
+  task_count: number;
+  day1: string;
+}
+
 /** A booking the calendar sync could not match to a lead (always empty until Google Calendar, phase 5). */
 export interface UnmatchedCalendarEvent {
   id: Uuid;
@@ -60,19 +68,24 @@ const leadPath = (id: Uuid) => `/leads/${encodeURIComponent(id)}`;
 
 export function createHttpLeadsRepository(client: HttpClient): HttpLeadsRepository {
   /** A write that changes the lead: its answer carries the lead's new ETag. */
-  const leadWrite = (id: Uuid, action: string, body?: unknown, idempotent = false) => {
+  const leadWrite = <T = LeadWithComputed>(
+    id: Uuid,
+    action: string,
+    body?: unknown,
+    idempotent = false,
+  ) => {
     const resource = leadPath(id);
-    return client.post<LeadWithComputed>(`${resource}/${action}`, body, { resource, idempotent });
+    return client.post<T>(`${resource}/${action}`, body, { resource, idempotent });
   };
 
   /**
-   * move, discard and approve-documents require If-Match with the lead's ETag. When none is known (the board only
-   * lists leads), the lead is read first; a stale one answers precondition_failed.
+   * move, discard, approve-documents and confirm-program-start require If-Match with the lead's ETag. When none is
+   * known (the board only lists leads), the lead is read first; a stale one answers precondition_failed.
    */
-  const guardedWrite = async (id: Uuid, action: string, body?: unknown) => {
+  const guardedWrite = async <T = LeadWithComputed>(id: Uuid, action: string, body?: unknown) => {
     const resource = leadPath(id);
     if (!client.etags.has(resource)) await client.get<LeadDetailResponse>(resource);
-    return leadWrite(id, action, body);
+    return leadWrite<T>(id, action, body);
   };
 
   /**
@@ -134,29 +147,40 @@ export function createHttpLeadsRepository(client: HttpClient): HttpLeadsReposito
 
     approveDocuments: (id) => guardedWrite(id, "approve-documents"),
 
-    /** Gap: starting the program is phase 3 (tripartite contract and Bishop funds). Rejects without calling. */
-    confirmProgramStart: async () => {
-      throw notImplemented("Starting the program is not available in the API yet.");
+    /**
+     * POST /confirm-program-start (If-Match on the lead): accepted → in_program with day 1 and the catalog's tasks.
+     * The API also answers the day 1 it set, which the front's contract does not carry (dropped).
+     */
+    confirmProgramStart: async (id, day1) => {
+      const result = await guardedWrite<ProgramStartResponse>(id, "confirm-program-start", {
+        day1,
+      });
+      return { lead: result.lead, business_id: result.business_id, task_count: result.task_count };
     },
 
     /** Gap: deprecated path of the mock, never exposed by the API. Rejects without calling. */
     startProgram: async () => {
-      throw notImplemented("Starting the program is not available in the API yet.");
+      throw notImplemented("Starting the program without the checks is not part of the API.");
     },
 
     rejectDocuments: (id, reason) => leadWrite(id, "reject-documents", { comment: reason }),
 
     getInvestors: (id) => getOrNull<LeadInvestors>(client, `${leadPath(id)}/investors`),
 
-    /** Gap: opportunities for Bishops are phase 3. Rejects without calling. */
-    releaseOpportunity: async () => {
-      throw notImplemented("Releasing an opportunity is not available in the API yet.");
-    },
+    /** POST /release-opportunity { reason }: back to every Bishop; the lead's new ETag is kept. */
+    releaseOpportunity: (id, reason) => leadWrite(id, "release-opportunity", { reason }),
 
-    /** Gap: the tripartite contract is phase 3. Rejects without calling. */
-    sendTripartite: async () => {
-      throw notImplemented("The tripartite contract is not available in the API yet.");
-    },
+    /**
+     * POST /send-tripartite (Idempotency-Key). It answers the contract, not the lead, so the lead's cached version
+     * is dropped: the next guarded write reads it again.
+     */
+    sendTripartite: async (id) =>
+      forgetVersion(
+        id,
+        await client.post<Contract>(`${leadPath(id)}/send-tripartite`, undefined, {
+          idempotent: true,
+        }),
+      ),
 
     createManual: (input) =>
       client.post<LeadWithComputed>(
