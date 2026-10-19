@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Paperclip } from "lucide-react";
 import { toast } from "sonner";
 import { useResolvePreValidation } from "@/lib/api/hooks";
 import type { PreValidation, TaskWithComputed } from "@/lib/api/types";
@@ -39,8 +40,8 @@ export function PreValidationBlock({ task, canResolve }: { task: TaskWithCompute
       onSuccess: () => toast.success(t("entry.pre.t_needed", { code: task.code }), { action: { label: t("entry.undo"), onClick: undo } }),
       onError: fail,
     });
-  const existing = (evidence: string, note: string) =>
-    resolve.mutate({ id: task.id, input: { decision: "existing", evidence_file_name: evidence, note } }, {
+  const existing = (evidence: string, note: string, file: File | null) =>
+    resolve.mutate({ id: task.id, input: { decision: "existing", evidence_file_name: evidence, note, evidence_file: file } }, {
       onSuccess: () => { setOpen(false); toast.success(t("entry.pre.t_existing", { code: task.code }), { action: { label: t("entry.undo"), onClick: undo } }); },
       onError: fail,
     });
@@ -72,9 +73,15 @@ export function PreValidationBlock({ task, canResolve }: { task: TaskWithCompute
   );
 }
 
-function ExistingDialog(props: { code: string; pending: boolean; onClose: () => void; onConfirm: (evidence: string, note: string) => void }) {
+/**
+ * The evidence the owner showed: a file picked from the computer (what the real API stores) or, in the demo, just its
+ * name typed in. Picking a file fills the name.
+ */
+function ExistingDialog(props: { code: string; pending: boolean; onClose: () => void; onConfirm: (evidence: string, note: string, file: File | null) => void }) {
   const { t } = useTranslation();
+  const picker = useRef<HTMLInputElement>(null);
   const [evidence, setEvidence] = useState("");
+  const [file, setFile] = useState<File | null>(null);
   const [note, setNote] = useState("");
   const [tried, setTried] = useState(false);
   const input = "h-9 w-full rounded-md border border-input bg-surface px-3 text-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30";
@@ -87,7 +94,19 @@ function ExistingDialog(props: { code: string; pending: boolean; onClose: () => 
         </DialogHeader>
         <label className="block space-y-1.5">
           <span className="text-sm font-medium">{t("entry.pre.evidence")}</span>
-          <input autoFocus value={evidence} onChange={(e) => setEvidence(e.target.value)} placeholder={t("entry.pre.evidence_placeholder")} className={input} />
+          <input autoFocus value={evidence} onChange={(e) => { setEvidence(e.target.value); setFile(null); }} placeholder={t("entry.pre.evidence_placeholder")} className={input} />
+          <input
+            ref={picker}
+            type="file"
+            className="sr-only"
+            aria-label={t("entry.pre.evidence")}
+            onChange={(e) => {
+              const picked = e.target.files?.[0];
+              if (picked) { setFile(picked); setEvidence(picked.name); }
+              e.target.value = "";
+            }}
+          />
+          <SecondaryButton onClick={() => picker.current?.click()}><Paperclip className="h-3.5 w-3.5" />{t("taskDetail.d_attach")}</SecondaryButton>
           {tried && !evidence.trim() && <span className="text-xs text-status-danger-fg">{t("entry.pre.evidence_required")}</span>}
         </label>
         <label className="block space-y-1.5">
@@ -96,7 +115,7 @@ function ExistingDialog(props: { code: string; pending: boolean; onClose: () => 
         </label>
         <DialogFooter>
           <SecondaryButton onClick={props.onClose}>{t("pipeline.cancel")}</SecondaryButton>
-          <PrimaryButton disabled={props.pending} onClick={() => { setTried(true); if (evidence.trim()) props.onConfirm(evidence.trim(), note.trim()); }}>{t("entry.pre.confirm")}</PrimaryButton>
+          <PrimaryButton disabled={props.pending} onClick={() => { setTried(true); if (evidence.trim()) props.onConfirm(evidence.trim(), note.trim(), file); }}>{t("entry.pre.confirm")}</PrimaryButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

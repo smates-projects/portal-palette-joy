@@ -397,7 +397,9 @@ export function createAccounts(ctx: AccountsContext) {
       return delay(db.brands.find((x) => x.business_id === b.id) ?? null);
     },
     getMine: async () => delay(brandFor(me(), db.brands, db.franchises)),
-    set: async (businessId, palette) => {
+    set: async (businessId, input) => {
+      // The picked Files are for the HTTP adapter; the mock keeps the palette (logo as data URL).
+      const { logo_file: _logo, manual_file: _manual, ...palette } = input;
       const u = me();
       const b = db.businesses.find((x) => x.id === businessId);
       if (!b || !canSetBrand(u, b)) throw new Error("forbidden");

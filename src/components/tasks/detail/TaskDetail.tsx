@@ -559,7 +559,6 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
         onOpenChange={setSubmitOpen}
         nextVersion={task.current_version + 1}
         isResubmit={status === "changes_requested"}
-        defaultFileName={`${task.code}_${(business?.name ?? "").replace(/\s+/g, "_")}_v${task.current_version + 1}.pdf`}
         ownerName={ownerFirst}
         changesQuote={status === "changes_requested" ? latestChanges?.body ?? null : null}
         pending={submit.isPending}
@@ -593,7 +592,6 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
         open={!!answering}
         onOpenChange={(o) => !o && setAnswering(null)}
         question={answering?.question ?? ""}
-        defaultFileName={`${task.code}_${(business?.name ?? "").replace(/\s+/g, "_")}_respuesta.pdf`}
         pending={answer.isPending}
         onSubmit={(v) =>
           answering &&

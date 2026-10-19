@@ -260,7 +260,6 @@ export function OwnerHomePage({ taskId }: { taskId?: string | undefined }) {
         open={!!answering}
         onOpenChange={(o) => !o && setAnswering(null)}
         question={answering?.request.question ?? ""}
-        defaultFileName={`${answering?.code ?? ""}_${(business?.name ?? "").replace(/\s+/g, "_")}_respuesta.pdf`}
         pending={answer.isPending}
         onSubmit={(v) =>
           answering &&

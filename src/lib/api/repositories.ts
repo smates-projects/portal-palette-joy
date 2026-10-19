@@ -55,6 +55,8 @@ import type {
   LeadWithComputed,
   AppNotification,
   AccountEvent,
+  AreaCode,
+  IsoDate,
   BrandEvent,
   BrandPalette,
   BrandProposal,
@@ -284,16 +286,46 @@ export interface TaskDetail {
   events: TaskEvent[];
 }
 
+/**
+ * The brand of B5-13 as the capture produces it: the proposal plus the Files picked for the manual and the logo.
+ * The mock keeps only the names; the HTTP adapter uploads the Files (a logo given only as a data URL is uploaded too).
+ */
+export interface BrandProposalUpload extends BrandProposal {
+  manual_file?: File | null | undefined;
+  logo_file?: File | null | undefined;
+}
+
 export interface SubmitVersionInput {
   note: string;
+  /** Names of every file of the deliverable, the brand's manual and logo included (what the mock stores). */
   file_names: string[];
+  /**
+   * The Files picked for the deliverable (without the brand's, which travel in `brand`). The HTTP adapter uploads
+   * them in this order; names without their File are refused there with "invalid_file". The mock ignores them.
+   */
+  files?: File[] | undefined;
   /** B5-13 only: the brand read from the manual. Applied to the business when the owner approves this version. */
-  brand?: BrandProposal | null | undefined;
+  brand?: BrandProposalUpload | null | undefined;
+}
+
+/** Optional filters of TasksRepository.list. The HTTP adapter sends them to GET /tasks; the mock applies the same. */
+export interface TaskListOptions {
+  /** Cancelled tasks are left out unless true. */
+  include_cancelled?: boolean | undefined;
+  business_id?: Uuid | undefined;
+  area?: AreaCode[] | undefined;
+  status?: TaskStatus[] | undefined;
+  assignee_user_id?: Uuid | undefined;
+  /** Due window, both ends included (YYYY-MM-DD). */
+  due_from?: IsoDate | undefined;
+  due_to?: IsoDate | undefined;
+  /** Searches name and acceptance criteria, accents and case ignored (2 characters at least). */
+  q?: string | undefined;
 }
 
 export interface TasksRepository {
   /** Visible tasks. Cancelled ones are left out unless include_cancelled. */
-  list(opts?: { include_cancelled?: boolean }): Promise<TaskWithComputed[]>;
+  list(opts?: TaskListOptions): Promise<TaskWithComputed[]>;
   /** SM only: reassign, change due date or step on one or many tasks. Logged and notified to the firm. */
   update(ids: Uuid[], patch: TaskPatch): Promise<TaskWithComputed[]>;
   /** SM only: cancel with a required reason. The task stays, as cancelled. */
@@ -302,7 +334,8 @@ export interface TasksRepository {
   updateStatus(id: Uuid, status: TaskStatus): Promise<TaskWithComputed>;
   start(id: Uuid): Promise<TaskWithComputed>;
   submitVersion(id: Uuid, input: SubmitVersionInput): Promise<TaskVersion>;
-  addComment(id: Uuid, input: { body: string; file_id: Uuid | null }): Promise<TaskComment>;
+  /** file_id: a file of the task the comment is about. file: a new File to attach (uploaded by the HTTP adapter). */
+  addComment(id: Uuid, input: { body: string; file_id: Uuid | null; file?: File | null | undefined }): Promise<TaskComment>;
   addOwnerRequest(id: Uuid, input: { question: string; due_date: string }): Promise<OwnerRequest>;
   setOwnerRequestResolved(requestId: Uuid, resolved: boolean): Promise<OwnerRequest>;
   proposeMeeting(id: Uuid, input: { topic: string; starts_at: string; duration_minutes: number }): Promise<Meeting>;
@@ -318,8 +351,11 @@ export interface TasksRepository {
   approve(id: Uuid): Promise<TaskWithComputed>;
   /** Owner only: submitted → changes_requested, with a required note. */
   requestChanges(id: Uuid, note: string): Promise<TaskWithComputed>;
-  /** Owner only: answer a request by uploading a file (simulated), with an optional note. */
-  answerOwnerRequest(requestId: Uuid, input: { file_name: string; note: string }): Promise<OwnerRequest>;
+  /**
+   * Owner only: answer a request with a file and an optional note. The mock keeps file_name; the HTTP adapter uploads
+   * `file` and refuses a name without its File ("invalid_file").
+   */
+  answerOwnerRequest(requestId: Uuid, input: { file_name: string; note: string; file?: File | null | undefined }): Promise<OwnerRequest>;
   /** Owner only: confirm a meeting proposed by a firm. */
   confirmMeeting(meetingId: Uuid): Promise<Meeting>;
   /**
@@ -447,6 +483,16 @@ export interface BusinessProfileRepository {
 }
 
 /**
+ * What SM loads by hand: the palette, plus the Files when they were just picked. The HTTP adapter uploads the logo
+ * (logo_file, or logo_url when it is a data URL) and the manual PDF; anything else that is not a file is refused there
+ * with "invalid_file". The mock keeps the palette only.
+ */
+export interface SetBrandInput extends BrandPalette {
+  logo_file?: File | null | undefined;
+  manual_file?: File | null | undefined;
+}
+
+/**
  * Brand of a business (white label). Read by the owner and the team (own business), the franchisor and its
  * franchises (inherited), SM team (office) and SM Global. Firms and Bishops get "forbidden": they keep the SM brand.
  */
@@ -456,7 +502,7 @@ export interface BrandRepository {
   /** The brand the current user's portal shows: null for SM, firms, Bishops and businesses without a brand. */
   getMine(): Promise<BusinessBrand | null>;
   /** SM team of the office (or SM Global): loads the brand by hand when the business already had one. */
-  set(businessId: Uuid, palette: BrandPalette): Promise<BusinessBrand>;
+  set(businessId: Uuid, palette: SetBrandInput): Promise<BusinessBrand>;
   /** "Volver a la marca de Strategic Mates": the owner (own business) or SM. Franchises cannot. */
   reset(businessId: Uuid): Promise<void>;
   /** Newest first. Same scope as get. */

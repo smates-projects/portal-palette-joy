@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FileText, Paperclip, X } from "lucide-react";
 import { TODAY } from "@/config/app";
-import type { BrandProposal } from "@/lib/api/types";
+import type { BrandProposalUpload } from "@/lib/api/repositories";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BrandCaptureSection } from "@/components/brand/BrandCaptureSection";
 
@@ -50,24 +50,22 @@ export function SubmitDeliverableDialog(props: {
   onOpenChange: (o: boolean) => void;
   nextVersion: number;
   isResubmit: boolean;
-  defaultFileName: string;
   ownerName: string;
   changesQuote: string | null;
   pending: boolean;
   /** B5-13 only: the firm uploads the brand manual and the logo; the palette read from it travels with the version. */
   brandCapture?: { businessName: string } | undefined;
-  onSubmit: (v: { note: string; file_names: string[]; brand?: BrandProposal | null }) => void;
+  /** file_names for the mock, files (the picked Files, same order, without the brand's) for the real API. */
+  onSubmit: (v: { note: string; file_names: string[]; files: File[]; brand?: BrandProposalUpload | null }) => void;
 }) {
   const { t } = useTranslation();
-  const [files, setFiles] = useState<string[]>([]);
+  const input = useRef<HTMLInputElement>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [note, setNote] = useState("");
-  const [brand, setBrand] = useState<BrandProposal | null>(null);
-  const attach = () => {
-    const base = props.defaultFileName.replace(/\.pdf$/, "");
-    setFiles((f) => [...f, f.length === 0 ? props.defaultFileName : `${base}_anexo_${f.length}.pdf`]);
-  };
+  const [brand, setBrand] = useState<BrandProposalUpload | null>(null);
   // The manual and the logo of the brand count as files of the deliverable.
-  const allFiles = brand ? [...files, brand.manual_file_name, ...(brand.logo_file_name ? [brand.logo_file_name] : [])] : files;
+  const fileNames = files.map((f) => f.name);
+  const allFiles = brand ? [...fileNames, brand.manual_file_name, ...(brand.logo_file_name ? [brand.logo_file_name] : [])] : fileNames;
   const canSend = allFiles.length > 0 && (!props.brandCapture || !!brand);
   return (
     <Dialog
@@ -99,9 +97,9 @@ export function SubmitDeliverableDialog(props: {
           <div className="space-y-1.5">
             <span className="block text-sm font-medium">{t("taskDetail.d_files")}</span>
             {files.map((f, i) => (
-              <div key={f} className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm">
+              <div key={`${i}-${f.name}`} className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm">
                 <FileText className="h-4 w-4 text-muted-foreground" />
-                <span className="flex-1 truncate">{f}</span>
+                <span className="flex-1 truncate">{f.name}</span>
                 <button
                   type="button"
                   aria-label={t("taskDetail.d_remove_file")}
@@ -112,7 +110,19 @@ export function SubmitDeliverableDialog(props: {
                 </button>
               </div>
             ))}
-            <SecondaryButton onClick={attach}>
+            <input
+              ref={input}
+              type="file"
+              multiple
+              className="sr-only"
+              aria-label={t("taskDetail.d_files")}
+              onChange={(e) => {
+                const picked = Array.from(e.target.files ?? []);
+                if (picked.length > 0) setFiles((f) => [...f, ...picked]);
+                e.target.value = "";
+              }}
+            />
+            <SecondaryButton onClick={() => input.current?.click()}>
               <Paperclip className="h-3.5 w-3.5" />
               {t("taskDetail.d_attach")}
             </SecondaryButton>
@@ -125,7 +135,7 @@ export function SubmitDeliverableDialog(props: {
         </div>
         <DialogFooter>
           <SecondaryButton onClick={() => props.onOpenChange(false)}>{t("taskDetail.d_cancel")}</SecondaryButton>
-          <PrimaryButton disabled={!canSend || props.pending} onClick={() => props.onSubmit({ note: note.trim(), file_names: allFiles, brand })}>
+          <PrimaryButton disabled={!canSend || props.pending} onClick={() => props.onSubmit({ note: note.trim(), file_names: allFiles, files, brand })}>
             {t("taskDetail.d_send")}
           </PrimaryButton>
         </DialogFooter>
@@ -253,17 +263,18 @@ export function RequestChangesDialog(props: {
   );
 }
 
-/** Owner: answer a firm's request by uploading a file (simulated), with an optional note. */
+/** Owner: answer a firm's request by uploading a file, with an optional note. */
 export function AnswerRequestDialog(props: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   question: string;
-  defaultFileName: string;
   pending: boolean;
-  onSubmit: (v: { file_name: string; note: string }) => void;
+  /** file_name for the mock, file (the picked File) for the real API. */
+  onSubmit: (v: { file_name: string; note: string; file: File }) => void;
 }) {
   const { t } = useTranslation();
-  const [file, setFile] = useState<string | null>(null);
+  const input = useRef<HTMLInputElement>(null);
+  const [file, setFile] = useState<File | null>(null);
   const [note, setNote] = useState("");
   return (
     <Dialog open={props.open} onOpenChange={(o) => { props.onOpenChange(o); if (!o) { setFile(null); setNote(""); } }}>
@@ -278,16 +289,29 @@ export function AnswerRequestDialog(props: {
             {file ? (
               <div className="flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm">
                 <FileText className="h-4 w-4 text-muted-foreground" />
-                <span className="flex-1 truncate">{file}</span>
+                <span className="flex-1 truncate">{file.name}</span>
                 <button type="button" aria-label={t("taskDetail.d_remove_file")} onClick={() => setFile(null)} className="text-muted-foreground hover:text-foreground">
                   <X className="h-4 w-4" />
                 </button>
               </div>
             ) : (
-              <SecondaryButton onClick={() => setFile(props.defaultFileName)}>
-                <Paperclip className="h-3.5 w-3.5" />
-                {t("taskDetail.d_attach")}
-              </SecondaryButton>
+              <>
+                <input
+                  ref={input}
+                  type="file"
+                  className="sr-only"
+                  aria-label={t("owner.d_upload_file")}
+                  onChange={(e) => {
+                    const picked = e.target.files?.[0];
+                    if (picked) setFile(picked);
+                    e.target.value = "";
+                  }}
+                />
+                <SecondaryButton onClick={() => input.current?.click()}>
+                  <Paperclip className="h-3.5 w-3.5" />
+                  {t("taskDetail.d_attach")}
+                </SecondaryButton>
+              </>
             )}
           </div>
           <Field label={t("owner.d_upload_note")}>
@@ -296,7 +320,7 @@ export function AnswerRequestDialog(props: {
         </div>
         <DialogFooter>
           <SecondaryButton onClick={() => props.onOpenChange(false)}>{t("taskDetail.d_cancel")}</SecondaryButton>
-          <PrimaryButton disabled={!file || props.pending} onClick={() => file && props.onSubmit({ file_name: file, note: note.trim() })}>
+          <PrimaryButton disabled={!file || props.pending} onClick={() => file && props.onSubmit({ file_name: file.name, note: note.trim(), file })}>
             {t("owner.d_upload_send")}
           </PrimaryButton>
         </DialogFooter>

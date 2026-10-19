@@ -1,6 +1,6 @@
 import { TODAY } from "@/config/app";
 import { nowIso } from "@/config/app";
-import type { ApiClient } from "../repositories";
+import type { ApiClient, BrandProposalUpload, TaskListOptions } from "../repositories";
 import { canTransition, withComputed } from "../computed";
 import { dueNotifications, taskRef } from "../notifications";
 import { computeFranchisability } from "../franchisability";
@@ -16,7 +16,7 @@ import { createFunds, type FundRecord, type StoredDistLine } from "./funds";
 import { seedFunds } from "./seed-funds";
 import { createAccounts } from "./accounts";
 import { isActiveFirm, isActiveUser } from "@/lib/accounts/permissions";
-import type { AccountEvent, BrandEvent, BusinessBrand, FirmEvent } from "../types";
+import type { AccountEvent, BrandEvent, BrandProposal, BusinessBrand, FirmEvent } from "../types";
 import { readyToStart, validDay1, programDayOn } from "@/lib/leads/funds";
 import { tripartiteState } from "@/lib/leads/opportunity";
 import { LEAD_NOTIFICATION_KINDS, type FundPayment, type NotificationKind } from "../types";
@@ -38,6 +38,26 @@ const newId = () => {
   idCounter += 1;
   return `00000000-0000-4000-8000-${idCounter.toString(16).padStart(12, "0")}`;
 };
+
+/** Lowercase without accents, for the "q" search of the task list (as the API's Spanish full text). */
+const searchable = (text: string) => text.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+/** The same filters GET /tasks applies (TaskListOptions). */
+function matchesTaskFilters(t: Task, opts: TaskListOptions | undefined): boolean {
+  if (!opts?.include_cancelled && t.status === "cancelled") return false;
+  if (opts?.business_id && t.business_id !== opts.business_id) return false;
+  if (opts?.area?.length && !opts.area.includes(t.area)) return false;
+  if (opts?.status?.length && !opts.status.includes(t.status)) return false;
+  if (opts?.assignee_user_id && t.assignee_user_id !== opts.assignee_user_id) return false;
+  if (opts?.due_from && t.due_date < opts.due_from) return false;
+  if (opts?.due_to && t.due_date > opts.due_to) return false;
+  const q = opts?.q?.trim();
+  if (q && q.length >= 2 && !searchable(`${t.name} ${t.acceptance_criteria}`).includes(searchable(q))) return false;
+  return true;
+}
+
+/** The mock keeps the names only: the picked Files (for the HTTP adapter) stay out of the stored version. */
+const brandProposalOf = ({ manual_file: _manual, logo_file: _logo, ...proposal }: BrandProposalUpload): BrandProposal => proposal;
 
 /** In-memory backend; filters by current user to simulate API authorization. */
 /** The mock client plus the controls mixed mode needs on its session (see ../http/mixed-mode.ts). */
@@ -658,8 +678,7 @@ export function createMockApi(): MockApi {
     },
     tasks: {
       resolvePreValidation: entry.resolvePreValidation,
-      list: (opts) =>
-        delay(visibleTasks().filter((t) => opts?.include_cancelled || t.status !== "cancelled").map(computed)),
+      list: (opts) => delay(visibleTasks().filter((t) => matchesTaskFilters(t, opts)).map(computed)),
       update: async (ids, patch) => {
         smOnly();
         const changed = ids.map(findTask).map((t) => {
@@ -752,7 +771,7 @@ export function createMockApi(): MockApi {
           note: input.note, files: input.file_names.map((name) => ({ id: newId(), name, size_kb: 480 })),
           status: "submitted", review_comment_id: null,
           // B5-13: the brand read from the manual travels with the version and applies when the owner approves it.
-          brand: t.code === "B5-13" && input.brand ? input.brand : null,
+          brand: t.code === "B5-13" && input.brand ? brandProposalOf(input.brand) : null,
         };
         db.versions.push(v);
         pushEvent(id, "submitted", v.version);

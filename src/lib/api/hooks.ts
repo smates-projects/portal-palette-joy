@@ -1,8 +1,7 @@
 import { keepPreviousData, useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./index";
-import type { DocumentUpload, SubmitVersionInput } from "./repositories";
+import type { DocumentUpload, SetBrandInput, SubmitVersionInput } from "./repositories";
 import type {
-  BrandPalette,
   BusinessProfilePatch,
   CatalogItemInput,
   ContractSignature,
@@ -164,7 +163,7 @@ export const useUnstartTask = () => useTaskMutation((id: string) => api.tasks.up
 export const useSubmitVersion = () =>
   useTaskMutation((v: { id: string } & SubmitVersionInput) => api.tasks.submitVersion(v.id, v));
 export const useAddComment = () =>
-  useTaskMutation((v: { id: string; body: string; file_id: string | null }) => api.tasks.addComment(v.id, v));
+  useTaskMutation((v: { id: string; body: string; file_id: string | null; file?: File | null }) => api.tasks.addComment(v.id, v));
 export const useAddOwnerRequest = () =>
   useTaskMutation((v: { id: string; question: string; due_date: string }) => api.tasks.addOwnerRequest(v.id, v));
 export const useSetOwnerRequestResolved = () =>
@@ -189,7 +188,7 @@ export const useSetNotificationPreference = () =>
 export const useApproveTask = () => useTaskMutation((id: string) => api.tasks.approve(id));
 export const useRequestChanges = () => useTaskMutation((v: { id: string; note: string }) => api.tasks.requestChanges(v.id, v.note));
 export const useAnswerOwnerRequest = () =>
-  useTaskMutation((v: { requestId: string; file_name: string; note: string }) => api.tasks.answerOwnerRequest(v.requestId, v));
+  useTaskMutation((v: { requestId: string; file_name: string; note: string; file?: File | null }) => api.tasks.answerOwnerRequest(v.requestId, v));
 export const useConfirmMeeting = () => useTaskMutation((id: string) => api.tasks.confirmMeeting(id));
 
 export const useUpdateTasks = () =>
@@ -355,7 +354,7 @@ export const useBusinessBrand = (businessId?: string, enabled = true) =>
   useQuery({ queryKey: ["brand", "business", businessId ?? "own"], queryFn: () => api.brand.get(businessId), enabled });
 export const useBrandEvents = (businessId: string | undefined) =>
   useQuery({ queryKey: ["brand", "events", businessId], queryFn: () => api.brand.listEvents(businessId!), enabled: !!businessId });
-export const useSetBrand = () => useNetworkMutation((v: { businessId: string; palette: BrandPalette }) => api.brand.set(v.businessId, v.palette), ["brand"]);
+export const useSetBrand = () => useNetworkMutation((v: { businessId: string; palette: SetBrandInput }) => api.brand.set(v.businessId, v.palette), ["brand"]);
 export const useResetBrand = () => useNetworkMutation((businessId: string) => api.brand.reset(businessId), ["brand"]);
 
 export const useBusinessEvents = (businessId: string) =>

@@ -27,9 +27,12 @@ export interface LeadMeetingItem {
 export type PreValidation = "pending" | "existing" | "needed";
 export type ApprovalSource = "deliverable" | "existing";
 
-/** "Ya lo tenía" (with the evidence the owner showed), "Hay que hacerla", or back to "A validar" (undo). */
+/**
+ * "Ya lo tenía" (with the evidence the owner showed), "Hay que hacerla", or back to "A validar" (undo). The mock keeps
+ * evidence_file_name; the HTTP adapter uploads evidence_file and refuses a name without its File ("invalid_file").
+ */
 export type PreValidationInput =
-  | { decision: "existing"; evidence_file_name: string; note: string }
+  | { decision: "existing"; evidence_file_name: string; note: string; evidence_file?: File | null | undefined }
   | { decision: "needed" }
   | { decision: "pending" };
 

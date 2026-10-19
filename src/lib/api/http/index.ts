@@ -6,6 +6,7 @@ import i18n from "@/lib/i18n";
 import type { ApiClient } from "../repositories";
 import { createHttpClient, type HttpClient, type HttpClientConfig } from "./client";
 import { createHttpBishopRepository } from "./bishop";
+import { createHttpBrandRepository } from "./brand";
 import { createHttpBusinessFileRepository } from "./business-file";
 import { createHttpBusinessProfileRepository } from "./business-profile";
 import { createHttpBusinessesRepository } from "./businesses";
@@ -19,6 +20,7 @@ import { createHttpOrganizationsRepository } from "./organizations";
 import { createHttpRoutingRepository } from "./routing";
 import { createHttpRulesRepository } from "./rules";
 import { createHttpSessionRepository } from "./session";
+import { createHttpTasksRepository } from "./tasks";
 import { createHttpUsersRepository } from "./users";
 
 export type RepositoryMode = "mock" | "http";
@@ -40,6 +42,8 @@ export const HTTP_REPOSITORIES = {
   distribution: "DISTRIBUTION",
   rules: "RULES",
   catalog: "CATALOG",
+  tasks: "TASKS",
+  brand: "BRAND",
 } as const satisfies Partial<Record<keyof ApiClient, string>>;
 
 export type HttpRepositoryKey = keyof typeof HTTP_REPOSITORIES;
@@ -81,6 +85,8 @@ export function createHttpRepositories(client: HttpClient): HttpRepositories {
     distribution: createHttpDistributionRepository(client),
     rules: createHttpRulesRepository(client),
     catalog: createHttpCatalogRepository(client),
+    tasks: createHttpTasksRepository(client),
+    brand: createHttpBrandRepository(client),
   };
 }
 

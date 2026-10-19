@@ -4,6 +4,7 @@ import {
   IDS,
   businessFixture,
   dataResponse,
+  jsonResponse,
   problemResponse,
   stubFetch,
   testClient,
@@ -27,52 +28,99 @@ describe("http businesses", () => {
     expect(calls[0]).toMatchObject({ method: "GET", path: "/businesses" });
   });
 
-  it("getFranchisability (gap): rejects with not_implemented without calling the API", async () => {
-    const { calls } = stubFetch();
-    await expect(setup().businesses.getFranchisability(IDS.business)).rejects.toThrow(
-      "not_implemented",
-    );
-    expect(calls).toHaveLength(0);
+  it("getFranchisability: GET /businesses/{id}/franchisability", async () => {
+    const franchisability = {
+      business_id: IDS.business,
+      franchisability_pct: 64,
+      franchisability_goal: 80,
+      required_task_codes: ["B1-01", "B6-01"],
+      missing_required: ["B6-01"],
+      is_ready: false,
+    };
+    const { calls } = stubFetch(dataResponse(franchisability));
+    expect(await setup().businesses.getFranchisability(IDS.business)).toEqual(franchisability);
+    expect(calls[0]).toMatchObject({
+      method: "GET",
+      path: `/businesses/${IDS.business}/franchisability`,
+    });
   });
 
-  it("listEvents: GET /businesses/{id}/events, consultant changes only, in the front's shape", async () => {
+  it("listEvents: GET /businesses/{id}/events, every page, consultant changes by a person only", async () => {
     const base = {
       business_id: IDS.business,
       actor_user_id: IDS.andrea,
       created_at: "2026-10-01T12:00:00.000Z",
+      from_status: null,
+      to_status: null,
+      from_user_id: null,
+      to_user_id: null,
     };
     const { calls } = stubFetch(
-      dataResponse([
-        {
-          ...base,
-          id: IDS.event,
-          kind: "consultant_changed",
-          from_user_id: IDS.andrea,
-          to_user_id: NICOLAS,
-          from_status: null,
-          to_status: null,
-        },
-        {
-          ...base,
-          id: IDS.zone,
-          kind: "status_changed",
-          from_user_id: null,
-          to_user_id: null,
-          from_status: "onboarding",
-          to_status: "in_program",
-        },
-      ]),
+      jsonResponse({
+        data: [
+          {
+            ...base,
+            id: IDS.event,
+            kind: "consultant_changed",
+            from_user_id: IDS.andrea,
+            to_user_id: NICOLAS,
+          },
+          {
+            ...base,
+            id: IDS.zone,
+            kind: "status_changed",
+            from_status: "onboarding",
+            to_status: "in_program",
+          },
+          {
+            ...base,
+            id: IDS.member,
+            kind: "task_event",
+            task_id: IDS.request,
+            task_code: "B1-01",
+            task_event_kind: "submitted",
+          },
+        ],
+        meta: { next_cursor: "c2" },
+      }),
+      jsonResponse({
+        data: [
+          {
+            ...base,
+            id: IDS.request,
+            kind: "activity",
+            activity_kind: "brand.set_by_sm",
+            subject_type: "brand",
+            subject_id: IDS.business,
+            payload: {},
+          },
+          // A system assignment: the front's BusinessEvent needs a person as actor.
+          {
+            ...base,
+            id: IDS.newFirm,
+            kind: "consultant_changed",
+            actor_user_id: null,
+            to_user_id: NICOLAS,
+          },
+        ],
+        meta: { next_cursor: null },
+      }),
     );
     expect(await setup().businesses.listEvents(IDS.business)).toEqual([
       {
-        ...base,
         id: IDS.event,
+        business_id: IDS.business,
         kind: "consultant_changed",
+        actor_user_id: IDS.andrea,
         from_user_id: IDS.andrea,
         to_user_id: NICOLAS,
+        created_at: "2026-10-01T12:00:00.000Z",
       },
     ]);
-    expect(calls[0]).toMatchObject({ method: "GET", path: `/businesses/${IDS.business}/events` });
+    expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual([
+      `GET /businesses/${IDS.business}/events?limit=200`,
+      `GET /businesses/${IDS.business}/events?limit=200&cursor=c2`,
+    ]);
   });
 
   it("setConsultant: reads the business for its ETag, then PATCH /consultant with If-Match", async () => {

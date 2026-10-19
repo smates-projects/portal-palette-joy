@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FileText, Image, Loader2, Paperclip, X } from "lucide-react";
-import type { BrandPalette, BrandProposal } from "@/lib/api/types";
+import type { BrandProposalUpload } from "@/lib/api/repositories";
+import type { BrandPalette } from "@/lib/api/types";
 import { checkAccent, checkPrimary, isHex } from "@/lib/brand/contrast";
 import { brandFileNames, detectBrandFromManual, readImageAsDataUrl, READING_DELAY_MS } from "@/lib/brand/detect";
 import { SecondaryButton } from "@/components/tasks/detail/dialogs";
@@ -12,19 +13,21 @@ import { BrandPreview } from "./BrandPreview";
  * Brand capture used in the B5-13 delivery ("Diagnóstico de marca y manual básico de uso") and by SM when it
  * loads a brand by hand. The firm picks the manual PDF and the logo image from its computer; the app "reads" the
  * manual (simulated) and prefills the palette, the logo shows at once in the preview. The firm corrects the palette
- * before sending. Contrast is checked against AA with a darker tone proposed when it falls short.
+ * before sending. Contrast is checked against AA with a darker tone proposed when it falls short. The picked Files go
+ * out with the proposal (manual_file, logo_file) so the real API can upload them; the mock keeps the names.
  */
 export function BrandCaptureSection({ businessName, value, onChange, mode = "delivery" }: {
   businessName: string;
-  value: BrandProposal | null;
-  onChange: (v: BrandProposal | null) => void;
+  value: BrandProposalUpload | null;
+  onChange: (v: BrandProposalUpload | null) => void;
   /** delivery: manual PDF first, then the palette. manual: SM types the palette straight away. */
   mode?: "delivery" | "manual";
 }) {
   const { t } = useTranslation();
   const names = brandFileNames(businessName);
   const [manual, setManual] = useState<string | null>(value?.manual_file_name ?? (mode === "manual" ? names.manual : null));
-  const [logo, setLogo] = useState<{ name: string; url: string } | null>(value?.logo_file_name ? { name: value.logo_file_name, url: value.logo_url ?? "" } : null);
+  const [manualFile, setManualFile] = useState<File | null>(value?.manual_file ?? null);
+  const [logo, setLogo] = useState<{ name: string; url: string; file: File | null } | null>(value?.logo_file_name ? { name: value.logo_file_name, url: value.logo_url ?? "", file: value.logo_file ?? null } : null);
   const [reading, setReading] = useState(false);
   const [palette, setPalette] = useState<BrandPalette | null>(value ? { primary_color: value.primary_color, accent_color: value.accent_color, font_family: value.font_family, logo_file_name: value.logo_file_name, logo_url: value.logo_url } : null);
 
@@ -51,11 +54,12 @@ export function BrandCaptureSection({ businessName, value, onChange, mode = "del
   // Tell the parent whenever the proposal is complete and valid.
   useEffect(() => {
     if (!manual || !palette || !isHex(palette.primary_color) || !isHex(palette.accent_color)) return onChange(null);
-    onChange({ ...palette, logo_file_name: logo?.name ?? null, logo_url: logo?.url || null, manual_file_name: manual });
+    onChange({ ...palette, logo_file_name: logo?.name ?? null, logo_url: logo?.url || null, manual_file_name: manual, manual_file: manualFile, logo_file: logo?.file ?? null });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [manual, logo, palette]);
+  }, [manual, manualFile, logo, palette]);
 
-  const attachLogo = async (file: File) => setLogo({ name: file.name, url: await readImageAsDataUrl(file) });
+  const attachLogo = async (file: File) => setLogo({ name: file.name, url: await readImageAsDataUrl(file), file });
+  const attachManual = (file: File) => { setManual(file.name); setManualFile(file); };
   const set = (k: keyof BrandPalette, v: string) => setPalette((p) => (p ? { ...p, [k]: v } : p));
   const primary = palette && isHex(palette.primary_color) ? checkPrimary(palette.primary_color) : null;
   const accent = palette && isHex(palette.accent_color) ? checkAccent(palette.accent_color) : null;
@@ -74,7 +78,7 @@ export function BrandCaptureSection({ businessName, value, onChange, mode = "del
 
       {mode === "delivery" && (
         <div className="space-y-2">
-          <FileRow label={t("brand.manual_file")} file={manual} accept="application/pdf" icon={<FileText className="h-4 w-4 text-muted-foreground" />} onAttach={(f) => setManual(f.name)} onRemove={() => { setManual(null); setPalette(null); }} attachLabel={t("brand.attach_manual")} />
+          <FileRow label={t("brand.manual_file")} file={manual} accept="application/pdf" icon={<FileText className="h-4 w-4 text-muted-foreground" />} onAttach={attachManual} onRemove={() => { setManual(null); setManualFile(null); setPalette(null); }} attachLabel={t("brand.attach_manual")} />
           {logoRow}
         </div>
       )}

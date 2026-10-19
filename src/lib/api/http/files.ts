@@ -9,7 +9,18 @@ import { ApiError, type HttpClient } from "./client";
 
 /** `files.owner_type` values the front uploads to today (FILE_CONTEXTS of the API). */
 export type FileContext =
-  "intake_document" | "contract_signature" | "fund_payment" | "distribution_payment";
+  | "intake_document"
+  | "contract_signature"
+  | "fund_payment"
+  | "distribution_payment"
+  | "task_version"
+  | "task_comment"
+  | "owner_request"
+  | "pre_validation"
+  /** Logos only (png, svg, jpg; public once applied). */
+  | "brand"
+  /** Any other document (pdf, png, jpg, docx, xlsx), private. */
+  | "other";
 
 interface PresignedFile {
   file_id: Uuid;
@@ -31,6 +42,7 @@ export interface UploadOptions {
 const MIME_BY_EXTENSION: Record<string, string> = {
   pdf: "application/pdf",
   png: "image/png",
+  svg: "image/svg+xml",
   jpg: "image/jpeg",
   jpeg: "image/jpeg",
   docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -42,6 +54,14 @@ export function mimeOf(blob: Blob, name: string): string {
   const extension = name.split(".").pop()?.toLowerCase() ?? "";
   return MIME_BY_EXTENSION[extension] ?? "application/octet-stream";
 }
+
+/** A real File (or Blob) picked in an input. A file name or the mock's placeholder is not one: it has no bytes. */
+export const isBlob = (value: unknown): value is Blob =>
+  typeof Blob !== "undefined" && value instanceof Blob;
+
+/** What an adapter throws, without calling the API, when it was given a name where it needs the file itself. */
+export const invalidFile = (detail: string): ApiError =>
+  new ApiError({ code: "invalid_file", status: 422, detail });
 
 /** Uploads one file and answers its id, ready to attach. Every failure is an ApiError the screens can show. */
 export async function uploadFile(
@@ -111,6 +131,24 @@ export async function uploadReceipt(
     });
   }
   return uploadFile(client, receipt, { context, businessId });
+}
+
+// ---------- Brand logos ----------
+
+/**
+ * The logo of a brand as bytes to upload: the File picked, or the data URL the capture read it into (BrandCapture
+ * keeps the logo that way for the preview). Null when there is no logo. Any other URL (a logo already stored by the
+ * API) has no bytes here and the API has no way to keep it by reference: invalid_file.
+ */
+export function logoBlob(
+  file: File | null | undefined,
+  url: string | null | undefined,
+): Blob | null {
+  if (isBlob(file)) return file;
+  if (!url) return null;
+  const blob = url.startsWith("data:") ? dataUrlToBlob(url) : null;
+  if (!blob) throw invalidFile("Pick the logo file to upload.");
+  return blob;
 }
 
 // ---------- Signature images ----------

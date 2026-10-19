@@ -56,6 +56,20 @@ describe("mock authorization", () => {
     const xyz = await api.tasks.list();
     expect(xyz.every((t) => t.organization_id === seed.ORG_XYZ)).toBe(true);
   });
+  it("list filters (the same GET /tasks takes): business, area, status, due window and q", async () => {
+    const api = createMockApi();
+    const perez = await api.tasks.list();
+    const vossler = await api.tasks.list({ business_id: seed.BIZ_VOSSLER, area: ["B6"] });
+    expect(vossler.length).toBeGreaterThan(0);
+    expect(vossler.every((t) => t.business_id === seed.BIZ_VOSSLER && t.area === "B6")).toBe(true);
+    const accepted = await api.tasks.list({ status: ["accepted"] });
+    expect(accepted).toEqual(perez.filter((t) => t.status === "accepted"));
+    const first = perez[0]!;
+    const due = await api.tasks.list({ due_from: first.due_date, due_to: first.due_date });
+    expect(due.every((t) => t.due_date === first.due_date)).toBe(true);
+    const word = first.name.split(" ").find((w) => w.length >= 3)!.toUpperCase();
+    expect((await api.tasks.list({ q: word })).map((t) => t.id)).toContain(first.id);
+  });
   it("Nicolás García is offered as the SM team user", async () => {
     const api = createMockApi();
     const opts = await api.session.getViewAsOptions();

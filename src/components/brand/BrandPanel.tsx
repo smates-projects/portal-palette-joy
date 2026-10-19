@@ -4,7 +4,8 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useBrandEvents, useBusinessBrand, useBusinesses, useCurrentUser, useResetBrand, useSetBrand, useUsersWithInactive } from "@/lib/api/hooks";
-import type { BrandEvent, BrandProposal, BusinessBrand } from "@/lib/api/types";
+import type { BrandProposalUpload } from "@/lib/api/repositories";
+import type { BrandEvent, BusinessBrand } from "@/lib/api/types";
 import { BRAND_TASK_CODE, canResetBrand, canSetBrand } from "@/lib/brand/scope";
 import { formatDateTime } from "@/lib/format";
 import { linkBtn, primaryBtn, secondaryBtn } from "@/components/accounts/shared";
@@ -119,8 +120,8 @@ function Swatch({ label, color }: { label: string; color: string }) {
 function ManualBrandDialog({ businessId, businessName, current, onClose }: { businessId: string; businessName: string; current: BusinessBrand | null; onClose: () => void }) {
   const { t } = useTranslation();
   const setBrand = useSetBrand();
-  const [proposal, setProposal] = useState<BrandProposal | null>(null);
-  const initial: BrandProposal | null = current ? { primary_color: current.primary_color, accent_color: current.accent_color, font_family: current.font_family, logo_file_name: current.logo_file_name, logo_url: current.logo_url, manual_file_name: current.manual_file_name ?? "" } : null;
+  const [proposal, setProposal] = useState<BrandProposalUpload | null>(null);
+  const initial: BrandProposalUpload | null = current ? { primary_color: current.primary_color, accent_color: current.accent_color, font_family: current.font_family, logo_file_name: current.logo_file_name, logo_url: current.logo_url, manual_file_name: current.manual_file_name ?? "" } : null;
   const submit = () => {
     if (!proposal) return;
     const { manual_file_name: _m, ...palette } = proposal;

@@ -96,6 +96,12 @@ describe("repository selection (VITE_API_MODE and VITE_API_MODE_<REPO>)", () => 
     });
   });
 
+  it("phase 4 repositories (tasks, brand) have their own override", () => {
+    expect(
+      resolveRepositoryModes({ VITE_API_MODE_TASKS: "http", VITE_API_MODE_BRAND: "http" }),
+    ).toMatchObject({ tasks: "http", brand: "http", businesses: "mock" });
+  });
+
   it("unknown values fall back to the mock", () => {
     expect(
       resolveRepositoryModes({ VITE_API_MODE: "laravel", VITE_API_MODE_USERS: " HTTP " }),
