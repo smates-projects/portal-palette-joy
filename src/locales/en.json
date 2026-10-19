@@ -2980,5 +2980,119 @@
       "read_only": "Read only. Strategic Mates records the payments and splits the funds among the firms.",
       "go_to_funds": "See your funds"
     }
+  },
+  "auth": {
+    "by_sm": "by Strategic Mates",
+    "back_to_login": "Back to sign in",
+    "fields": {
+      "email": "Email",
+      "email_placeholder": "name@company.com",
+      "password": "Password",
+      "new_password": "New password",
+      "confirm_password": "Repeat the password",
+      "name": "Your first and last name"
+    },
+    "validation": {
+      "email_required": "Type your email.",
+      "email_invalid": "Check the email. It should look like this: name@company.com.",
+      "password_required": "Type your password.",
+      "name_required": "Type your name.",
+      "password_short": "The password needs at least {{min}} characters.",
+      "password_mismatch": "The two passwords are not the same. Type them again.",
+      "terms_required": "To create your account, tick that you accept the terms."
+    },
+    "password_hint": {
+      "min": "Use at least {{min}} characters.",
+      "missing_one": "1 more character to go.",
+      "missing_other": "{{count}} more characters to go.",
+      "ok": "Long enough. Mixing letters, numbers and symbols makes it safer."
+    },
+    "errors": {
+      "invalid_credentials": "The email or the password do not match",
+      "invalid_credentials_help": "Check that they are spelled right. If you do not remember your password, you can change it or sign in with a link by email.",
+      "account_inactive": "Your account is deactivated",
+      "account_inactive_help": "Talk to your Strategic Mates consultant to turn it back on.",
+      "generic": "We could not finish this step",
+      "generic_help": "Check your internet connection and try again."
+    },
+    "token": {
+      "token_expired": "This link has expired",
+      "token_used": "This link was already used",
+      "token_invalid": "This link is not valid",
+      "invalid_help": "Check that the link is complete. If you copied it, copy the whole link from the email."
+    },
+    "login": {
+      "title": "Sign in to your portal",
+      "subtitle": "Use the email Strategic Mates invited you with.",
+      "submit": "Sign in",
+      "pending": "Signing in…",
+      "forgot": "Forgot your password?",
+      "use_magic": "Sign in with a link by email",
+      "demo_hint": "Demo: every test account uses the password {{password}}",
+      "reset_done": "Done, your password is changed. Sign in with the new one."
+    },
+    "magic": {
+      "title": "Sign in with a link",
+      "subtitle": "We send a link to your email. You open it and you are in, no password.",
+      "submit": "Send me the link",
+      "pending": "Sending…",
+      "use_password": "Sign in with password"
+    },
+    "sent": {
+      "title": "Check your email",
+      "body": "If <email>{{email}}</email> has an account, we sent a link to sign in.",
+      "body_no_email": "If your email has an account, we sent a link to sign in.",
+      "rules": "The link works once and expires in 15 minutes.",
+      "spam": "Did not get it? Look in the spam folder or ask for another link."
+    },
+    "magic_exchange": {
+      "pending": "Signing in to your portal…",
+      "help": "Sign-in links last 15 minutes and work once. Ask for a new one and you will get another email.",
+      "inactive_help": "Your account is deactivated. Talk to your Strategic Mates consultant.",
+      "request_new": "Ask for a new link"
+    },
+    "invitation": {
+      "loading": "Checking your invitation…",
+      "title": "Create your account",
+      "intro": "{{inviter}} invited you to the Strategic Mates portal.",
+      "intro_no_inviter": "Strategic Mates invited you to its portal.",
+      "business": "Business",
+      "organization": "Organization",
+      "role": "You join as",
+      "email": "Your email",
+      "expires": "The invitation expires on {{date}}.",
+      "terms": "I accept the <terms>terms</terms> and the <privacy>privacy policy</privacy>",
+      "submit": "Create my account",
+      "pending": "Creating your account…",
+      "expired_title": "This invitation has expired",
+      "expired_body": "Invitations last 7 days. Ask for a new one and you will get another email.",
+      "used_title": "This invitation was already used",
+      "used_body": "You already created your account with this link. Sign in with your email and password.",
+      "invalid_title": "We could not find this invitation",
+      "request_new": "Ask for a new invitation",
+      "request_new_note": "Write to your Strategic Mates consultant and ask for a new invitation. It will arrive by email.",
+      "go_login": "Go to sign in"
+    },
+    "forgot": {
+      "title": "Change your password",
+      "subtitle": "Type your email. We send you instructions to create a new password.",
+      "submit": "Send me instructions",
+      "pending": "Sending…",
+      "done_title": "Check your email",
+      "done_body": "If <email>{{email}}</email> has an account, we sent you instructions. The link expires in 1 hour.",
+      "other_email": "Use another email"
+    },
+    "reset": {
+      "title": "Create a new password",
+      "subtitle": "After this you sign in with this password.",
+      "submit": "Save password",
+      "pending": "Saving…",
+      "help": "Password links last 1 hour and work once. Ask for a new one.",
+      "request_new": "Ask for a new link"
+    },
+    "logout": {
+      "action": "Sign out",
+      "error": "We could not sign you out. Try again."
+    }
   }
 }

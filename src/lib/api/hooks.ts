@@ -79,6 +79,67 @@ export function useSetGoogleCalendar() {
   });
 }
 
+// ---------- Sign-in (public screens) ----------
+/** Queries of the sign-in screens themselves; kept when the session changes. */
+const AUTH_KEY = "auth";
+
+/** A new person signed in: drop every cached answer of the previous session (nothing of it may show). */
+const resetSessionCache = (qc: ReturnType<typeof useQueryClient>) =>
+  qc.removeQueries({ predicate: (q) => q.queryKey[0] !== AUTH_KEY });
+
+/**
+ * Synchronous read for the route guard. Subscribed to the session query, so a logout (which invalidates it)
+ * re-renders the guard.
+ */
+export function useIsAuthenticated(): boolean {
+  useCurrentUser();
+  return api.session.isAuthenticated();
+}
+
+function useSessionStart<V>(fn: (vars: V) => Promise<unknown>) {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: fn, onSuccess: () => resetSessionCache(qc) });
+}
+export const useLogin = () => useSessionStart((v: import("./types").LoginInput) => api.session.login(v));
+export const useAcceptInvitation = () => useSessionStart((v: import("./types").AcceptInvitationInput) => api.session.acceptInvitation(v));
+
+export function useLogout() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (_: void) => api.session.logout(),
+    // Not awaited: the caller navigates to /login right away and the shell unmounts.
+    onSuccess: () => void qc.invalidateQueries({ queryKey: queryKeys.me }),
+  });
+}
+export const useRequestMagicLink = () => useMutation({ mutationFn: (email: string) => api.session.requestMagicLink(email) });
+export const useForgotPassword = () => useMutation({ mutationFn: (email: string) => api.session.forgotPassword(email) });
+export const useResetPassword = () => useMutation({ mutationFn: (v: import("./types").ResetPasswordInput) => api.session.resetPassword(v) });
+
+/** Reads the invitation (who, which business, which role). A bad token is an answer, not something to retry. */
+export const useExchangeInvitation = (token: string) =>
+  useQuery({ queryKey: [AUTH_KEY, "invitation", token], queryFn: () => api.session.exchangeInvitation(token), retry: false, staleTime: Infinity, refetchOnWindowFocus: false });
+
+/**
+ * Uses the magic link once and starts the session. A query (not a mutation) so a remount or React StrictMode
+ * shares the same exchange instead of spending the single-use token twice.
+ */
+export function useExchangeMagicLink(token: string) {
+  const qc = useQueryClient();
+  return useQuery({
+    queryKey: [AUTH_KEY, "magic-link", token],
+    queryFn: async () => {
+      const user = await api.session.exchangeMagicLink(token);
+      resetSessionCache(qc);
+      return user;
+    },
+    retry: false,
+    staleTime: Infinity,
+    gcTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
+}
+
 export function useSetViewAs() {
   const qc = useQueryClient();
   return useMutation({

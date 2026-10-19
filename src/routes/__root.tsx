@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
   type ErrorComponentProps,
@@ -16,6 +17,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import "../lib/i18n";
 import { AppShell } from "@/components/layout/AppShell";
+import { isPublicAuthPath } from "@/lib/auth/redirect";
 
 const primaryBtn =
   "inline-flex items-center justify-center rounded-[4px] bg-primary px-4 py-2 font-display text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover";
@@ -117,12 +119,18 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  // Sign-in screens are public: no rail, no top bar, no route guard. They bring their own AuthLayout.
+  const isPublic = useRouterState({ select: (s) => isPublicAuthPath(s.location.pathname) });
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AppShell>
+      {isPublic ? (
         <Outlet />
-      </AppShell>
+      ) : (
+        <AppShell>
+          <Outlet />
+        </AppShell>
+      )}
       <Toaster position="bottom-right" />
     </QueryClientProvider>
   );

@@ -2980,5 +2980,119 @@
       "read_only": "Solo lectura. Strategic Mates registra los pagos y reparte los fondos entre las firmas.",
       "go_to_funds": "Ver tus fondos"
     }
+  },
+  "auth": {
+    "by_sm": "by Strategic Mates",
+    "back_to_login": "Volver a entrar",
+    "fields": {
+      "email": "Correo",
+      "email_placeholder": "nombre@empresa.com",
+      "password": "Contraseña",
+      "new_password": "Contraseña nueva",
+      "confirm_password": "Repite la contraseña",
+      "name": "Tu nombre y apellido"
+    },
+    "validation": {
+      "email_required": "Escribe tu correo.",
+      "email_invalid": "Revisa el correo. Debe verse así: nombre@empresa.com.",
+      "password_required": "Escribe tu contraseña.",
+      "name_required": "Escribe tu nombre.",
+      "password_short": "La contraseña necesita al menos {{min}} caracteres.",
+      "password_mismatch": "Las dos contraseñas no son iguales. Escríbelas de nuevo.",
+      "terms_required": "Para crear tu cuenta, marca que aceptas los términos."
+    },
+    "password_hint": {
+      "min": "Usa al menos {{min}} caracteres.",
+      "missing_one": "Te falta 1 carácter.",
+      "missing_other": "Te faltan {{count}} caracteres.",
+      "ok": "Largo suficiente. Si mezclas letras, números y signos, es más segura."
+    },
+    "errors": {
+      "invalid_credentials": "El correo o la contraseña no coinciden",
+      "invalid_credentials_help": "Revisa que estén bien escritos. Si no recuerdas tu contraseña, puedes cambiarla o entrar con un enlace por correo.",
+      "account_inactive": "Tu cuenta está desactivada",
+      "account_inactive_help": "Habla con tu consultor de Strategic Mates para activarla de nuevo.",
+      "generic": "No pudimos completar este paso",
+      "generic_help": "Revisa tu conexión a internet e intenta de nuevo."
+    },
+    "token": {
+      "token_expired": "Este enlace ya venció",
+      "token_used": "Este enlace ya se usó",
+      "token_invalid": "Este enlace no es válido",
+      "invalid_help": "Revisa que el enlace esté completo. Si lo copiaste, copia todo el enlace del correo."
+    },
+    "login": {
+      "title": "Entra a tu portal",
+      "subtitle": "Usa el correo con el que te invitó Strategic Mates.",
+      "submit": "Entrar",
+      "pending": "Entrando…",
+      "forgot": "¿Olvidaste tu contraseña?",
+      "use_magic": "Entrar con un enlace por correo",
+      "demo_hint": "Demo: todas las cuentas de prueba usan la contraseña {{password}}",
+      "reset_done": "Listo, ya cambiaste tu contraseña. Entra con la nueva."
+    },
+    "magic": {
+      "title": "Entra con un enlace",
+      "subtitle": "Te mandamos un enlace a tu correo. Lo abres y entras, sin contraseña.",
+      "submit": "Enviarme el enlace",
+      "pending": "Enviando…",
+      "use_password": "Entrar con contraseña"
+    },
+    "sent": {
+      "title": "Revisa tu correo",
+      "body": "Si <email>{{email}}</email> tiene una cuenta, te mandamos un enlace para entrar.",
+      "body_no_email": "Si tu correo tiene una cuenta, te mandamos un enlace para entrar.",
+      "rules": "El enlace sirve una sola vez y vence en 15 minutos.",
+      "spam": "¿No te llegó? Mira en la carpeta de correo no deseado o pide otro enlace."
+    },
+    "magic_exchange": {
+      "pending": "Entrando a tu portal…",
+      "help": "Los enlaces para entrar duran 15 minutos y sirven una sola vez. Pide uno nuevo y te llegará otro correo.",
+      "inactive_help": "Tu cuenta está desactivada. Habla con tu consultor de Strategic Mates.",
+      "request_new": "Pedir un enlace nuevo"
+    },
+    "invitation": {
+      "loading": "Revisando tu invitación…",
+      "title": "Crea tu cuenta",
+      "intro": "{{inviter}} te invitó al portal de Strategic Mates.",
+      "intro_no_inviter": "Strategic Mates te invitó a su portal.",
+      "business": "Negocio",
+      "organization": "Organización",
+      "role": "Entras como",
+      "email": "Tu correo",
+      "expires": "La invitación vence el {{date}}.",
+      "terms": "Acepto los <terms>términos</terms> y la <privacy>política de privacidad</privacy>",
+      "submit": "Crear mi cuenta",
+      "pending": "Creando tu cuenta…",
+      "expired_title": "Esta invitación ya venció",
+      "expired_body": "Las invitaciones duran 7 días. Pide una nueva y te llegará otro correo.",
+      "used_title": "Esta invitación ya se usó",
+      "used_body": "Ya creaste tu cuenta con este enlace. Entra con tu correo y tu contraseña.",
+      "invalid_title": "No encontramos esta invitación",
+      "request_new": "Pedir una invitación nueva",
+      "request_new_note": "Escríbele a tu consultor de Strategic Mates y pídele una invitación nueva. Te llegará por correo.",
+      "go_login": "Ir a entrar"
+    },
+    "forgot": {
+      "title": "Cambia tu contraseña",
+      "subtitle": "Escribe tu correo. Te mandamos instrucciones para crear una contraseña nueva.",
+      "submit": "Enviarme instrucciones",
+      "pending": "Enviando…",
+      "done_title": "Revisa tu correo",
+      "done_body": "Si <email>{{email}}</email> tiene una cuenta, te mandamos instrucciones. El enlace vence en 1 hora.",
+      "other_email": "Usar otro correo"
+    },
+    "reset": {
+      "title": "Crea una contraseña nueva",
+      "subtitle": "Después vas a entrar con esta contraseña.",
+      "submit": "Guardar contraseña",
+      "pending": "Guardando…",
+      "help": "Los enlaces para cambiar la contraseña duran 1 hora y sirven una sola vez. Pide uno nuevo.",
+      "request_new": "Pedir un enlace nuevo"
+    },
+    "logout": {
+      "action": "Cerrar sesión",
+      "error": "No pudimos cerrar tu sesión. Intenta de nuevo."
+    }
   }
 }

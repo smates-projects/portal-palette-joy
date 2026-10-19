@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Link, Navigate, useRouterState } from "@tanstack/react-router";
+import { Link, Navigate, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { ChevronsLeft, ChevronsRight, Search, Check, Eye, Menu } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, Search, Check, Eye, LogOut, Menu, UserRound } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { Logo } from "@/components/brand/Logo";
@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { brandStyle } from "@/lib/brand/style";
 import type { BusinessBrand } from "@/lib/api/types";
 import { LANGUAGE_STORAGE_KEY, type Language } from "@/lib/i18n";
-import { useBusinesses, useCurrentUser, useIsFranchisor, useIsOnboarding, useMyBrand, useSetViewAs, useViewAsOptions } from "@/lib/api/hooks";
+import { useBusinesses, useCurrentUser, useIsAuthenticated, useIsFranchisor, useIsOnboarding, useLogout, useMyBrand, useSetViewAs, useViewAsOptions } from "@/lib/api/hooks";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -140,7 +140,7 @@ function Rail({ collapsed, onToggle, brand, mobile = false }: { collapsed: boole
   );
 }
 
-function LanguageSwitch() {
+export function LanguageSwitch() {
   const { t, i18n } = useTranslation();
   const set = (lng: Language) => {
     void i18n.changeLanguage(lng);
@@ -294,14 +294,20 @@ function ViewAs() {
 }
 
 /**
+ * Without a session, every screen of the shell goes to /login, keeping the attempted path in ?next= (the login
+ * honors it only for paths of this app). The public sign-in screens never get here: the root renders them
+ * outside the AppShell.
  * A role only reaches the screens of its own menu (plus Mi perfil and the task detail). Typing another role's URL
  * (a firm opening /negocios) goes back to its home. The data layer scopes the data anyway; this keeps the UI honest.
  */
 function RouteGuard({ children }: { children: ReactNode }) {
+  const authenticated = useIsAuthenticated();
   const { data: me } = useCurrentUser();
   const franchisor = useIsFranchisor();
   const onboarding = useIsOnboarding();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const href = useRouterState({ select: (s) => s.location.href });
+  if (!authenticated) return <Navigate to="/login" search={href === "/" ? {} : { next: href }} replace />;
   if (!me) return <>{children}</>;
   const allowed = [...navFor(me.role, { franchisor, onboarding }).map((i) => i.to), "/perfil", "/tareas"];
   const ok = pathname === "/" || allowed.some((p) => p !== "/" && (pathname === p || pathname.startsWith(`${p}/`)));
@@ -335,30 +341,66 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
       <NotificationBell />
       <div className="hidden shrink-0 md:block"><LanguageSwitch /></div>
       <ViewAs />
-      {me?.role === "sm_team" ? (
-        // SM has no "Mi perfil" in the menu: the avatar opens it (booking link lives there).
-        <Link
-          to="/perfil"
-          title={me.full_name}
-          aria-label={t("topbar.account")}
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-primary font-display text-xs font-semibold text-primary-foreground hover:bg-primary-hover"
-        >
-          {initials(me.full_name)}
-        </Link>
-      ) : (
-        <div
-          title={me?.full_name}
-          aria-label={t("topbar.account")}
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-primary font-display text-xs font-semibold text-primary-foreground"
-        >
-          {me ? initials(me.full_name) : ""}
-        </div>
-      )}
+      <UserMenu />
     </header>
   );
 }
 
+/**
+ * The avatar opens the account menu: who is signed in, Mi perfil (SM has no "Mi perfil" in the rail; the booking
+ * link lives there) and Cerrar sesión.
+ */
+function UserMenu() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { data: me } = useCurrentUser();
+  const logout = useLogout();
+  const signOut = () =>
+    logout.mutate(undefined, {
+      onSuccess: () => void navigate({ to: "/login", replace: true }),
+      onError: () => toast.error(t("auth.logout.error")),
+    });
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        title={me?.full_name}
+        aria-label={t("topbar.account")}
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary font-display text-xs font-semibold text-primary-foreground hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        {me ? initials(me.full_name) : ""}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-64">
+        {me && (
+          <DropdownMenuLabel className="font-normal">
+            <div className="truncate text-sm font-medium text-foreground">{me.full_name}</div>
+            <div className="truncate text-xs text-muted-foreground">{me.email}</div>
+          </DropdownMenuLabel>
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link to="/perfil" className="flex items-center gap-2">
+            <UserRound className="h-4 w-4" />
+            {t("nav.profile")}
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={signOut} disabled={logout.isPending} className="flex items-center gap-2">
+          <LogOut className="h-4 w-4" />
+          {t("auth.logout.action")}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
+  return (
+    <RouteGuard>
+      <Shell>{children}</Shell>
+    </RouteGuard>
+  );
+}
+
+function Shell({ children }: { children: ReactNode }) {
   const { t, i18n } = useTranslation();
   const [collapsed, setCollapsed] = useState(false);
   // Brand of the current user's business (owner, team, franchisor, franchises); null keeps the SM brand.
@@ -390,7 +432,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </Sheet>
         <div className="flex min-w-0 flex-1 flex-col">
           <TopBar onMenu={() => setMenuOpen(true)} />
-          <main className="min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]"><RouteGuard>{children}</RouteGuard></main>
+          <main className="min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]">{children}</main>
         </div>
       </div>
     </TooltipProvider>

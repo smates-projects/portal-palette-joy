@@ -96,6 +96,6 @@ The small business pays nothing. The Bishop pays SM the program amount (SM Globa
 
 ## Pending (not bugs)
 
-- Backend: a new Laravel 12 API will be built on top of `src/lib/api` as the contract. Until then everything runs on the mock.
+- Backend: a new API (TypeScript, NestJS, PostgreSQL) is being built in a separate repo on top of `src/lib/api` as the contract. Until then everything runs on the mock, and the Lovable preview always stays on the mock. Two folders will arrive from that work and must never be edited in Lovable: `src/shared/domain` (generated copy of the business rules) and `src/lib/api/http` (adapters to the real API).
 - Real integrations come last: DocuSeal, Google Calendar, file storage, transactional email.
 - Decisions pending with Strategic Mates: MOU text, mandatory documents list, Bishop split (50/22/10 is provisional), zones by state or city, real names of the SM Miami team.

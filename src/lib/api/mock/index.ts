@@ -26,6 +26,9 @@ import { AREA_BY_KEY, generateProgramTasks, type CatalogEntry } from "../program
 import { resolveLeadMove } from "@/lib/leads/pipeline";
 import { DEFAULT_ASSESSMENT_AREA_MAP } from "@/lib/leads/prevalidation";
 import { createEntry } from "./entry";
+import { createSession } from "./session";
+
+export { DEMO_PASSWORD } from "./session";
 import type { AreaCode, Business, BusinessEvent, CatalogAdminItem, Lead, LeadEvent, LeadWithComputed } from "../types";
 
 const delay = <T,>(v: T, ms = 120) => new Promise<T>((r) => setTimeout(() => r(structuredClone(v)), ms));
@@ -132,8 +135,14 @@ export function createMockApi(): ApiClient {
   const notifyConsultant = (l: Lead, kind: NotificationKind, extra: { place?: string; meeting_at?: string; actor_name?: string }) =>
     leadNotifs.push({ id: newId(), user_id: l.consultant_user_id, kind, lead_id: l.id, actor_user_id: null, created_at: nowIso(), read: false, ...extra });
   let currentUserId = seed.U_LUCIA;
+  // Login, logout, invitations, magic links and reset (./session). Starts signed in as currentUserId.
+  const auth = createSession({ db, newId, delay, getUserId: () => currentUserId, setUserId: (id) => { currentUserId = id; } });
 
-  const me = (): User => db.users.find((u) => u.id === currentUserId)!;
+  /** The signed-in person. Without a session every repository answers "unauthenticated" (the API's 401). */
+  const me = (): User => {
+    if (!auth.isAuthenticated()) throw new Error("unauthenticated");
+    return db.users.find((u) => u.id === currentUserId)!;
+  };
 
   const visibleTasks = (): Task[] => {
     const u = me();
@@ -410,7 +419,8 @@ export function createMockApi(): ApiClient {
       },
     },
     session: {
-      getCurrentUser: () => delay(me()),
+      ...auth,
+      getCurrentUser: async () => delay(me()),
       getViewAsOptions: () =>
         delay([
           ...[seed.U_LUCIA, seed.U_TOMAS].map((id) => {

@@ -16,8 +16,10 @@ import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as ConfiguracionRouteImport } from './routes/configuracion'
 import { Route as DocumentosRouteImport } from './routes/documentos'
 import { Route as EmbudoRouteImport } from './routes/embudo'
+import { Route as EnlaceEnviadoRouteImport } from './routes/enlace-enviado'
 import { Route as EstructuraRouteImport } from './routes/estructura'
 import { Route as FranquiciadoraRouteImport } from './routes/franquiciadora'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as ManualRouteImport } from './routes/manual'
 import { Route as NegocioRouteImport } from './routes/negocio'
 import { Route as NegociosRouteImport } from './routes/negocios'
@@ -25,15 +27,19 @@ import { Route as NumerosRouteImport } from './routes/numeros'
 import { Route as PagosRouteImport } from './routes/pagos'
 import { Route as PerfilRouteImport } from './routes/perfil'
 import { Route as PersonasRouteImport } from './routes/personas'
+import { Route as RecuperarRouteImport } from './routes/recuperar'
 import { Route as RedRouteImport } from './routes/red'
 import { Route as ReglasRouteImport } from './routes/reglas'
 import { Route as ReporteRouteImport } from './routes/reporte'
+import { Route as EnlaceTokenRouteImport } from './routes/enlace.$token'
 import { Route as FranquiciasIndexRouteImport } from './routes/franquicias.index'
 import { Route as FranquiciasFranchiseIdRouteImport } from './routes/franquicias.$franchiseId'
+import { Route as InvitacionTokenRouteImport } from './routes/invitacion.$token'
 import { Route as OficinasIndexRouteImport } from './routes/oficinas.index'
 import { Route as OficinasOfficeIdRouteImport } from './routes/oficinas.$officeId'
 import { Route as OportunidadesIndexRouteImport } from './routes/oportunidades.index'
 import { Route as OportunidadesOpportunityIdRouteImport } from './routes/oportunidades.$opportunityId'
+import { Route as RestablecerTokenRouteImport } from './routes/restablecer.$token'
 import { Route as TareasIndexRouteImport } from './routes/tareas.index'
 import { Route as TareasTaskIdRouteImport } from './routes/tareas.$taskId'
 
@@ -72,6 +78,11 @@ const EmbudoRoute = EmbudoRouteImport.update({
   path: '/embudo',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EnlaceEnviadoRoute = EnlaceEnviadoRouteImport.update({
+  id: '/enlace-enviado',
+  path: '/enlace-enviado',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EstructuraRoute = EstructuraRouteImport.update({
   id: '/estructura',
   path: '/estructura',
@@ -80,6 +91,11 @@ const EstructuraRoute = EstructuraRouteImport.update({
 const FranquiciadoraRoute = FranquiciadoraRouteImport.update({
   id: '/franquiciadora',
   path: '/franquiciadora',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ManualRoute = ManualRouteImport.update({
@@ -117,6 +133,11 @@ const PersonasRoute = PersonasRouteImport.update({
   path: '/personas',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RecuperarRoute = RecuperarRouteImport.update({
+  id: '/recuperar',
+  path: '/recuperar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RedRoute = RedRouteImport.update({
   id: '/red',
   path: '/red',
@@ -132,6 +153,11 @@ const ReporteRoute = ReporteRouteImport.update({
   path: '/reporte',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EnlaceTokenRoute = EnlaceTokenRouteImport.update({
+  id: '/enlace/$token',
+  path: '/enlace/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FranquiciasIndexRoute = FranquiciasIndexRouteImport.update({
   id: '/franquicias/',
   path: '/franquicias/',
@@ -140,6 +166,11 @@ const FranquiciasIndexRoute = FranquiciasIndexRouteImport.update({
 const FranquiciasFranchiseIdRoute = FranquiciasFranchiseIdRouteImport.update({
   id: '/franquicias/$franchiseId',
   path: '/franquicias/$franchiseId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InvitacionTokenRoute = InvitacionTokenRouteImport.update({
+  id: '/invitacion/$token',
+  path: '/invitacion/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OficinasIndexRoute = OficinasIndexRouteImport.update({
@@ -163,6 +194,11 @@ const OportunidadesOpportunityIdRoute =
     path: '/oportunidades/$opportunityId',
     getParentRoute: () => rootRouteImport,
   } as any)
+const RestablecerTokenRoute = RestablecerTokenRouteImport.update({
+  id: '/restablecer/$token',
+  path: '/restablecer/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TareasIndexRoute = TareasIndexRouteImport.update({
   id: '/tareas/',
   path: '/tareas/',
@@ -182,8 +218,10 @@ export interface FileRoutesByFullPath {
   '/configuracion': typeof ConfiguracionRoute
   '/documentos': typeof DocumentosRoute
   '/embudo': typeof EmbudoRoute
+  '/enlace-enviado': typeof EnlaceEnviadoRoute
   '/estructura': typeof EstructuraRoute
   '/franquiciadora': typeof FranquiciadoraRoute
+  '/login': typeof LoginRoute
   '/manual': typeof ManualRoute
   '/negocio': typeof NegocioRoute
   '/negocios': typeof NegociosRoute
@@ -191,12 +229,16 @@ export interface FileRoutesByFullPath {
   '/pagos': typeof PagosRoute
   '/perfil': typeof PerfilRoute
   '/personas': typeof PersonasRoute
+  '/recuperar': typeof RecuperarRoute
   '/red': typeof RedRoute
   '/reglas': typeof ReglasRoute
   '/reporte': typeof ReporteRoute
+  '/enlace/$token': typeof EnlaceTokenRoute
   '/franquicias/$franchiseId': typeof FranquiciasFranchiseIdRoute
+  '/invitacion/$token': typeof InvitacionTokenRoute
   '/oficinas/$officeId': typeof OficinasOfficeIdRoute
   '/oportunidades/$opportunityId': typeof OportunidadesOpportunityIdRoute
+  '/restablecer/$token': typeof RestablecerTokenRoute
   '/tareas/$taskId': typeof TareasTaskIdRoute
   '/franquicias/': typeof FranquiciasIndexRoute
   '/oficinas/': typeof OficinasIndexRoute
@@ -211,8 +253,10 @@ export interface FileRoutesByTo {
   '/configuracion': typeof ConfiguracionRoute
   '/documentos': typeof DocumentosRoute
   '/embudo': typeof EmbudoRoute
+  '/enlace-enviado': typeof EnlaceEnviadoRoute
   '/estructura': typeof EstructuraRoute
   '/franquiciadora': typeof FranquiciadoraRoute
+  '/login': typeof LoginRoute
   '/manual': typeof ManualRoute
   '/negocio': typeof NegocioRoute
   '/negocios': typeof NegociosRoute
@@ -220,12 +264,16 @@ export interface FileRoutesByTo {
   '/pagos': typeof PagosRoute
   '/perfil': typeof PerfilRoute
   '/personas': typeof PersonasRoute
+  '/recuperar': typeof RecuperarRoute
   '/red': typeof RedRoute
   '/reglas': typeof ReglasRoute
   '/reporte': typeof ReporteRoute
+  '/enlace/$token': typeof EnlaceTokenRoute
   '/franquicias/$franchiseId': typeof FranquiciasFranchiseIdRoute
+  '/invitacion/$token': typeof InvitacionTokenRoute
   '/oficinas/$officeId': typeof OficinasOfficeIdRoute
   '/oportunidades/$opportunityId': typeof OportunidadesOpportunityIdRoute
+  '/restablecer/$token': typeof RestablecerTokenRoute
   '/tareas/$taskId': typeof TareasTaskIdRoute
   '/franquicias': typeof FranquiciasIndexRoute
   '/oficinas': typeof OficinasIndexRoute
@@ -241,8 +289,10 @@ export interface FileRoutesById {
   '/configuracion': typeof ConfiguracionRoute
   '/documentos': typeof DocumentosRoute
   '/embudo': typeof EmbudoRoute
+  '/enlace-enviado': typeof EnlaceEnviadoRoute
   '/estructura': typeof EstructuraRoute
   '/franquiciadora': typeof FranquiciadoraRoute
+  '/login': typeof LoginRoute
   '/manual': typeof ManualRoute
   '/negocio': typeof NegocioRoute
   '/negocios': typeof NegociosRoute
@@ -250,12 +300,16 @@ export interface FileRoutesById {
   '/pagos': typeof PagosRoute
   '/perfil': typeof PerfilRoute
   '/personas': typeof PersonasRoute
+  '/recuperar': typeof RecuperarRoute
   '/red': typeof RedRoute
   '/reglas': typeof ReglasRoute
   '/reporte': typeof ReporteRoute
+  '/enlace/$token': typeof EnlaceTokenRoute
   '/franquicias/$franchiseId': typeof FranquiciasFranchiseIdRoute
+  '/invitacion/$token': typeof InvitacionTokenRoute
   '/oficinas/$officeId': typeof OficinasOfficeIdRoute
   '/oportunidades/$opportunityId': typeof OportunidadesOpportunityIdRoute
+  '/restablecer/$token': typeof RestablecerTokenRoute
   '/tareas/$taskId': typeof TareasTaskIdRoute
   '/franquicias/': typeof FranquiciasIndexRoute
   '/oficinas/': typeof OficinasIndexRoute
@@ -272,8 +326,10 @@ export interface FileRouteTypes {
     | '/configuracion'
     | '/documentos'
     | '/embudo'
+    | '/enlace-enviado'
     | '/estructura'
     | '/franquiciadora'
+    | '/login'
     | '/manual'
     | '/negocio'
     | '/negocios'
@@ -281,12 +337,16 @@ export interface FileRouteTypes {
     | '/pagos'
     | '/perfil'
     | '/personas'
+    | '/recuperar'
     | '/red'
     | '/reglas'
     | '/reporte'
+    | '/enlace/$token'
     | '/franquicias/$franchiseId'
+    | '/invitacion/$token'
     | '/oficinas/$officeId'
     | '/oportunidades/$opportunityId'
+    | '/restablecer/$token'
     | '/tareas/$taskId'
     | '/franquicias/'
     | '/oficinas/'
@@ -301,8 +361,10 @@ export interface FileRouteTypes {
     | '/configuracion'
     | '/documentos'
     | '/embudo'
+    | '/enlace-enviado'
     | '/estructura'
     | '/franquiciadora'
+    | '/login'
     | '/manual'
     | '/negocio'
     | '/negocios'
@@ -310,12 +372,16 @@ export interface FileRouteTypes {
     | '/pagos'
     | '/perfil'
     | '/personas'
+    | '/recuperar'
     | '/red'
     | '/reglas'
     | '/reporte'
+    | '/enlace/$token'
     | '/franquicias/$franchiseId'
+    | '/invitacion/$token'
     | '/oficinas/$officeId'
     | '/oportunidades/$opportunityId'
+    | '/restablecer/$token'
     | '/tareas/$taskId'
     | '/franquicias'
     | '/oficinas'
@@ -330,8 +396,10 @@ export interface FileRouteTypes {
     | '/configuracion'
     | '/documentos'
     | '/embudo'
+    | '/enlace-enviado'
     | '/estructura'
     | '/franquiciadora'
+    | '/login'
     | '/manual'
     | '/negocio'
     | '/negocios'
@@ -339,12 +407,16 @@ export interface FileRouteTypes {
     | '/pagos'
     | '/perfil'
     | '/personas'
+    | '/recuperar'
     | '/red'
     | '/reglas'
     | '/reporte'
+    | '/enlace/$token'
     | '/franquicias/$franchiseId'
+    | '/invitacion/$token'
     | '/oficinas/$officeId'
     | '/oportunidades/$opportunityId'
+    | '/restablecer/$token'
     | '/tareas/$taskId'
     | '/franquicias/'
     | '/oficinas/'
@@ -360,8 +432,10 @@ export interface RootRouteChildren {
   ConfiguracionRoute: typeof ConfiguracionRoute
   DocumentosRoute: typeof DocumentosRoute
   EmbudoRoute: typeof EmbudoRoute
+  EnlaceEnviadoRoute: typeof EnlaceEnviadoRoute
   EstructuraRoute: typeof EstructuraRoute
   FranquiciadoraRoute: typeof FranquiciadoraRoute
+  LoginRoute: typeof LoginRoute
   ManualRoute: typeof ManualRoute
   NegocioRoute: typeof NegocioRoute
   NegociosRoute: typeof NegociosRoute
@@ -369,12 +443,16 @@ export interface RootRouteChildren {
   PagosRoute: typeof PagosRoute
   PerfilRoute: typeof PerfilRoute
   PersonasRoute: typeof PersonasRoute
+  RecuperarRoute: typeof RecuperarRoute
   RedRoute: typeof RedRoute
   ReglasRoute: typeof ReglasRoute
   ReporteRoute: typeof ReporteRoute
+  EnlaceTokenRoute: typeof EnlaceTokenRoute
   FranquiciasFranchiseIdRoute: typeof FranquiciasFranchiseIdRoute
+  InvitacionTokenRoute: typeof InvitacionTokenRoute
   OficinasOfficeIdRoute: typeof OficinasOfficeIdRoute
   OportunidadesOpportunityIdRoute: typeof OportunidadesOpportunityIdRoute
+  RestablecerTokenRoute: typeof RestablecerTokenRoute
   TareasTaskIdRoute: typeof TareasTaskIdRoute
   FranquiciasIndexRoute: typeof FranquiciasIndexRoute
   OficinasIndexRoute: typeof OficinasIndexRoute
@@ -433,6 +511,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EmbudoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/enlace-enviado': {
+      id: '/enlace-enviado'
+      path: '/enlace-enviado'
+      fullPath: '/enlace-enviado'
+      preLoaderRoute: typeof EnlaceEnviadoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/estructura': {
       id: '/estructura'
       path: '/estructura'
@@ -445,6 +530,13 @@ declare module '@tanstack/react-router' {
       path: '/franquiciadora'
       fullPath: '/franquiciadora'
       preLoaderRoute: typeof FranquiciadoraRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/manual': {
@@ -496,6 +588,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PersonasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/recuperar': {
+      id: '/recuperar'
+      path: '/recuperar'
+      fullPath: '/recuperar'
+      preLoaderRoute: typeof RecuperarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/red': {
       id: '/red'
       path: '/red'
@@ -517,6 +616,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReporteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/enlace/$token': {
+      id: '/enlace/$token'
+      path: '/enlace/$token'
+      fullPath: '/enlace/$token'
+      preLoaderRoute: typeof EnlaceTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/franquicias/': {
       id: '/franquicias/'
       path: '/franquicias'
@@ -529,6 +635,13 @@ declare module '@tanstack/react-router' {
       path: '/franquicias/$franchiseId'
       fullPath: '/franquicias/$franchiseId'
       preLoaderRoute: typeof FranquiciasFranchiseIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invitacion/$token': {
+      id: '/invitacion/$token'
+      path: '/invitacion/$token'
+      fullPath: '/invitacion/$token'
+      preLoaderRoute: typeof InvitacionTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/oficinas/': {
@@ -559,6 +672,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OportunidadesOpportunityIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/restablecer/$token': {
+      id: '/restablecer/$token'
+      path: '/restablecer/$token'
+      fullPath: '/restablecer/$token'
+      preLoaderRoute: typeof RestablecerTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/tareas/': {
       id: '/tareas/'
       path: '/tareas'
@@ -584,8 +704,10 @@ const rootRouteChildren: RootRouteChildren = {
   ConfiguracionRoute: ConfiguracionRoute,
   DocumentosRoute: DocumentosRoute,
   EmbudoRoute: EmbudoRoute,
+  EnlaceEnviadoRoute: EnlaceEnviadoRoute,
   EstructuraRoute: EstructuraRoute,
   FranquiciadoraRoute: FranquiciadoraRoute,
+  LoginRoute: LoginRoute,
   ManualRoute: ManualRoute,
   NegocioRoute: NegocioRoute,
   NegociosRoute: NegociosRoute,
@@ -593,12 +715,16 @@ const rootRouteChildren: RootRouteChildren = {
   PagosRoute: PagosRoute,
   PerfilRoute: PerfilRoute,
   PersonasRoute: PersonasRoute,
+  RecuperarRoute: RecuperarRoute,
   RedRoute: RedRoute,
   ReglasRoute: ReglasRoute,
   ReporteRoute: ReporteRoute,
+  EnlaceTokenRoute: EnlaceTokenRoute,
   FranquiciasFranchiseIdRoute: FranquiciasFranchiseIdRoute,
+  InvitacionTokenRoute: InvitacionTokenRoute,
   OficinasOfficeIdRoute: OficinasOfficeIdRoute,
   OportunidadesOpportunityIdRoute: OportunidadesOpportunityIdRoute,
+  RestablecerTokenRoute: RestablecerTokenRoute,
   TareasTaskIdRoute: TareasTaskIdRoute,
   FranquiciasIndexRoute: FranquiciasIndexRoute,
   OficinasIndexRoute: OficinasIndexRoute,

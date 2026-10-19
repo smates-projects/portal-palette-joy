@@ -440,6 +440,58 @@ export interface ViewAsOption {
   enabled: boolean;
 }
 
+// ---------- Authentication (login, invitation, magic link, password reset) ----------
+
+/** Minimum password length, checked by the API on accept and reset ("weak_password"). */
+export const MIN_PASSWORD_LENGTH = 12;
+
+/**
+ * Error codes the session repository throws (as Error messages). 401 on login is always "invalid_credentials",
+ * whether the email exists or not; "account_inactive" only after a correct password.
+ */
+export const AUTH_ERROR_CODES = [
+  "invalid_credentials",
+  "account_inactive",
+  "token_invalid",
+  "token_expired",
+  "token_used",
+  "weak_password",
+  "terms_required",
+  "name_required",
+] as const;
+export type AuthErrorCode = (typeof AUTH_ERROR_CODES)[number];
+
+export interface LoginInput {
+  email: string;
+  password: string;
+}
+
+/** What the invitation link shows before the person creates the account. Read only: it does not use the token. */
+export interface InvitationPreview {
+  email: string;
+  role: UserRole;
+  organization_name: string | null;
+  business_name: string | null;
+  expires_at: IsoDateTime;
+  /** Name SM already has for the person (prefills the form); null when unknown. */
+  full_name: string | null;
+  /** Who sent the invitation; null when it was automatic. */
+  invited_by_name: string | null;
+}
+
+export interface AcceptInvitationInput {
+  token: string;
+  name: string;
+  password: string;
+  /** The person ticked "Acepto los términos y la política de privacidad". */
+  accepted_terms: true;
+}
+
+export interface ResetPasswordInput {
+  token: string;
+  password: string;
+}
+
 /** Franchisability part of the platform rules. Set only by SM Global, same for every program (like the catalog). Required list may be empty. */
 export interface FranchisabilityRules {
   goal: number;

@@ -1,4 +1,8 @@
 import type {
+  AcceptInvitationInput,
+  InvitationPreview,
+  LoginInput,
+  ResetPasswordInput,
   BishopFunds,
   Distribution,
   DistributionLineInput,
@@ -89,10 +93,34 @@ import type {
   ZoneRuleInput,
 } from "./types";
 
+/**
+ * The signed-in person. Every other repository answers "unauthenticated" while there is no session.
+ * Tokens (invitation, magic link, reset) always travel in the body, never in the API URL.
+ */
 export interface SessionRepository {
+  /** Rejects with "unauthenticated" when nobody is signed in. */
   getCurrentUser(): Promise<User>;
   getViewAsOptions(): Promise<ViewAsOption[]>;
   setViewAs(userId: Uuid): Promise<User>;
+  /** Synchronous read for the route guard: is there a session right now? */
+  isAuthenticated(): boolean;
+  /** "invalid_credentials" for a wrong email or password (never says which); "account_inactive" for a deactivated person. */
+  login(input: LoginInput): Promise<User>;
+  logout(): Promise<void>;
+  /** "Cerrar sesión en todos lados": revokes every session of the current person. */
+  logoutAll(): Promise<void>;
+  /** Always resolves, whether the email has an account or not. The link lasts 15 minutes and works once. */
+  requestMagicLink(email: string): Promise<void>;
+  /** Starts the session. token_invalid | token_expired | token_used | account_inactive. */
+  exchangeMagicLink(token: string): Promise<User>;
+  /** Reads the invitation without using it. token_invalid | token_expired | token_used. */
+  exchangeInvitation(token: string): Promise<InvitationPreview>;
+  /** Sets name and password, activates the account and starts the session. Also name_required | weak_password | terms_required. */
+  acceptInvitation(input: AcceptInvitationInput): Promise<User>;
+  /** Always resolves, whether the email has an account or not. The reset link lasts 1 hour. */
+  forgotPassword(email: string): Promise<void>;
+  /** Sets a new password. Does not start a session: the person signs in again. token_* | weak_password. */
+  resetPassword(input: ResetPasswordInput): Promise<void>;
 }
 
 export interface OrganizationsRepository {
