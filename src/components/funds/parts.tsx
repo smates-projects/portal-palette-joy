@@ -4,6 +4,7 @@ import { FileText, Paperclip } from "lucide-react";
 import { TODAY } from "@/config/app";
 import { PAYMENT_METHODS, type FundsStatus, type PaymentMethod, type Receipt } from "@/lib/api/types";
 import { formatUsd } from "@/lib/format";
+import { fileSizeKb } from "@/lib/funds/receipt";
 import { isReceiptFile, parseWholeUsd } from "@/lib/leads/funds";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -47,7 +48,7 @@ export function ReceiptLink({ receipt }: { receipt: Receipt }) {
   );
 }
 
-/** File picker for a receipt (PDF or image). The upload is simulated: only name and size are kept. */
+/** File picker for a receipt (PDF or image). The picked File itself is kept and sent to the API. */
 export function ReceiptPicker({ value, onChange, required }: { value: File | null; onChange: (r: File | null) => void; required?: boolean }) {
   const { t } = useTranslation();
   const [wrongType, setWrongType] = useState(false);
@@ -107,7 +108,7 @@ export function PaymentDialog(props: {
   const [paidOn, setPaidOn] = useState(TODAY);
   const [method, setMethod] = useState<PaymentMethod>("wire");
   const [reference, setReference] = useState("");
-  const [receipt, setReceipt] = useState<Receipt | null>(null);
+  const [receipt, setReceipt] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const submit = () => {

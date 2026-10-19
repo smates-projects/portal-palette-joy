@@ -11,6 +11,6 @@ describe("receipt helpers", () => {
 
   it("reads the name from a File or from a stored receipt", () => {
     expect(receiptFileName(new File(["x"], "transfer.pdf"))).toBe("transfer.pdf");
-    expect(receiptFileName({ file_name: "stored.jpg", size_kb: 3 })).toBe("stored.jpg");
+    expect(receiptFileName({ file_name: "stored.jpg" })).toBe("stored.jpg");
   });
 });
