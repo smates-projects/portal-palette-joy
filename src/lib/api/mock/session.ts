@@ -116,7 +116,15 @@ type AuthMethods = Omit<SessionRepository, "getCurrentUser" | "getViewAsOptions"
 
 const sameEmail = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
-export function createSession(ctx: SessionContext): AuthMethods {
+/** Extra controls of the mock, used when the real session runs over HTTP while other repositories stay mock. */
+export interface MockSessionControls {
+  /** Makes the mock act as the user with that email (ids differ from the API, emails match). False when none. */
+  adoptUserByEmail: (email: string) => boolean;
+  /** Back to the mock's default demo user. */
+  resetUser: () => void;
+}
+
+export function createSession(ctx: SessionContext): AuthMethods & Pick<MockSessionControls, "adoptUserByEmail"> {
   const { db, delay } = ctx;
   // Starts signed in as the seeded user; logout() clears it until a login, an accepted invitation or a magic link.
   let authenticated = true;
@@ -153,6 +161,12 @@ export function createSession(ctx: SessionContext): AuthMethods {
     });
 
   return {
+    adoptUserByEmail: (email) => {
+      const user = userByEmail(email);
+      if (!user) return false;
+      ctx.setUserId(user.id);
+      return true;
+    },
     isAuthenticated: () => authenticated,
     login: async ({ email, password }) => {
       const user = userByEmail(email);

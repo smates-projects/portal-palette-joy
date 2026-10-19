@@ -26,7 +26,7 @@ import { AREA_BY_KEY, generateProgramTasks, type CatalogEntry } from "../program
 import { resolveLeadMove } from "@/lib/leads/pipeline";
 import { DEFAULT_ASSESSMENT_AREA_MAP } from "@/lib/leads/prevalidation";
 import { createEntry } from "./entry";
-import { createSession } from "./session";
+import { createSession, type MockSessionControls } from "./session";
 
 export { DEMO_PASSWORD } from "./session";
 import type { AreaCode, Business, BusinessEvent, CatalogAdminItem, Lead, LeadEvent, LeadWithComputed } from "../types";
@@ -40,7 +40,10 @@ const newId = () => {
 };
 
 /** In-memory backend; filters by current user to simulate API authorization. */
-export function createMockApi(): ApiClient {
+/** The mock client plus the controls mixed mode needs on its session (see ../http/mixed-mode.ts). */
+export type MockApi = ApiClient & { session: MockSessionControls };
+
+export function createMockApi(): MockApi {
   const db = {
     tasks: structuredClone([...seed.tasks, ...seedNetwork.tasks]) as Task[],
     versions: structuredClone([...seed.versions, ...seedNetwork.versions]) as TaskVersion[],
@@ -420,6 +423,7 @@ export function createMockApi(): ApiClient {
     },
     session: {
       ...auth,
+      resetUser: () => { currentUserId = seed.U_LUCIA; },
       getCurrentUser: async () => delay(me()),
       getViewAsOptions: () =>
         delay([

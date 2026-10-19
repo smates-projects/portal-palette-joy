@@ -17,7 +17,8 @@ Data and logic (`src/lib`):
 - `api/types.ts`, `api/network-types.ts`, `api/entry-types.ts`: every entity, snake_case, UUID ids, ISO dates.
 - `api/repositories.ts`: repository interfaces (Session, Organizations, Businesses, Users, Leads, Tasks, Notifications, Documents, Funds, Brand, BusinessProfile, Bishop, Rules, Catalog, Network, Franchises, Manual...).
 - `api/hooks.ts`: TanStack Query hooks; components only use these.
-- `api/mock/`: in-memory backend with authorization by current user (`index.ts`, `seed*.ts`, `intake.ts`, `funds.ts`, `accounts.ts`, `entry.ts`, `opportunities.ts`, `network.ts`).
+- `api/mock/`: in-memory backend with authorization by current user (`index.ts`, `seed*.ts`, `intake.ts`, `funds.ts`, `accounts.ts`, `entry.ts`, `opportunities.ts`, `network.ts`, `session.ts`).
+- `api/http/`: adapters to the real API (NestJS, separate repo), one file per repository, chosen in `api/index.ts` by `VITE_API_MODE` (`mock` by default, so Lovable and the preview never need it) or per repository with `VITE_API_MODE_<REPO>`; `VITE_API_URL` points to the API. Never edit this folder in Lovable.
 - `leads/`: pure rules of the pipeline (`pipeline.ts`), entry documents and contracts (`onboarding.ts`), automatic entry and zones (`entry.ts`), assessment result (`readiness.ts`), "Ya lo tenía" (`prevalidation.ts`), funds and distribution (`funds.ts`).
 - `brand/`: contrast (AA), detection of the brand from the manual (simulated), scope of the white label.
 - `contracts/signature.ts`: sample signatures and document fingerprint.
