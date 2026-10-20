@@ -1,7 +1,7 @@
 // UsersRepository over the real API (identity module: users.controller.ts).
-import type { UsersRepository } from "../repositories";
-import type { AccountEvent, AccountEventKind, User } from "../types";
-import { ApiError, type HttpClient } from "./client";
+import type { CalendarConsent, UsersRepository } from "../repositories";
+import type { AccountEvent, AccountEventKind, ExternalCalendarEvent, User } from "../types";
+import type { HttpClient } from "./client";
 
 /** The API writes more kinds (invitation_resent, impersonation_*, password_changed, totp_enabled); the front knows these. */
 const FRONT_ACCOUNT_EVENT_KINDS: ReadonlySet<string> = new Set<AccountEventKind>([
@@ -67,17 +67,20 @@ export function createHttpUsersRepository(client: HttpClient): UsersRepository {
         ),
       ),
 
-    /** Gap: Google Calendar is phase 5 (OAuth); the API has no endpoint yet. Rejects without calling. */
-    setGoogleCalendar: async () => {
-      throw new ApiError({
-        code: "not_implemented",
-        status: 501,
-        detail: "Google Calendar is not available in the API yet.",
-      });
+    /**
+     * Connect: POST /me/calendar/connect answers Google's consent URL (OAuth). The email is not sent: Google says
+     * which account it is. The caller redirects; the API's callback comes back to /perfil?calendar=....
+     * Disconnect (null): DELETE /me/calendar answers the User without the calendar.
+     */
+    setGoogleCalendar: async (email) => {
+      if (email !== null) return client.post<CalendarConsent>("/me/calendar/connect");
+      const user = await client.delete<User>("/me/calendar");
+      client.updateSessionUser(user);
+      return user;
     },
 
-    /** Gap: no calendar endpoint yet (phase 5). Answers as "not connected": an empty list. */
-    listCalendarEvents: async () => [],
+    /** GET /me/calendar-events: the upcoming events of the connected calendar; empty when not connected. */
+    listCalendarEvents: () => client.get<ExternalCalendarEvent[]>("/me/calendar-events"),
 
     setBookingUrl: async (url) => {
       const user = await client.patch<User>("/me/booking-url", { booking_url: url });

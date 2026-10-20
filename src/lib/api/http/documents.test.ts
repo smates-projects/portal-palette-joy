@@ -9,6 +9,7 @@ import {
   documentFixture,
   emptyResponse,
   intakeSummaryFixture,
+  jsonResponse,
   problemResponse,
   stubFetch,
   testClient,
@@ -157,6 +158,38 @@ describe("http documents", () => {
       path: `/contracts/${CONTRACT}/open`,
       body: undefined,
     });
+  });
+
+  it("openContract with the real DocuSeal driver: meta.signing comes back as the contract's signing", async () => {
+    const opened = contractFixture({ state: "opened" });
+    const signing = {
+      provider: "docuseal",
+      embed_src: "https://docuseal.test/s/abc123",
+      slug: "abc123",
+    };
+    stubFetch(jsonResponse({ data: opened, meta: { signing } }));
+    const answer = await asOwner().openContract(CONTRACT);
+    expect(answer).toEqual({ ...opened, signing });
+    expect(answer.signing?.embed_src).toBe("https://docuseal.test/s/abc123");
+  });
+
+  it("openContract simulated: the session says so and has no embed", async () => {
+    const opened = contractFixture({ state: "opened" });
+    stubFetch(
+      jsonResponse({
+        data: opened,
+        meta: { signing: { provider: "simulated", embed_src: null, slug: null } },
+      }),
+      jsonResponse({ data: opened, meta: { signing: null } }),
+    );
+    const documents = asOwner();
+    expect((await documents.openContract(CONTRACT)).signing).toEqual({
+      provider: "simulated",
+      embed_src: null,
+      slug: null,
+    });
+    // A signer who already signed gets no session at all.
+    expect(await documents.openContract(CONTRACT)).toEqual(opened);
   });
 
   it("signContract: uploads the signature as PNG (presign → PUT → complete), then POST /sign with consent", async () => {

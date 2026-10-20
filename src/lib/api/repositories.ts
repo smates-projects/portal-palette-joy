@@ -158,6 +158,16 @@ export interface BusinessesRepository {
   setConsultant(businessId: Uuid, userId: Uuid): Promise<Business>;
 }
 
+/** POST /me/calendar/connect: where to send the person to grant the calendar access. */
+export interface CalendarConsent {
+  consent_url: string;
+}
+
+export const isCalendarConsent = (value: unknown): value is CalendarConsent =>
+  typeof value === "object" &&
+  value !== null &&
+  typeof (value as Record<string, unknown>)["consent_url"] === "string";
+
 export interface UsersRepository {
   /** People in the current user's scope. Deactivated people are left out unless include_inactive. */
   list(opts?: { include_inactive?: boolean }): Promise<User[]>;
@@ -175,8 +185,12 @@ export interface UsersRepository {
   setAdmin(userId: Uuid, isAdmin: boolean): Promise<User>;
   /** Account history of one person (or of everyone in scope), newest first. */
   listAccountEvents(userId?: Uuid): Promise<AccountEvent[]>;
-  /** Connect (with an account email) or disconnect (null) the current user's Google Calendar. */
-  setGoogleCalendar(email: string | null): Promise<User>;
+  /**
+   * Connect (with an account email) or disconnect (null) the current user's Google Calendar. The mock connects at
+   * once and answers the User. The real API answers connecting with Google's consent screen (CalendarConsent): the
+   * caller sends the person there, and Google comes back to /perfil?calendar=connected|denied|error.
+   */
+  setGoogleCalendar(email: string | null): Promise<User | CalendarConsent>;
   /** Current user's Google Calendar events; empty when not connected. */
   listCalendarEvents(): Promise<ExternalCalendarEvent[]>;
   /** SM team: set or clear the current user's booking link. */
@@ -443,6 +457,22 @@ export interface ManualRepository {
  */
 export type DocumentUpload = File | { name: string };
 
+/**
+ * Where the current signer signs (meta.signing of POST /contracts/{id}/open). With the real DocuSeal driver the
+ * portal embeds the signer's own form at embed_src; "simulated" (and the mock, which sends none) keeps the portal's
+ * own signature screen.
+ */
+export interface SigningSession {
+  provider: "simulated" | "docuseal";
+  embed_src: string | null;
+  slug: string | null;
+}
+
+/** The contract as opening it answers: plus the signing session when the API sends one. */
+export interface OpenedContract extends Contract {
+  signing?: SigningSession | null | undefined;
+}
+
 export interface DocumentsRepository {
   listDocuments(businessId?: Uuid): Promise<BusinessDocument[]>;
   listContracts(businessId?: Uuid): Promise<Contract[]>;
@@ -451,10 +481,10 @@ export interface DocumentsRepository {
   /** Entry checklist of a business in onboarding (owner: own). Null when it has none. */
   getIntake(businessId?: Uuid): Promise<IntakeSummary | null>;
   /**
-   * DocuSeal (simulated today): the current user's signer opens, signs or declines (reason required).
-   * Owner signs as owner; any SM person of the office signs as Strategic Mates.
+   * DocuSeal: the current user's signer opens, signs or declines (reason required). Owner signs as owner; any SM
+   * person of the office signs as Strategic Mates. Opening again only answers the contract (and the embed) again.
    */
-  openContract(contractId: Uuid): Promise<Contract>;
+  openContract(contractId: Uuid): Promise<OpenedContract>;
   /** The signature the person drew, typed or uploaded (DocuSeal collects it in production). */
   signContract(contractId: Uuid, signature?: ContractSignature): Promise<Contract>;
   declineContract(contractId: Uuid, reason: string): Promise<Contract>;
@@ -484,12 +514,15 @@ export interface BusinessProfileRepository {
 
 /**
  * What SM loads by hand: the palette, plus the Files when they were just picked. The HTTP adapter uploads the logo
- * (logo_file, or logo_url when it is a data URL) and the manual PDF; anything else that is not a file is refused there
- * with "invalid_file". The mock keeps the palette only.
+ * (logo_file, or logo_url when it is a data URL) and the manual PDF. A logo or manual left unchanged travels as the
+ * stored file id the brand already had (logo_file_id, manual_file_id), or not at all: the API keeps the current
+ * file. The mock keeps the palette only.
  */
 export interface SetBrandInput extends BrandPalette {
   logo_file?: File | null | undefined;
   manual_file?: File | null | undefined;
+  logo_file_id?: Uuid | null | undefined;
+  manual_file_id?: Uuid | null | undefined;
 }
 
 /**

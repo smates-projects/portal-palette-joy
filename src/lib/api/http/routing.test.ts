@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createMockApi } from "../mock";
 import { HTTP_REPOSITORY_KEYS, resolveRepositoryModes } from "./index";
 import { createHttpRoutingRepository } from "./routing";
 import { IDS, dataResponse, emptyResponse, stubFetch, testClient } from "./testing";
@@ -100,6 +101,29 @@ describe("repository selection (VITE_API_MODE and VITE_API_MODE_<REPO>)", () => 
     expect(
       resolveRepositoryModes({ VITE_API_MODE_TASKS: "http", VITE_API_MODE_BRAND: "http" }),
     ).toMatchObject({ tasks: "http", brand: "http", businesses: "mock" });
+  });
+
+  it("network, franchising, manual and financials have their own override", () => {
+    expect(
+      resolveRepositoryModes({
+        VITE_API_MODE_NETWORK: "http",
+        VITE_API_MODE_FRANCHISES: "http",
+        VITE_API_MODE_MANUAL: "http",
+        VITE_API_MODE_FINANCIALS: "http",
+        VITE_API_MODE_FRANCHISEE: "http",
+      }),
+    ).toMatchObject({
+      network: "http",
+      franchises: "http",
+      manual: "http",
+      financials: "http",
+      franchisee: "http",
+      tasks: "mock",
+    });
+  });
+
+  it("every repository of the client has an adapter", () => {
+    expect([...HTTP_REPOSITORY_KEYS].sort()).toEqual(Object.keys(createMockApi()).sort());
   });
 
   it("unknown values fall back to the mock", () => {

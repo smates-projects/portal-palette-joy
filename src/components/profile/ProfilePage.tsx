@@ -5,6 +5,7 @@ import { NotificationPreferences } from "@/components/profile/NotificationPrefer
 import { BookingUrlSection } from "@/components/profile/BookingUrlSection";
 import { CalendarDays, Mail, MapPin, Phone, UserPlus } from "lucide-react";
 import { useCurrentUser, useOrganizations, useSetGoogleCalendar, useUsersWithInactive } from "@/lib/api/hooks";
+import { isCalendarConsent } from "@/lib/api/repositories";
 import type { User } from "@/lib/api/types";
 import { isActiveUser, isFirmAdmin } from "@/lib/accounts/permissions";
 import { cn } from "@/lib/utils";
@@ -14,7 +15,23 @@ import { DeactivatePersonDialog, InvitePersonDialog, PersonActions } from "@/com
 
 const initials = (n: string) => n.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 
-export function ProfilePage() {
+/** How Google's consent ended, as the API's callback reports it on /perfil?calendar=. */
+export type CalendarReturnStatus = "connected" | "denied" | "error";
+
+const CALENDAR_NOTE_TONE: Record<CalendarReturnStatus, string> = {
+  connected: "border-status-success-border bg-status-success-bg text-status-success-fg",
+  denied: "border-status-warning-border bg-status-warning-bg text-status-warning-fg",
+  error: "border-status-danger-border bg-status-danger-bg text-status-danger-fg",
+};
+
+/** Real API: connecting answers Google's consent screen and the person goes there; the mock connects at once. */
+const goToConsent = (answer: unknown): boolean => {
+  if (!isCalendarConsent(answer)) return false;
+  window.location.assign(answer.consent_url);
+  return true;
+};
+
+export function ProfilePage({ calendarStatus, onDismissCalendarStatus }: { calendarStatus?: CalendarReturnStatus | undefined; onDismissCalendarStatus?: () => void } = {}) {
   const { t } = useTranslation();
   const meQ = useCurrentUser();
   const orgsQ = useOrganizations();
@@ -35,7 +52,9 @@ export function ProfilePage() {
   const connect = () => {
     if (!me) return;
     setCal.mutate(me.email, {
-      onSuccess: () => toast.success(t("profile.t_connected", { email: me.email })),
+      onSuccess: (answer) => {
+        if (!goToConsent(answer)) toast.success(t("profile.t_connected", { email: me.email }));
+      },
       onError: () => toast.error(t("taskDetail.t_error")),
     });
   };
@@ -44,7 +63,8 @@ export function ProfilePage() {
     setCal.mutate(null, {
       onSuccess: () =>
         toast.success(t("profile.t_disconnected"), {
-          action: { label: t("profile.undo"), onClick: () => setCal.mutate(prev) },
+          // Undo connects again: with the real API that means Google's consent screen once more.
+          action: { label: t("profile.undo"), onClick: () => setCal.mutate(prev, { onSuccess: goToConsent }) },
         }),
       onError: () => toast.error(t("taskDetail.t_error")),
     });
@@ -126,6 +146,14 @@ export function ProfilePage() {
 
           {/* Google Calendar */}
           <section className="rounded-md border border-border bg-surface px-5 py-4">
+            {calendarStatus && (
+              <div role="status" className={cn("mb-4 flex items-start justify-between gap-3 rounded-[4px] border px-3 py-2 text-sm", CALENDAR_NOTE_TONE[calendarStatus])}>
+                <p>{t(`profile.cal_return_${calendarStatus}`)}</p>
+                {onDismissCalendarStatus && (
+                  <button onClick={onDismissCalendarStatus} className="shrink-0 text-xs underline-offset-2 hover:underline">{t("profile.cal_return_dismiss")}</button>
+                )}
+              </div>
+            )}
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-start gap-3">
                 <CalendarDays className="mt-0.5 h-5 w-5 text-muted-foreground" />

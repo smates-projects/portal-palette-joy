@@ -2,21 +2,24 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Download, PenLine } from "lucide-react";
-import { useDeclineContract, useOpenContract, useSignContract } from "@/lib/api/hooks";
+import { useContractSigningPoll, useDeclineContract, useOpenContract, useRefreshSigning, useSignContract } from "@/lib/api/hooks";
 import type { Contract, ContractSignature } from "@/lib/api/types";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PrimaryButton, SecondaryButton } from "@/components/tasks/detail/dialogs";
 import { SignaturePad } from "./SignaturePad";
 
 /**
- * Simulated DocuSeal signing. Every change goes through the repository (openContract, signContract,
- * declineContract), so the real DocuSeal embed can replace this component without touching the rest.
+ * DocuSeal signing. With the API's real DocuSeal driver, opening the contract answers the signer's own form
+ * (signing.embed_src): the dialog embeds it and re-reads the contract until the signer's status changes (the
+ * signature reaches the API by webhook), then closes. Otherwise (the mock, the API's simulated driver) it is the
+ * portal's own screen, and every change goes through the repository (openContract, signContract, declineContract).
  */
 export function DocuSealSigner(props: { contract: Contract; party: "owner" | "sm" | "bishop"; signerName: string; onClose: () => void }) {
   const { t } = useTranslation();
   const open = useOpenContract();
   const sign = useSignContract();
   const decline = useDeclineContract();
+  const refresh = useRefreshSigning();
   const [declining, setDeclining] = useState(false);
   const [reason, setReason] = useState("");
   const [tried, setTried] = useState(false);
@@ -25,13 +28,34 @@ export function DocuSealSigner(props: { contract: Contract; party: "owner" | "sm
   const [signed, setSigned] = useState(me?.status === "signed");
   const [signature, setSignature] = useState<ContractSignature | null>(null);
   const [missing, setMissing] = useState(false);
+  const [embedSrc, setEmbedSrc] = useState<string | null>(null);
   const shown = signed ? (me?.signature ?? signature) : null;
   const others = props.contract.signers.filter((s) => s.party !== props.party).map((s) => s.name);
 
   useEffect(() => {
-    // DocuSeal reports "viewed" when the signer opens the document.
-    if (!opened.current && me?.status === "sent") { opened.current = true; open.mutate(props.contract.id); }
+    // DocuSeal reports "viewed" when the signer opens the document. With the real driver a signer who already opened
+    // it opens again to get the embed back; the mock's simulated screen only opens a "sent" one, as before.
+    if (opened.current || (me?.status !== "sent" && me?.status !== "opened")) return;
+    opened.current = true;
+    open.mutate(props.contract.id, {
+      onSuccess: (answer) => {
+        if (answer.signing?.provider === "docuseal" && answer.signing.embed_src) setEmbedSrc(answer.signing.embed_src);
+      },
+    });
   }, [me?.status, open, props.contract.id]);
+
+  // While the embed is open: re-read the contract and close once the signer signed or declined in DocuSeal.
+  const poll = useContractSigningPoll(props.contract.id, embedSrc !== null);
+  const polledStatus = poll.data?.signers.find((s) => s.party === props.party)?.status;
+  const { onClose } = props;
+  const contractName = props.contract.name;
+  useEffect(() => {
+    if (!embedSrc || (polledStatus !== "signed" && polledStatus !== "declined")) return;
+    setEmbedSrc(null);
+    void refresh();
+    toast.success(t(polledStatus === "signed" ? "intake.docuseal.t_signed" : "intake.docuseal.t_declined", { name: contractName }));
+    onClose();
+  }, [embedSrc, polledStatus, refresh, t, contractName, onClose]);
 
   const fail = () => toast.error(t("intake.docuseal.t_error"));
   const doSign = () => {
@@ -68,6 +92,18 @@ export function DocuSealSigner(props: { contract: Contract; party: "owner" | "sm
           <DialogDescription>{t("intake.docuseal.signing_as", { name: props.signerName })}</DialogDescription>
         </DialogHeader>
 
+        {embedSrc ? (
+          <div className="space-y-3">
+            {/* DocuSeal's own form for this signer: it collects the signature; the API hears it by webhook. */}
+            <div className="overflow-hidden rounded-md border border-border bg-surface">
+              <iframe src={embedSrc} title={t("intake.docuseal.embed_title", { name: props.contract.name })} className="block h-[60vh] min-h-[420px] w-full" allow="camera; clipboard-write" />
+            </div>
+            <p className="text-xs text-muted-foreground" role="status">{t("intake.docuseal.embed_hint")}</p>
+            <div className="flex justify-end">
+              <SecondaryButton onClick={props.onClose}>{t("intake.docuseal.close")}</SecondaryButton>
+            </div>
+          </div>
+        ) : (<>
         {/* Sample PDF with the signature field highlighted; once signed it shows the signature itself */}
         <div className="rounded-md border border-border bg-muted/50 p-4">
           <div className="mx-auto max-w-sm rounded-md border border-border bg-surface p-5 text-xs leading-relaxed text-muted-foreground sm:p-6">
@@ -123,6 +159,7 @@ export function DocuSealSigner(props: { contract: Contract; party: "owner" | "sm
             </div>
           </div>
         )}
+        </>)}
       </DialogContent>
     </Dialog>
   );

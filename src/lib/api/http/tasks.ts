@@ -181,11 +181,16 @@ export function createHttpTasksRepository(client: HttpClient): TasksRepository {
       (await client.post<TaskApi[]>("/tasks/cancel", { ids, reason })).map(remember),
 
     /**
-     * Only "start" has an endpoint. Gap: the API has no generic status change, so "Volver a pendiente" (pending)
-     * and any other status reject with not_implemented without calling.
+     * "Empezar" is POST /start; "Volver a pendiente" is POST /unstart, guarded by If-Match (the task is read first
+     * when its version is unknown). The API has no generic status change: any other status rejects with
+     * not_implemented without calling (the screens move the rest through approve, request-changes, versions).
      */
     updateStatus: async (id, status) => {
       if (status === "in_progress") return taskWrite(id, "start");
+      if (status === "pending") {
+        await ensureEtag(id);
+        return taskWrite(id, "unstart");
+      }
       throw notImplemented(`The API has no endpoint to move a task to ${status}.`);
     },
 

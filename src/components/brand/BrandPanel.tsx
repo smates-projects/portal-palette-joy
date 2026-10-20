@@ -124,7 +124,15 @@ function ManualBrandDialog({ businessId, businessName, current, onClose }: { bus
   const initial: BrandProposalUpload | null = current ? { primary_color: current.primary_color, accent_color: current.accent_color, font_family: current.font_family, logo_file_name: current.logo_file_name, logo_url: current.logo_url, manual_file_name: current.manual_file_name ?? "" } : null;
   const submit = () => {
     if (!proposal) return;
-    const { manual_file_name: _m, ...palette } = proposal;
+    const { manual_file_name: manualName, ...picked } = proposal;
+    // A logo or manual left as it was is resent by its stored file id, so nothing is uploaded again.
+    const keepLogo = !picked.logo_file && !!current?.logo_url && picked.logo_url === current.logo_url;
+    const keepManual = !picked.manual_file && !!current?.manual_file_name && manualName === current.manual_file_name;
+    const palette = {
+      ...picked,
+      ...(keepLogo && current?.logo_file_id !== undefined ? { logo_file_id: current.logo_file_id } : {}),
+      ...(keepManual && current?.manual_file_id !== undefined ? { manual_file_id: current.manual_file_id } : {}),
+    };
     setBrand.mutate({ businessId, palette }, {
       onSuccess: () => { toast.success(t("brand.t_set", { name: businessName })); onClose(); },
       onError: () => toast.error(t("brand.t_error")),

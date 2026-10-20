@@ -150,10 +150,36 @@ describe("http brand", () => {
     expect(calls[0]?.body).toMatchObject({ logo_file_id: null, manual_file_id: null });
   });
 
-  it("set: a logo the API already stores (not a file) is invalid_file, without calling", async () => {
+  it("set: a logo and manual the API already stores are resent by their ids, without uploading", async () => {
+    const { calls } = stubFetch(
+      dataResponse(brandFixture({ logo_file_id: LOGO_ID, manual_file_id: MANUAL_ID })),
+    );
+    await brand().set(IDS.business, {
+      ...palette,
+      logo_url: "https://cdn.test/public/logos/abc.png",
+      logo_file_id: LOGO_ID,
+      manual_file_id: MANUAL_ID,
+    });
+    expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual([
+      `PUT /businesses/${IDS.business}/brand`,
+    ]);
+    expect(calls[0]?.body).toMatchObject({ logo_file_id: LOGO_ID, manual_file_id: MANUAL_ID });
+  });
+
+  it("set: a stored logo without its id leaves logo_file_id out (the API keeps the current one)", async () => {
+    const { calls } = stubFetch(dataResponse(brandFixture()));
+    await brand().set(IDS.business, {
+      ...palette,
+      logo_url: "https://cdn.test/public/logos/abc.png",
+    });
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.body).not.toHaveProperty("logo_file_id");
+  });
+
+  it("set: a broken data URL is invalid_file, without calling", async () => {
     const { calls } = stubFetch();
     await expect(
-      brand().set(IDS.business, { ...palette, logo_url: "https://cdn.test/public/logos/abc.png" }),
+      brand().set(IDS.business, { ...palette, logo_url: "data:image/png;base64" }),
     ).rejects.toThrow("invalid_file");
     expect(calls).toHaveLength(0);
   });

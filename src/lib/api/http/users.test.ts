@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { isCalendarConsent } from "../repositories";
+import type { User } from "../types";
 import { createHttpUsersRepository } from "./users";
 import { IDS, dataResponse, stubFetch, testClient, userFixture } from "./testing";
 
@@ -109,18 +111,40 @@ describe("http users", () => {
     expect(calls.map((c) => c.path)).toEqual([`/users/${IDS.carla}/events`, "/account-events"]);
   });
 
-  it("setGoogleCalendar (gap): rejects with not_implemented without calling the API", async () => {
-    const { calls } = stubFetch();
-    await expect(setup().users.setGoogleCalendar("carla@gmail.com")).rejects.toThrow(
-      "not_implemented",
-    );
-    expect(calls).toHaveLength(0);
+  it("setGoogleCalendar connect: POST /me/calendar/connect answers Google's consent URL", async () => {
+    const consent = { consent_url: "https://accounts.google.com/o/oauth2/v2/auth?state=abc" };
+    const { calls } = stubFetch(dataResponse(consent));
+    const answer = await setup().users.setGoogleCalendar("carla@gmail.com");
+    expect(answer).toEqual(consent);
+    expect(isCalendarConsent(answer)).toBe(true);
+    expect(calls[0]).toMatchObject({
+      method: "POST",
+      path: "/me/calendar/connect",
+      body: undefined,
+    });
   });
 
-  it("listCalendarEvents (gap): empty, as not connected", async () => {
-    const { calls } = stubFetch();
-    expect(await setup().users.listCalendarEvents()).toEqual([]);
-    expect(calls).toHaveLength(0);
+  it("setGoogleCalendar disconnect: DELETE /me/calendar, the session user follows", async () => {
+    const { calls } = stubFetch(dataResponse(userFixture({ google_calendar_email: null })));
+    const { users, client } = setup();
+    client.setSession(userFixture({ google_calendar_email: "andrea@gmail.com" }) as User);
+    const answer = await users.setGoogleCalendar(null);
+    expect(isCalendarConsent(answer)).toBe(false);
+    expect(calls[0]).toMatchObject({ method: "DELETE", path: "/me/calendar" });
+    expect(client.session().user?.google_calendar_email).toBeNull();
+  });
+
+  it("listCalendarEvents: GET /me/calendar-events", async () => {
+    const event = {
+      id: IDS.event,
+      user_id: IDS.andrea,
+      title: "Dentista",
+      starts_at: "2026-10-20T15:00:00.000Z",
+      duration_minutes: 60,
+    };
+    const { calls } = stubFetch(dataResponse([event]));
+    expect(await setup().users.listCalendarEvents()).toEqual([event]);
+    expect(calls[0]).toMatchObject({ method: "GET", path: "/me/calendar-events" });
   });
 
   it("setBookingUrl: PATCH /me/booking-url and the session user follows", async () => {

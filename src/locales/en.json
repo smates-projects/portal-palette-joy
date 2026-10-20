@@ -726,6 +726,10 @@
     "cal_note": "Simulation: in this version the connection doesn't reach Google.",
     "t_connected": "Google Calendar connected as {{email}}",
     "t_disconnected": "Google Calendar disconnected",
+    "cal_return_connected": "Google Calendar connected. Confirmed meetings will be added to your calendar.",
+    "cal_return_denied": "You did not allow access to your Google Calendar. You can try again whenever you want.",
+    "cal_return_error": "We could not connect your Google Calendar. Try again in a few minutes.",
+    "cal_return_dismiss": "Close",
     "undo": "Undo",
     "error_title": "We couldn't load your profile",
     "retry": "Load profile again",
@@ -813,7 +817,12 @@
     "kind_lead_assessment": "New assessment from {{business}} ({{place}})",
     "kind_meeting_booked": "{{owner}} booked a meeting for {{date}}",
     "pref_lead_assessment": "A new assessment arrived for you",
-    "pref_meeting_booked": "An owner booked a meeting with you"
+    "pref_meeting_booked": "An owner booked a meeting with you",
+    "kind_calendar_disconnected": "Your Google Calendar was disconnected. Connect it again in your profile",
+    "pref_calendar_disconnected": "Your Google Calendar needs to be connected again",
+    "kind_brand_logo_rejected": "The logo of {{business}} did not pass the check. Upload it again",
+    "pref_brand_logo_rejected": "A logo you uploaded did not pass the check",
+    "profile_ref": "Your profile"
   },
   "soon": {
     "manual": "Here you'll see your business's operations manual as the firms write it and you approve it.",
@@ -2781,7 +2790,9 @@
       "t_declined": "You declined {{name}}.",
       "t_error": "It could not be completed. Try again.",
       "close": "Close",
-      "pdf_line": "This agreement protects the information {{a}} and {{b}} share during entry to Método 180."
+      "pdf_line": "This agreement protects the information {{a}} and {{b}} share during entry to Método 180.",
+      "embed_title": "DocuSeal signing form: {{name}}",
+      "embed_hint": "Sign in the DocuSeal form. This window closes by itself when you finish."
     },
     "owner": {
       "question": "What is left before you start?",

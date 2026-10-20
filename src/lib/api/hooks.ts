@@ -306,6 +306,26 @@ export const useRejectDocuments = () => useIntakeMutation((v: { id: string; reas
 export const useIntake = (businessId?: string) =>
   useQuery({ queryKey: ["documents", "intake", businessId ?? "own"], queryFn: () => api.documents.getIntake(businessId) });
 export const useOpenContract = () => useIntakeMutation((contractId: string) => api.documents.openContract(contractId));
+/** How often the signer screen re-reads a contract while DocuSeal's embedded form is open. */
+export const SIGNING_POLL_MS = 4000;
+/**
+ * DocuSeal embed: the signature arrives at the API by webhook, so the screen re-reads the contract every few seconds
+ * while the form is open. Opening again is idempotent and the only per-contract read every party can make (the API
+ * has no GET /contracts/{id}).
+ */
+export const useContractSigningPoll = (contractId: string, enabled: boolean) =>
+  useQuery({
+    queryKey: ["signing", contractId],
+    queryFn: () => api.documents.openContract(contractId),
+    enabled,
+    refetchInterval: enabled ? SIGNING_POLL_MS : false,
+    gcTime: 0,
+  });
+/** Refreshes what a signature changes (leads, documents, the Bishop's agreements) once the embed reports it. */
+export function useRefreshSigning() {
+  const qc = useQueryClient();
+  return () => Promise.all([qc.invalidateQueries({ queryKey: ["leads"] }), qc.invalidateQueries({ queryKey: ["documents"] }), qc.invalidateQueries({ queryKey: ["bishop"] })]);
+}
 export const useSignContract = () => useIntakeMutation((v: { contractId: string; signature: ContractSignature }) => api.documents.signContract(v.contractId, v.signature));
 export const useDeclineContract = () => useIntakeMutation((v: { contractId: string; reason: string }) => api.documents.declineContract(v.contractId, v.reason));
 /** True when the current user owns a business still entering (NDA and MOU sent, not in program yet). */

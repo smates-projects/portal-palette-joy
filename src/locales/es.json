@@ -720,12 +720,16 @@
     "cal_off_short": "Sin Calendar",
     "cal_title": "Google Calendar",
     "cal_on": "Conectado como {{email}}. Las reuniones confirmadas se agregan a tu calendario.",
-    "cal_off": "No conectado. Conectalo para que las reuniones confirmadas se agreguen solas a tu calendario.",
+    "cal_off": "No conectado. Conéctalo para que las reuniones confirmadas se agreguen solas a tu calendario.",
     "cal_connect": "Conectar Google Calendar",
     "cal_disconnect": "Desconectar Google Calendar",
     "cal_note": "Simulación: en esta versión la conexión no llega a Google.",
     "t_connected": "Google Calendar conectado como {{email}}",
     "t_disconnected": "Google Calendar desconectado",
+    "cal_return_connected": "Google Calendar conectado. Las reuniones confirmadas se van a agregar a tu calendario.",
+    "cal_return_denied": "No diste permiso para usar tu Google Calendar. Puedes intentarlo de nuevo cuando quieras.",
+    "cal_return_error": "No pudimos conectar tu Google Calendar. Prueba de nuevo en unos minutos.",
+    "cal_return_dismiss": "Cerrar",
     "undo": "Deshacer",
     "error_title": "No pudimos cargar tu perfil",
     "retry": "Cargar perfil de nuevo",
@@ -813,7 +817,12 @@
     "kind_lead_assessment": "Nuevo assessment de {{business}} ({{place}})",
     "kind_meeting_booked": "{{owner}} agendó reunión para el {{date}}",
     "pref_lead_assessment": "Llegó un assessment nuevo a tu cargo",
-    "pref_meeting_booked": "Un dueño agendó su reunión contigo"
+    "pref_meeting_booked": "Un dueño agendó su reunión contigo",
+    "kind_calendar_disconnected": "Tu Google Calendar se desconectó. Conéctalo de nuevo en tu perfil",
+    "pref_calendar_disconnected": "Tu Google Calendar necesita conectarse de nuevo",
+    "kind_brand_logo_rejected": "El logo de {{business}} no pasó la revisión. Súbelo de nuevo",
+    "pref_brand_logo_rejected": "Un logo que subiste no pasó la revisión",
+    "profile_ref": "Tu perfil"
   },
   "soon": {
     "manual": "Aquí verás el manual operativo de tu negocio a medida que las firmas lo escriban y tú lo apruebes.",
@@ -2781,7 +2790,9 @@
       "t_declined": "Rechazaste {{name}}.",
       "t_error": "No se pudo completar. Prueba de nuevo.",
       "close": "Cerrar",
-      "pdf_line": "Este acuerdo protege la información que comparten {{a}} y {{b}} durante el ingreso al Método 180."
+      "pdf_line": "Este acuerdo protege la información que comparten {{a}} y {{b}} durante el ingreso al Método 180.",
+      "embed_title": "Formulario de firma de DocuSeal: {{name}}",
+      "embed_hint": "Firma en el formulario de DocuSeal. Esta ventana se cierra sola cuando termines."
     },
     "owner": {
       "question": "¿Qué te falta para empezar?",

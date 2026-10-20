@@ -1,7 +1,8 @@
 // DocumentsRepository over the real API: entry documents (pipeline module, business-entry.controller.ts) and the
-// simulated DocuSeal signing (signing module, contracts.controller.ts). Files travel through the files module
+// signing (signing module, contracts.controller.ts: the portal's own screen, or DocuSeal's embedded form when the API
+// runs the real driver). Files travel through the files module
 // (./files.ts): the adapter uploads the bytes first and then attaches the returned file_id.
-import type { DocumentUpload, DocumentsRepository } from "../repositories";
+import type { DocumentUpload, DocumentsRepository, SigningSession } from "../repositories";
 import type { BusinessDocument, Contract, IntakeSummary, IsoDateTime, Uuid } from "../types";
 import { ApiError, getOrNull, type HttpClient } from "./client";
 import { signatureToPng, uploadFile } from "./files";
@@ -40,6 +41,16 @@ export interface HttpDocumentsRepository extends DocumentsRepository {
 
 const businessPath = (id: Uuid) => `/businesses/${encodeURIComponent(id)}`;
 const contractPath = (id: Uuid) => `/contracts/${encodeURIComponent(id)}`;
+
+/** meta.signing of POST /contracts/{id}/open, when it is a well-formed SigningSessionSchema; null otherwise. */
+function signingOf(value: unknown): SigningSession | null {
+  if (typeof value !== "object" || value === null) return null;
+  const record = value as Record<string, unknown>;
+  const provider = record["provider"];
+  if (provider !== "docuseal" && provider !== "simulated") return null;
+  const text = (key: string) => (typeof record[key] === "string" ? (record[key] as string) : null);
+  return { provider, embed_src: text("embed_src"), slug: text("slug") };
+}
 
 /** A real File (or Blob with a name) from the input; `{ name }` alone is the mock's simulated upload. */
 const isRealFile = (file: DocumentUpload): file is File =>
@@ -85,7 +96,16 @@ export function createHttpDocumentsRepository(client: HttpClient): HttpDocuments
       return id ? getOrNull<IntakeSummary>(client, `${businessPath(id)}/intake`) : null;
     },
 
-    openContract: (contractId) => client.post<Contract>(`${contractPath(contractId)}/open`),
+    /**
+     * POST /open answers the contract plus meta.signing: with the real DocuSeal driver, the embed of this signer's
+     * own form (provider docuseal, embed_src, slug). It is idempotent once opened, so the signer screen also polls
+     * it while the embed is open (the API has no GET /contracts/{id}).
+     */
+    openContract: async (contractId) => {
+      const answer = await client.envelope<Contract>("POST", `${contractPath(contractId)}/open`);
+      const signing = signingOf((answer.meta as Record<string, unknown> | undefined)?.["signing"]);
+      return signing ? { ...answer.data, signing } : answer.data;
+    },
 
     /**
      * The SignaturePad gives a data URL; the API wants the image stored first (context contract_signature, PNG

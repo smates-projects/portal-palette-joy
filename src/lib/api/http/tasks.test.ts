@@ -360,13 +360,38 @@ describe("http tasks: the deliverable loop", () => {
     expect(client.etags.get(`/tasks/${TASK}`)).toBe('"4"');
   });
 
-  it("updateStatus: in_progress is start; any other status is not_implemented without calling", async () => {
+  it("updateStatus: in_progress is start; any status without an endpoint is not_implemented without calling", async () => {
     const { calls } = stubFetch(dataResponse(taskApi()));
     const { tasks } = setup();
     await tasks.updateStatus(TASK, "in_progress");
     expect(route(calls[0]!)).toBe(`POST /tasks/${TASK}/start`);
-    await expect(tasks.updateStatus(TASK, "pending")).rejects.toThrow("not_implemented");
+    await expect(tasks.updateStatus(TASK, "accepted")).rejects.toThrow("not_implemented");
     expect(calls).toHaveLength(1);
+  });
+
+  it("updateStatus pending: POST /tasks/{id}/unstart with If-Match, the new ETag lands on the task", async () => {
+    const pending = taskApi({ status: "pending", version: 5 });
+    const { calls } = stubFetch(dataResponse(pending, 200, { ETag: '"5"' }));
+    const { tasks, client } = setup();
+    client.etags.set(`/tasks/${TASK}`, '"4"');
+    expect(await tasks.updateStatus(TASK, "pending")).toEqual(toFrontTask(pending));
+    expect(calls[0]).toMatchObject({
+      method: "POST",
+      path: `/tasks/${TASK}/unstart`,
+      body: undefined,
+    });
+    expect(calls[0]?.headers["If-Match"]).toBe('"4"');
+    expect(client.etags.get(`/tasks/${TASK}`)).toBe('"5"');
+  });
+
+  it("updateStatus pending: reads the task first when its version is unknown", async () => {
+    const { calls } = stubFetch(
+      dataResponse(detailFixture(), 200, { ETag: '"3"' }),
+      dataResponse(taskApi({ status: "pending", version: 4 })),
+    );
+    await setup().tasks.updateStatus(TASK, "pending");
+    expect(calls.map(route)).toEqual([`GET /tasks/${TASK}`, `POST /tasks/${TASK}/unstart`]);
+    expect(calls[1]?.headers["If-Match"]).toBe('"3"');
   });
 
   it("a blocked task: the 409 arrives as ApiError blocked with the API's detail", async () => {

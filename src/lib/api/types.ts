@@ -279,6 +279,9 @@ export interface BusinessBrand extends BrandPalette {
   applied_at: IsoDateTime;
   applied_by_user_id: Uuid | null;
   manual_file_name: string | null;
+  /** Stored files behind the logo and the manual. Only the real API sends them (the mock has no files). */
+  logo_file_id?: Uuid | null | undefined;
+  manual_file_id?: Uuid | null | undefined;
 }
 
 export type BrandEventKind = "applied_from_b5_13" | "set_by_sm" | "reset";
@@ -380,6 +383,10 @@ export const NOTIFICATION_KINDS = [
   // Automatic entry (to the lead's consultant): a new assessment arrived, the owner booked the meeting.
   "lead_assessment",
   "meeting_booked",
+  // Google Calendar (API): to the person whose calendar Google stopped accepting, connect it again.
+  "calendar_disconnected",
+  // Brand (API): to whoever uploaded the logo, the file failed verification and left the brand.
+  "brand_logo_rejected",
 ] as const;
 /** Kinds about a lead of the Embudo. Only the SM team of the lead's office gets them. */
 export const LEAD_NOTIFICATION_KINDS: readonly NotificationKind[] = ["bishop_accepted", "funds_reported", "lead_assessment", "meeting_booked"];
