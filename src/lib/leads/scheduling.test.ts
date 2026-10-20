@@ -1,0 +1,38 @@
+import { describe, expect, it } from "vitest";
+import { leadOwnerOf, scheduleRoute } from "./scheduling";
+
+const users = [
+  { id: "n", role: "sm_team" as const, business_id: null, email: "nicolas@strategicmates.com" },
+  {
+    id: "lu",
+    role: "business_owner" as const,
+    business_id: "peralta",
+    email: "lucia@peraltapisos.com",
+  },
+  { id: "x", role: "business_owner" as const, business_id: "other", email: "x@other.com" },
+];
+
+describe("Agendar reunión on a lead", () => {
+  it("finds the owner's account by the lead's business, or by its email before the business is linked", () => {
+    expect(
+      leadOwnerOf({ business_id: "peralta", contact: { email: "otro@mail.com" } }, users)?.id,
+    ).toBe("lu");
+    expect(
+      leadOwnerOf({ business_id: null, contact: { email: " Lucia@PeraltaPisos.com " } }, users)?.id,
+    ).toBe("lu");
+    expect(
+      leadOwnerOf({ business_id: null, contact: { email: "nadie@mail.com" } }, users),
+    ).toBeUndefined();
+    expect(
+      leadOwnerOf({ business_id: "peralta", contact: { email: "" } }, undefined),
+    ).toBeUndefined();
+  });
+
+  it("with an account the portal's dialog books it; without one, the booking link", () => {
+    expect(scheduleRoute("schedule", true)).toBe("dialog");
+    expect(scheduleRoute("rebook", true)).toBe("dialog");
+    expect(scheduleRoute("schedule", false)).toBe("booking_link");
+    expect(scheduleRoute("rebook", false)).toBe("booking_link");
+    expect(scheduleRoute("send_mou", true)).toBeNull();
+  });
+});

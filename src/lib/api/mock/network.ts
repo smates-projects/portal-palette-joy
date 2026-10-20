@@ -1,6 +1,6 @@
 // In-memory implementation of the network repositories (SM Global, franchises, manual, owner data, Bishop,
 // franchisee). Like the rest of the mock layer it filters by the current user to simulate API authorization.
-import { TODAY, nowIso } from "@/config/app";
+import { todayIso, nowIso } from "@/lib/clock";
 import { PROFIT_SPLIT } from "@/config/economics";
 import { isActiveFirm, isActiveUser } from "@/lib/accounts/permissions";
 import { bishopShareAt, estimatePaybackMonth } from "@/lib/bishop/split";
@@ -217,7 +217,7 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
     const programs = biz.filter((b) => b.status === "in_program");
     const ids = new Set(biz.map((b) => b.id));
     const tasks = all.filter((t) => ids.has(t.business_id) && t.status !== "cancelled");
-    const matrix = buildNetworkMatrix(tasks, db.versions, programs, TODAY, db.rules.area_amber_days);
+    const matrix = buildNetworkMatrix(tasks, db.versions, programs, todayIso(), db.rules.area_amber_days);
     const month = buildPipelineCounters(db.leads.filter((l) => l.office_id === office.id));
     return {
       programs: programs.length,
@@ -251,7 +251,7 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       globalOnly();
       const offices = db.orgs.filter((o) => o.kind === "sm");
       const all = computedTasks();
-      const month = previousMonth(TODAY.slice(0, 7));
+      const month = previousMonth(todayIso().slice(0, 7));
       const sums = offices.map((o) => officeStats(o, all));
       const sum = (pick: (s: OfficeStats) => number) => sums.reduce((a, s) => a + pick(s), 0);
       const reports = reportedIn(month);
@@ -287,7 +287,7 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       if (!office || (u.role === "sm_team" && office.id !== u.organization_id)) return delay(null);
       const all = computedTasks();
       const biz = db.businesses.filter((b) => b.office_id === id && b.status !== "onboarding");
-      const matrix = buildNetworkMatrix(all.filter((t) => t.status !== "cancelled"), db.versions, biz, TODAY, db.rules.area_amber_days);
+      const matrix = buildNetworkMatrix(all.filter((t) => t.status !== "cancelled"), db.versions, biz, todayIso(), db.rules.area_amber_days);
       const businesses: OfficeBusinessRow[] = biz.map((b) => ({
         business_id: b.id,
         name: b.name,
@@ -313,7 +313,7 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       // Health, franchisability and facts of every node are computed here, so the screen only draws the tree.
       const tasks = computedTasks().filter((t) => t.status !== "cancelled");
       const programs = db.businesses.filter((b) => b.status === "in_program");
-      const rows = buildNetworkMatrix(tasks, db.versions, programs, TODAY, db.rules.area_amber_days);
+      const rows = buildNetworkMatrix(tasks, db.versions, programs, todayIso(), db.rules.area_amber_days);
       const consultantName = (b: Business) => db.users.find((u) => u.id === b.consultant_id)?.full_name ?? null;
       const worst = (healths: StructureHealth[]): StructureHealth =>
         (["red", "amber", "green"] as const).find((h) => healths.includes(h)) ?? "grey";
@@ -336,7 +336,7 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
               // Bishop investors hang from the business they funded; the share is the provisional split of that date.
               ...db.investments.filter((i) => i.business_id === b.id).map((i): StructureNode => ({
                 id: i.id, kind: "investor", name: db.users.find((u) => u.id === i.bishop_user_id)?.full_name ?? "", health: null, franchisability: null,
-                detail: { kind: "investor", invested: i.invested, share_pct: bishopShareAt(i.invested_at, TODAY) }, children: [],
+                detail: { kind: "investor", invested: i.invested, share_pct: bishopShareAt(i.invested_at, todayIso()) }, children: [],
               })),
             ],
           };
@@ -389,7 +389,7 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       const rows: AreaBottleneck[] = AREAS.map((area) => {
         const inArea = all.filter((t) => t.area === area);
         const open = inArea.filter((t) => t.status !== "accepted");
-        const red = [...programIds].filter((id) => areaHealth(inArea.filter((t) => t.business_id === id), db.versions, TODAY, db.rules.area_amber_days) === "red").length;
+        const red = [...programIds].filter((id) => areaHealth(inArea.filter((t) => t.business_id === id), db.versions, todayIso(), db.rules.area_amber_days) === "red").length;
         return {
           area,
           open: open.length,
@@ -427,7 +427,7 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       if (!input.manager_name.trim()) throw new Error("manager_required");
       if (!validEmail(input.manager_email)) throw new Error("invalid_email");
       if (db.users.some((u) => u.email.toLowerCase() === input.manager_email.trim().toLowerCase())) throw new Error("email_taken");
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(input.planned_opening_date) || input.planned_opening_date < TODAY) throw new Error("invalid_date");
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(input.planned_opening_date) || input.planned_opening_date < todayIso()) throw new Error("invalid_date");
       const officeId = newId();
       const managerId = newId();
       // The manager is the admin of the new office: invites its team and adds its partner firms.
@@ -460,7 +460,7 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       if (office.status === "operating") throw new Error("invalid_state");
       if (office.status === "opening") {
         if (!computeOfficeChecklist(office, db.users, db.orgs, db.leads).complete) throw new Error("checklist_incomplete");
-        office.opened_at = TODAY;
+        office.opened_at = todayIso();
       }
       office.status = "operating";
       office.pause_reason = null;
@@ -602,7 +602,7 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       if (b.status !== "franchisor") throw new Error("franchisor_only");
       const units = db.franchises.filter((f) => f.franchisor_business_id === b.id);
       const unitIds = new Set(units.map((f) => f.id));
-      const month = previousMonth(TODAY.slice(0, 7));
+      const month = previousMonth(todayIso().slice(0, 7));
       const reports = reportedIn(month).filter((r) => unitIds.has(r.franchise_id));
       return delay({
         business_id: b.id,
@@ -665,7 +665,7 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       if (!db.manualSections.some((s) => s.business_id === b.id))
         db.manualSections.push(
           ...MANUAL_SECTION_TITLES.map((title): ManualSection => ({
-            id: newId(), business_id: b.id, title, pct: 0, status: "not_started", updated_at: TODAY, published_in: null, ...manualSectionContent(title, "not_started"),
+            id: newId(), business_id: b.id, title, pct: 0, status: "not_started", updated_at: todayIso(), published_in: null, ...manualSectionContent(title, "not_started"),
           })),
         );
       const all = db.manualSections.filter((s) => s.business_id === b.id);
@@ -695,7 +695,7 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       if (feeding.some((t) => t.status !== "accepted")) throw new Error("tasks_pending");
       section.status = "approved";
       section.pct = 100;
-      section.updated_at = TODAY;
+      section.updated_at = todayIso();
       if (!section.body) section.body = manualSectionContent(section.title, "approved").body;
       db.manualEvents.push({ id: newId(), business_id: b.id, section_id: section.id, section_title: section.title, kind: "approved", actor_user_id: me().id, created_at: nowIso() });
       return delay(section);
@@ -711,18 +711,18 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       const [major, minor] = current ? (current.slice(1).split(".").map(Number) as [number, number]) : [1, -1];
       const version = `v${major}.${minor + 1}`;
       const published: ManualVersion = {
-        id: newId(), business_id: businessId, version, published_at: TODAY, note: input.note.trim(),
+        id: newId(), business_id: businessId, version, published_at: todayIso(), note: input.note.trim(),
         published_by_user_id: me().id, section_titles: sections.map((s) => s.title),
       };
       db.manualVersions.push(published);
       for (const s of sections) {
         s.published_in = version;
-        s.updated_at = TODAY;
+        s.updated_at = todayIso();
       }
       // It flows down: every franchise follows the new version and gets a task to read what changed.
       for (const f of db.franchises.filter((x) => x.franchisor_business_id === businessId)) {
         f.manual_version = version;
-        db.franchiseTasks.push({ id: newId(), franchise_id: f.id, kind: "manual_read", title: `Leer el manual ${version}: ${published.section_titles.join(", ")}`, due_date: addDaysIso(TODAY, 7), done: false });
+        db.franchiseTasks.push({ id: newId(), franchise_id: f.id, kind: "manual_read", title: `Leer el manual ${version}: ${published.section_titles.join(", ")}`, due_date: addDaysIso(todayIso(), 7), done: false });
       }
       return delay(published);
     },
@@ -747,7 +747,7 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       if (!d) throw new Error("not_found");
       if (d.state !== "requested") throw new Error("invalid_state");
       if (!fileName.trim()) throw new Error("file_required");
-      Object.assign(d, { state: "received", received_at: TODAY, file_name: fileName.trim() });
+      Object.assign(d, { state: "received", received_at: todayIso(), file_name: fileName.trim() });
       return delay(d);
     },
   };
@@ -850,7 +850,7 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
           return {
             id: i.id, bishop_user_id: i.bishop_user_id, business_id: i.business_id, business_name: businessOf(i.business_id)?.name ?? "",
             invested: i.invested, invested_at: i.invested_at, recovered, recovered_pct: pct(recovered, i.invested),
-            current_share_pct: bishopShareAt(i.invested_at, TODAY),
+            current_share_pct: bishopShareAt(i.invested_at, todayIso()),
             estimated_payback_month: estimatePaybackMonth(series, i.invested),
             franchises: db.franchises.filter((f) => f.franchisor_business_id === i.business_id).length,
             recovery: series,

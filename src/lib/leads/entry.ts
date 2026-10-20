@@ -1,6 +1,6 @@
 // Automatic entry of a lead: the four entry phases live INSIDE the stages Evaluado and Reunión (sub-state), never as
 // stages of their own. Pure rules shared by the mock and the screens; the Laravel backend applies the same ones.
-import { TODAY, nowIso } from "@/config/app";
+import { todayIso, nowIso } from "@/lib/clock";
 import type { Lead, LeadMeeting, RoutingRules } from "@/lib/api/types";
 
 const daysSince = (iso: string, today: string) =>
@@ -71,7 +71,7 @@ export function entryTimeline(lead: EntryLead & Pick<Lead, "submitted_at" | "sta
 }
 
 /** Days since the assessment of an evaluated lead without booking (null when it does not apply or is under 2 days). */
-export function unbookedDays(lead: Pick<Lead, "stage" | "submitted_at" | "meeting"> & Partial<Pick<Lead, "source">>, today: string = TODAY): number | null {
+export function unbookedDays(lead: Pick<Lead, "stage" | "submitted_at" | "meeting"> & Partial<Pick<Lead, "source">>, today: string = todayIso()): number | null {
   // Added by hand: there was no on-screen result with a booking button, so there is nothing to wait for.
   if (lead.stage !== "evaluated" || lead.meeting || lead.source === "manual") return null;
   const d = daysSince(lead.submitted_at, today);
@@ -79,7 +79,7 @@ export function unbookedDays(lead: Pick<Lead, "stage" | "submitted_at" | "meetin
 }
 
 /** "Nuevo": arrived today, still in Evaluado and nobody from SM touched it. Shown first in its column. */
-export const isNewLead = (lead: Pick<Lead, "stage" | "submitted_at" | "last_contact_at">, today: string = TODAY) =>
+export const isNewLead = (lead: Pick<Lead, "stage" | "submitted_at" | "last_contact_at">, today: string = todayIso()) =>
   lead.stage === "evaluated" && !lead.last_contact_at && lead.submitted_at.slice(0, 10) === today;
 
 const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLowerCase();

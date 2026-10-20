@@ -1,5 +1,4 @@
-import { TODAY } from "@/config/app";
-import { nowIso } from "@/config/app";
+import { todayIso, nowIso } from "@/lib/clock";
 import type { ApiClient, BrandProposalUpload, TaskListOptions } from "../repositories";
 import { canTransition, withComputed } from "../computed";
 import { dueNotifications, taskRef } from "../notifications";
@@ -20,7 +19,7 @@ import { isActiveFirm, isActiveUser } from "@/lib/accounts/permissions";
 import type { AccountEvent, BrandEvent, BrandProposal, BusinessBrand, FirmEvent } from "../types";
 import { readyToStart, validDay1, programDayOn } from "@/lib/leads/funds";
 import { tripartiteState } from "@/lib/leads/opportunity";
-import { BISHOP_NOTIFICATION_KINDS, LEAD_NOTIFICATION_KINDS, type FundPayment, type NotificationKind } from "../types";
+import { API_ONLY_NOTIFICATION_KINDS, BISHOP_NOTIFICATION_KINDS, LEAD_NOTIFICATION_KINDS, type FundPayment, type NotificationKind } from "../types";
 import catalogJson from "@/data/catalogo_metodo180.json";
 import { DEFAULT_PLATFORM_RULES } from "../franchisability";
 import { AREA_BY_KEY, generateProgramTasks, type CatalogEntry } from "../program";
@@ -140,6 +139,7 @@ export function createMockApi(): MockApi {
   const kindsFor = (userId: string) => {
     const role = db.users.find((u) => u.id === userId)?.role;
     return NOTIFICATION_KINDS.filter((k) =>
+      !API_ONLY_NOTIFICATION_KINDS.includes(k) &&
       (role === "sm_team" || !LEAD_NOTIFICATION_KINDS.includes(k)) && (role === "bishop" || !BISHOP_NOTIFICATION_KINDS.includes(k)));
   };
   const prefsOf = (userId: string) => {
@@ -272,7 +272,7 @@ export function createMockApi(): MockApi {
   const sendMouAndMove = (l: Lead) => {
     const r = intake.record(l.id);
     if (!r) throw new Error("invalid_state");
-    intake.sendMou(r, l, { sentOn: TODAY });
+    intake.sendMou(r, l, { sentOn: todayIso() });
     setStage(l, "documents");
     pushLeadEvent({ lead_id: l.id, kind: "mou_sent", from: "meeting", to: "documents", body: null });
   };
@@ -291,7 +291,7 @@ export function createMockApi(): MockApi {
   cal.seed();
   /** The booking (or "Enviar NDA"): owner account, business in onboarding and the NDA, Strategic Mates pre-signed. */
   const openNda = (l: Lead, actor: string | null) => {
-    intake.open(l, { sentOn: TODAY });
+    intake.open(l, { sentOn: todayIso() });
     db.leadEvents.push({ id: newId(), lead_id: l.id, kind: "nda_sent", actor_user_id: actor, created_at: nowIso(), from: null, to: null, body: null });
   };
   const entry = createEntry({ db, me, newId, delay, findLead, visibleLeads, withBooking: (l) => withBooking(l), findTask, computed, notifyConsultant, openNda: (l) => openNda(l, null) });
@@ -805,7 +805,7 @@ export function createMockApi(): MockApi {
       startProgram: async (id, day1) => {
         const l = findLead(id);
         if (l.stage !== "accepted") throw new Error("invalid_transition");
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(day1) || day1 > TODAY) throw new Error("invalid_date");
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(day1) || day1 > todayIso()) throw new Error("invalid_date");
         return delay(launchProgram(l, day1, "contract_signed"));
       },
       rejectDocuments: async (id, reason) => {
@@ -877,7 +877,7 @@ export function createMockApi(): MockApi {
         const ids = new Set(visibleTasks().map((t) => t.id));
         return delay(
           db.meetings
-            .filter((m) => ids.has(m.task_id) && m.status !== "cancelled" && m.starts_at.slice(0, 10) >= TODAY)
+            .filter((m) => ids.has(m.task_id) && m.status !== "cancelled" && m.starts_at.slice(0, 10) >= todayIso())
             .sort((a, b) => a.starts_at.localeCompare(b.starts_at)),
         );
       },

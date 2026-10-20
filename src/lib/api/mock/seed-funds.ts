@@ -1,6 +1,6 @@
 // Sample funds and distribution: the three programs already running (Vossler, Prime 10, Enyermy). Techos Delgado,
 // accepted, has its Operating Agreement in the waiting period, so it has no funds yet. Same ids every run.
-import { TODAY } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import type { AreaCode, Business, Lead, PaymentMethod, PaymentPlanKind } from "../types";
 import type { FundsDb, Funds, StoredDistLine } from "./funds";
 import { uuid } from "./seed-leads";
@@ -96,13 +96,13 @@ export function seedFunds({ db, funds, seedSignedTripartite }: SeedDeps) {
       const p = PLAN_BY_AREA[area];
       plan(f.org.id, p.kind, p.amounts, p.days, p.milestones);
     }
-    const firmDue = lines.filter((x) => x.organization_id).flatMap((x) => x.payments).filter((x) => x.due_on && x.due_on < TODAY);
+    const firmDue = lines.filter((x) => x.organization_id).flatMap((x) => x.payments).filter((x) => x.due_on && x.due_on < todayIso());
     const keepOverdue = [...firmDue].sort((a, c) => (a.due_on ?? "").localeCompare(c.due_on ?? "")).at(-1);
-    const programDay = Math.round((Date.parse(`${TODAY}T12:00:00Z`) - Date.parse(`${start}T12:00:00Z`)) / 86_400_000) + 1;
+    const programDay = Math.round((Date.parse(`${todayIso()}T12:00:00Z`) - Date.parse(`${start}T12:00:00Z`)) / 86_400_000) + 1;
     let ref = 0;
     for (const line of lines)
       line.payments.forEach((x, i) => {
-        const due = x.due_on ? x.due_on < TODAY && x !== keepOverdue : line.kind === "milestones" && i === 0 && programDay > 30;
+        const due = x.due_on ? x.due_on < todayIso() && x !== keepOverdue : line.kind === "milestones" && i === 0 && programDay > 30;
         if (!due) return;
         const paidOn = x.due_on ?? addDays(start, 40);
         Object.assign(x, {

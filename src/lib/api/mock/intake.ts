@@ -2,7 +2,7 @@
 // points the owner confirms, the due diligence documents (locked until the MOU is signed), the owner's own NDA, the
 // review clock and the approval. The real backend gets the DocuSeal events by webhook; here signing is simulated
 // through the same repository calls.
-import { TODAY } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import { summarizeIntake, isDocsAdmin, canResend } from "@/lib/leads/onboarding";
 import { entryRules, oaWaitingUntil, ownNdaPending, signBlock, validAcknowledgment } from "@/lib/leads/entry-flow";
 import { typedSignatureDataUrl } from "@/lib/contracts/signature";
@@ -263,37 +263,37 @@ export function createIntake(db: IntakeDb, newId: () => string) {
       const d = findDoc(r.business_id, docId);
       if (d.state !== "received") throw new Error("invalid_state");
       if (!fact.trim()) throw new Error("fact_required");
-      Object.assign(d, { state: "reviewed", reviewed_at: TODAY, verified_fact: fact.trim(), review_comment: null });
+      Object.assign(d, { state: "reviewed", reviewed_at: todayIso(), verified_fact: fact.trim(), review_comment: null });
       return d;
     },
     requestAgain: (r: IntakeRecord, docId: Uuid, comment: string) => {
       const d = findDoc(r.business_id, docId);
       if (d.state !== "received" && d.state !== "reviewed") throw new Error("invalid_state");
       if (!comment.trim()) throw new Error("comment_required");
-      Object.assign(d, { state: "rejected", reviewed_at: TODAY, review_comment: comment.trim(), verified_fact: null, pauses: [...(d.pauses ?? []), { from: TODAY, to: null }] });
+      Object.assign(d, { state: "rejected", reviewed_at: todayIso(), review_comment: comment.trim(), verified_fact: null, pauses: [...(d.pauses ?? []), { from: todayIso(), to: null }] });
       return d;
     },
     /** Owner upload of an entry document: locked until he signs the MOU. Closes the pause of a replacement. */
     upload: (businessId: Uuid, d: BusinessDocument, fileName: string) => {
       if (d.locked_until_mou) throw new Error("mou_required");
       if (d.state !== "requested" && d.state !== "rejected") throw new Error("invalid_state");
-      for (const p of d.pauses ?? []) if (!p.to) p.to = TODAY;
-      Object.assign(d, { state: "received", received_at: TODAY, file_name: fileName });
+      for (const p of d.pauses ?? []) if (!p.to) p.to = todayIso();
+      Object.assign(d, { state: "received", received_at: todayIso(), file_name: fileName });
       const r = db.intakes.find((i) => i.business_id === businessId);
-      if (r) startClockIfComplete(r, TODAY);
+      if (r) startClockIfComplete(r, todayIso());
       return d;
     },
     approve: (r: IntakeRecord, user: User, lead: Lead) => {
       if (!isDocsAdmin(user, lead.office_id)) throw new Error("admin_only");
       const s = summaryForBusiness(r.business_id)!;
       if (!s.approval.ok) throw new Error("not_ready");
-      r.approved_at = new Date(`${TODAY}T15:00:00Z`).toISOString();
+      r.approved_at = new Date(`${todayIso()}T15:00:00Z`).toISOString();
       r.approved_by = user.id;
     },
     resend: (r: IntakeRecord, contractId: Uuid) => {
       const c = contractsOf(r.business_id).find((x) => x.id === contractId);
       if (!c || !canResend(c)) throw new Error("invalid_state");
-      for (const s of c.signers) if (s.status !== "signed") { s.status = "sent"; s.history = [...(s.history ?? []), { status: "sent", at: TODAY }]; }
+      for (const s of c.signers) if (s.status !== "signed") { s.status = "sent"; s.history = [...(s.history ?? []), { status: "sent", at: todayIso() }]; }
       c.state = contractState(c);
       return c;
     },
@@ -321,8 +321,8 @@ export function createIntake(db: IntakeDb, newId: () => string) {
       for (const s of c.signers)
         if (s.status !== "signed") {
           s.status = "signed";
-          s.signed_at = TODAY;
-          s.history = [...(s.history ?? []), { status: "signed", at: TODAY }];
+          s.signed_at = todayIso();
+          s.history = [...(s.history ?? []), { status: "signed", at: todayIso() }];
         }
       return settle(c);
     },
@@ -347,15 +347,15 @@ export function createIntake(db: IntakeDb, newId: () => string) {
         const block = signBlock(c, party);
         if (block) throw new Error(block);
         if (c.kind === "nda" && ownNdaPending(c)) throw new Error("own_nda_pending");
-        const until = oaWaitingUntil(c, rules().oa_waiting_days, TODAY);
+        const until = oaWaitingUntil(c, rules().oa_waiting_days, todayIso());
         if (until) throw mockError("waiting_period", until);
       }
       s.status = status;
-      s.history = [...(s.history ?? []), { status, at: TODAY }];
-      if (status === "signed") s.signed_at = TODAY;
+      s.history = [...(s.history ?? []), { status, at: todayIso() }];
+      if (status === "signed") s.signed_at = todayIso();
       if (status === "declined") s.decline_reason = reason?.trim() || null;
       c.state = contractState(c);
-      if (c.state === "signed") c.signed_at = TODAY;
+      if (c.state === "signed") c.signed_at = todayIso();
       if (c.kind === "mou" && party === "owner" && status === "signed") unlockDocuments(c.business_id);
       return c;
     },

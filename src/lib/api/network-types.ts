@@ -685,8 +685,8 @@ export interface LeadInvestors {
   tripartite: Contract | null;
   /** Bishops SM presented the business to ("Presentar a Bishops"), oldest first. */
   presented?: { bishop_user_id: Uuid; name: string; presented_at: IsoDateTime }[] | undefined;
-  /** Who SM can present it to: active Bishops with the framework agreement signed. */
-  candidates?: { user_id: Uuid; name: string }[] | undefined;
+  /** Who SM can present it to: active Bishops (framework_signed false = the framework agreement is still unsigned). */
+  candidates?: { user_id: Uuid; name: string; framework_signed?: boolean | undefined }[] | undefined;
 }
 
 export type AgreementState = "draft" | "sent" | "signed";

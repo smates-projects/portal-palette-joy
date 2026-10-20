@@ -1,7 +1,7 @@
 // Accounts, partner firms, manual leads and the business brand in the mock. Like the rest of the mock layer it
 // checks the current user before every write (the rules live in src/lib/accounts/permissions.ts and
 // src/lib/brand/scope.ts) so screens and "backend" refuse the same things.
-import { nowIso } from "@/config/app";
+import { nowIso } from "@/lib/clock";
 import { canInvite, canManage, canManageFirms, isActiveFirm, isActiveUser, officeOfUser, ownsBusiness, type AccountContext } from "@/lib/accounts/permissions";
 import { isHex } from "@/lib/brand/contrast";
 import { BRAND_TASK_CODE, brandBusinessIdFor, brandFor, canReadBrand, canResetBrand, canSetBrand } from "@/lib/brand/scope";

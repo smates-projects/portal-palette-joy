@@ -1,4 +1,4 @@
-import { TODAY } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import type { TaskWithComputed, VisibleTaskStatus } from "@/lib/api/types";
 
 export const DUE_FILTERS = ["overdue", "today", "week", "month"] as const;
@@ -42,7 +42,7 @@ export function daysBetween(from: string, to: string) {
 }
 
 /** Week ends on Sunday; month ends on its last day. Approved tasks never match. */
-export function matchesDue(task: TaskWithComputed, due: DueFilter, today: string = TODAY) {
+export function matchesDue(task: TaskWithComputed, due: DueFilter, today: string = todayIso()) {
   if (due === "overdue") return task.is_overdue;
   if (task.status === "accepted") return false;
   if (due === "today") return task.due_date === today;
@@ -64,7 +64,7 @@ export interface TableContext {
 
 /** SM rule: a deliverable is stale when it waits for the owner's approval more than 3 days. */
 export const STALE_DAYS = 3;
-export function isStaleSubmission(t: TaskWithComputed, today: string = TODAY) {
+export function isStaleSubmission(t: TaskWithComputed, today: string = todayIso()) {
   return t.status === "submitted" && !!t.last_submitted_at && daysBetween(t.last_submitted_at.slice(0, 10), today) > STALE_DAYS;
 }
 
@@ -76,14 +76,14 @@ export function overdueBlockers(t: TaskWithComputed, all: TaskWithComputed[]) {
 
 export type AttentionReason = "overdue" | "stale" | "long_block";
 /** "Necesita atención" (SM): overdue, deliverable stale, or blocked by an overdue task. First match wins. */
-export function attentionReason(t: TaskWithComputed, all: TaskWithComputed[], today: string = TODAY): AttentionReason | null {
+export function attentionReason(t: TaskWithComputed, all: TaskWithComputed[], today: string = todayIso()): AttentionReason | null {
   if (t.is_overdue) return "overdue";
   if (isStaleSubmission(t, today)) return "stale";
   if (overdueBlockers(t, all).length) return "long_block";
   return null;
 }
 
-export function filterTasks(tasks: TaskWithComputed[], s: TasksSearch, ctx: TableContext, today = TODAY) {
+export function filterTasks(tasks: TaskWithComputed[], s: TasksSearch, ctx: TableContext, today = todayIso()) {
   const q = s.q?.trim().toLowerCase();
   return tasks.filter((t) => {
     // Cancelled tasks only show when filtering by that status.

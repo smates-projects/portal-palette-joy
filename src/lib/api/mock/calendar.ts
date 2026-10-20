@@ -2,7 +2,7 @@
 // as the API (30-minute grid inside meeting_hours, portal meetings excluded) and the portal meetings themselves.
 // Demo seed: Carla, Lucía, Nicolás and Jefferson have the calendar connected; Mariana does not; Camila's access
 // expired (reconnect required).
-import { nowIso } from "@/config/app";
+import { nowIso } from "@/lib/clock";
 import type { CalendarConsent, CalendarRepository } from "../repositories";
 import type {
   AppNotification, Business, CalendarConnection, ExternalCalendarEvent, Lead, NotificationKind, PlatformRules, PortalMeeting,

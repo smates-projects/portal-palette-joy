@@ -2,7 +2,7 @@
 // meeting, the MOU accepted point by point, documents locked until the MOU is signed, the Bishops SM presents the
 // business to, the expansion meeting and the waiting period of the Operating Agreement. Pure rules shared by the mock
 // and the screens; the API applies the same ones and answers the same codes.
-import { TODAY, nowIso } from "@/config/app";
+import { todayIso, nowIso } from "@/lib/clock";
 import {
   MOU_ACKNOWLEDGMENT_POINTS,
   type BusinessDocument,
@@ -17,6 +17,7 @@ import {
   type PlatformRules,
 } from "@/lib/api/types";
 import { meetingHeld } from "./entry";
+import { entryMeetings } from "./meetings";
 
 // ---------- Rules ----------
 
@@ -120,7 +121,7 @@ export const oaSignableFrom = (sentAt: IsoDate, waitingDays: number): IsoDate =>
  * The date the Operating Agreement can be signed from while the waiting period runs ("Podrás firmar desde el ..."),
  * or null when it can be signed today (or the contract is not an Operating Agreement or was not sent).
  */
-export function oaWaitingUntil(c: Pick<Contract, "kind" | "sent_at">, waitingDays: number, today: string = TODAY): IsoDate | null {
+export function oaWaitingUntil(c: Pick<Contract, "kind" | "sent_at">, waitingDays: number, today: string = todayIso()): IsoDate | null {
   if (c.kind !== "tripartite" || !c.sent_at) return null;
   const from = oaSignableFrom(c.sent_at, waitingDays);
   return from > today ? from : null;
@@ -185,17 +186,36 @@ const signedBy = (c: Contract | null, party: "owner" | "sm" | "bishop") =>
  */
 export function ownerSteps(input: OwnerStepsInput): { key: OwnerStepKey; state: OwnerStepState }[] {
   const entry: OwnerEntry | null = input.summary.entry ?? null;
+  const meetings = entryMeetings(entry);
   const approved = !!input.summary.approved_at;
   const done: Record<OwnerStepKey, boolean> = {
     nda: ndaStatus(input.nda) === "signed",
     // The MOU only exists after "Se hizo": its presence means the meeting was held.
-    meeting: entry?.meeting?.outcome === "held" || !!input.mou,
+    meeting: meetings.initial?.outcome === "held" || !!input.mou,
     mou: signedBy(input.mou, "owner"),
     documents: approved,
-    expansion: !input.rules.require_expansion_meeting || !!entry?.expansion_meeting_held_at,
+    expansion: !input.rules.require_expansion_meeting || !!entry?.expansion_meeting_held_at || meetings.expansion?.outcome === "held",
     operating_agreement: signedBy(input.operatingAgreement, "owner"),
   };
   const keys = OWNER_STEPS.filter((k) => approved || (k !== "expansion" && k !== "operating_agreement"));
   const current = keys.find((k) => !done[k]);
   return keys.map((key) => ({ key, state: done[key] ? "done" : key === current ? "current" : "upcoming" }));
+}
+
+/**
+ * What a meeting step of "Tu ingreso" shows. book: nothing booked (the booking link); rebook: it did not happen
+ * (no-show / reschedule: book again); upcoming: date, time and the Meet link; waiting_outcome: it already passed and
+ * the consultant has not answered; held: "Reunión hecha". `heldAt` (expansion_meeting_held_at) counts as held even
+ * when the meeting itself did not come in the answer.
+ */
+export type OwnerMeetingView = "book" | "rebook" | "upcoming" | "waiting_outcome" | "held";
+
+export function ownerMeetingView(
+  m: Pick<LeadMeeting, "starts_at" | "duration_minutes" | "outcome"> | null | undefined,
+  options: { heldAt?: string | null | undefined; now?: string } = {},
+): OwnerMeetingView {
+  if (m?.outcome === "held" || options.heldAt) return "held";
+  if (!m) return "book";
+  if (m.outcome === "no_show" || m.outcome === "reschedule") return "rebook";
+  return meetingHeld(m, options.now ?? nowIso()) ? "waiting_outcome" : "upcoming";
 }

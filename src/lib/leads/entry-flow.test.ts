@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Contract, LeadMeeting, Signer } from "@/lib/api/types";
 import {
   ENTRY_RULE_DEFAULTS, acknowledgedAll, bishopSees, bookingKind, entryRules, missingAcknowledgments, ndaStatus, oaSendBlock,
-  oaSignableFrom, oaWaitingUntil, outcomeBlock, outcomePending, ownerSteps, signBlock, validAcknowledgment,
+  oaSignableFrom, oaWaitingUntil, outcomeBlock, outcomePending, ownerMeetingView, ownerSteps, signBlock, validAcknowledgment,
 } from "./entry-flow";
 
 const ALL = ["funds_finance_intervention", "business_stays_yours", "franchisor_entity_participation", "do_it_together_no_debt"] as const;
@@ -107,5 +107,47 @@ describe("NDA status and owner steps", () => {
       nda, mou: { ...mou, signers: [signer("owner", "signed"), signer("sm", "signed")] }, operatingAgreement: contract("tripartite", [signer("owner", "sent")]), rules: ENTRY_RULE_DEFAULTS,
     });
     expect(after.map((s) => `${s.key}:${s.state}`)).toEqual(["nda:done", "meeting:done", "mou:done", "documents:done", "expansion:done", "operating_agreement:current"]);
+  });
+});
+
+describe("owner meeting steps (API entry with meetings[])", () => {
+  const nda = contract("nda", [signer("owner", "signed"), signer("sm", "signed")]);
+  const apiEntry = (meetings: { id: string; kind: "initial" | "expansion"; starts_at: string; outcome: LeadMeeting["outcome"] }[], heldAt: string | null = null) => ({
+    meetings: meetings.map((m) => ({ ...m, duration_min: 30, meet_url: "https://meet.google.com/x", outcome_prompted_at: null })),
+    booking_url: "https://strategicmates.com/book",
+    expansion_meeting_held_at: heldAt,
+  });
+
+  it("Tu reunión: a booked meeting shows itself (never 'Reserva tu reunión'); held reads 'Reunión hecha'", () => {
+    expect(ownerMeetingView(null, { now: NOW })).toBe("book");
+    expect(ownerMeetingView(meeting("2026-10-20T15:00:00Z"), { now: NOW })).toBe("upcoming");
+    expect(ownerMeetingView(meeting("2026-10-14T10:00:00Z"), { now: NOW })).toBe("waiting_outcome");
+    expect(ownerMeetingView(meeting("2026-10-14T10:00:00Z", { outcome: "held" }), { now: NOW })).toBe("held");
+    expect(ownerMeetingView(meeting("2026-10-14T10:00:00Z", { outcome: "no_show" }), { now: NOW })).toBe("rebook");
+  });
+
+  it("Reunión de ampliación: once held (outcome or expansion_meeting_held_at) it stops offering the booking", () => {
+    expect(ownerMeetingView(null, { heldAt: "2026-10-20T06:42:40Z" })).toBe("held");
+    expect(ownerMeetingView(meeting("2026-10-14T05:12:33Z", { kind: "expansion", outcome: "held" }))).toBe("held");
+  });
+
+  it("the meeting step is done from entry.meetings[] alone, and the Operating Agreement follows a held expansion", () => {
+    const meetingOnly = ownerSteps({
+      summary: { approved_at: null, entry: apiEntry([{ id: "i", kind: "initial", starts_at: "2026-10-14T05:44:18Z", outcome: "held" }]) },
+      nda, mou: null, operatingAgreement: null, rules: ENTRY_RULE_DEFAULTS,
+    });
+    expect(meetingOnly.map((s) => `${s.key}:${s.state}`)).toEqual(["nda:done", "meeting:done", "mou:current", "documents:upcoming"]);
+    const mou = contract("mou", [signer("owner", "signed"), signer("sm", "signed")]);
+    const afterExpansion = ownerSteps({
+      summary: {
+        approved_at: "2026-10-20T06:41:11Z",
+        entry: apiEntry([
+          { id: "i", kind: "initial", starts_at: "2026-10-14T05:44:18Z", outcome: "held" },
+          { id: "e", kind: "expansion", starts_at: "2026-10-14T05:12:33Z", outcome: "held" },
+        ]),
+      },
+      nda, mou, operatingAgreement: contract("tripartite", [signer("owner", "sent")]), rules: ENTRY_RULE_DEFAULTS,
+    });
+    expect(afterExpansion.map((s) => `${s.key}:${s.state}`)).toEqual(["nda:done", "meeting:done", "mou:done", "documents:done", "expansion:done", "operating_agreement:current"]);
   });
 });

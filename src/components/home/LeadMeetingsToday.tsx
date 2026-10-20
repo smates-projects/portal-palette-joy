@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Video } from "lucide-react";
-import { TODAY } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import { useLeadMeetings } from "@/lib/api/hooks";
 import { addDaysIso } from "@/lib/api/program";
 import { localDay } from "@/lib/tasks/calendar";
@@ -13,8 +13,8 @@ const MAX_ITEMS = 5;
 export function LeadMeetingsToday() {
   const { t, i18n } = useTranslation();
   const q = useLeadMeetings();
-  const tomorrow = addDaysIso(TODAY, 1);
-  const items = (q.data ?? []).filter((m) => [TODAY, tomorrow].includes(localDay(m.meeting.starts_at)));
+  const tomorrow = addDaysIso(todayIso(), 1);
+  const items = (q.data ?? []).filter((m) => [todayIso(), tomorrow].includes(localDay(m.meeting.starts_at)));
   if (q.isLoading || q.isError || items.length === 0) return null;
   const time = (iso: string) => new Intl.DateTimeFormat(localeTag(i18n.language), { hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
   return (
@@ -27,7 +27,7 @@ export function LeadMeetingsToday() {
         {items.slice(0, MAX_ITEMS).map((m) => (
           <li key={m.lead_id} className="flex items-center gap-3 px-4 py-2.5 text-sm">
             <span className="w-24 shrink-0 text-xs tabular-nums text-muted-foreground">
-              {t(localDay(m.meeting.starts_at) === TODAY ? "entry.home.today" : "entry.home.tomorrow", { time: time(m.meeting.starts_at) })}
+              {t(localDay(m.meeting.starts_at) === todayIso() ? "entry.home.today" : "entry.home.tomorrow", { time: time(m.meeting.starts_at) })}
             </span>
             <Link to="/embudo" search={{ lead: m.lead_id }} className="min-w-0 flex-1 hover:underline">
               <span className="block truncate font-medium">{m.business_name}</span>

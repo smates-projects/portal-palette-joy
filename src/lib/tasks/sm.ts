@@ -1,4 +1,4 @@
-import { TODAY } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import type { Business, Organization, TaskVersion, TaskWithComputed } from "@/lib/api/types";
 import { AREAS, areaHealth, type Health } from "./owner";
 import { attentionReason, daysBetween, isStaleSubmission, type AttentionReason } from "./table";
@@ -11,7 +11,7 @@ export interface SmSummary {
 }
 
 /** Inicio SM cards. Approved tasks never count as due. */
-export function buildSmSummary(tasks: TaskWithComputed[], today = TODAY): SmSummary {
+export function buildSmSummary(tasks: TaskWithComputed[], today = todayIso()): SmSummary {
   return {
     due_today: tasks.filter((t) => t.status !== "accepted" && t.due_date === today).length,
     overdue: tasks.filter((t) => t.is_overdue).length,
@@ -31,7 +31,7 @@ export interface AttentionItem {
 const REASON_ORDER: Record<AttentionReason, number> = { overdue: 0, stale: 1, long_block: 2 };
 
 /** "Necesita atención": overdue first (most late first), then stale deliverables, then long blocks. */
-export function buildAttention(tasks: TaskWithComputed[], all: TaskWithComputed[], today = TODAY): AttentionItem[] {
+export function buildAttention(tasks: TaskWithComputed[], all: TaskWithComputed[], today = todayIso()): AttentionItem[] {
   return tasks
     .flatMap((task) => {
       const reason = attentionReason(task, all, today);
@@ -79,7 +79,7 @@ export interface MatrixRow {
 const SEVERITY: Record<Health, number> = { grey: 0, green: 1, amber: 2, red: 3 };
 
 /** Business × area health, using the one area-health rule. */
-export function buildNetworkMatrix(tasks: TaskWithComputed[], versions: TaskVersion[], businesses: Business[], today = TODAY, amberDays?: number): MatrixRow[] {
+export function buildNetworkMatrix(tasks: TaskWithComputed[], versions: TaskVersion[], businesses: Business[], today = todayIso(), amberDays?: number): MatrixRow[] {
   return businesses.map((business) => {
     const mine = tasks.filter((t) => t.business_id === business.id);
     const cells = AREAS.map((area) => {
@@ -109,7 +109,7 @@ export interface FirmLoad {
 const avg = (xs: number[]) => (xs.length ? Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10) / 10 : null);
 
 /** "Carga por firma": firms with tasks in scope, most overdue first. */
-export function buildFirmLoad(tasks: TaskWithComputed[], versions: TaskVersion[], orgs: Organization[], today = TODAY): FirmLoad[] {
+export function buildFirmLoad(tasks: TaskWithComputed[], versions: TaskVersion[], orgs: Organization[], today = todayIso()): FirmLoad[] {
   return orgs
     .map((firm) => {
       const mine = tasks.filter((t) => t.organization_id === firm.id);

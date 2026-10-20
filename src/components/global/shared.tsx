@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
-import { TODAY } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import { useBusinesses, useOrganizations, useRules, useTasks, useVersions } from "@/lib/api/hooks";
 import type { OfficeStatus } from "@/lib/api/types";
 import { formatDateTime } from "@/lib/format";
@@ -106,7 +106,7 @@ export function BusinessSheet({ businessId, onClose }: { businessId: string | nu
       return <p className="p-6 text-sm text-muted-foreground">{t("global.business.not_found")}</p>;
 
     const tasks = (tasksQ.data ?? []).filter((x) => x.status !== "cancelled");
-    const row = buildNetworkMatrix(tasks, versionsQ.data ?? [], [business], TODAY, rulesQ.data?.area_amber_days)[0];
+    const row = buildNetworkMatrix(tasks, versionsQ.data ?? [], [business], todayIso(), rulesQ.data?.area_amber_days)[0];
     const inProgram = business.status === "in_program";
     const office = orgsQ.data?.find((o) => o.id === business.office_id)?.name ?? "";
 

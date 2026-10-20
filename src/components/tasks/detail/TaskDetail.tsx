@@ -5,7 +5,7 @@ import {
   ArrowLeft, Ban, CalendarCheck, MoreHorizontal, Pencil, CalendarClock, CheckCircle2, Circle, FileText, Lock, Maximize2, MessageSquare, PanelRight, Plus, Video, X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { TODAY } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import {
   useAddComment, useAddOwnerRequest, useAnswerOwnerRequest, useApproveTask, useBusinesses, useCalendarConnection, useConfirmMeeting,
   useCurrentUser, useMyMeetings, useOrganizations, useRequestChanges, useSetOwnerRequestResolved, useStartTask,
@@ -36,9 +36,11 @@ import { areaColorVar } from "@/lib/tasks/area-color";
 
 export type DetailMode = "panel" | "page";
 
-const MEETINGS_FROM = new Date(`${addDays(TODAY, -30)}T00:00:00Z`).toISOString();
-const MEETINGS_TO = new Date(`${addDays(TODAY, 60)}T00:00:00Z`).toISOString();
-
+/** Portal meetings shown on a task: a month back and two ahead of today (read at render, never at module load). */
+const meetingsWindow = (today: string) => ({
+  from: new Date(`${addDays(today, -30)}T00:00:00Z`).toISOString(),
+  to: new Date(`${addDays(today, 60)}T00:00:00Z`).toISOString(),
+});
 
 /** The one task detail. Rendered inside the side panel or as the /tareas/:id page. */
 export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChanges = false }: { taskId: string; mode: DetailMode; onClose?: () => void; openSubmit?: boolean; openChanges?: boolean }) {
@@ -58,8 +60,8 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
   const me = useCurrentUser();
   const connectionQ = useCalendarConnection();
   const meConnected = connectionQ.data?.connected ?? isCalendarConnected(me.data);
-  // Portal meetings of this task: a month back and two ahead of the demo day.
-  const portalQ = useMyMeetings(MEETINGS_FROM, MEETINGS_TO);
+  const [meetingsRange] = useState(() => meetingsWindow(todayIso()));
+  const portalQ = useMyMeetings(meetingsRange.from, meetingsRange.to);
   const orgsQ = useOrganizations();
   const approve = useApproveTask();
   const requestChanges = useRequestChanges();
@@ -171,7 +173,7 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
     .filter((c) => c.kind === "changes_requested")
     .sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
   const approvedEvent = [...events].reverse().find((e) => e.kind === "approved");
-  const dueDays = daysBetween(TODAY, task.due_date);
+  const dueDays = daysBetween(todayIso(), task.due_date);
   const dueDate = formatShortDate(task.due_date, lng);
   const status = task.status as VisibleTaskStatus;
 

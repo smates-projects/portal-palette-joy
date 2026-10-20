@@ -58,11 +58,26 @@ export type OpportunityVisibility = "presented" | "all";
  * the meetings, the booking link of the consultant and whether the expansion meeting already happened.
  */
 export interface OwnerEntry {
-  meeting: LeadMeeting | null;
-  expansion_meeting: LeadMeeting | null;
+  /** The mock sends the two meetings by kind; the API sends `meetings[]` (and the latest expansion one). */
+  meeting?: LeadMeeting | null | undefined;
+  expansion_meeting?: LeadMeeting | null | undefined;
+  /** Every meeting of the lead with its id (API: `duration_min` instead of `duration_minutes`, meet_url nullable). */
+  meetings?: OwnerEntryMeeting[] | undefined;
   expansion_meeting_held_at: IsoDateTime | null;
   booking_url: string | null;
-  consultant_name: string | null;
+  consultant_name?: string | null | undefined;
+}
+
+/** One meeting as the entering owner reads it (intake.summary.entry.meetings[]). */
+export interface OwnerEntryMeeting {
+  id?: Uuid | undefined;
+  kind?: MeetingKind | undefined;
+  starts_at: IsoDateTime;
+  duration_min?: number | undefined;
+  duration_minutes?: number | undefined;
+  meet_url?: string | null | undefined;
+  outcome?: MeetingOutcome | null | undefined;
+  outcome_prompted_at?: IsoDateTime | null | undefined;
 }
 
 /** A booked meeting of one lead, for the consultant's calendar and the SM home. */

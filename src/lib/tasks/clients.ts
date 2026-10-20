@@ -1,4 +1,4 @@
-import { TODAY } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import type { TaskWithComputed } from "@/lib/api/types";
 
 export type StuckLine =
@@ -17,7 +17,7 @@ export interface ClientSummary {
 }
 
 /** Per-business figures for the firm's own tasks. "Open" = everything not approved. */
-export function buildClientSummary(businessId: string, tasks: TaskWithComputed[], today = TODAY): ClientSummary {
+export function buildClientSummary(businessId: string, tasks: TaskWithComputed[], today = todayIso()): ClientSummary {
   const mine = tasks.filter((t) => t.business_id === businessId);
   const open = mine.filter((t) => t.status !== "accepted");
   const next =

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
-import { TODAY } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import { useClearDistributionLine, useDistribution, useMarkDistributionPaid, useMarkDistributionPending, useSaveDistributionLine } from "@/lib/api/hooks";
 import type { Distribution, DistributionLine, DistributionPayment, PaymentPlanKind } from "@/lib/api/types";
 import { formatDate } from "@/lib/format";
@@ -108,7 +108,7 @@ function DistributionBody({ dist, readOnly }: { dist: Distribution; readOnly: bo
                     </div>
                     {p.status === "paid" && (
                       <p className="mt-0.5 flex flex-wrap gap-x-2 text-muted-foreground">
-                        <span>{t("funds.dist.paid_on", { date: formatDate(p.paid_on ?? TODAY, lng), method: t(`funds.method.${p.method ?? "other"}`) })}</span>
+                        <span>{t("funds.dist.paid_on", { date: formatDate(p.paid_on ?? todayIso(), lng), method: t(`funds.method.${p.method ?? "other"}`) })}</span>
                         {p.reference && <span>{t("funds.reference", { ref: p.reference })}</span>}
                         {p.receipt && <ReceiptLink receipt={p.receipt} />}
                       </p>
@@ -133,7 +133,7 @@ function DistributionBody({ dist, readOnly }: { dist: Distribution; readOnly: bo
           withAmount={false}
           defaultAmount={paying.payment.amount}
           pending={markPaid.isPending}
-          validate={(v) => (!v.paid_on || v.paid_on > TODAY ? "date" : null)}
+          validate={(v) => (!v.paid_on || v.paid_on > todayIso() ? "date" : null)}
           onClose={() => setPaying(null)}
           onSubmit={(v) => {
             const paymentId = paying.payment.id;

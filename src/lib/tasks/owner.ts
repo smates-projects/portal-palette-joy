@@ -1,4 +1,4 @@
-import { TODAY } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import type { AreaCode, Meeting, OwnerRequest, TaskVersion, TaskWithComputed } from "@/lib/api/types";
 import { DEFAULT_AREA_AMBER_DAYS } from "@/lib/api/franchisability";
 import { daysBetween } from "./table";
@@ -42,7 +42,7 @@ export function buildOwnerInbox(
  * Area health (same rule everywhere): red if any task is overdue; amber if something is due within 7 days
  * or a deliverable has waited for the owner more than 7 days; green otherwise; grey if the area has no tasks.
  */
-export function areaHealth(tasks: TaskWithComputed[], versions: TaskVersion[], today = TODAY, amberDays = DEFAULT_AREA_AMBER_DAYS): Health {
+export function areaHealth(tasks: TaskWithComputed[], versions: TaskVersion[], today = todayIso(), amberDays = DEFAULT_AREA_AMBER_DAYS): Health {
   // No tasks yet = nothing overdue: green. Grey only when the area does not apply (not tracked yet).
   if (tasks.length === 0) return "green";
   if (tasks.some((t) => t.is_overdue)) return "red";
@@ -63,7 +63,7 @@ export interface AreaProgress {
   health: Health;
 }
 
-export function buildAreaProgress(tasks: TaskWithComputed[], versions: TaskVersion[], today = TODAY, amberDays = DEFAULT_AREA_AMBER_DAYS): AreaProgress[] {
+export function buildAreaProgress(tasks: TaskWithComputed[], versions: TaskVersion[], today = todayIso(), amberDays = DEFAULT_AREA_AMBER_DAYS): AreaProgress[] {
   return AREAS.map((area) => {
     const mine = tasks.filter((t) => t.area === area);
     const accepted = mine.filter((t) => t.status === "accepted").length;

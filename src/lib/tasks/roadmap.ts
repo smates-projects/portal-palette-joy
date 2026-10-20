@@ -1,4 +1,4 @@
-import { TODAY } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import type { AreaCode, Business, TaskWithComputed } from "@/lib/api/types";
 import { daysBetween } from "./table";
 
@@ -29,7 +29,7 @@ const addMonths = (iso: string, n: number) => {
  * week: 3 weeks starting the Monday before this week. month: 4 months starting last month.
  * program: earliest program start to the latest of program end (day 180) or task due date, by month.
  */
-export function zoomRange(zoom: Zoom, businesses: Business[], tasks: TaskWithComputed[], today = TODAY) {
+export function zoomRange(zoom: Zoom, businesses: Business[], tasks: TaskWithComputed[], today = todayIso()) {
   if (zoom === "week") {
     const start = addDays(mondayOf(today), -7);
     return { start, end: addDays(start, 20) };

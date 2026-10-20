@@ -1,7 +1,7 @@
 // Bishop funds and their distribution to the firms, in the mock. It simulates the backend authorization:
 // money goes only to the SM team of the office, SM Global (read) and the Bishop of that business (read, plus his
 // receipt). Owners, firms and franchisees get "forbidden" and never an amount.
-import { TODAY, nowIso } from "@/config/app";
+import { todayIso, nowIso } from "@/lib/clock";
 import {
   confirmedTotal,
   distributionTotals,
@@ -276,7 +276,7 @@ export function createFunds(d: Deps) {
 
   const toLine = (b: Business, orgId: Uuid | null, firmName: string | null, areas: AreaCode[]): DistributionLine => {
     const s = storedLine(b.id, orgId);
-    const payments: DistributionPayment[] = (s?.payments ?? []).map((p) => ({ ...p, overdue: isPaymentOverdue(p, TODAY) }));
+    const payments: DistributionPayment[] = (s?.payments ?? []).map((p) => ({ ...p, overdue: isPaymentOverdue(p, todayIso()) }));
     return {
       id: lineId(b.id, orgId), business_id: b.id, organization_id: orgId, firm_name: firmName, areas,
       kind: s?.kind ?? null,
@@ -355,7 +355,7 @@ export function createFunds(d: Deps) {
       const { b, l, r } = writable(businessId);
       const p = findPayment(businessId, paymentId);
       if (p.status !== "pending") throw new Error("invalid_state");
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(input.paid_on) || input.paid_on > TODAY) throw new Error("invalid_date");
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(input.paid_on) || input.paid_on > todayIso()) throw new Error("invalid_date");
       if (!["transfer", "wire", "other"].includes(input.method)) throw new Error("invalid_method");
       const receipt = receiptOf(input.receipt);
       if (receipt && !isReceiptFile(receipt.file_name)) throw new Error("invalid_receipt");

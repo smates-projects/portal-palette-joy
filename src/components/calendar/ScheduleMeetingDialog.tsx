@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { CalendarCheck, X } from "lucide-react";
-import { nowIso } from "@/config/app";
+import { nowIso } from "@/lib/clock";
 import {
   useAvailability, useCalendarConnection, useCurrentUser, useRescheduleMeeting, useScheduleMeeting, useUsers,
 } from "@/lib/api/hooks";

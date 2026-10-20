@@ -1,6 +1,6 @@
 // Bishop funds, start of the program and distribution to the firms. Pure rules shared by the mock and the screens;
 // the Laravel backend applies the same ones.
-import { TODAY } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import { receiptFileName, type NamedReceipt } from "@/lib/funds/receipt";
 import type {
   Contract,
@@ -48,7 +48,7 @@ export function validateFundPayment(
   remaining: number,
   opts: { receiptRequired?: boolean; today?: string } = {},
 ): FundPaymentError | null {
-  const today = opts.today ?? TODAY;
+  const today = opts.today ?? todayIso();
   if (!Number.isFinite(input.amount) || input.amount <= 0) return "amount";
   if (input.amount > remaining) return "over_total";
   if (!isIsoDate(input.paid_on)) return "date";
@@ -96,12 +96,12 @@ export function readyToStart(input: {
 export const validDay1 = (day1: string, proposed: IsoDate) => isIsoDate(day1) && day1 >= proposed;
 
 /** Program day on `today` for a program that starts on `day1` (0 while it has not started). */
-export const programDayOn = (day1: IsoDate, today: string = TODAY) => Math.max(0, daysBetween(day1, today) + 1);
+export const programDayOn = (day1: IsoDate, today: string = todayIso()) => Math.max(0, daysBetween(day1, today) + 1);
 
 // ---------- Distribution to the firms ----------
 
 /** Pending, with a due date already past: shown as "Vencido". */
-export const isPaymentOverdue = (p: Pick<DistributionPayment, "status" | "due_on">, today: string = TODAY) =>
+export const isPaymentOverdue = (p: Pick<DistributionPayment, "status" | "due_on">, today: string = todayIso()) =>
   p.status === "pending" && !!p.due_on && p.due_on < today;
 
 export type LinePlanError = "no_payments" | "amount" | "date" | "milestone" | "one_time_single" | "over_received";
@@ -124,7 +124,7 @@ export function validateLinePlan(input: Pick<DistributionLineInput, "kind" | "pa
 }
 
 /** Totals of a distribution against the funds received. */
-export function distributionTotals(received: number, lines: { amount: number; payments: Pick<DistributionPayment, "amount" | "status" | "due_on">[] }[], today: string = TODAY) {
+export function distributionTotals(received: number, lines: { amount: number; payments: Pick<DistributionPayment, "amount" | "status" | "due_on">[] }[], today: string = todayIso()) {
   const assigned = lines.reduce((sum, l) => sum + l.amount, 0);
   const paid = lines.flatMap((l) => l.payments).filter((p) => p.status === "paid").reduce((sum, p) => sum + p.amount, 0);
   const overdue_count = lines.flatMap((l) => l.payments).filter((p) => isPaymentOverdue(p, today)).length;

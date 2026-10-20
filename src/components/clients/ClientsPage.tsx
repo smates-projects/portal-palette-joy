@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { TODAY } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import { useBusinesses, useTasks, useUsers } from "@/lib/api/hooks";
 import { firstName, formatDate } from "@/lib/format";
 import { buildClientSummary, type StuckLine } from "@/lib/tasks/clients";
@@ -26,7 +26,7 @@ export function ClientsPage() {
     return t("clients.stuck_none");
   };
   const nextText = (iso: string) => {
-    const d = daysBetween(TODAY, iso);
+    const d = daysBetween(todayIso(), iso);
     return d === 0 ? t("home.due_today") : d === 1 ? t("home.due_tomorrow") : t("home.due_in", { count: d });
   };
 

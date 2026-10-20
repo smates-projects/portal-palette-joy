@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { TODAY } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import type { AreaCode, Business, TaskWithComputed, VisibleTaskStatus } from "@/lib/api/types";
 import { formatDate, localeTag } from "@/lib/format";
 import {
@@ -125,7 +125,7 @@ export function TaskRoadmap(props: {
   // Keep "today" in view when the zoom changes.
   useEffect(() => {
     const el = scroller.current;
-    if (el) el.scrollLeft = Math.max(0, x(TODAY) - (el.clientWidth - LABEL_W) / 3);
+    if (el) el.scrollLeft = Math.max(0, x(todayIso()) - (el.clientWidth - LABEL_W) / 3);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [zoom]);
 
@@ -182,8 +182,8 @@ export function TaskRoadmap(props: {
     });
   });
 
-  const todayX = x(TODAY);
-  const todayVisible = TODAY >= range.start && TODAY <= range.end;
+  const todayX = x(todayIso());
+  const todayVisible = todayIso() >= range.start && todayIso() <= range.end;
 
   if (rows.length === 0) return null;
 

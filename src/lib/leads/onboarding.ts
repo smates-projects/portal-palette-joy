@@ -1,4 +1,4 @@
-import { TODAY } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import type { BusinessDocument, Contract, DocsApproval, IntakeSummary, ReviewClock, User, Uuid } from "@/lib/api/types";
 
 const ms = (d: string) => Date.parse(`${d.slice(0, 10)}T12:00:00Z`);
@@ -21,7 +21,7 @@ export function reviewClock(input: {
   total: number;
   today?: string;
 }): ReviewClock {
-  const today = input.today ?? TODAY;
+  const today = input.today ?? todayIso();
   const paused = input.docs.some((d) => d.state === "rejected");
   const end = input.approved_at ? input.approved_at.slice(0, 10) : today;
   let day = 0;
@@ -87,7 +87,7 @@ export function summarizeIntake(input: {
 }
 
 /** SM can resend when the signer has not signed and the last send is older than 3 days. */
-export function canResend(c: Contract, today: string = TODAY) {
+export function canResend(c: Contract, today: string = todayIso()) {
   if (fullySigned(c) || !c.sent_at) return false;
   const lastSent = (c.signers.flatMap((s) => s.history ?? []).filter((h) => h.status === "sent").map((h) => h.at).sort().at(-1)) ?? c.sent_at;
   return daysBetween(lastSent, today) >= RESEND_AFTER_DAYS;

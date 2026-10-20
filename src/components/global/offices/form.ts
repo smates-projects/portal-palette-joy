@@ -1,4 +1,4 @@
-import { TODAY } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import type { CreateOfficeInput } from "@/lib/api/network-types";
 
 // Pure rules of the "Nueva oficina" form. The data layer checks the same things again, as the server will.
@@ -15,7 +15,7 @@ export type NewOfficeErrors = Partial<Record<keyof NewOfficeForm, NewOfficeError
 
 export const emptyNewOfficeForm = (): NewOfficeForm => ({ city: "", manager_name: "", manager_email: "", planned_opening_date: "" });
 
-export function validateNewOffice(form: NewOfficeForm, today: string = TODAY): NewOfficeErrors {
+export function validateNewOffice(form: NewOfficeForm, today: string = todayIso()): NewOfficeErrors {
   const errors: NewOfficeErrors = {};
   if (!form.city.trim()) errors.city = "city_required";
   if (!form.manager_name.trim()) errors.manager_name = "manager_required";

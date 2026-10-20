@@ -2,7 +2,7 @@
 // read-only leads for SM Global and the structure tree. Same style as network.test.ts.
 import { describe, expect, it } from "vitest";
 import catalogJson from "@/data/catalogo_metodo180.json";
-import { TODAY } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import { bishopShareAt } from "@/lib/bishop/split";
 import { expectedFranchisePct } from "@/lib/tasks/office";
 import { computeOfficeChecklist } from "./office-checklist";
@@ -380,7 +380,7 @@ describe("structure tree computed by the data layer", () => {
     const nodes = flat((await (await asGlobal()).network.getStructure()).root);
     const investors = nodes.filter((n) => n.kind === "investor");
     expect(investors).toHaveLength(1);
-    expect(investors[0]).toMatchObject({ name: "Jefferson Paula", detail: { kind: "investor", invested: 150000, share_pct: bishopShareAt("2025-11-14", TODAY) } });
+    expect(investors[0]).toMatchObject({ name: "Jefferson Paula", detail: { kind: "investor", invested: 150000, share_pct: bishopShareAt("2025-11-14", todayIso()) } });
     const bimbo = nodes.find((n) => n.id === seed.BIZ_BIMBO)!;
     expect(bimbo.children.filter((c) => c.kind === "investor").map((c) => c.id)).toEqual([investors[0]!.id]);
     // No other business shows an investor.

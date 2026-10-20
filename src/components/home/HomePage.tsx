@@ -3,7 +3,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { CalendarDays, Maximize2, ChevronDown, Plus, ChevronLeft, ChevronRight, ChevronUp, ClipboardList, Lock, Target } from "lucide-react";
-import { TODAY } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import { useBusinesses, useMyMeetings, useStartTask, useTasks, useUpcomingMeetings } from "@/lib/api/hooks";
 import { localDay, visibleRange } from "@/lib/tasks/calendar";
 import { GoogleMark, MeetingStatusChip } from "@/components/calendar/parts";
@@ -43,8 +43,8 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
   const start = useStartTask();
   const [submitFor, setSubmitFor] = useState<string | null>(null);
   const [closed, setClosed] = useState<Partial<Record<TodayReason, boolean>>>({});
-  const [weekStart, setWeekStart] = useState(() => addDays(TODAY, -3));
-  const [day, setDay] = useState(TODAY);
+  const [weekStart, setWeekStart] = useState(() => addDays(todayIso(), -3));
+  const [day, setDay] = useState(todayIso());
   const [addOpen, setAddOpen] = useState(false);
   const week = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const meetings = meetingsQ.data ?? [];
@@ -64,7 +64,7 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
   const selected = tasks.find((x) => x.id === taskId);
 
   const dueText = (task: TaskWithComputed) => {
-    const d = daysBetween(TODAY, task.due_date);
+    const d = daysBetween(todayIso(), task.due_date);
     if (d < 0) return t("home.overdue_by", { count: -d });
     if (d === 0) return t("home.due_today");
     if (d === 1) return t("home.due_tomorrow");
@@ -72,7 +72,7 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
   };
 
   const dueSub = (task: TaskWithComputed) => {
-    const d = daysBetween(TODAY, task.due_date);
+    const d = daysBetween(todayIso(), task.due_date);
     if (d < 0) return t("home.due_sub_ago", { count: -d });
     if (d === 0) return t("home.due_sub_today");
     if (d === 1) return t("home.due_sub_tomorrow");
@@ -80,7 +80,7 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
   };
 
   const whenText = (iso: string) => {
-    const d = daysBetween(TODAY, iso);
+    const d = daysBetween(todayIso(), iso);
     const weekday = new Intl.DateTimeFormat(localeTag(lng), { weekday: "long" }).format(new Date(`${iso}T12:00:00`));
     return d <= 6 ? t("home.when_weekday", { day: weekday }) : t("home.when_date", { date: formatDate(iso, lng) });
   };

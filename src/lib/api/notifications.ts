@@ -1,4 +1,4 @@
-import { TODAY } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import type { AppNotification, Business, Task, TaskWithComputed } from "./types";
 
 const addDays = (iso: string, n: number) => {
@@ -8,14 +8,14 @@ const addDays = (iso: string, n: number) => {
 };
 
 /**
- * Due-date notifications computed from TODAY (never stored): due today, due tomorrow, overdue.
+ * Due-date notifications computed from todayIso() (never stored): due today, due tomorrow, overdue.
  * Approved tasks never generate them. Ids are stable per task and day so read state survives refetches.
  */
 export function dueNotifications(
   userId: string,
   tasks: TaskWithComputed[],
   businesses: Business[],
-  today: string = TODAY,
+  today: string = todayIso(),
 ): Omit<AppNotification, "read_at">[] {
   const tomorrow = addDays(today, 1);
   return tasks.flatMap((t) => {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import en from "./en.json";
 import es from "./es.json";
+import { NOTIFICATION_KINDS } from "@/lib/api/types";
 
 /** Dotted path of every text in a locale file. */
 function keysOf(node: unknown, prefix = ""): string[] {
@@ -29,5 +30,24 @@ describe("locales", () => {
 
   it("Spanish says provisional, never provisorio", () => {
     expect(textsOf(es).filter((text) => /provisori/i.test(text))).toEqual([]);
+  });
+
+  it("every notification kind has its bell text and its preference label in both languages", () => {
+    const missing = (locale: { notifications: Record<string, unknown> }) =>
+      NOTIFICATION_KINDS.flatMap((kind) => [`kind_${kind}`, `pref_${kind}`]).filter((key) => typeof locale.notifications[key] !== "string");
+    expect(missing(es)).toEqual([]);
+    expect(missing(en)).toEqual([]);
+  });
+
+  it("the signed contract names the contract and the business from the payload", () => {
+    expect(es.notifications.kind_contract_signed).toContain("{{contract_name}}");
+    expect(es.notifications.kind_contract_signed).toContain("{{business_name}}");
+    expect(en.notifications.kind_contract_signed).toContain("{{contract_name}}");
+    expect(en.notifications.kind_contract_signed).toContain("{{business_name}}");
+  });
+
+  it("the payment receipt is stored, not only its name", () => {
+    expect(es.funds.form.receipt_hint).not.toMatch(/nombre del archivo/i);
+    expect(en.funds.form.receipt_hint).not.toMatch(/file name/i);
   });
 });

@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, ExternalLink, Video } from "lucide-react";
-import { nowIso } from "@/config/app";
+import { nowIso } from "@/lib/clock";
 import type { LeadMeeting, LeadWithComputed, MeetingOutcome } from "@/lib/api/types";
 import { emailItems, entryTimeline, meetingHeld } from "@/lib/leads/entry";
 import { outcomePending } from "@/lib/leads/entry-flow";
+import { entryMeetings } from "@/lib/leads/meetings";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -97,9 +98,9 @@ export function SummaryEmail({ lead }: { lead: LeadWithComputed }) {
 }
 
 /**
- * The booked meeting: date, time, consultant and the Meet link. Once it started, the consultant answers "¿Se hizo?":
- * Se hizo (with a note), No se presentó, Reagendar. Initial meeting while in Reunión; expansion meeting while accepted.
- * `focused` (from the bell) scrolls to it and outlines it.
+ * The meetings of the lead: the initial one from Reunión on, and the expansion one once booked (or while Aceptado).
+ * Only the meeting the lead is waiting on takes an answer; the others read as a record ("Se hizo el ...").
+ * `focused` (from the bell) scrolls to the actionable one and outlines it.
  */
 export function MeetingCard(props: {
   lead: LeadWithComputed;
@@ -109,22 +110,50 @@ export function MeetingCard(props: {
   pending?: boolean;
   onOutcome?: (meeting: LeadMeeting, outcome: MeetingOutcome) => void;
 }) {
-  const { t, i18n } = useTranslation();
   const { lead } = props;
-  const ref = useRef<HTMLElement>(null);
-  const expansion = lead.stage === "accepted";
-  const m = expansion ? lead.expansion_meeting ?? null : lead.meeting;
+  const ref = useRef<HTMLDivElement>(null);
+  const { initial, expansion } = entryMeetings(lead);
   useEffect(() => {
     if (props.focused) ref.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [props.focused]);
-  if (lead.stage !== "meeting" && !(expansion && m)) return null;
+  if (lead.stage === "evaluated" || lead.stage === "discarded") return null;
+  const expansionOpen = lead.stage === "accepted" && !lead.expansion_meeting_held_at;
+  const showInitial = lead.stage === "meeting" || !!initial;
+  const showExpansion = !!expansion || expansionOpen;
+  if (!showInitial && !showExpansion) return null;
+  return (
+    <div ref={ref} id="lead-meeting" className="space-y-6">
+      {showInitial && (
+        <OneMeeting {...props} meeting={initial} kind="initial" actionable={lead.stage === "meeting"} focused={!!props.focused && lead.stage === "meeting"} />
+      )}
+      {showExpansion && (
+        <OneMeeting {...props} meeting={expansion} kind="expansion" actionable={expansionOpen} focused={!!props.focused && expansionOpen} />
+      )}
+    </div>
+  );
+}
+
+function OneMeeting(props: {
+  meeting: LeadMeeting | null;
+  kind: "initial" | "expansion";
+  actionable: boolean;
+  consultantName: string;
+  readOnly?: boolean;
+  focused: boolean;
+  pending?: boolean;
+  onOutcome?: (meeting: LeadMeeting, outcome: MeetingOutcome) => void;
+}) {
+  const { t, i18n } = useTranslation();
+  const m = props.meeting;
+  const expansion = props.kind === "expansion";
   const started = !!m && Date.parse(m.starts_at) <= Date.parse(nowIso());
   const asked = outcomePending(m) && !!m?.outcome_prompted_at;
+  const canAnswer = props.actionable && !props.readOnly;
   return (
-    <section ref={ref} id="lead-meeting">
+    <section>
       <h3 className={sectionTitle}>{t(expansion ? "entry.meeting.expansion_title" : "entry.meeting.title")}</h3>
       {!m ? (
-        <p className="mt-2 rounded-md border border-dashed border-border px-3 py-3 text-sm text-muted-foreground">{t("entry.meeting.manual")}</p>
+        <p className="mt-2 rounded-md border border-dashed border-border px-3 py-3 text-sm text-muted-foreground">{t(expansion ? "entry.meeting.expansion_none" : "entry.meeting.manual")}</p>
       ) : (
         <div className={cn("mt-2 rounded-md border px-4 py-3 text-sm", props.focused ? "border-primary ring-2 ring-primary/20" : "border-border")}>
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -137,16 +166,16 @@ export function MeetingCard(props: {
                 </p>
               )}
             </div>
-            {!meetingHeld(m) && !m.outcome && (
+            {!meetingHeld(m) && !m.outcome && m.meet_url && (
               <a href={m.meet_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-sm text-link hover:underline">
                 <Video className="h-4 w-4" />{t("entry.meeting.join")}<ExternalLink className="h-3 w-3" />
               </a>
             )}
           </div>
-          {!m.outcome && started && (
+          {!m.outcome && started && props.actionable && (
             <div className="mt-3 border-t border-border pt-3">
               <p className={cn("text-sm", asked ? "font-medium text-status-warning-fg" : "font-medium")}>{t(asked ? "entry.outcome.pending" : "entry.outcome.question")}</p>
-              {!props.readOnly && (
+              {canAnswer && (
                 <div className="mt-2 flex flex-wrap gap-2">
                   <PrimaryButton disabled={!!props.pending} onClick={() => props.onOutcome?.(m, "held")}>{t("entry.outcome.held")}</PrimaryButton>
                   {(["no_show", "reschedule"] as const).map((o) => (
@@ -157,10 +186,10 @@ export function MeetingCard(props: {
                   ))}
                 </div>
               )}
-              {!props.readOnly && <p className="mt-2 text-xs text-muted-foreground">{t(expansion ? "entry.outcome.hint_expansion" : "entry.outcome.hint")}</p>}
+              {canAnswer && <p className="mt-2 text-xs text-muted-foreground">{t(expansion ? "entry.outcome.hint_expansion" : "entry.outcome.hint")}</p>}
             </div>
           )}
-          {(m.outcome === "no_show" || m.outcome === "reschedule") && (
+          {props.actionable && (m.outcome === "no_show" || m.outcome === "reschedule") && (
             <p className="mt-2 text-xs text-muted-foreground">{t("entry.outcome.rebook_hint")}</p>
           )}
         </div>

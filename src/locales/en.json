@@ -831,7 +831,30 @@
     "pref_meeting_cancelled": "A meeting of yours is cancelled",
     "pref_calendar_connect_suggested": "Suggestion to connect your Google Calendar",
     "pref_calendar_reconnect_required": "Your Google Calendar needs to be connected again",
-    "calendar_ref": "Calendar"
+    "calendar_ref": "Calendar",
+    "contract_fallback": "contract",
+    "kind_contract_signed": "{{business_name}}: the {{contract_name}} was signed",
+    "pref_contract_signed": "A contract is signed",
+    "kind_contract_sent": "You have the {{contract_name}} of {{business_name}} to sign",
+    "pref_contract_sent": "A contract arrives for you to sign",
+    "kind_document_received": "{{business_name}} uploaded a document to review",
+    "pref_document_received": "An owner uploads a document",
+    "kind_document_requested": "Strategic Mates asked you again for a document of {{business_name}}",
+    "pref_document_requested": "A document is asked again",
+    "kind_documents_approved": "The documents of {{business_name}} were approved",
+    "pref_documents_approved": "Documents are approved",
+    "kind_documents_unlocked": "The documents of {{business_name}} can be uploaded now",
+    "pref_documents_unlocked": "Documents are unlocked",
+    "kind_review_overdue": "The document review of {{business_name}} is past its deadline",
+    "pref_review_overdue": "A document review is past its deadline",
+    "kind_own_nda_rejected": "Strategic Mates did not accept your own NDA. Read the comment",
+    "pref_own_nda_rejected": "An answer about your own NDA",
+    "kind_signature_pending_review": "A signature of the {{contract_name}} of {{business_name}} needs review",
+    "pref_signature_pending_review": "A signature needs review",
+    "kind_opportunity_available": "A new business is available to invest in",
+    "pref_opportunity_available": "A business is available",
+    "kind_program_started": "The program of {{business_name}} started",
+    "pref_program_started": "A program starts"
   },
   "soon": {
     "manual": "Here you'll see your business's operations manual as the firms write it and you approve it.",
@@ -1276,7 +1299,9 @@
       "own_nda_accepted": "{{actor}} accepted the owner's own NDA",
       "own_nda_rejected": "{{actor}} asked to sign the mutual NDA",
       "presented_to_bishops": "{{actor}} presented the business to investors",
-      "expansion_booked": "Automatic: expansion meeting booked by {{owner}}"
+      "expansion_booked": "Automatic: expansion meeting booked by {{owner}}",
+      "nda_signed": "The NDA was signed",
+      "mou_signed": "The MOU was signed"
     },
     "error_title": "We could not load the pipeline.",
     "retry": "Retry",
@@ -1306,12 +1331,14 @@
       "not_viewed": "has not opened it yet",
       "accepted_on": "accepted it on {{date}}",
       "present_title": "Present {{name}} to investors",
-      "present_body": "Pick which investors see this business. Only active investors with the framework agreement signed show up. They get a notice.",
-      "present_empty": "There are no active investors with the framework agreement signed.",
+      "present_body": "Choose which investors to show this business to. They get a notice. Only those who signed the framework agreement can be chosen.",
+      "present_empty": "There are no active investors to present it to.",
       "already_presented": "Already presented",
       "present_confirm": "Present",
       "t_presented_one": "You presented {{name}} to {{count}} investor.",
-      "t_presented_other": "You presented {{name}} to {{count}} investors."
+      "t_presented_other": "You presented {{name}} to {{count}} investors.",
+      "no_framework": "Framework agreement missing",
+      "load_error": "We could not show the investors of this business."
     },
     "t_tripartite_sent": "We sent the tripartite contract for {{name}}.",
     "manual": {
@@ -1382,7 +1409,8 @@
       "join": "Join Google Meet",
       "join_short": "Join",
       "manual": "Moved to Meeting without a booking from the owner. Agree on the date with them.",
-      "expansion_title": "Expansion meeting"
+      "expansion_title": "Expansion meeting",
+      "expansion_none": "The expansion meeting is not booked yet."
     },
     "note": {
       "title": "Meeting note with {{name}}",
@@ -1522,7 +1550,8 @@
       "invalid_transition": "That cannot be done yet. Check the meeting time.",
       "acknowledgment_required": "Before signing, tick \"I understand\" on the four points of the MOU.",
       "own_nda_pending": "Your NDA is being reviewed. We will let you know when Strategic Mates answers.",
-      "waiting_period": "It cannot be signed yet. You can sign from {{date}}."
+      "waiting_period": "It cannot be signed yet. You can sign from {{date}}.",
+      "meeting_id_missing": "We could not save the outcome: the meeting's identifier is missing. Reload the page and try again."
     }
   },
   "business_file": {
@@ -3087,7 +3116,7 @@
       "receipt_pick": "Choose file",
       "receipt_change": "Change file",
       "receipt_type": "The receipt must be a PDF or an image.",
-      "receipt_hint": "PDF or image. In this test version we only keep the file name."
+      "receipt_hint": "PDF or image. We store the receipt with the payment."
     },
     "errors": {
       "amount": "Enter a dollar amount greater than zero.",

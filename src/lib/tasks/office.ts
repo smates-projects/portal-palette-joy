@@ -1,4 +1,4 @@
-import { TODAY } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import { isActiveFirm, isActiveUser } from "@/lib/accounts/permissions";
 import type { AreaCode, Business, Franchisability, Organization, TaskVersion, TaskWithComputed, User } from "@/lib/api/types";
 import { AREAS, areaHealth, type Health } from "./owner";
@@ -26,7 +26,7 @@ export function franchiseHealth(f: Franchisability, programDay: number): Exclude
 }
 
 /** Area light for Negocios: an area with no tasks yet has nothing overdue, so it is green. Grey only when it does not apply. */
-export const businessAreaHealth = (tasks: TaskWithComputed[], versions: TaskVersion[], today = TODAY): Health =>
+export const businessAreaHealth = (tasks: TaskWithComputed[], versions: TaskVersion[], today = todayIso()): Health =>
   tasks.length === 0 ? "green" : areaHealth(tasks, versions, today);
 
 export interface BusinessRow {
@@ -51,7 +51,7 @@ export function buildBusinessRows(
   versions: TaskVersion[],
   users: User[],
   franchise: Franchisability[],
-  today = TODAY,
+  today = todayIso(),
 ): BusinessRow[] {
   const user = (id: string | null) => (id ? users.find((u) => u.id === id) ?? null : null);
   return businesses
@@ -130,7 +130,7 @@ export interface AreaCard {
 }
 
 /** Ficha del negocio: the six areas with their firm and counts. */
-export function buildAreaCards(businessId: string, tasks: TaskWithComputed[], versions: TaskVersion[], orgs: Organization[], today = TODAY): AreaCard[] {
+export function buildAreaCards(businessId: string, tasks: TaskWithComputed[], versions: TaskVersion[], orgs: Organization[], today = todayIso()): AreaCard[] {
   const mine = tasks.filter((t) => t.business_id === businessId);
   return AREAS.map((area) => {
     const inArea = mine.filter((t) => t.area === area);

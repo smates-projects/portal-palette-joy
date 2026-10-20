@@ -1,4 +1,4 @@
-import { TODAY } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import type { FranchiseSummary, FinancialSeries, ManualSection, TaskWithComputed } from "@/lib/api/types";
 
 // Pure rules of the owner screens (manual, numbers, franchisor home). No React here so they are easy to test.
@@ -70,7 +70,7 @@ export interface AttentionItem {
 export const LOW_STANDARDS_PCT = 80;
 
 /** Franchises that need the franchisor, most urgent first: late report, then open tickets, then low standards. */
-export function buildAttentionList(franchises: FranchiseSummary[], today: string = TODAY): AttentionItem[] {
+export function buildAttentionList(franchises: FranchiseSummary[], today: string = todayIso()): AttentionItem[] {
   const weight: Record<AttentionReason, number> = { report_late: 4, tickets: 2, low_standards: 1 };
   return franchises
     .map((franchise) => {

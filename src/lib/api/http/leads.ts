@@ -13,6 +13,7 @@ import type {
   Uuid,
 } from "../types";
 import { getOrNull, listAllByCursor, notImplemented, type HttpClient } from "./client";
+import { entryMeetings, type RawMeeting } from "@/lib/leads/meetings";
 
 /** GET /leads/{id}: the front's LeadDetail plus what the API computes for the detail screen (dropped here). */
 interface LeadDetailResponse extends LeadDetail {
@@ -66,6 +67,53 @@ const PAGE_LIMIT = 200;
 
 const leadPath = (id: Uuid) => `/leads/${encodeURIComponent(id)}`;
 
+/**
+ * GET /leads/{id}: the API's `meeting` is the latest meeting of any kind and the ids live in `meetings[]`. The front's
+ * lead carries the initial one in `meeting` and the expansion one in `expansion_meeting`, both with their ids.
+ */
+export function withDetailMeetings(lead: LeadWithComputed, meetings: unknown[] | undefined): LeadWithComputed {
+  const resolved = entryMeetings({
+    meeting: lead.meeting,
+    expansion_meeting: lead.expansion_meeting,
+    meetings: (meetings ?? []) as RawMeeting[],
+  });
+  return { ...lead, meeting: resolved.initial ?? lead.meeting, expansion_meeting: resolved.expansion };
+}
+
+/** The board has no `meetings[]`: an expansion meeting sent as `meeting` is at least known as the expansion one. */
+function withBoardMeetings(lead: LeadWithComputed): LeadWithComputed {
+  if (lead.meeting?.kind !== "expansion" || lead.expansion_meeting) return lead;
+  return { ...lead, expansion_meeting: lead.meeting };
+}
+
+/** The API's investor rows as they arrive (candidates keyed by `id`, presented Bishops listed as views). */
+interface InvestorsResponse extends Omit<LeadInvestors, "views" | "candidates"> {
+  views?: (Omit<LeadInvestors["views"][number], "viewed_at"> & { viewed_at: IsoDateTime | null; presented_at?: IsoDateTime | null })[];
+  candidates?: { id?: Uuid; user_id?: Uuid; name: string; framework_signed?: boolean }[];
+}
+
+/**
+ * GET /investors and POST /present-to-bishops. `views` keeps only the Bishops that opened the opportunity (a presented
+ * Bishop who never opened it comes with viewed_at null) and every candidate gets its `user_id`: the API keys them by
+ * `id`, which left the checkboxes without a key (one tick ticked all, and the request sent [null]).
+ */
+export function normalizeInvestors(raw: InvestorsResponse): LeadInvestors {
+  const { views, candidates, ...rest } = raw;
+  const opened = (views ?? []).flatMap(({ presented_at: _presented, ...v }) => (v.viewed_at ? [{ ...v, viewed_at: v.viewed_at }] : []));
+  return {
+    ...rest,
+    views: opened,
+    ...(candidates
+      ? {
+          candidates: candidates.flatMap((c) => {
+            const userId = c.user_id ?? c.id;
+            return userId ? [{ user_id: userId, name: c.name, ...(c.framework_signed !== undefined ? { framework_signed: c.framework_signed } : {}) }] : [];
+          }),
+        }
+      : {}),
+  };
+}
+
 export function createHttpLeadsRepository(client: HttpClient): HttpLeadsRepository {
   /** A write that changes the lead: its answer carries the lead's new ETag. */
   const leadWrite = <T = LeadWithComputed>(
@@ -98,15 +146,17 @@ export function createHttpLeadsRepository(client: HttpClient): HttpLeadsReposito
   };
 
   return {
-    list: (opts) =>
-      listAllByCursor<LeadWithComputed>(client, "/leads", {
-        office_id: opts?.office_id,
-        limit: PAGE_LIMIT,
-      }),
+    list: async (opts) =>
+      (
+        await listAllByCursor<LeadWithComputed>(client, "/leads", {
+          office_id: opts?.office_id,
+          limit: PAGE_LIMIT,
+        })
+      ).map(withBoardMeetings),
 
     get: async (id) => {
       const detail = await getOrNull<LeadDetailResponse>(client, leadPath(id));
-      return detail ? { lead: detail.lead, events: detail.events } : null;
+      return detail ? { lead: withDetailMeetings(detail.lead, detail.meetings), events: detail.events } : null;
     },
 
     move: (id, to) => guardedWrite(id, "move", { to }),
@@ -141,9 +191,11 @@ export function createHttpLeadsRepository(client: HttpClient): HttpLeadsReposito
     presentToBishops: async (id, bishopUserIds) =>
       forgetVersion(
         id,
-        await client.post<LeadInvestors>(`${leadPath(id)}/present-to-bishops`, {
-          bishop_user_ids: bishopUserIds,
-        }),
+        normalizeInvestors(
+          await client.post<InvestorsResponse>(`${leadPath(id)}/present-to-bishops`, {
+            bishop_user_ids: bishopUserIds,
+          }),
+        ),
       ),
 
     getIntake: (id) => getOrNull<LeadIntake>(client, `${leadPath(id)}/intake`),
@@ -190,7 +242,10 @@ export function createHttpLeadsRepository(client: HttpClient): HttpLeadsReposito
 
     rejectDocuments: (id, reason) => leadWrite(id, "reject-documents", { comment: reason }),
 
-    getInvestors: (id) => getOrNull<LeadInvestors>(client, `${leadPath(id)}/investors`),
+    getInvestors: async (id) => {
+      const raw = await getOrNull<InvestorsResponse>(client, `${leadPath(id)}/investors`);
+      return raw ? normalizeInvestors(raw) : null;
+    },
 
     /** POST /release-opportunity { reason }: back to every Bishop; the lead's new ETag is kept. */
     releaseOpportunity: (id, reason) => leadWrite(id, "release-opportunity", { reason }),

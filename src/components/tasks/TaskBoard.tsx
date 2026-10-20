@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { TODAY } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import { useApproveTask, useCurrentUser, useStartTask, useUnstartTask } from "@/lib/api/hooks";
 import type { TaskWithComputed, VisibleTaskStatus } from "@/lib/api/types";
 import { formatDate, formatRelativeDate } from "@/lib/format";
@@ -150,7 +150,7 @@ export function TaskBoard(props: {
                       title={formatDate(task.due_date, lng)}
                     >
                       {task.is_overdue
-                        ? t("tasks.overdue_days", { count: daysBetween(task.due_date, TODAY) })
+                        ? t("tasks.overdue_days", { count: daysBetween(task.due_date, todayIso()) })
                         : formatRelativeDate(task.due_date, lng)}
                     </span>
                   </div>

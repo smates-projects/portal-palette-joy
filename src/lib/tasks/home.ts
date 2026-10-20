@@ -1,4 +1,4 @@
-import { TODAY } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import type { TaskWithComputed } from "@/lib/api/types";
 import { matchesDue, type TasksSearch } from "./table";
 
@@ -14,7 +14,7 @@ export const SUMMARY_FILTER: Record<SummaryKey, TasksSearch> = {
   waiting: { status: "submitted" },
 };
 
-export function matchesSummary(t: TaskWithComputed, key: SummaryKey, today = TODAY) {
+export function matchesSummary(t: TaskWithComputed, key: SummaryKey, today = todayIso()) {
   if (key === "changes") return t.status === "changes_requested";
   if (key === "waiting") return t.status === "submitted";
   return matchesDue(t, key, today);
@@ -27,7 +27,7 @@ export interface SummaryCard {
   byBusiness: { business_id: string; count: number }[];
 }
 
-export function buildSummary(tasks: TaskWithComputed[], today = TODAY): SummaryCard[] {
+export function buildSummary(tasks: TaskWithComputed[], today = todayIso()): SummaryCard[] {
   return SUMMARY_KEYS.map((key) => {
     const hits = tasks.filter((t) => matchesSummary(t, key, today));
     const counts = new Map<string, number>();
@@ -43,7 +43,7 @@ const actionable = (t: TaskWithComputed) => t.status !== "submitted" && t.status
 export type TodayReason = "overdue" | "today" | "changes" | "week";
 
 /** Urgency order: overdue, due today, changes requested, due this week. Each task appears once. */
-export function buildToday(tasks: TaskWithComputed[], today = TODAY) {
+export function buildToday(tasks: TaskWithComputed[], today = todayIso()) {
   const seen = new Set<string>();
   const out: { task: TaskWithComputed; reason: TodayReason }[] = [];
   const tests: [TodayReason, (t: TaskWithComputed) => boolean][] = [
@@ -65,7 +65,7 @@ export function buildToday(tasks: TaskWithComputed[], today = TODAY) {
 }
 
 /** Next actionable task due after today (for the empty state). */
-export function nextDue(tasks: TaskWithComputed[], today = TODAY) {
+export function nextDue(tasks: TaskWithComputed[], today = todayIso()) {
   return (
     tasks
       .filter((t) => actionable(t) && t.due_date > today)

@@ -1,7 +1,7 @@
 // Bishop opportunities in the mock: born from the lead once NDA + MOU are signed by both. Also the framework agreement,
 // the tripartite contract and what SM sees (who viewed, who passed, who accepted, release).
 import { PROFIT_SPLIT } from "@/config/economics";
-import { TODAY, nowIso } from "@/config/app";
+import { todayIso, nowIso } from "@/lib/clock";
 import { projectYears } from "@/lib/bishop/split";
 import { opportunityPhase, tripartiteState, acceptBlock } from "@/lib/leads/opportunity";
 import { bishopSees, entryRules, oaSendBlock } from "@/lib/leads/entry-flow";
@@ -169,14 +169,14 @@ export function createOpportunities(d: Deps) {
   };
 
   const signerFromUser = (party: "owner" | "sm" | "bishop", name: string, user_id: Uuid | null): Signer =>
-    ({ name, role: party, party, user_id, status: "sent", signed_at: null, decline_reason: null, history: [{ status: "sent", at: TODAY }] });
+    ({ name, role: party, party, user_id, status: "sent", signed_at: null, decline_reason: null, history: [{ status: "sent", at: todayIso() }] });
 
   const makeTripartite = (l: Lead): Contract => {
     const bishop = db.users.find((u) => u.id === l.bishop_user_id)!;
     const owner = db.users.find((u) => u.role === "business_owner" && u.business_id === l.business_id);
     return {
       id: d.newId(), business_id: l.business_id!, area: "intake", kind: "tripartite", name: OPERATING_AGREEMENT_NAME,
-      state: "sent", sent_at: TODAY, signed_at: null,
+      state: "sent", sent_at: todayIso(), signed_at: null,
       signers: [signerFromUser("owner", owner?.full_name ?? l.contact.name, owner?.id ?? null), signerFromUser("sm", "Strategic Mates", null), signerFromUser("bishop", bishop.full_name, bishop.id)],
     };
   };
@@ -328,7 +328,7 @@ export function createOpportunities(d: Deps) {
       );
       const c = makeTripartite(techos);
       c.id = "9d000000-0000-4000-8000-000000000002";
-      const sentOn = addDaysIso(TODAY, -3);
+      const sentOn = addDaysIso(todayIso(), -3);
       c.sent_at = sentOn;
       for (const s of c.signers) s.history = [{ status: "sent", at: sentOn }];
       db.contracts.push(c);

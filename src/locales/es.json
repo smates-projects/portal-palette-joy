@@ -831,7 +831,30 @@
     "pref_meeting_cancelled": "Cancelan una reunión tuya",
     "pref_calendar_connect_suggested": "Sugerencia de conectar tu Google Calendar",
     "pref_calendar_reconnect_required": "Tu Google Calendar necesita volver a conectarse",
-    "calendar_ref": "Calendario"
+    "calendar_ref": "Calendario",
+    "contract_fallback": "contrato",
+    "kind_contract_signed": "{{business_name}}: firmaron el {{contract_name}}",
+    "pref_contract_signed": "Se firma un contrato",
+    "kind_contract_sent": "Tienes el {{contract_name}} de {{business_name}} para firmar",
+    "pref_contract_sent": "Te llega un contrato para firmar",
+    "kind_document_received": "{{business_name}} subió un documento para revisar",
+    "pref_document_received": "Un dueño sube un documento",
+    "kind_document_requested": "Strategic Mates te pidió de nuevo un documento de {{business_name}}",
+    "pref_document_requested": "Te piden de nuevo un documento",
+    "kind_documents_approved": "Se aprobaron los documentos de {{business_name}}",
+    "pref_documents_approved": "Se aprueban los documentos",
+    "kind_documents_unlocked": "Ya se pueden subir los documentos de {{business_name}}",
+    "pref_documents_unlocked": "Se habilitan los documentos",
+    "kind_review_overdue": "La revisión de documentos de {{business_name}} pasó el plazo",
+    "pref_review_overdue": "Una revisión de documentos pasa el plazo",
+    "kind_own_nda_rejected": "Strategic Mates no aceptó tu propio NDA. Revisa el comentario",
+    "pref_own_nda_rejected": "Responden sobre tu propio NDA",
+    "kind_signature_pending_review": "Llegó una firma del {{contract_name}} de {{business_name}} para revisar",
+    "pref_signature_pending_review": "Una firma necesita revisión",
+    "kind_opportunity_available": "Hay un negocio nuevo disponible para invertir",
+    "pref_opportunity_available": "Hay un negocio disponible",
+    "kind_program_started": "Empezó el programa de {{business_name}}",
+    "pref_program_started": "Empieza un programa"
   },
   "soon": {
     "manual": "Aquí verás el manual operativo de tu negocio a medida que las firmas lo escriban y tú lo apruebes.",
@@ -1276,7 +1299,9 @@
       "own_nda_accepted": "{{actor}} aceptó el NDA propio del dueño",
       "own_nda_rejected": "{{actor}} pidió firmar el NDA mutuo",
       "presented_to_bishops": "{{actor}} presentó el negocio a inversores",
-      "expansion_booked": "Automático: reunión de ampliación agendada por {{owner}}"
+      "expansion_booked": "Automático: reunión de ampliación agendada por {{owner}}",
+      "nda_signed": "Se firmó el NDA",
+      "mou_signed": "Se firmó el MOU"
     },
     "error_title": "No pudimos cargar el embudo.",
     "retry": "Reintentar",
@@ -1306,12 +1331,14 @@
       "not_viewed": "todavía no la abrió",
       "accepted_on": "la aceptó el {{date}}",
       "present_title": "Presentar {{name}} a inversores",
-      "present_body": "Elige a qué inversores mostrarle este negocio. Solo aparecen los activos que firmaron el acuerdo marco. Les llega un aviso.",
-      "present_empty": "No hay inversores activos con el acuerdo marco firmado.",
+      "present_body": "Elige a qué inversores mostrarle este negocio. Les llega un aviso. Solo puedes elegir a los que firmaron el acuerdo marco.",
+      "present_empty": "No hay inversores activos para presentar.",
       "already_presented": "Ya se le presentó",
       "present_confirm": "Presentar",
       "t_presented_one": "Presentaste {{name}} a {{count}} inversor.",
-      "t_presented_other": "Presentaste {{name}} a {{count}} inversores."
+      "t_presented_other": "Presentaste {{name}} a {{count}} inversores.",
+      "no_framework": "Falta el acuerdo marco",
+      "load_error": "No pudimos mostrar los inversores de este negocio."
     },
     "t_tripartite_sent": "Enviamos el contrato tripartito de {{name}}.",
     "manual": {
@@ -1382,7 +1409,8 @@
       "join": "Unirse a Google Meet",
       "join_short": "Unirse",
       "manual": "Pasó a Reunión sin reserva del dueño. Acuerda la fecha con él.",
-      "expansion_title": "Reunión de ampliación"
+      "expansion_title": "Reunión de ampliación",
+      "expansion_none": "Todavía no se reservó la reunión de ampliación."
     },
     "note": {
       "title": "Nota de la reunión con {{name}}",
@@ -1522,7 +1550,8 @@
       "invalid_transition": "Todavía no se puede hacer eso. Revisa la hora de la reunión.",
       "acknowledgment_required": "Antes de firmar, marca \"Entendí\" en los cuatro puntos del MOU.",
       "own_nda_pending": "Tu NDA está en revisión. Te avisamos cuando Strategic Mates responda.",
-      "waiting_period": "Todavía no se puede firmar. Podrás hacerlo desde el {{date}}."
+      "waiting_period": "Todavía no se puede firmar. Podrás hacerlo desde el {{date}}.",
+      "meeting_id_missing": "No pudimos guardar el resultado: falta el identificador de la reunión. Recarga la página y vuelve a intentarlo."
     }
   },
   "business_file": {
@@ -3087,7 +3116,7 @@
       "receipt_pick": "Elegir archivo",
       "receipt_change": "Cambiar archivo",
       "receipt_type": "El comprobante tiene que ser PDF o imagen.",
-      "receipt_hint": "PDF o imagen. En esta versión de prueba solo guardamos el nombre del archivo."
+      "receipt_hint": "PDF o imagen. Guardamos el comprobante junto con el pago."
     },
     "errors": {
       "amount": "Escribe un monto en dólares, mayor que cero.",

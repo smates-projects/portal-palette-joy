@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Bell } from "lucide-react";
-import { nowIso } from "@/config/app";
+import { nowIso } from "@/lib/clock";
 import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications } from "@/lib/api/hooks";
 import type { AppNotification, NotificationKind } from "@/lib/api/types";
 import { firstName, formatDateTime, localeTag } from "@/lib/format";
@@ -38,6 +38,17 @@ const DOT: Record<NotificationKind, string> = {
   meeting_cancelled: "bg-status-danger-fg",
   calendar_connect_suggested: "bg-link",
   calendar_reconnect_required: "bg-status-warning-fg",
+  document_received: "bg-link",
+  document_requested: "bg-status-warning-fg",
+  documents_approved: "bg-status-success-fg",
+  documents_unlocked: "bg-link",
+  contract_sent: "bg-primary",
+  contract_signed: "bg-status-success-fg",
+  review_overdue: "bg-status-danger-fg",
+  own_nda_rejected: "bg-status-warning-fg",
+  signature_pending_review: "bg-status-warning-fg",
+  opportunity_available: "bg-gold",
+  program_started: "bg-status-success-fg",
 };
 
 /** Calendar v2: these open the calendar with the meeting in focus. */
@@ -76,8 +87,10 @@ export function NotificationBell() {
     else if (PROFILE_KINDS.has(n.kind)) void navigate({ to: "/perfil" });
     else if (n.kind === "meeting_outcome_pending" && n.lead_id) void navigate({ to: "/embudo", search: { lead: n.lead_id, focus: "meeting" } });
     else if (n.lead_id) void navigate({ to: "/embudo", search: { lead: n.lead_id } });
-    else if (n.kind === "opportunity_presented") void navigate({ to: "/oportunidades" });
+    else if (n.kind === "opportunity_presented" || n.kind === "opportunity_available") void navigate({ to: "/oportunidades" });
     else if (n.kind === "brand_logo_rejected" && !n.task_id) void navigate({ to: "/negocios", search: { biz: n.business_id } });
+    // Contracts, entry documents, program start: about a business, not a task; the home of each role picks it up.
+    else if (!n.task_id) void navigate({ to: "/" });
     else void navigate({ to: "/tareas", search: { task: n.task_id } });
   };
 
@@ -146,6 +159,9 @@ export function NotificationBell() {
                               // Automatic entry: "Nuevo assessment de {business} ({place})", "{owner} agendó reunión para el {date}".
                               owner: n.actor_name ?? "", business: n.business_name, place: n.lead_place ?? "",
                               date: n.meeting_at ? formatDateTime(n.meeting_at, i18n.language) : "",
+                              // Contracts and entry documents: the contract's name and the business from the payload.
+                              contract_name: n.contract_name || t("notifications.contract_fallback"),
+                              business_name: n.business_name || "",
                             })}
                       </span>
                       <span className="block truncate text-xs text-muted-foreground">

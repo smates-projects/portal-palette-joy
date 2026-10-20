@@ -3,7 +3,8 @@ import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { CalendarCheck, CheckCircle2, FileUp, Flag, PackageCheck } from "lucide-react";
-import { PROGRAM_LENGTH_DAYS, TODAY } from "@/config/app";
+import { PROGRAM_LENGTH_DAYS } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import {
   useAnswerOwnerRequest, useApproveTask, useBusinesses, useConfirmMeeting, useCurrentUser, useFranchisability, useMeetings,
   useOpenOwnerRequests, useOrganizations, useTasks, useUsers, useVersions,
@@ -70,7 +71,7 @@ export function OwnerHomePage({ taskId }: { taskId?: string | undefined }) {
   const day = business?.program_day ?? 0;
 
   const when = (iso: string) => {
-    const d = daysBetween(TODAY, iso);
+    const d = daysBetween(todayIso(), iso);
     if (d < 0) return t("home.overdue_by", { count: -d });
     if (d === 0) return t("home.due_today");
     if (d === 1) return t("home.due_tomorrow");
@@ -104,7 +105,7 @@ export function OwnerHomePage({ taskId }: { taskId?: string | undefined }) {
           {t("owner.action_confirm_meeting")}
         </ActionButton>
       );
-    const late = it.kind !== "meeting" && it.date < TODAY;
+    const late = it.kind !== "meeting" && it.date < todayIso();
     return (
       <li key={it.key} className="flex flex-wrap items-center gap-3 px-4 py-3 sm:flex-nowrap">
         <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />

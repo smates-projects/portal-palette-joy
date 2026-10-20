@@ -1,7 +1,7 @@
 // Automatic entry of leads, zone routing, "Ya lo tenía" and the ficha del negocio, in the mock. It simulates the
 // backend authorization: the SM team works on its own office, SM Global reads everything and edits the zones, the
 // owner reads his own snapshot without the score, firms get nothing.
-import { TODAY, nowIso } from "@/config/app";
+import { todayIso, nowIso } from "@/lib/clock";
 import { ASSESSMENT_BLOCKS } from "../types";
 import type {
   AssessmentSnapshot,
@@ -181,7 +181,7 @@ export function createEntry(d: Deps) {
 
   /** As it comes from the consultant's calendar: within the next 7 days, 30 minutes (60 for the expansion), a Meet link. */
   const bookedMeeting = (l: Lead, kind: "initial" | "expansion"): LeadMeeting => {
-    const day = addDays(TODAY, 1 + Math.floor(Math.random() * 7));
+    const day = addDays(todayIso(), 1 + Math.floor(Math.random() * 7));
     const hour = 13 + Math.floor(Math.random() * 7);
     const code = () => Math.random().toString(36).slice(2, 5).padEnd(3, "x");
     return {

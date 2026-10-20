@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { TODAY } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import {
   useBottlenecks,
   useBusinesses,
@@ -58,7 +58,7 @@ export function GlobalHomePage() {
   const businesses = bizQ.data ?? [];
   const tasks = (tasksQ.data ?? []).filter((x) => x.status !== "cancelled");
   const inProgram = businesses.filter((b) => b.status === "in_program");
-  const matrix = buildNetworkMatrix(tasks, versionsQ.data ?? [], inProgram, TODAY, rulesQ.data?.area_amber_days);
+  const matrix = buildNetworkMatrix(tasks, versionsQ.data ?? [], inProgram, todayIso(), rulesQ.data?.area_amber_days);
   const cards = buildOfficeCards(offices, matrix);
   const attention = buildNetworkAttention(tasks, businesses, orgsQ.data ?? []);
   const bottlenecks = sortBottlenecks(bottlenecksQ.data ?? []);

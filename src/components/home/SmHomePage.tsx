@@ -5,7 +5,7 @@ import { ClockLabel } from "@/components/pipeline/IntakeChecklist";
 import type { TaskWithComputed } from "@/lib/api/types";
 import { buildAttention, buildSmSummary, type SmSummary } from "@/lib/tasks/sm";
 import { isStaleSubmission } from "@/lib/tasks/table";
-import { TODAY } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
@@ -14,7 +14,7 @@ import { LeadMeetingsToday } from "./LeadMeetingsToday";
 import type { TasksSearch } from "@/lib/tasks/table";
 
 const CARDS: { key: keyof SmSummary; search: TasksSearch; match: (t: TaskWithComputed) => boolean }[] = [
-  { key: "due_today", search: { due: "today" }, match: (t) => t.status !== "accepted" && t.due_date === TODAY },
+  { key: "due_today", search: { due: "today" }, match: (t) => t.status !== "accepted" && t.due_date === todayIso() },
   { key: "overdue", search: { due: "overdue" }, match: (t) => t.is_overdue },
   { key: "stale", search: { stale: "1" }, match: (t) => isStaleSubmission(t) },
   { key: "blocked", search: { blocked: "1" }, match: (t) => t.is_blocked && t.status !== "accepted" },

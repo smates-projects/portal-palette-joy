@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { FileText, Paperclip } from "lucide-react";
-import { TODAY } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import { PAYMENT_METHODS, type FundsStatus, type PaymentMethod, type Receipt } from "@/lib/api/types";
 import { formatUsd } from "@/lib/format";
 import { fileSizeKb } from "@/lib/funds/receipt";
@@ -105,7 +105,7 @@ export function PaymentDialog(props: {
 }) {
   const { t } = useTranslation();
   const [amount, setAmount] = useState(props.defaultAmount ? String(props.defaultAmount) : "");
-  const [paidOn, setPaidOn] = useState(TODAY);
+  const [paidOn, setPaidOn] = useState(todayIso());
   const [method, setMethod] = useState<PaymentMethod>("wire");
   const [reference, setReference] = useState("");
   const [receipt, setReceipt] = useState<File | null>(null);
@@ -135,7 +135,7 @@ export function PaymentDialog(props: {
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block space-y-1.5">
               <span className="text-sm font-medium">{t("funds.form.date")}</span>
-              <input type="date" value={paidOn} max={TODAY} onChange={(e) => setPaidOn(e.target.value)} className={inputCls} />
+              <input type="date" value={paidOn} max={todayIso()} onChange={(e) => setPaidOn(e.target.value)} className={inputCls} />
             </label>
             <label className="block space-y-1.5">
               <span className="text-sm font-medium">{t("funds.form.method")}</span>

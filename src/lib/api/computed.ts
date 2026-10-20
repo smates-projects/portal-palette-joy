@@ -1,4 +1,4 @@
-import { TODAY } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import type { Task, TaskStatus, TaskWithComputed, UserRole } from "./types";
 
 /** Blocked = depends on at least one task not yet accepted. Not a status. */
@@ -10,11 +10,11 @@ export function isBlocked(task: Task, all: Task[]): boolean {
 }
 
 /** Overdue = due date passed and not accepted. Not a status. */
-export function isOverdue(task: Task, today: string = TODAY): boolean {
+export function isOverdue(task: Task, today: string = todayIso()): boolean {
   return task.status !== "accepted" && task.status !== "cancelled" && task.due_date < today;
 }
 
-export function withComputed(task: Task, all: Task[], today: string = TODAY): TaskWithComputed {
+export function withComputed(task: Task, all: Task[], today: string = todayIso()): TaskWithComputed {
   return { ...task, is_blocked: isBlocked(task, all), is_overdue: isOverdue(task, today) };
 }
 

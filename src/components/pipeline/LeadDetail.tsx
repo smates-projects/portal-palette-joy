@@ -7,6 +7,8 @@ import {
   useRejectDocuments, useRemoveFundPayment, useRules, useSendTripartite, useSetMeetingOutcome, useUsers,
 } from "@/lib/api/hooks";
 import { entryRules, oaSendBlock } from "@/lib/leads/entry-flow";
+import { meetingIdOf } from "@/lib/leads/meetings";
+import { leadOwnerOf, scheduleRoute } from "@/lib/leads/scheduling";
 import type { LeadMeeting, MeetingOutcome } from "@/lib/api/types";
 import { validateFundPayment } from "@/lib/leads/funds";
 import { FundsPanel } from "@/components/funds/FundsPanel";
@@ -77,7 +79,7 @@ export function LeadDetail(props: {
   const { lead, events } = q.data;
   const action = primaryActionFor(lead);
   // The owner's account exists from the booking (or "Enviar NDA") on.
-  const leadOwner = lead.business_id ? usersQ.data?.find((u) => u.role === "business_owner" && u.business_id === lead.business_id) : undefined;
+  const leadOwner = leadOwnerOf(lead, usersQ.data);
   const scheduleGuests = [leadOwner, usersQ.data?.find((u) => u.id === lead.consultant_user_id)]
     .filter((u): u is NonNullable<typeof u> => !!u && u.id !== meQ.data?.id)
     .map((u) => ({ user_id: u.id, name: u.full_name }));
@@ -98,13 +100,22 @@ export function LeadDetail(props: {
       ? t(`entry.errors.${e.message}`) : t("pipeline.t_error"));
   /** "Se hizo" asks for the note first; the other two answers go at once. */
   const answer = (m: LeadMeeting, value: MeetingOutcome, note?: string) => {
-    if (!m.id) return;
-    outcome.mutate({ leadId: lead.id, meetingId: m.id, input: { outcome: value, note: note ?? null } }, {
+    const meetingId = meetingIdOf(m);
+    // Never a silent no-op: without the meeting's id the API cannot take the answer, so say so.
+    if (!meetingId) {
+      setNoting(null);
+      toast.error(t("entry.errors.meeting_id_missing"));
+      return;
+    }
+    outcome.mutate({ leadId: lead.id, meetingId, input: { outcome: value, note: note ?? null } }, {
       onSuccess: () => { setNoting(null); toast.success(t(`entry.outcome.t_${value}${m.kind === "expansion" ? "_expansion" : ""}`, { name: lead.business.name })); },
       onError: fail,
     });
   };
-  const onOutcome = (m: LeadMeeting, value: MeetingOutcome) => (value === "held" ? setNoting(m) : answer(m, value));
+  const onOutcome = (m: LeadMeeting, value: MeetingOutcome) => {
+    if (!meetingIdOf(m)) return answer(m, value);
+    return value === "held" ? setNoting(m) : answer(m, value);
+  };
   const runPrimary = () => {
     if (action === "review_docs") return document.getElementById("intake-docs")?.scrollIntoView({ behavior: "smooth", block: "start" });
     if (action === "approve_docs")
@@ -120,8 +131,9 @@ export function LeadDetail(props: {
     if (action === "meeting_outcome") return document.getElementById("lead-meeting")?.scrollIntoView({ behavior: "smooth", block: "center" });
     // Calendar v2: a lead whose owner already has an account is scheduled with the portal's dialog; without an
     // account the booking link keeps doing it (the person books on the consultant's calendar).
-    if ((action === "schedule" || action === "rebook") && leadOwner) return setScheduling(true);
-    if (action === "rebook") {
+    const route = scheduleRoute(action, !!leadOwner);
+    if (route === "dialog") return setScheduling(true);
+    if (route === "booking_link" && action === "rebook") {
       // Open synchronously from the click so the browser does not block the new tab.
       if (lead.booking_url) window.open(lead.booking_url, "_blank", "noopener,noreferrer");
       return;
@@ -241,7 +253,8 @@ export function LeadDetail(props: {
         <MeetingCard lead={lead} consultantName={consultant?.full_name ?? ""} readOnly={!!props.readOnly} focused={props.focus === "meeting"} pending={outcome.isPending} onOutcome={onOutcome} />
         {/* 1b. Entry checklist (from NDA + MOU on) */}
         {lead.intake && <IntakeChecklist leadId={lead.id} readOnly={!!props.readOnly} />}
-        {(lead.stage === "documents" || lead.stage === "accepted") && lead.intake && (
+        {/* Who SM presented it to and who took it; still a record once the program started (read only there). */}
+        {(lead.stage === "documents" || lead.stage === "accepted" || lead.stage === "in_program") && lead.intake && (
           <InvestorsSection leadId={lead.id} businessName={lead.business.name} readOnly={!!props.readOnly} canPresent={lead.stage === "accepted"} />
         )}
         {/* 1c. Bishop funds, once the three signed the tripartite contract (SM only: money) */}

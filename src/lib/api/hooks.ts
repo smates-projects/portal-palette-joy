@@ -101,6 +101,10 @@ export const useAvailability = (input: AvailabilityInput | null) =>
     gcTime: 0,
   });
 
+/**
+ * Calendar writes. A meeting booked, moved or cancelled from a lead also changes the lead (its meeting card, stage,
+ * phase) and the owner's entry ("Tu reunión"), so leads and documents refresh too: no hard reload needed.
+ */
 function useCalendarMutation<V, R>(fn: (vars: V) => Promise<R>) {
   const qc = useQueryClient();
   return useMutation({
@@ -108,6 +112,8 @@ function useCalendarMutation<V, R>(fn: (vars: V) => Promise<R>) {
     onSuccess: () =>
       Promise.all([
         qc.invalidateQueries({ queryKey: [CALENDAR_KEY] }),
+        qc.invalidateQueries({ queryKey: ["leads"] }),
+        qc.invalidateQueries({ queryKey: ["documents"] }),
         qc.invalidateQueries({ queryKey: ["notifications"] }),
         qc.invalidateQueries({ queryKey: queryKeys.me }),
         qc.invalidateQueries({ queryKey: queryKeys.users }),

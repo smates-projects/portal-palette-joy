@@ -457,7 +457,7 @@ meetings.push(
 // Extra meeting the owner proposed to the firm (shows in notifications and calendar).
 meetings.push({ id: uuid("1b000000", 903), task_id: TASK_B603_VOSSLER, proposed_by_user_id: U_CARLA, topic: "Licencia CGC y condados donde operar", starts_at: "2026-10-19T16:00:00Z", duration_minutes: 30, status: "proposed" });
 
-/** Stored (event-driven) notifications. Due-date ones are generated from TODAY, not stored. */
+/** Stored (event-driven) notifications. Due-date ones are generated from todayIso(), not stored. */
 export const notifications: { id: string; user_id: string; kind: NotificationKind; task_id: string; actor_user_id: string | null; created_at: string; read: boolean; change?: TaskChange | null }[] = [
   { id: uuid("1f000000", 1), user_id: U_LUCIA, kind: "mentioned", task_id: TASK_B603_VOSSLER, actor_user_id: U_CARLA, created_at: "2026-10-14T13:20:00Z", read: false },
   { id: uuid("1f000000", 2), user_id: U_LUCIA, kind: "meeting_proposed", task_id: TASK_B603_VOSSLER, actor_user_id: U_CARLA, created_at: "2026-10-14T12:05:00Z", read: false },

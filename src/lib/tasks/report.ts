@@ -1,4 +1,4 @@
-import { TODAY } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import type { Business, TaskVersion, TaskWithComputed, VisibleTaskStatus } from "@/lib/api/types";
 import { daysBetween, VISIBLE_STATUSES } from "./table";
 
@@ -24,7 +24,7 @@ export function buildFirmReport(
   tasks: TaskWithComputed[],
   versions: TaskVersion[],
   businesses: Business[],
-  _today: string = TODAY,
+  _today: string = todayIso(),
 ): FirmReport {
   const byId = new Map(tasks.map((t) => [t.id, t]));
   const total = tasks.length;

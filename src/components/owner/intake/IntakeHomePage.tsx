@@ -6,8 +6,8 @@ import { Check, ExternalLink, Lock, Video } from "lucide-react";
 import { useContracts, useCurrentUser, useDocuments, useIntake, useProposeOwnNda, useRules } from "@/lib/api/hooks";
 import type { Contract, LeadMeeting } from "@/lib/api/types";
 import { formatDate, formatDateTime } from "@/lib/format";
-import { meetingHeld } from "@/lib/leads/entry";
-import { entryRules, ndaStatus, oaWaitingUntil, ownNdaPending, ownerSteps, type OwnerStepKey, type OwnerStepState } from "@/lib/leads/entry-flow";
+import { entryRules, ndaStatus, oaWaitingUntil, ownNdaPending, ownerMeetingView, ownerSteps, type OwnerStepKey, type OwnerStepState } from "@/lib/leads/entry-flow";
+import { entryMeetings } from "@/lib/leads/meetings";
 import { cn } from "@/lib/utils";
 import { DocuSealSigner } from "@/components/docuseal/DocuSealSigner";
 import { ErrorState, LoadingState, PageHeader, primaryButtonCls } from "../shared";
@@ -57,24 +57,36 @@ export function IntakeHomePage() {
     });
   };
 
-  const meetingBlock = (m: LeadMeeting | null, kind: "initial" | "expansion") => {
-    if (!m || m.outcome === "no_show" || m.outcome === "reschedule")
+  const meetings = entryMeetings(entry);
+  /** One meeting step: book it, book again, the booked meeting (date, Meet link), waiting for the outcome, or held. */
+  const meetingBlock = (m: LeadMeeting | null, kind: "initial" | "expansion", heldAt?: string | null) => {
+    const view = ownerMeetingView(m, { heldAt });
+    if (view === "held") {
+      const at = m?.starts_at ?? heldAt;
+      return <p className="text-sm">{at ? t("intake.owner.meeting.held", { date: formatDate(at, lng) }) : t("intake.owner.meeting.held_short")}</p>;
+    }
+    if (view === "book" || view === "rebook" || !m)
       return (
         <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">{t(m ? "intake.owner.meeting.rebook" : kind === "expansion" ? "intake.owner.expansion.book" : "intake.owner.meeting.book")}</p>
+          <p className="text-sm text-muted-foreground">{t(view === "rebook" ? "intake.owner.meeting.rebook" : kind === "expansion" ? "intake.owner.expansion.book" : "intake.owner.meeting.book")}</p>
           {entry?.booking_url && (
             <a href={entry.booking_url} target="_blank" rel="noreferrer" className={primaryButtonCls}>{t("intake.owner.meeting.book_cta")}</a>
           )}
         </div>
       );
-    if (m.outcome === "held") return <p className="text-sm">{t("intake.owner.meeting.held", { date: formatDate(m.starts_at, lng) })}</p>;
     return (
       <div className="space-y-1">
-        <p className="text-sm font-medium tabular-nums">{t("intake.owner.meeting.when", { date: formatDateTime(m.starts_at, lng), minutes: m.duration_minutes })}</p>
+        <p className="text-sm font-medium tabular-nums">
+          {m.duration_minutes > 0
+            ? t("intake.owner.meeting.when", { date: formatDateTime(m.starts_at, lng), minutes: m.duration_minutes })
+            : formatDateTime(m.starts_at, lng)}
+        </p>
         {entry?.consultant_name && <p className="text-xs text-muted-foreground">{t("intake.owner.meeting.with", { name: entry.consultant_name })}</p>}
-        {meetingHeld(m)
+        {view === "waiting_outcome"
           ? <p className="text-sm text-muted-foreground">{t("intake.owner.meeting.waiting_outcome")}</p>
-          : <a href={m.meet_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-sm text-link hover:underline"><Video className="h-4 w-4" />{t("intake.owner.meeting.join")}<ExternalLink className="h-3 w-3" /></a>}
+          : m.meet_url
+            ? <a href={m.meet_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-sm text-link hover:underline"><Video className="h-4 w-4" />{t("intake.owner.meeting.join")}<ExternalLink className="h-3 w-3" /></a>
+            : null}
       </div>
     );
   };
@@ -104,7 +116,8 @@ export function IntakeHomePage() {
         );
       }
       case "meeting":
-        return mou ? <p className="text-sm">{t("intake.owner.meeting.held_short")}</p> : meetingBlock(entry?.meeting ?? null, "initial");
+        // The MOU only exists after "Se hizo": with it the meeting reads as held even without its row.
+        return mou && !meetings.initial ? <p className="text-sm">{t("intake.owner.meeting.held_short")}</p> : meetingBlock(meetings.initial, "initial", mou ? meetings.initial?.starts_at : null);
       case "mou": {
         if (!mou) return <p className="text-sm text-muted-foreground">{t("intake.owner.mou.not_sent")}</p>;
         if (!ownerPending(mou)) return <p className="text-sm">{t("intake.owner.mou.signed")}</p>;
@@ -143,7 +156,7 @@ export function IntakeHomePage() {
         );
       }
       case "expansion":
-        return meetingBlock(entry?.expansion_meeting ?? null, "expansion");
+        return meetingBlock(meetings.expansion, "expansion", entry?.expansion_meeting_held_at ?? null);
       case "operating_agreement": {
         if (!oa) return <p className="text-sm text-muted-foreground">{t("intake.owner.oa.not_sent")}</p>;
         if (!ownerPending(oa)) return <p className="text-sm">{t("intake.owner.oa.signed")}</p>;

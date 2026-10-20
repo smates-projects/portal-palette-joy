@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight, Lock, Video } from "lucide-react";
-import { TODAY } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import { localeTag } from "@/lib/format";
 import { useCalendarEvents, useCurrentUser, useLeadMeetings, useMeetings, useMyMeetings, usePortalMeeting } from "@/lib/api/hooks";
 import type { TaskWithComputed } from "@/lib/api/types";
@@ -27,7 +27,7 @@ export function TaskCalendar(props: {
   const { t, i18n } = useTranslation();
   const locale = localeTag(i18n.language);
   const [mode, setMode] = useState<CalMode>("month");
-  const [anchor, setAnchor] = useState(TODAY);
+  const [anchor, setAnchor] = useState(todayIso());
   const meetingsQ = useMeetings();
   const eventsQ = useCalendarEvents();
   const navigate = useNavigate();
@@ -140,7 +140,7 @@ export function TaskCalendar(props: {
       <div className="flex flex-wrap items-center justify-between gap-3 pb-2">
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setAnchor(TODAY)}
+            onClick={() => setAnchor(todayIso())}
             className="h-7 rounded-md border border-border bg-surface px-2.5 text-xs hover:bg-accent"
           >
             {t("tasks.calendar.today")}
@@ -185,7 +185,7 @@ export function TaskCalendar(props: {
           {days.slice(0, 7).map((d) => (
             <div key={d} className="px-2 py-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
               {mode === "month" ? fmt({ weekday: "short" }, d) : (
-                <span className={cn(d === TODAY && "text-primary")}>
+                <span className={cn(d === todayIso() && "text-primary")}>
                   {fmt({ weekday: "short" }, d)} <span className="font-semibold tabular-nums">{fmt({ day: "numeric" }, d)}</span>
                 </span>
               )}
@@ -203,7 +203,7 @@ export function TaskCalendar(props: {
                   <span
                     className={cn(
                       "mb-0.5 self-start rounded-[4px] px-1 text-[11px] tabular-nums",
-                      d === TODAY ? "bg-primary font-semibold text-primary-foreground" : outside ? "text-muted-foreground/60" : "text-muted-foreground",
+                      d === todayIso() ? "bg-primary font-semibold text-primary-foreground" : outside ? "text-muted-foreground/60" : "text-muted-foreground",
                     )}
                   >
                     {fmt({ day: "numeric" }, d)}

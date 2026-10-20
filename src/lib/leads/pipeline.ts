@@ -1,4 +1,4 @@
-import { TODAY, nowIso } from "@/config/app";
+import { todayIso, nowIso } from "@/lib/clock";
 import { isNewLead, meetingHeld } from "./entry";
 import {
   LEAD_STAGES,
@@ -19,7 +19,7 @@ export const STALE_STAGE_DAYS = 5;
 export const UNCONTACTED_DAYS = 2;
 
 const day = (iso: string) => iso.slice(0, 10);
-export const daysSince = (iso: string, today: string = TODAY) =>
+export const daysSince = (iso: string, today: string = todayIso()) =>
   Math.round((Date.parse(`${today}T12:00:00Z`) - Date.parse(`${day(iso)}T12:00:00Z`)) / 86_400_000);
 
 export type LeadMove =
@@ -96,7 +96,7 @@ export type LeadQuick = "week" | "uncontacted" | "signed_month" | "in_review" | 
 
 type WithIntake = Lead & { intake?: IntakeSummary | null };
 
-export function matchesQuick(lead: WithIntake, quick: LeadQuick, today: string = TODAY) {
+export function matchesQuick(lead: WithIntake, quick: LeadQuick, today: string = todayIso()) {
   if (quick === "in_review") return lead.stage === "documents";
   if (quick === "review_overdue") return lead.stage === "documents" && lead.intake?.clock.tone === "red";
   if (quick === "no_investor") return lead.stage === "accepted" && !lead.bishop_user_id;
@@ -120,7 +120,7 @@ export interface PipelineCounters {
   conversion_pct: number | null;
 }
 
-export function buildPipelineCounters(leads: WithIntake[], today: string = TODAY): PipelineCounters {
+export function buildPipelineCounters(leads: WithIntake[], today: string = todayIso()): PipelineCounters {
   const signed = leads.filter((l) => matchesQuick(l, "signed_month", today)).length;
   const monthAssessments = leads.filter((l) => sameMonth(l.submitted_at, today)).length;
   return {
@@ -179,7 +179,7 @@ export function validateLeadsSearch(raw: Record<string, unknown>): LeadsSearch {
   return out;
 }
 
-export function filterLeads<T extends WithIntake>(leads: T[], s: LeadsSearch, today: string = TODAY): T[] {
+export function filterLeads<T extends WithIntake>(leads: T[], s: LeadsSearch, today: string = todayIso()): T[] {
   return leads.filter(
     (l) =>
       (!s.stage || l.stage === s.stage) &&
@@ -195,7 +195,7 @@ export function filterLeads<T extends WithIntake>(leads: T[], s: LeadsSearch, to
 export const byTimeInStage = (a: Lead, b: Lead) => a.stage_entered_at.localeCompare(b.stage_entered_at);
 
 /** Board column order: leads that just arrived ("Nuevo") on top, newest first; then longest in stage. */
-export const byNewThenTime = (today: string = TODAY) => (a: Lead, b: Lead) => {
+export const byNewThenTime = (today: string = todayIso()) => (a: Lead, b: Lead) => {
   const na = isNewLead(a, today), nb = isNewLead(b, today);
   if (na !== nb) return na ? -1 : 1;
   return na ? b.submitted_at.localeCompare(a.submitted_at) : byTimeInStage(a, b);

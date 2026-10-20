@@ -56,7 +56,12 @@ describe("http leads", () => {
   it("get: GET /leads/{id}, only { lead, events }, and the ETag kept", async () => {
     const { calls } = stubFetch(dataResponse(detailFixture(), 200, { ETag: '"7"' }));
     const { leads, client } = setup();
-    expect(await leads.get(LEAD)).toEqual({ lead: leadFixture(), events: [leadEventFixture()] });
+    // The meeting comes back normalized by the one selector (kind and outcome explicit, no expansion meeting yet).
+    const lead = leadFixture();
+    expect(await leads.get(LEAD)).toEqual({
+      lead: { ...lead, meeting: { ...lead.meeting, kind: "initial", outcome: null, outcome_prompted_at: null }, expansion_meeting: null },
+      events: [leadEventFixture()],
+    });
     expect(calls[0]).toMatchObject({ method: "GET", path: LEAD_PATH });
     expect(client.etags.get(LEAD_PATH)).toBe('"7"');
   });
@@ -227,6 +232,44 @@ describe("http leads", () => {
     const { calls } = stubFetch(dataResponse(investors));
     expect(await setup().leads.getInvestors(LEAD)).toEqual(investors);
     expect(calls[0]).toMatchObject({ method: "GET", path: `${LEAD_PATH}/investors` });
+  });
+
+  it("getInvestors: candidates keyed by `id` get their user_id; a presented Bishop who never opened it is not a view", async () => {
+    stubFetch(
+      dataResponse({
+        views: [
+          { bishop_user_id: IDS.member, name: "Jefferson Paula", viewed_at: null, decision: "none", decided_at: null, status: "presented", presented_at: "2026-10-20T06:41:35Z" },
+          { bishop_user_id: IDS.zone, name: "Laura Ortega", viewed_at: "2026-10-20T07:00:00Z", decision: "passed", decided_at: "2026-10-20T08:00:00Z", status: "passed", presented_at: null },
+        ],
+        bishop: null,
+        tripartite: null,
+        presented: [{ bishop_user_id: IDS.member, name: "Jefferson Paula", presented_at: "2026-10-20T06:41:35Z" }],
+        candidates: [
+          { id: IDS.member, name: "Jefferson Paula", framework_signed: true },
+          { id: IDS.newFirm, name: "Diego Rivas", framework_signed: false },
+        ],
+      }),
+    );
+    const investors = await setup().leads.getInvestors(LEAD);
+    expect(investors?.views.map((v) => v.bishop_user_id)).toEqual([IDS.zone]);
+    expect(investors?.candidates).toEqual([
+      { user_id: IDS.member, name: "Jefferson Paula", framework_signed: true },
+      { user_id: IDS.newFirm, name: "Diego Rivas", framework_signed: false },
+    ]);
+  });
+
+  it("get: the API's `meeting` (latest of any kind, no id) becomes the initial and expansion meetings with ids from meetings[]", async () => {
+    const expansionNoId = { ...leadFixture().meeting, starts_at: "2026-10-14T05:12:33.249Z", kind: "expansion", outcome: "held", outcome_prompted_at: null };
+    const initialRow = { ...leadFixture().meeting, id: IDS.member, kind: "initial", outcome: "held", outcome_prompted_at: null };
+    stubFetch(
+      dataResponse({
+        ...detailFixture({ meeting: expansionNoId, stage: "in_program" }),
+        meetings: [{ ...expansionNoId, id: IDS.zone, source: "manual", note: "ok" }, initialRow],
+      }),
+    );
+    const detail = await setup().leads.get(LEAD);
+    expect(detail?.lead.meeting).toMatchObject({ id: IDS.member, kind: "initial", starts_at: leadFixture().meeting.starts_at });
+    expect(detail?.lead.expansion_meeting).toMatchObject({ id: IDS.zone, kind: "expansion", outcome: "held" });
   });
 
   it("createManual: POST /leads with the manual lead and an Idempotency-Key", async () => {

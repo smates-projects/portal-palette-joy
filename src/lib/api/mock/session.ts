@@ -2,7 +2,7 @@
 // and error codes as the real API (PLAN_BACKEND 5.1, 5.3): tokens are single use, expire, and are always sent in
 // the body. The mock starts signed in (the demo, the tutorials and the Lovable preview need it) and goes back to
 // that state on every page reload.
-import { nowIso } from "@/config/app";
+import { nowIso } from "@/lib/clock";
 import { isActiveUser } from "@/lib/accounts/permissions";
 import type { SessionRepository } from "../repositories";
 import {
@@ -73,7 +73,7 @@ interface AuthToken {
  * - /entrada/entrada-rivera: entry link of Javier Rivera (Rivera Roofing & Remodel). Resolved by email when used,
  *   so it works once his owner account exists (created when the meeting is booked); before that, token_invalid.
  * - /entrada/entrada-expired: expired entry link.
- * Valid ones expire after the fixed demo day (TODAY) so they keep working whatever the real clock says.
+ * Valid ones expire after the fixed demo day (todayIso()) so they keep working whatever the real clock says.
  */
 export const DEMO_TOKENS: readonly AuthToken[] = [
   {

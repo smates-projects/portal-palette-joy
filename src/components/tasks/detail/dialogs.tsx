@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FileText, Paperclip, X } from "lucide-react";
-import { TODAY } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import type { BrandProposalUpload } from "@/lib/api/repositories";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BrandCaptureSection } from "@/components/brand/BrandCaptureSection";
@@ -152,7 +152,7 @@ export function OwnerRequestDialog(props: {
 }) {
   const { t } = useTranslation();
   const [question, setQuestion] = useState("");
-  const [due, setDue] = useState(TODAY);
+  const [due, setDue] = useState(todayIso());
   return (
     <Dialog open={props.open} onOpenChange={(o) => { props.onOpenChange(o); if (!o) setQuestion(""); }}>
       <DialogContent className="sm:max-w-md">
@@ -165,7 +165,7 @@ export function OwnerRequestDialog(props: {
             <textarea rows={3} value={question} onChange={(e) => setQuestion(e.target.value)} placeholder={t("taskDetail.d_request_placeholder")} className={textareaCls} />
           </Field>
           <Field label={t("taskDetail.d_request_due")}>
-            <input type="date" min={TODAY} value={due} onChange={(e) => setDue(e.target.value)} className={inputCls} />
+            <input type="date" min={todayIso()} value={due} onChange={(e) => setDue(e.target.value)} className={inputCls} />
           </Field>
         </div>
         <DialogFooter>

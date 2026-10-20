@@ -1,10 +1,6 @@
-// Fixed "today" so the demo is stable regardless of the real date.
-export const TODAY = "2026-10-14";
+// "Today" and "now" live in src/lib/clock.ts (frozen demo day in mock mode, real time over http).
 export const PROGRAM_LENGTH_DAYS = 180;
 
 export type ApiMode = "mock" | "http";
 export const API_MODE: ApiMode =
   (import.meta.env["VITE_API_MODE"] as ApiMode | undefined) === "http" ? "http" : "mock";
-
-/** Current timestamp anchored to the fixed demo day. */
-export const nowIso = () => `${TODAY}T${new Date().toISOString().slice(11)}`;

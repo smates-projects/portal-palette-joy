@@ -499,7 +499,27 @@ export const NOTIFICATION_KINDS = [
   "meeting_cancelled",
   "calendar_connect_suggested",
   "calendar_reconnect_required",
+  // Entry documents and contracts (API). To SM: a document arrived, a review is past its deadline, a signature of the
+  // Operating Agreement needs review. To the owner: a document asked again, the documentation approved or unlocked,
+  // a contract to sign, his own NDA turned down. To the other parties: a contract signed.
+  "document_received",
+  "document_requested",
+  "documents_approved",
+  "documents_unlocked",
+  "contract_sent",
+  "contract_signed",
+  "review_overdue",
+  "own_nda_rejected",
+  "signature_pending_review",
+  // Bishop and program (API): a business can be taken; the program started (day 1).
+  "opportunity_available",
+  "program_started",
 ] as const;
+/** Kinds that only the real API sends (the mock never creates them nor lists their preferences). */
+export const API_ONLY_NOTIFICATION_KINDS: readonly NotificationKind[] = [
+  "document_received", "document_requested", "documents_approved", "documents_unlocked", "contract_sent", "contract_signed",
+  "review_overdue", "own_nda_rejected", "signature_pending_review", "opportunity_available", "program_started",
+];
 /** Kinds about a lead of the Embudo. Only the SM team of the lead's office gets them. */
 export const LEAD_NOTIFICATION_KINDS: readonly NotificationKind[] = [
   "bishop_accepted", "funds_reported", "lead_assessment", "meeting_booked", "meeting_outcome_pending", "own_nda_proposed",
@@ -535,6 +555,9 @@ export interface AppNotification {
   meeting_id?: Uuid | null;
   /** opportunity_presented: the opportunity to open (same id as the lead, but the Bishop never gets lead_id). */
   opportunity_id?: Uuid | null;
+  /** Contract notifications (contract_sent, contract_signed): the contract and its name ("NDA", "Operating Agreement"). */
+  contract_id?: Uuid | null;
+  contract_name?: string | null;
 }
 
 export interface NotificationPreference {

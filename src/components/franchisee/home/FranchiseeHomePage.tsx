@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Check, Circle } from "lucide-react";
 import { FEES } from "@/config/economics";
-import { TODAY } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import { useFranchiseeChecklist, useFranchiseeHome, useFranchiseeTasks, useFranchiseeTickets, useSetFranchiseeTaskDone } from "@/lib/api/hooks";
 import type { FranchiseTask, TicketState } from "@/lib/api/types";
 import { formatDate, formatRelativeDate, formatUsd } from "@/lib/format";
@@ -111,7 +111,7 @@ export function FranchiseeHomePage() {
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-surface px-4 py-3 text-sm">
             <p>
               {t("franchisee.home.next_report", { month: formatMonth(home.next_report.month, lng) })}{" "}
-              <span className={home.next_report.due_date < TODAY ? "text-status-danger-fg" : "text-muted-foreground"} title={formatDate(home.next_report.due_date, lng)}>
+              <span className={home.next_report.due_date < todayIso() ? "text-status-danger-fg" : "text-muted-foreground"} title={formatDate(home.next_report.due_date, lng)}>
                 {t("franchisee.home.next_report_due", { when: formatRelativeDate(home.next_report.due_date, lng) })}
               </span>
             </p>
@@ -133,7 +133,7 @@ export function FranchiseeHomePage() {
                 <ul className="divide-y divide-border border-t border-border">
                   {shownTasks.map((task) => {
                     const link = taskLink(task);
-                    const late = task.due_date < TODAY;
+                    const late = task.due_date < todayIso();
                     return (
                       <li key={task.id} className="flex items-center gap-3 px-4 py-3">
                         <Checkbox

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { FEES } from "@/config/economics";
-import { TODAY } from "@/config/app";
+import { todayIso } from "@/lib/clock";
 import { useFranchiseeHome, useFranchiseReports, useSubmitFranchiseReport } from "@/lib/api/hooks";
 import type { ReportStatus } from "@/lib/api/types";
 import { computeReportAmounts } from "@/lib/franchise/fees";
@@ -105,7 +105,7 @@ export function PaymentsPage() {
                       <td className="px-4 py-3 text-right tabular-nums">{r.marketing_fund_amount === null ? "-" : money(r.marketing_fund_amount)}</td>
                       <td className="px-4 py-3 text-right font-semibold tabular-nums">{r.total_due === null ? "-" : money(r.total_due)}</td>
                       <td className="px-4 py-3">
-                        <Tag tone={r.status === "due" && r.due_date < TODAY ? "danger" : STATUS_TONE[r.status]}>{t(`franchisee.payments.status_${r.status}`)}</Tag>
+                        <Tag tone={r.status === "due" && r.due_date < todayIso() ? "danger" : STATUS_TONE[r.status]}>{t(`franchisee.payments.status_${r.status}`)}</Tag>
                         <p className="mt-1 text-xs text-muted-foreground">
                           {r.status === "paid" && r.paid_at
                             ? t("franchisee.payments.paid_on", { date: formatDate(r.paid_at, lng) })

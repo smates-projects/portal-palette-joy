@@ -1,5 +1,6 @@
 import type { ApiClient } from "./repositories";
 import { createMockApi } from "./mock";
+import { clockFrozenFor, configureClock } from "@/lib/clock";
 import { withMockUserSync } from "./http/mixed-mode";
 import {
   HTTP_REPOSITORY_KEYS,
@@ -15,8 +16,10 @@ import {
  * the mock's own user, which follows the real session by email (http/mixed-mode.ts).
  */
 function createApi(): ApiClient {
-  const mock = createMockApi();
   const modes = resolveRepositoryModes(import.meta.env as Record<string, unknown>);
+  // Real time as soon as anything talks to the API; the frozen demo day only for a pure mock build.
+  configureClock({ frozen: clockFrozenFor(modes) });
+  const mock = createMockApi();
   const httpKeys = HTTP_REPOSITORY_KEYS.filter((key) => modes[key] === "http");
   if (httpKeys.length === 0) return mock;
 
