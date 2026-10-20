@@ -2849,7 +2849,7 @@
     "accept_body": "Escribe el dato verificado. Es lo que verá el inversor.",
     "accept_label": "Dato verificado",
     "accept_confirm": "Aceptar documento",
-    "fact_required": "Escribe el dato verificado.",
+    "fact_required": "Escribe el dato que verificaste con este documento",
     "t_accepted": "Documento aceptado.",
     "request_title": "Pedir otro: {{name}}",
     "request_body": "Cuéntale al dueño qué falta. El plazo de revisión se pausa hasta que suba el nuevo.",

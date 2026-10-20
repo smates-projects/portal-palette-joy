@@ -205,9 +205,9 @@ function CountRow({ label, n, m }: { label: string; n: number; m: number }) {
   );
 }
 
-export function TextDialog(props: { title: string; body: string; label: string; confirm: string; required: string; initial?: string; pending: boolean; onClose: () => void; onConfirm: (v: string) => void }) {
+export function TextDialog(props: { title: string; body: string; label: string; confirm: string; required: string; placeholder?: string | undefined; serverError?: string | undefined; pending: boolean; onClose: () => void; onConfirm: (v: string) => void }) {
   const { t } = useTranslation();
-  const [value, setValue] = useState(props.initial ?? "");
+  const [value, setValue] = useState("");
   const [tried, setTried] = useState(false);
   return (
     <Dialog open onOpenChange={(o) => !o && props.onClose()}>
@@ -218,10 +218,13 @@ export function TextDialog(props: { title: string; body: string; label: string; 
         </DialogHeader>
         <label className="block space-y-1.5">
           <span className="text-sm font-medium">{props.label}</span>
-          <textarea autoFocus rows={3} value={value} onChange={(e) => setValue(e.target.value)}
+          <textarea autoFocus rows={3} value={value} placeholder={props.placeholder} required aria-required="true"
+            aria-invalid={(tried && !value.trim()) || !!props.serverError} onChange={(e) => setValue(e.target.value)}
             className="w-full resize-none rounded-md border border-input bg-surface px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30" />
         </label>
-        {tried && !value.trim() && <p className="text-xs text-status-danger-fg">{props.required}</p>}
+        {tried && !value.trim()
+          ? <p role="alert" className="text-xs text-status-danger-fg">{props.required}</p>
+          : props.serverError && <p role="alert" className="text-xs text-status-danger-fg">{props.serverError}</p>}
         <DialogFooter>
           <SecondaryButton onClick={props.onClose}>{t("intake.cancel")}</SecondaryButton>
           <PrimaryButton disabled={props.pending} onClick={() => { setTried(true); if (value.trim()) props.onConfirm(value.trim()); }}>{props.confirm}</PrimaryButton>
@@ -234,11 +237,20 @@ export function TextDialog(props: { title: string; body: string; label: string; 
 function AcceptDialog({ leadId, doc, onClose }: { leadId: string; doc: BusinessDocument; onClose: () => void }) {
   const { t } = useTranslation();
   const accept = useAcceptDocument();
+  const [factRejected, setFactRejected] = useState(false);
   return (
     <TextDialog
       title={t("intake.accept_title", { name: doc.name })} body={t("intake.accept_body")} label={t("intake.accept_label")}
-      confirm={t("intake.accept_confirm")} required={t("intake.fact_required")} initial={doc.verified_hint ?? ""} pending={accept.isPending} onClose={onClose}
-      onConfirm={(fact) => accept.mutate({ id: leadId, documentId: doc.id, fact }, { onSuccess: () => { toast.success(t("intake.t_accepted")); onClose(); }, onError: () => toast.error(t("pipeline.t_error")) })}
+      confirm={t("intake.accept_confirm")} required={t("intake.fact_required")} placeholder={doc.verified_hint ?? undefined}
+      serverError={factRejected ? t("intake.fact_required") : undefined} pending={accept.isPending} onClose={onClose}
+      onConfirm={(fact) => {
+        setFactRejected(false);
+        accept.mutate({ id: leadId, documentId: doc.id, fact }, {
+          onSuccess: () => { toast.success(t("intake.t_accepted")); onClose(); },
+          // The API's fact_required code is shown inline, next to the field.
+          onError: (error) => { if (error.message === "fact_required") setFactRejected(true); else toast.error(t("pipeline.t_error")); },
+        });
+      }}
     />
   );
 }

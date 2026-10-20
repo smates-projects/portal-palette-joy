@@ -187,16 +187,16 @@ export function createHttpLeadsRepository(client: HttpClient): HttpLeadsReposito
       });
     },
 
-    /** POST /present-to-bishops { bishop_user_ids }: answers who SM presented it to (the investors of the lead). */
-    presentToBishops: async (id, bishopUserIds) =>
-      forgetVersion(
-        id,
-        normalizeInvestors(
-          await client.post<InvestorsResponse>(`${leadPath(id)}/present-to-bishops`, {
-            bishop_user_ids: bishopUserIds,
-          }),
-        ),
-      ),
+    /**
+     * POST /present-to-bishops { bishop_user_ids } answers the lead, not the investors: the investors are read
+     * right after with GET /investors.
+     */
+    presentToBishops: async (id, bishopUserIds) => {
+      await client.post<unknown>(`${leadPath(id)}/present-to-bishops`, { bishop_user_ids: bishopUserIds });
+      forgetVersion(id, null);
+      const raw = await client.get<InvestorsResponse>(`${leadPath(id)}/investors`);
+      return normalizeInvestors(raw);
+    },
 
     getIntake: (id) => getOrNull<LeadIntake>(client, `${leadPath(id)}/intake`),
 
@@ -205,8 +205,8 @@ export function createHttpLeadsRepository(client: HttpClient): HttpLeadsReposito
         id,
         await client.post<BusinessDocument>(
           `${leadPath(id)}/documents/${encodeURIComponent(documentId)}/accept`,
-          // Empty: the API uses the rule's hint, as the mock does.
-          { verified_fact: verifiedFact.trim() ? verifiedFact : undefined },
+          // The API answers 422 fact_required when the fact is empty.
+          { verified_fact: verifiedFact.trim() },
         ),
       ),
 

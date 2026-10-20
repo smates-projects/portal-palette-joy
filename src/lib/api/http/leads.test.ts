@@ -182,18 +182,18 @@ describe("http leads", () => {
     expect(calls[0]).toMatchObject({ method: "GET", path: `${LEAD_PATH}/intake` });
   });
 
-  it("acceptDocument: POST /documents/{doc}/accept with the verified fact (left out when empty)", async () => {
+  it("acceptDocument: POST /documents/{doc}/accept with the verified fact; an empty one arrives as fact_required", async () => {
     const reviewed = documentFixture({ state: "reviewed", verified_fact: "Ventas 2025: 640k" });
-    const { calls } = stubFetch(dataResponse(reviewed), dataResponse(reviewed));
+    const { calls } = stubFetch(dataResponse(reviewed), problemResponse(422, "fact_required"));
     const { leads } = setup();
-    expect(await leads.acceptDocument(LEAD, DOC, "Ventas 2025: 640k")).toEqual(reviewed);
-    await leads.acceptDocument(LEAD, DOC, "  ");
+    expect(await leads.acceptDocument(LEAD, DOC, " Ventas 2025: 640k ")).toEqual(reviewed);
+    await expect(leads.acceptDocument(LEAD, DOC, "  ")).rejects.toThrow("fact_required");
     expect(calls[0]).toMatchObject({
       method: "POST",
       path: `${LEAD_PATH}/documents/${DOC}/accept`,
       body: { verified_fact: "Ventas 2025: 640k" },
     });
-    expect(calls[1]?.body).toEqual({});
+    expect(calls[1]?.body).toEqual({ verified_fact: "" });
   });
 
   it("requestDocument: POST /documents/{doc}/request with the comment", async () => {
@@ -325,13 +325,15 @@ describe("http leads", () => {
     await expect(leads.setMeetingOutcome(LEAD, IDS.zone, { outcome: "reschedule" })).rejects.toThrow("outcome_already_set");
   });
 
-  it("presentToBishops: POST /present-to-bishops { bishop_user_ids } answers the investors; the cached ETag is dropped", async () => {
+  it("presentToBishops: POST /present-to-bishops answers the lead, then GET /investors is what it returns; the cached ETag is dropped", async () => {
     const investors = { views: [], bishop: null, tripartite: null, presented: [{ bishop_user_id: IDS.member, name: "Jefferson Paula", presented_at: "2026-10-14T12:00:00Z" }] };
-    const { calls } = stubFetch(dataResponse(investors));
+    const { calls } = stubFetch(dataResponse(leadFixture()), dataResponse(investors));
     const { leads, client } = setup();
     client.etags.set(LEAD_PATH, '"2"');
     expect(await leads.presentToBishops(LEAD, [IDS.member])).toEqual(investors);
+    expect(calls).toHaveLength(2);
     expect(calls[0]).toMatchObject({ method: "POST", path: `${LEAD_PATH}/present-to-bishops`, body: { bishop_user_ids: [IDS.member] } });
+    expect(calls[1]).toMatchObject({ method: "GET", path: `${LEAD_PATH}/investors` });
     expect(client.etags.has(LEAD_PATH)).toBe(false);
   });
 

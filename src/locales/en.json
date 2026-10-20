@@ -2849,7 +2849,7 @@
     "accept_body": "Write the verified fact. It is what the investor will see.",
     "accept_label": "Verified fact",
     "accept_confirm": "Accept document",
-    "fact_required": "Write the verified fact.",
+    "fact_required": "Write the fact you verified with this document",
     "t_accepted": "Document accepted.",
     "request_title": "Ask for another: {{name}}",
     "request_body": "Tell the owner what is missing. The review clock pauses until they upload the new one.",

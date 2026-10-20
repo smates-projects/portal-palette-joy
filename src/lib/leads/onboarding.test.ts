@@ -127,6 +127,15 @@ describe("entry flow in the mock", () => {
     expect(mou.signers.find((s) => s.party === "owner")!.acknowledgments).toHaveLength(4);
     expect((await api.documents.listDocuments()).filter((d) => d.area === "intake").some((d) => d.locked_until_mou)).toBe(false);
   });
+  it("accepting a document needs a non-empty verified fact (fact_required), like the API", async () => {
+    const api = createMockApi();
+    await api.session.setViewAs(seed.U_NICOLAS);
+    const glow = (await api.leads.list()).find((l) => l.business.name === "Navarro Cercas y Portones")!;
+    const { documents } = (await api.leads.getIntake(glow.id))!;
+    const received = documents.find((d) => d.state === "received")!;
+    await expect(api.leads.acceptDocument(glow.id, received.id, "   ")).rejects.toThrow("fact_required");
+    expect((await api.leads.acceptDocument(glow.id, received.id, " Ventas 2025 ")).verified_fact).toBe("Ventas 2025");
+  });
   it("only an admin approves, and only when everything is signed and accepted", async () => {
     const api = createMockApi();
     await api.session.setViewAs(seed.U_NICOLAS);

@@ -394,7 +394,7 @@ export const useMarkDistributionPending = () =>
 /** LeadIntake | null: summary (clock, counts, approval), NDA/MOU with signer status, and the entry documents. */
 export const useLeadIntake = (id: string | undefined) =>
   useQuery({ queryKey: ["leads", "intake", id], queryFn: () => api.leads.getIntake(id!), enabled: !!id });
-/** Entry writes touch leads, documents and contracts: refresh both roots. */
+/** Entry writes touch leads (their investors live under the same "leads" root), documents and contracts: refresh all roots. */
 function useIntakeMutation<V, R>(fn: (v: V) => Promise<R>) {
   const qc = useQueryClient();
   return useMutation({
