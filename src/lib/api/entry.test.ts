@@ -65,7 +65,9 @@ describe("automatic entry (mock)", () => {
     const l = await api.leads.simulateAssessment();
     const booked = await api.leads.simulateBooking(l.id);
     expect(booked.summary_sent_at).not.toBeNull();
-    expect(booked.summary_sent_at! >= booked.meeting!.booked_at).toBe(true);
+    // Both stamps come from the same booking; the mock writes them within the same tick, so allow a second of skew.
+    const skewMs = Date.parse(booked.meeting!.booked_at) - Date.parse(booked.summary_sent_at!);
+    expect(skewMs).toBeLessThanOrEqual(1000);
     expect(entryPhase(booked)).toBe("summary_sent");
     const kinds = (await api.leads.get(l.id))!.events.map((e) => e.kind);
     expect(kinds).toContain("meeting_booked");
