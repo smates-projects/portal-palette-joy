@@ -1,7 +1,7 @@
 // Calendar v2 rules the screens and the mock share: who is connected, what a new meeting becomes (confirmed in
 // Google or a proposal), what the success note says, and the meeting hours with their defaults.
 import type {
-  CalendarConnection, MeetingHours, PlatformRules, PortalMeeting, User, UserRole,
+  CalendarConnection, MeetingHours, PlatformRules, PortalMeeting, PortalMeetingParticipant, User, UserRole,
 } from "@/lib/api/types";
 import { DEFAULT_MEETING_HOURS } from "./slots";
 
@@ -73,6 +73,14 @@ export function scheduleOutcome(meeting: PortalMeeting): ScheduleOutcome {
     ? meeting.participants.filter((p) => p.user_id !== meeting.organizer.user_id && p.response === "needsAction").map((p) => p.name)
     : [];
   return { invitation_sent: meeting.google_synced, pending_names: pending };
+}
+
+/**
+ * The answer shown next to a guest (key under calendar.response). On a confirmed meeting Google's needsAction only
+ * means the invitation is waiting in their inbox: "Invitación enviada", not "Sin responder".
+ */
+export function responseLabelKey(response: PortalMeetingParticipant["response"], status: PortalMeeting["status"]): string {
+  return response === "needsAction" && status === "confirmed" ? "invited" : response;
 }
 
 /** "Ana", "Ana y Luis", "Ana, Luis y Carla" (the connector comes from the locale). */

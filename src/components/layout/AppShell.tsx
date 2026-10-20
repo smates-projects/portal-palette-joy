@@ -15,6 +15,7 @@ import type { BusinessBrand } from "@/lib/api/types";
 import { LANGUAGE_STORAGE_KEY, type Language } from "@/lib/i18n";
 import { loginSearchFor } from "@/lib/auth/redirect";
 import { onSessionExpired } from "@/lib/api/http/session-events";
+import { showViewAs } from "@/lib/auth/view-as";
 import { useBusinesses, useCurrentUser, useIsAuthenticated, useIsFranchisor, useIsOnboarding, useLogout, useMyBrand, useSetViewAs, useViewAsOptions } from "@/lib/api/hooks";
 import {
   DropdownMenu,
@@ -211,6 +212,9 @@ function ViewAs() {
       onSuccess: () => toast.success(t("topbar.switched", { name: label(o) })),
       onError: () => toast.error(t("topbar.switch_error")),
     });
+
+  // Impersonation is SM Global's: anyone else gets no options and sees nothing here.
+  if (!showViewAs(options)) return null;
 
   return (
     <DropdownMenu>

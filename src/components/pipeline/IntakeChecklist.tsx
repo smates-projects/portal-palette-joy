@@ -173,7 +173,7 @@ export function IntakeChecklist({ leadId, readOnly }: { leadId: string; readOnly
 
       {accepting && <AcceptDialog leadId={leadId} doc={accepting} onClose={() => setAccepting(null)} />}
       {requesting && <RequestDialog leadId={leadId} doc={requesting} onClose={() => setRequesting(null)} />}
-      {signing && <DocuSealSigner contract={signing} party="sm" signerName="Strategic Mates" onClose={() => setSigning(null)} />}
+      {signing && <DocuSealSigner contract={signing} party="sm" signerName={signing.signers.find((s) => s.party === "sm")?.name || "Strategic Mates"} onClose={() => setSigning(null)} />}
       {viewing && <SignedContractDialog contract={viewing} onClose={() => setViewing(null)} />}
     </section>
   );

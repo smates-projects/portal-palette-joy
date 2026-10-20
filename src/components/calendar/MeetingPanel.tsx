@@ -7,7 +7,7 @@ import {
   useAddComment, useBusinesses, useCancelPortalMeeting, useCurrentUser, useLeadDetail, usePortalMeeting, useTasks, useUsers,
 } from "@/lib/api/hooks";
 import type { PortalMeeting } from "@/lib/api/types";
-import { canManageMeeting, durationOf } from "@/lib/calendar/scheduling";
+import { canManageMeeting, durationOf, responseLabelKey } from "@/lib/calendar/scheduling";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
@@ -106,7 +106,7 @@ function MeetingBody({ meeting }: { meeting: PortalMeeting }) {
                 <li key={p.user_id} className="flex items-center justify-between gap-2 px-3 py-1.5">
                   <span className="min-w-0 truncate">{p.name}</span>
                   <span className={cn("shrink-0 text-xs", p.response === "declined" ? "text-status-danger-fg" : p.response === "accepted" ? "text-status-success-fg" : "text-muted-foreground")}>
-                    {t(`calendar.response.${p.response}`)}
+                    {t(`calendar.response.${responseLabelKey(p.response, meeting.status)}`)}
                   </span>
                 </li>
               ))}

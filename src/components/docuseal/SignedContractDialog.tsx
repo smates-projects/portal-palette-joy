@@ -1,11 +1,11 @@
 import { useTranslation } from "react-i18next";
 import { Printer, ShieldCheck } from "lucide-react";
 import type { Contract, Signer } from "@/lib/api/types";
-import { contractSections, documentFingerprint } from "@/lib/contracts/signature";
+import { documentFingerprint } from "@/lib/contracts/signature";
 import { formatDate } from "@/lib/format";
-import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PrimaryButton, SecondaryButton } from "@/components/tasks/detail/dialogs";
+import { ContractText, SignatureMark } from "./ContractDocument";
 
 /**
  * The contract as a document: its full text (contract.body) or, for older answers, a sample; one signature block per
@@ -17,7 +17,6 @@ export function SignedContractDialog({ contract, onClose }: { contract: Contract
   const { t, i18n } = useTranslation();
   const lng = i18n.language;
   const anySigned = contract.signers.some((s) => s.signed_at);
-  const sections = contract.body ? contractSections(contract.body) : null;
   const parties = contract.signers.map((s) => s.name).join(", ");
   const fingerprint = documentFingerprint(contract.id);
   const partyLabel = (s: Signer) => (s.party ? t(`intake.party.${s.party}`) : s.role);
@@ -43,18 +42,11 @@ export function SignedContractDialog({ contract, onClose }: { contract: Contract
         <div id="signed-document" className="rounded-md border border-border bg-muted/50 p-2 sm:p-4 print:border-0 print:bg-transparent print:p-0">
           <div className="mx-auto max-w-xl rounded-md border border-border bg-surface px-5 py-6 text-[13px] leading-relaxed text-muted-foreground sm:px-10 sm:py-10 print:max-w-none print:border-0 print:shadow-none">
             <p className="text-center text-lg font-semibold tracking-tight text-foreground">{contract.name}</p>
-            {!sections && <p className="mt-1 text-center text-[11px] uppercase tracking-wide">{t("intake.docuseal.sample")}</p>}
+            {!contract.body && <p className="mt-1 text-center text-[11px] uppercase tracking-wide">{t("intake.docuseal.sample")}</p>}
             <div className="mx-auto mt-4 h-px w-16 bg-border" />
-            {sections ? (
+            {contract.body ? (
               // The full text, section by section (the dialog scrolls).
-              <div className="mt-5 space-y-4 text-foreground">
-                {sections.map((s, i) => (
-                  <section key={i} className="break-inside-avoid">
-                    {s.heading && <h3 className="text-sm font-semibold">{s.heading}</h3>}
-                    <p className={cn("whitespace-pre-line", s.heading && "mt-1")}>{s.text}</p>
-                  </section>
-                ))}
-              </div>
+              <ContractText body={contract.body} className="mt-5" />
             ) : (<>
               <p className="mt-5 text-foreground">{t("intake.docuseal.pdf_parties", { parties })}</p>
               <p className="mt-2">{t("intake.docuseal.pdf_body")}</p>
@@ -67,11 +59,7 @@ export function SignedContractDialog({ contract, onClose }: { contract: Contract
                 <div key={`${s.name}-${s.role}`} className="break-inside-avoid">
                   {s.signed_at ? (
                     <div className="flex h-14 items-end border-b border-foreground/60 pb-1">
-                      {s.signature ? (
-                        <img src={s.signature.image_url} alt={s.name} className="h-12 max-w-full object-contain object-left" />
-                      ) : (
-                        <span className="text-2xl text-foreground" style={{ fontFamily: '"Segoe Script", "Brush Script MT", cursive' }}>{s.name}</span>
-                      )}
+                      <SignatureMark signature={s.signature} signerName={s.name} />
                     </div>
                   ) : (
                     <div className="flex h-14 items-end border-b border-dashed border-foreground/40 pb-1 text-muted-foreground">{t("intake.docuseal.pending_sig")}</div>

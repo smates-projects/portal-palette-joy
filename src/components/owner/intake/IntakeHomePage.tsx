@@ -59,7 +59,7 @@ export function IntakeHomePage({ focusStep }: { focusStep?: OwnerStepKey | undef
   const steps = ownerSteps({ summary: s, nda, mou, operatingAgreement: oa, rules });
   const ownerPending = (c: Contract | null) => !!c?.signers.some((x) => x.party === "owner" && (x.status === "sent" || x.status === "opened"));
   const smSigned = (c: Contract | null) => !!c?.signers.some((x) => x.party === "sm" && x.status === "signed");
-  // The documents list goes out after "Se hizo": with it the meeting reads as held even without its row.
+  // The API creates the documents at the NDA signature: they say nothing about the meeting (only its outcome does).
   const docsSent = docs.length > 0;
   const ownNdaCard = me?.business_id ? (
     <OwnNdaCard businessId={me.business_id} own={s.own_nda ?? null} contract={ownNda} onView={setReading} onSign={setSigning} />
@@ -133,7 +133,8 @@ export function IntakeHomePage({ focusStep }: { focusStep?: OwnerStepKey | undef
         );
       }
       case "meeting":
-        return docsSent && !meetings.initial ? <p className="text-sm">{t("intake.owner.meeting.held_short")}</p> : meetingBlock(meetings.initial, "initial", docsSent ? meetings.initial?.starts_at : null);
+        // Approved without the meeting row (older programs): the meeting happened before the approval.
+        return s.approved_at && !meetings.initial ? <p className="text-sm">{t("intake.owner.meeting.held_short")}</p> : meetingBlock(meetings.initial, "initial");
       case "mou": {
         // The MOU exists as soon as the owner signs the NDA.
         if (!mou) return <p className="text-sm text-muted-foreground">{t("intake.owner.mou.not_sent")}</p>;
@@ -169,7 +170,7 @@ export function IntakeHomePage({ focusStep }: { focusStep?: OwnerStepKey | undef
             </p>
           );
         if (s.approved_at) return <p className="text-sm">{t("intake.owner.docs.approved")}</p>;
-        if (!docsSent) return <p className="text-sm text-muted-foreground">{t("intake.owner.docs.after_meeting")}</p>;
+        if (!docsSent) return <p className="text-sm text-muted-foreground">{t("intake.owner.docs.preparing")}</p>;
         return (
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">

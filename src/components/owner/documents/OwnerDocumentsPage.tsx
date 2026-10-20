@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { FileText, Upload } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import { useContracts, useCurrentUser, useDocuments, useRules, useUploadDocument } from "@/lib/api/hooks";
+import { useContracts, useCurrentUser, useDocuments, useIsOnboarding, useRules, useUploadDocument } from "@/lib/api/hooks";
 import { INTAKE_DOCUMENT_ACCEPT, entryRules, intakeDocumentHelp, oaWaitingUntil } from "@/lib/leads/entry-flow";
 import { DocumentHelp } from "@/components/pipeline/DocumentHelp";
 import type { Contract } from "@/lib/api/types";
@@ -35,6 +35,7 @@ export function OwnerDocumentsPage() {
   const documents = documentsQ.data ?? [];
   const contracts = contractsQ.data ?? [];
   const me = useCurrentUser().data;
+  const onboarding = useIsOnboarding();
   const [signing, setSigning] = useState<Contract | null>(null);
   const [viewing, setViewing] = useState<Contract | null>(null);
   // Documents asked again go first, with the Strategic Mates comment.
@@ -48,9 +49,11 @@ export function OwnerDocumentsPage() {
   const hasIntake = documents.some((d) => d.area === "intake");
   /**
    * The MOU is signed from "Tu ingreso" (the four points first), and so is the owner's own NDA (after Strategic Mates
-   * signed it); the Operating Agreement only after its waiting period.
+   * signed it); the Operating Agreement only after its waiting period. Once the program started "Tu ingreso" is gone,
+   * so the owner's own NDA, still optional, is signed here.
    */
-  const signableHere = (c: Contract) => c.kind !== "mou" && c.kind !== "owner_nda" && !(c.kind === "tripartite" && oaWaitingUntil(c, rules.oa_waiting_days));
+  const signableHere = (c: Contract) =>
+    c.kind !== "mou" && (c.kind !== "owner_nda" || !onboarding) && !(c.kind === "tripartite" && oaWaitingUntil(c, rules.oa_waiting_days));
 
   const areaLabel = (area: BusinessDocument["area"]) => (area === "diagnosis" || area === "closing" || area === "intake" ? t(`owner_extra.documents.area_${area}`) : t(`areas.${area}`));
 

@@ -232,6 +232,9 @@ const readEnv = (key: string): string | undefined => {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 };
 
+/** The API base URL the app's client uses (VITE_API_URL, then DEFAULT_API_URL), e.g. to resolve the API's file links. */
+export const apiBaseUrl = (): string => readEnv("VITE_API_URL") ?? DEFAULT_API_URL;
+
 export function createHttpClient(config: HttpClientConfig = {}): HttpClient {
   const baseUrl = config.baseUrl ?? readEnv("VITE_API_URL") ?? DEFAULT_API_URL;
   const etags = new Map<string, string>();

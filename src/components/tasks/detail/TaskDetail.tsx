@@ -25,6 +25,7 @@ import { PreValidationBlock } from "./PreValidation";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CancelTasksDialog, EditTasksDialog } from "@/components/tasks/sm/SmTaskActions";
 import { describeChange } from "@/lib/tasks/changes";
+import { taskEmptyState, type TaskEmptySection } from "@/lib/tasks/detail-copy";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MentionInput, MentionText } from "./mentions";
 import {
@@ -180,6 +181,11 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
   const fail = () => toast.error(t("taskDetail.t_error"));
   const org = orgsQ.data?.find((o) => o.id === task.organization_id);
   const firmName = org ? t("owner.firm_label", { name: org.name, what: t(`firmWhat.${org.area ?? "B1"}`) }) : "";
+  /** The empty state of a section, worded for whoever looks (firm, owner, Strategic Mates). */
+  const emptyCopy = (section: TaskEmptySection) => {
+    const copy = taskEmptyState(me.data?.role, section, { ownerFirst, firmName: org?.name ?? "" });
+    return t(copy.key, { name: copy.name });
+  };
 
   // ----- Header: one primary action according to status -----
   let primary: ReactNode = null;
@@ -375,7 +381,7 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
         {/* 3. Deliverables */}
         <Section title={t("taskDetail.s_deliverables")}>
           {sortedVersions.length === 0 ? (
-            <Empty>{t("taskDetail.no_versions", { name: ownerFirst })}</Empty>
+            <Empty>{emptyCopy("versions")}</Empty>
           ) : (
             <ol className="space-y-3">
               {sortedVersions.map((v) => {
@@ -434,7 +440,7 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
           action={!isFirm || cancelled ? undefined : <SecondaryButton onClick={() => setRequestOpen(true)}><Plus className="h-3.5 w-3.5" />{t("taskDetail.ask_owner")}</SecondaryButton>}
         >
           {owner_requests.length === 0 ? (
-            <Empty>{t("taskDetail.requests_empty")}</Empty>
+            <Empty>{emptyCopy("requests")}</Empty>
           ) : (
             <ul className="divide-y divide-border rounded-md border border-border">
               {[...owner_requests].sort((a, b) => Number(a.status === "resolved") - Number(b.status === "resolved")).map((r) => {
@@ -518,7 +524,7 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
             </ul>
           )}
           {meetings.length === 0 && taskMeetings.length > 0 ? null : meetings.length === 0 ? (
-            <Empty>{t("taskDetail.meetings_empty", { name: ownerFirst })}</Empty>
+            <Empty>{emptyCopy("meetings")}</Empty>
           ) : (
             <ul className="divide-y divide-border rounded-md border border-border">
               {[...meetings].sort((a, b) => b.starts_at.localeCompare(a.starts_at)).map((m) => (

@@ -403,6 +403,7 @@
   },
   "tasks": {
     "heading": "¿Qué tengo que mover?",
+    "calendar_heading": "Tu calendario",
     "for_role": "Vista para firma aliada",
     "count": "{{count}} tareas",
     "count_one": "{{count}} tarea",
@@ -550,6 +551,9 @@
     "criteria_title": "Esto es lo que el dueño va a revisar",
     "s_deliverables": "Entregas",
     "no_versions": "Todavía no enviaste ninguna entrega. Cuando la envíes, {{name}} la revisará aquí.",
+    "no_versions_owner": "{{name}} todavía no envió ninguna entrega. Cuando la envíe, la revisas aquí.",
+    "no_versions_owner_nofirm": "La firma todavía no envió ninguna entrega. Cuando la envíe, la revisas aquí.",
+    "no_versions_neutral": "Todavía no hay entregas en esta tarea.",
     "v_submitted": "Enviada",
     "v_changes": "Cambios pedidos por {{name}}",
     "v_accepted": "Aprobada",
@@ -558,6 +562,8 @@
     "comment_file": "Comentar este archivo",
     "s_requests": "Pedidos al dueño",
     "requests_empty": "No le pediste nada al dueño. Si necesitas un documento o una respuesta, pídeselo aquí.",
+    "requests_empty_owner": "La firma no te pidió nada todavía.",
+    "requests_empty_neutral": "La firma todavía no le pidió nada al dueño.",
     "request_due": "Para el {{date}}",
     "mark_resolved": "Marcar como resuelto",
     "resolved_on": "Resuelto el {{date}}",
@@ -566,6 +572,9 @@
     "owner_answer": "Respuesta de {{name}}",
     "s_meetings": "Reuniones",
     "meetings_empty": "No hay reuniones. Si necesitas hablar con {{name}}, propón una.",
+    "meetings_empty_owner": "No hay reuniones. Si necesitas hablar con {{name}}, agenda una.",
+    "meetings_empty_owner_nofirm": "No hay reuniones. Si necesitas hablar con la firma, agenda una.",
+    "meetings_empty_neutral": "No hay reuniones en esta tarea.",
     "m_proposed": "Propuesta",
     "m_proposed_hint": "Esperando que {{name}} confirme",
     "m_confirmed": "Confirmada",
@@ -2873,6 +2882,7 @@
     "docuseal": {
       "header": "Firma electrónica con DocuSeal",
       "sample": "Documento de muestra",
+      "text_label": "Texto completo de {{name}}",
       "signing_as": "Firmas como: {{name}}",
       "field": "Firma aquí",
       "sign": "Firmar",
@@ -2998,7 +3008,7 @@
         "missing_other": "Te faltan {{count}} documentos. Si te pedimos uno de nuevo, aparece primero con nuestro comentario.",
         "in_review": "Estamos revisando tus documentos: día {{day}} de {{total}}.",
         "approved": "Aprobamos tus documentos.",
-        "after_meeting": "Después de tu reunión te pedimos los documentos. Aparecen aquí."
+        "preparing": "Con el MOU firmado se abre tu lista de documentos. Aparece aquí y, después de tu reunión, te la recordamos por correo."
       },
       "oa": {
         "not_sent": "Te lo enviamos después de la reunión de ampliación.",
@@ -3483,6 +3493,7 @@
     "google_mark_title": "Está en Google Calendar",
     "response": {
       "needsAction": "Sin responder",
+      "invited": "Invitación enviada",
       "accepted": "Va",
       "declined": "No va",
       "tentative": "Tal vez"

@@ -104,7 +104,7 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t(isOwner ? "owner.for_role" : isSm ? "sm.for_role" : "tasks.for_role")}</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">{t(isOwner ? "owner.tasks_heading" : isSm ? "sm.tasks_heading" : "tasks.heading")}</h1>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight">{t(view === "calendar" ? "tasks.calendar_heading" : isOwner ? "owner.tasks_heading" : isSm ? "sm.tasks_heading" : "tasks.heading")}</h1>
         </div>
         <div role="tablist" aria-label={t("tasks.views.label")} className="flex max-w-full overflow-x-auto rounded-md border border-border bg-surface p-0.5">
           {VIEWS.map((v) => {

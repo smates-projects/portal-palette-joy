@@ -17,8 +17,35 @@ export function contractSections(body: string): { heading: string | null; text: 
   const blocks = body.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
   return blocks.slice(1).map((block) => {
     const [first = "", ...rest] = block.split("\n");
-    return /^\d+\.\s/.test(first) && rest.length > 0 ? { heading: first, text: rest.join("\n") } : { heading: null, text: block };
+    // "1. Objeto. …\n2. Información …" is a numbered list of clauses (siblings), not a heading with its text.
+    const list = rest.some((line) => /^\d+\.\s/.test(line.trim()));
+    return /^\d+\.\s/.test(first) && rest.length > 0 && !list ? { heading: first, text: rest.join("\n") } : { heading: null, text: block };
   });
+}
+
+/** How a signer's signature is drawn: the name in the script style, or an image. */
+export type SignatureView = { kind: "text"; text: string } | { kind: "image"; src: string };
+
+/**
+ * A signature as shown in a document. A data URL (the pad, the mock) is an image as is. A typed signature stored by
+ * the API is the name in the script style (its stored file is only a rendering of the same name). A stored drawn or
+ * uploaded one is an image: the API answers its link relative to its own origin ("/api/v1/files/{id}/download"), so it
+ * is resolved against the API base URL, not the front. Without any image, the name in the script style.
+ */
+export function signatureView(
+  signature: { kind: "drawn" | "typed" | "uploaded"; image_url: string } | null | undefined,
+  signerName: string,
+  apiBaseUrl: string,
+): SignatureView {
+  const url = signature?.image_url?.trim() ?? "";
+  if (url.startsWith("data:")) return { kind: "image", src: url };
+  if (!signature || !url || signature.kind === "typed") return { kind: "text", text: signerName };
+  if (/^https?:\/\//i.test(url)) return { kind: "image", src: url };
+  try {
+    return { kind: "image", src: new URL(url, apiBaseUrl).toString() };
+  } catch {
+    return { kind: "text", text: signerName };
+  }
 }
 
 /** Stable fake SHA-256 of a document, so the demo shows the same fingerprint every time. */

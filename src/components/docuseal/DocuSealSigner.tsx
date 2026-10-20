@@ -7,6 +7,8 @@ import type { Contract, ContractSignature } from "@/lib/api/types";
 import { formatDate } from "@/lib/format";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PrimaryButton, SecondaryButton } from "@/components/tasks/detail/dialogs";
+import { cn } from "@/lib/utils";
+import { ContractText, SignatureMark } from "./ContractDocument";
 import { SignaturePad } from "./SignaturePad";
 
 /**
@@ -32,6 +34,7 @@ export function DocuSealSigner(props: { contract: Contract; party: "owner" | "sm
   const [embedSrc, setEmbedSrc] = useState<string | null>(null);
   const shown = signed ? (me?.signature ?? signature) : null;
   const others = props.contract.signers.filter((s) => s.party !== props.party).map((s) => s.name);
+  const body = props.contract.body?.trim() ? props.contract.body : null;
 
   useEffect(() => {
     // DocuSeal reports "viewed" when the signer opens the document. With the real driver a signer who already opened
@@ -93,7 +96,7 @@ export function DocuSealSigner(props: { contract: Contract; party: "owner" | "sm
 
   return (
     <Dialog open onOpenChange={(o) => !o && props.onClose()}>
-      <DialogContent className="max-h-[92vh] w-[calc(100vw-1.5rem)] overflow-y-auto bg-surface p-4 sm:max-w-lg sm:p-6">
+      <DialogContent className={cn("max-h-[92vh] w-[calc(100vw-1.5rem)] overflow-y-auto bg-surface p-4 sm:p-6", body && !embedSrc ? "sm:max-w-2xl" : "sm:max-w-lg")}>
         <DialogHeader>
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("intake.docuseal.header")}</p>
           <DialogTitle>{props.contract.name}</DialogTitle>
@@ -112,16 +115,23 @@ export function DocuSealSigner(props: { contract: Contract; party: "owner" | "sm
             </div>
           </div>
         ) : (<>
-        {/* Sample PDF with the signature field highlighted; once signed it shows the signature itself */}
-        <div className="rounded-md border border-border bg-muted/50 p-4">
-          <div className="mx-auto max-w-sm rounded-md border border-border bg-surface p-5 text-xs leading-relaxed text-muted-foreground sm:p-6">
+        {/* The contract's full text (scrollable) with the signature field below; a sample only when it has no text.
+            Once signed it shows the signature itself. */}
+        <div className="rounded-md border border-border bg-muted/50 p-2 sm:p-4">
+          <div className={cn("mx-auto rounded-md border border-border bg-surface p-5 text-xs leading-relaxed text-muted-foreground sm:p-6", body ? "max-w-none" : "max-w-sm")}>
             <p className="text-sm font-semibold text-foreground">{props.contract.name}</p>
-            <p className="mt-1 text-[11px] uppercase tracking-wide">{t("intake.docuseal.sample")}</p>
-            <p className="mt-3">{t("intake.docuseal.pdf_line", { a: props.signerName, b: others.join(", ") })}</p>
-            <div className="mt-3 space-y-1.5">{[0, 1, 2, 3].map((i) => <div key={i} className="h-1.5 rounded bg-muted" style={{ width: `${90 - i * 12}%` }} />)}</div>
+            {body ? (
+              <div className="mt-3 max-h-[40vh] overflow-y-auto border-b border-border pb-3 pr-2 text-[13px]" tabIndex={0} aria-label={t("intake.docuseal.text_label", { name: props.contract.name })}>
+                <ContractText body={body} />
+              </div>
+            ) : (<>
+              <p className="mt-1 text-[11px] uppercase tracking-wide">{t("intake.docuseal.sample")}</p>
+              <p className="mt-3">{t("intake.docuseal.pdf_line", { a: props.signerName, b: others.join(", ") })}</p>
+              <div className="mt-3 space-y-1.5">{[0, 1, 2, 3].map((i) => <div key={i} className="h-1.5 rounded bg-muted" style={{ width: `${90 - i * 12}%` }} />)}</div>
+            </>)}
             {signed ? (
               <div className="mt-5 rounded-[4px] border border-status-success-border bg-status-success-bg px-3 py-2 text-status-success-fg">
-                {shown ? <img src={shown.image_url} alt={props.signerName} className="h-12 max-w-full object-contain object-left" /> : null}
+                {shown ? <SignatureMark signature={shown} signerName={props.signerName} /> : null}
                 <span className="mt-1 inline-flex items-center gap-1.5 text-[11px] font-medium"><PenLine className="h-3 w-3" />{props.signerName}{me?.signed_at ? ` · ${me.signed_at}` : ""}</span>
               </div>
             ) : (

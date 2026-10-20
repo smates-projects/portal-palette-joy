@@ -110,9 +110,16 @@ describe("NDA status and owner steps", () => {
     const signedMou = { ...mou, signers: [signer("owner", "signed"), signer("sm", "signed")] };
     const beforeMeeting = ownerSteps({ summary: { approved_at: null, required_total: 0 }, nda, mou: signedMou, operatingAgreement: null, rules: ENTRY_RULE_DEFAULTS });
     expect(beforeMeeting.map((s) => `${s.key}:${s.state}`)).toEqual(["nda:done", "mou:done", "meeting:current", "documents:upcoming"]);
-    // The documents list went out (only after "Se hizo"): the meeting reads as held.
+    // The API creates the documents at the NDA signature: a documents list does not make the meeting held.
     const withDocs = ownerSteps({ summary: { approved_at: null, required_total: 9 }, nda, mou: signedMou, operatingAgreement: null, rules: ENTRY_RULE_DEFAULTS });
-    expect(withDocs.map((s) => `${s.key}:${s.state}`)).toEqual(["nda:done", "mou:done", "meeting:done", "documents:current"]);
+    expect(withDocs.map((s) => `${s.key}:${s.state}`)).toEqual(["nda:done", "mou:done", "meeting:current", "documents:upcoming"]);
+    // A booked meeting still to come, with documents: upcoming, not held. Only outcome "held" marks it held.
+    const booked = { meetings: [{ id: "i", kind: "initial" as const, starts_at: "2026-10-20T15:00:00Z", duration_min: 30, meet_url: null, outcome: null, outcome_prompted_at: null }], booking_url: null, expansion_meeting_held_at: null };
+    const bookedSteps = ownerSteps({ summary: { approved_at: null, required_total: 9, entry: booked }, nda, mou: signedMou, operatingAgreement: null, rules: ENTRY_RULE_DEFAULTS });
+    expect(bookedSteps.find((s) => s.key === "meeting")?.state).toBe("current");
+    const held = { ...booked, meetings: [{ ...booked.meetings[0]!, outcome: "held" as const }] };
+    const heldSteps = ownerSteps({ summary: { approved_at: null, required_total: 9, entry: held }, nda, mou: signedMou, operatingAgreement: null, rules: ENTRY_RULE_DEFAULTS });
+    expect(heldSteps.map((s) => `${s.key}:${s.state}`)).toEqual(["nda:done", "mou:done", "meeting:done", "documents:current"]);
     const after = ownerSteps({
       summary: { approved_at: "2026-10-01T15:00:00Z", entry: { meeting: null, expansion_meeting: null, expansion_meeting_held_at: "2026-10-08T16:00:00Z", booking_url: null, consultant_name: null } },
       nda, mou: signedMou, operatingAgreement: contract("tripartite", [signer("owner", "sent")]), rules: ENTRY_RULE_DEFAULTS,

@@ -224,7 +224,7 @@ export function cleanDocumentHelp(help: IntakeDocumentHelp | null | undefined): 
 /**
  * The order of "Tu ingreso": NDA → MOU → Tu reunión → Documentos, then (after the approval) the expansion meeting and
  * the Operating Agreement. The MOU exists as soon as the owner signs the NDA, so he can sign it before or during the
- * meeting; the meeting only sends the documents list.
+ * meeting. The documents open when the MOU is signed, independent of the meeting.
  */
 export const OWNER_STEPS = ["nda", "mou", "meeting", "documents", "expansion", "operating_agreement"] as const;
 export type OwnerStepKey = (typeof OWNER_STEPS)[number];
@@ -251,8 +251,9 @@ export function ownerSteps(input: OwnerStepsInput): { key: OwnerStepKey; state: 
   const approved = !!input.summary.approved_at;
   const done: Record<OwnerStepKey, boolean> = {
     nda: ndaStatus(input.nda) === "signed",
-    // The documents list only goes out after "Se hizo": a list means the meeting was held (older rows have no outcome).
-    meeting: meetings.initial?.outcome === "held" || (input.summary.required_total ?? 0) > 0 || approved,
+    // Only the outcome says the meeting was held: the API creates the documents at the NDA signature, so a documents
+    // list (or the list being open after the MOU) says nothing about the meeting. The approval comes after it.
+    meeting: meetings.initial?.outcome === "held" || approved,
     mou: signedBy(input.mou, "owner"),
     documents: approved,
     expansion: !input.rules.require_expansion_meeting || !!entry?.expansion_meeting_held_at || meetings.expansion?.outcome === "held",

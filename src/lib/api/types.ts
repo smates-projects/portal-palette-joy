@@ -398,6 +398,9 @@ export interface PortalMeeting {
   /** The event exists in the organizer's Google Calendar and the invitations went out. */
   google_synced: boolean;
   version: number;
+  /** The Google event and its iCalUID, when the API sends them: they tell this meeting apart in the Google events. */
+  google_event_id?: string | null | undefined;
+  ical_uid?: string | null | undefined;
 }
 
 /** GET /me/calendar and GET /users/{id}/calendar-status. */
@@ -463,6 +466,8 @@ export interface ExternalCalendarEvent {
   title: string;
   starts_at: IsoDateTime;
   duration_minutes: number;
+  /** Google's iCalUID, when the API sends it (the same event in every guest's calendar). */
+  ical_uid?: string | null | undefined;
 }
 
 export const NOTIFICATION_KINDS = [

@@ -2,8 +2,17 @@ import { describe, expect, it } from "vitest";
 import type { PortalMeeting } from "@/lib/api/types";
 import {
   addPerson, availabilityWindow, canManageMeeting, canSearchSlots, isCalendarConnected, joinNames, meetingHoursOf, needsReconnect,
-  planMeeting, scheduleOutcome, unavailableKind, validateMeetingHours,
+  planMeeting, responseLabelKey, scheduleOutcome, unavailableKind, validateMeetingHours,
 } from "./scheduling";
+
+describe("responseLabelKey (a guest's answer next to their name)", () => {
+  it("needsAction on a confirmed meeting reads 'Invitación enviada'; on a proposal it stays 'Sin responder'", () => {
+    expect(responseLabelKey("needsAction", "confirmed")).toBe("invited");
+    expect(responseLabelKey("needsAction", "proposed")).toBe("needsAction");
+    expect(responseLabelKey("accepted", "confirmed")).toBe("accepted");
+    expect(responseLabelKey("declined", "confirmed")).toBe("declined");
+  });
+});
 
 const meeting = (overrides: Partial<PortalMeeting> = {}): PortalMeeting => ({
   id: "m1", kind: "task", task_id: "t1", business_id: "b1", lead_id: null, topic: "Revisar", starts_at: "2026-10-20T15:00:00Z",

@@ -403,6 +403,7 @@
   },
   "tasks": {
     "heading": "What do I need to move?",
+    "calendar_heading": "Your calendar",
     "for_role": "Partner firm view",
     "count": "{{count}} tasks",
     "count_one": "{{count}} task",
@@ -550,6 +551,9 @@
     "criteria_title": "This is what the owner will review",
     "s_deliverables": "Deliverables",
     "no_versions": "You haven't submitted a deliverable yet. When you do, {{name}} will review it here.",
+    "no_versions_owner": "{{name}} hasn't submitted a deliverable yet. When they do, you review it here.",
+    "no_versions_owner_nofirm": "The firm hasn't submitted a deliverable yet. When they do, you review it here.",
+    "no_versions_neutral": "No deliverables on this task yet.",
     "v_submitted": "Submitted",
     "v_changes": "Changes requested by {{name}}",
     "v_accepted": "Approved",
@@ -558,6 +562,8 @@
     "comment_file": "Comment on this file",
     "s_requests": "Requests to the owner",
     "requests_empty": "You haven't asked the owner for anything. If you need a document or an answer, ask here.",
+    "requests_empty_owner": "The firm hasn't asked you for anything yet.",
+    "requests_empty_neutral": "The firm hasn't asked the owner for anything yet.",
     "request_due": "By {{date}}",
     "mark_resolved": "Mark as resolved",
     "resolved_on": "Resolved on {{date}}",
@@ -566,6 +572,9 @@
     "owner_answer": "{{name}}'s answer",
     "s_meetings": "Meetings",
     "meetings_empty": "No meetings. If you need to talk with {{name}}, propose one.",
+    "meetings_empty_owner": "No meetings. If you need to talk with {{name}}, schedule one.",
+    "meetings_empty_owner_nofirm": "No meetings. If you need to talk with the firm, schedule one.",
+    "meetings_empty_neutral": "No meetings on this task.",
     "m_proposed": "Proposed",
     "m_proposed_hint": "Waiting for {{name}} to confirm",
     "m_confirmed": "Confirmed",
@@ -2873,6 +2882,7 @@
     "docuseal": {
       "header": "Electronic signature with DocuSeal",
       "sample": "Sample document",
+      "text_label": "Full text of {{name}}",
       "signing_as": "Signing as: {{name}}",
       "field": "Sign here",
       "sign": "Sign",
@@ -2998,7 +3008,7 @@
         "missing_other": "{{count}} documents are missing. If we ask for one again, it shows first with our comment.",
         "in_review": "We are reviewing your documents: day {{day}} of {{total}}.",
         "approved": "We approved your documents.",
-        "after_meeting": "After your meeting we ask for your documents. They show up here."
+        "preparing": "With the MOU signed, your documents list opens. It shows up here and, after your meeting, we remind you by email."
       },
       "oa": {
         "not_sent": "We send it after the expansion meeting.",
@@ -3483,6 +3493,7 @@
     "google_mark_title": "It is in Google Calendar",
     "response": {
       "needsAction": "No answer",
+      "invited": "Invitation sent",
       "accepted": "Going",
       "declined": "Not going",
       "tentative": "Maybe"

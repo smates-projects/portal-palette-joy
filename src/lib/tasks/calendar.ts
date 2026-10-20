@@ -43,19 +43,52 @@ export type CalItem =
   | { kind: "lead"; day: string; at: string; item: LeadMeetingItem }
   | { kind: "portal"; day: string; at: string; meeting: PortalMeeting };
 
+const instant = (iso: string) => new Date(iso).getTime();
+const sameText = (a: string, b: string) => a.trim().toLocaleLowerCase() === b.trim().toLocaleLowerCase();
+
+/**
+ * One meeting, one item. A portal meeting (calendar v2) also comes back as a task meeting (same id, or same task and
+ * start), as an entry meeting of a lead (same id), and as an event of the person's own Google Calendar when they are a
+ * guest (same Google event id or iCalUID; without those, same start and the topic as title). The portal meeting wins
+ * and the copies are left out.
+ */
+export function dedupeMeetings(
+  meetings: Meeting[],
+  events: ExternalCalendarEvent[],
+  leadMeetings: LeadMeetingItem[],
+  portalMeetings: PortalMeeting[],
+): { meetings: Meeting[]; events: ExternalCalendarEvent[]; leadMeetings: LeadMeetingItem[] } {
+  const portalIds = new Set(portalMeetings.map((m) => m.id));
+  const googleIds = new Set(portalMeetings.flatMap((m) => (m.google_event_id ? [m.google_event_id] : [])));
+  const icalUids = new Set(portalMeetings.flatMap((m) => (m.ical_uid ? [m.ical_uid] : [])));
+  const isPortalTaskMeeting = (m: Meeting) =>
+    portalIds.has(m.id) || portalMeetings.some((p) => p.task_id === m.task_id && instant(p.starts_at) === instant(m.starts_at));
+  const isPortalEvent = (e: ExternalCalendarEvent) =>
+    googleIds.has(e.id) ||
+    (!!e.ical_uid && icalUids.has(e.ical_uid)) ||
+    portalMeetings.some((p) => p.status !== "cancelled" && instant(p.starts_at) === instant(e.starts_at) && sameText(p.topic, e.title));
+  return {
+    meetings: meetings.filter((m) => !isPortalTaskMeeting(m)),
+    events: events.filter((e) => !isPortalEvent(e)),
+    leadMeetings: leadMeetings.filter((l) => !l.meeting.id || !portalIds.has(l.meeting.id)),
+  };
+}
+
 /**
  * Due dates of the visible tasks, meetings only of those tasks, plus the user's Google events, the entry
  * meetings booked with the consultant (leads) and the portal meetings of calendar v2 (every kind, cancelled ones
- * included so the person sees what was dropped). Per day: timed items by hour first, then due dates by code.
+ * included so the person sees what was dropped). The same meeting from two sources shows once (dedupeMeetings).
+ * Per day: timed items by hour first, then due dates by code.
  */
 export function buildCalendarItems(
   tasks: TaskWithComputed[],
-  meetings: Meeting[],
-  events: ExternalCalendarEvent[],
-  leadMeetings: LeadMeetingItem[] = [],
+  allMeetings: Meeting[],
+  allEvents: ExternalCalendarEvent[],
+  allLeadMeetings: LeadMeetingItem[] = [],
   portalMeetings: PortalMeeting[] = [],
 ): Map<string, CalItem[]> {
   const byId = new Map(tasks.map((t) => [t.id, t]));
+  const { meetings, events, leadMeetings } = dedupeMeetings(allMeetings, allEvents, allLeadMeetings, portalMeetings);
   const items: CalItem[] = [
     ...tasks.map((task) => ({ kind: "due" as const, day: task.due_date, task })),
     ...meetings.flatMap((meeting) => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildCalendarItems, localDay, monthGrid, shiftAnchor, visibleRange, weekDays } from "./calendar";
-import type { Meeting, PortalMeeting, TaskWithComputed } from "@/lib/api/types";
+import { buildCalendarItems, dedupeMeetings, localDay, monthGrid, shiftAnchor, visibleRange, weekDays } from "./calendar";
+import type { LeadMeetingItem, Meeting, PortalMeeting, TaskWithComputed } from "@/lib/api/types";
 
 const task = (id: string, code: string, due: string) => ({ id, code, due_date: due }) as TaskWithComputed;
 const meeting = (task_id: string, status: Meeting["status"]) =>
@@ -35,6 +35,32 @@ describe("calendar items", () => {
     const map = buildCalendarItems([task("a", "B6-02", "2026-10-20")], [], [], [], [portal]);
     expect(localDay(portal.starts_at)).toBe("2026-10-20");
     expect(map.get("2026-10-20")?.map((i) => i.kind)).toEqual(["portal", "due"]);
+  });
+
+  it("the same meeting from the portal, the task and the guest's Google Calendar shows once", () => {
+    const at = new Date("2026-10-21T12:00:00").toISOString();
+    const portal = { id: "p1", kind: "task", task_id: "a", topic: "B6-01 · Data Room", starts_at: at, status: "confirmed", google_event_id: "g1", ical_uid: "g1@google.com" } as PortalMeeting;
+    const sameTask = { id: "p1", task_id: "a", starts_at: at, status: "confirmed" } as Meeting;
+    // Same task and instant written without milliseconds.
+    const sameTaskOtherId = { id: "legacy", task_id: "a", starts_at: at.replace(".000Z", "Z"), status: "confirmed" } as Meeting;
+    const events = [
+      { id: "g1", user_id: "u", title: "Otro título", starts_at: at, duration_minutes: 45 },
+      { id: "copy", user_id: "u", title: "x", starts_at: at, duration_minutes: 45, ical_uid: "g1@google.com" },
+      { id: "untagged", user_id: "u", title: " b6-01 · data room ", starts_at: at, duration_minutes: 45 },
+      { id: "dentist", user_id: "u", title: "Dentista", starts_at: at, duration_minutes: 30 },
+    ];
+    const lead = { lead_id: "l", business_name: "", owner_name: "", city: "", state: "", meeting: { id: "p1", starts_at: at } } as LeadMeetingItem;
+    const map = buildCalendarItems([task("a", "B6-01", "2026-10-30")], [sameTask, sameTaskOtherId], events, [lead], [portal]);
+    const day = map.get(localDay(at)) ?? [];
+    expect(day.filter((i) => i.kind === "portal")).toHaveLength(1);
+    expect(day.filter((i) => i.kind === "meeting" || i.kind === "lead")).toHaveLength(0);
+    expect(day.flatMap((i) => (i.kind === "google" ? [i.event.id] : []))).toEqual(["dentist"]);
+  });
+
+  it("without portal meetings nothing is dropped", () => {
+    const { meetings, events } = dedupeMeetings([meeting("a", "confirmed")], [{ id: "g", user_id: "u", title: "t", starts_at: "2026-10-16T15:00:00Z", duration_minutes: 30 }], [], []);
+    expect(meetings).toHaveLength(1);
+    expect(events).toHaveLength(1);
   });
 
   it("the visible range runs from the first day's midnight to the day after the last one", () => {
