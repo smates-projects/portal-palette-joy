@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Download, PenLine } from "lucide-react";
 import { useContractSigningPoll, useDeclineContract, useOpenContract, useRefreshSigning, useSignContract } from "@/lib/api/hooks";
 import type { Contract, ContractSignature } from "@/lib/api/types";
+import { formatDate } from "@/lib/format";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PrimaryButton, SecondaryButton } from "@/components/tasks/detail/dialogs";
 import { SignaturePad } from "./SignaturePad";
@@ -15,7 +16,7 @@ import { SignaturePad } from "./SignaturePad";
  * portal's own screen, and every change goes through the repository (openContract, signContract, declineContract).
  */
 export function DocuSealSigner(props: { contract: Contract; party: "owner" | "sm" | "bishop"; signerName: string; onClose: () => void }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const open = useOpenContract();
   const sign = useSignContract();
   const decline = useDeclineContract();
@@ -57,7 +58,14 @@ export function DocuSealSigner(props: { contract: Contract; party: "owner" | "sm
     onClose();
   }, [embedSrc, polledStatus, refresh, t, contractName, onClose]);
 
-  const fail = () => toast.error(t("intake.docuseal.t_error"));
+  /** The API's reasons a signature waits: the four MOU points, the Operating Agreement's waiting period, an own NDA in review. */
+  const fail = (e?: unknown) => {
+    const code = e instanceof Error ? ((e as Error & { code?: string }).code ?? e.message) : "";
+    const detail = e instanceof Error ? (e as Error & { detail?: string | null }).detail ?? "" : "";
+    if (code === "acknowledgment_required" || code === "own_nda_pending") toast.error(t(`entry.errors.${code}`));
+    else if (code === "waiting_period") toast.error(t("entry.errors.waiting_period", { date: /^\d{4}-\d{2}-\d{2}/.test(detail) ? formatDate(detail, i18n.language) : detail }));
+    else toast.error(t("intake.docuseal.t_error"));
+  };
   const doSign = () => {
     if (!signature) return setMissing(true);
     sign.mutate({ contractId: props.contract.id, signature }, {

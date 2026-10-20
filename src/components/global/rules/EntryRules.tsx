@@ -6,6 +6,7 @@ import { useOrganizations, useRemoveZone, useRoutingRules, useSetDefaultOffice, 
 import { ASSESSMENT_BLOCKS, type AreaCode, type AssessmentAreaMap, type Organization, type ZoneRule } from "@/lib/api/types";
 import type { PlatformRules } from "@/lib/api/network-types";
 import { validateZone } from "@/lib/leads/entry";
+import { entryRules } from "@/lib/leads/entry-flow";
 import { DEFAULT_ASSESSMENT_AREA_MAP } from "@/lib/leads/prevalidation";
 import { AREAS } from "@/lib/tasks/owner";
 import { cn } from "@/lib/utils";
@@ -188,6 +189,71 @@ export function AssessmentMapEditor({ rules }: { rules: PlatformRules }) {
       </div>
       <div className="mt-3 flex justify-end">
         <PrimaryButton onClick={save} disabled={!dirty || update.isPending}>{t("entry.rules.map_save")}</PrimaryButton>
+      </div>
+    </Box>
+  );
+}
+
+/**
+ * SM Global: the revised entry. Who sees an approved business (only the Bishops SM presents it to, or every Bishop),
+ * the waiting days of the Operating Agreement, whether it needs the expansion meeting, and whether the NDA and the
+ * MOU go out already signed by Strategic Mates.
+ */
+export function EntryFlowRules({ rules }: { rules: PlatformRules }) {
+  const { t } = useTranslation();
+  const update = useUpdateRules();
+  const saved = entryRules(rules);
+  const [form, setForm] = useState({ ...saved, oa_waiting_days: String(saved.oa_waiting_days) });
+  const days = Number(form.oa_waiting_days);
+  const daysOk = form.oa_waiting_days.trim() !== "" && Number.isInteger(days) && days >= 0 && days <= 60;
+  const patch: Partial<PlatformRules> = {};
+  if (form.opportunity_visibility !== saved.opportunity_visibility) patch.opportunity_visibility = form.opportunity_visibility;
+  if (daysOk && days !== saved.oa_waiting_days) patch.oa_waiting_days = days;
+  if (form.require_expansion_meeting !== saved.require_expansion_meeting) patch.require_expansion_meeting = form.require_expansion_meeting;
+  if (form.nda_auto_signed_by_sm !== saved.nda_auto_signed_by_sm) patch.nda_auto_signed_by_sm = form.nda_auto_signed_by_sm;
+  const dirty = Object.keys(patch).length > 0;
+  const save = () => {
+    const undo: Partial<PlatformRules> = Object.fromEntries(Object.keys(patch).map((k) => [k, saved[k as keyof typeof saved]]));
+    update.mutate({ patch }, {
+      onSuccess: () => toast.success(t("entry.rules.flow.t_saved"), {
+        action: { label: t("global.undo"), onClick: () => update.mutate({ patch: undo }) },
+      }),
+      onError: () => toast.error(t("global.t_error")),
+    });
+  };
+  return (
+    <Box title={t("entry.rules.flow.title")} hint={t("entry.rules.flow.hint")}>
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium">{t("entry.rules.flow.visibility")}</legend>
+        {(["presented", "all"] as const).map((v) => (
+          <label key={v} className={cn("flex cursor-pointer items-start gap-3 rounded-[4px] border p-3 text-sm", form.opportunity_visibility === v ? "border-primary" : "border-border")}>
+            <input type="radio" name="opportunity_visibility" className="mt-0.5 h-4 w-4 accent-primary" checked={form.opportunity_visibility === v}
+              onChange={() => setForm((f) => ({ ...f, opportunity_visibility: v }))} />
+            <span>
+              <span className="block font-medium">{t(`entry.rules.flow.visibility_${v}`)}</span>
+              <span className="block text-muted-foreground">{t(`entry.rules.flow.visibility_${v}_hint`)}</span>
+            </span>
+          </label>
+        ))}
+      </fieldset>
+      <label className="mt-4 block space-y-1 text-sm">
+        <span className="block font-medium">{t("entry.rules.flow.waiting_days")}</span>
+        <input inputMode="numeric" value={form.oa_waiting_days} onChange={(e) => setForm((f) => ({ ...f, oa_waiting_days: e.target.value }))}
+          className={cn(inputCls, "w-24", !daysOk && "border-status-danger-fg")} aria-invalid={!daysOk} />
+        <span className="block text-xs text-muted-foreground">{t("entry.rules.flow.waiting_days_hint")}</span>
+        {!daysOk && <span className="block text-xs text-status-danger-fg">{t("entry.rules.flow.waiting_days_error")}</span>}
+      </label>
+      {(["require_expansion_meeting", "nda_auto_signed_by_sm"] as const).map((k) => (
+        <label key={k} className="mt-3 flex cursor-pointer items-start gap-3 text-sm">
+          <input type="checkbox" className="mt-0.5 h-4 w-4 accent-primary" checked={form[k]} onChange={(e) => setForm((f) => ({ ...f, [k]: e.target.checked }))} />
+          <span>
+            <span className="block font-medium">{t(`entry.rules.flow.${k}`)}</span>
+            <span className="block text-muted-foreground">{t(`entry.rules.flow.${k}_hint`)}</span>
+          </span>
+        </label>
+      ))}
+      <div className="mt-3 flex justify-end">
+        <PrimaryButton onClick={save} disabled={!dirty || !daysOk || update.isPending}>{t("entry.rules.flow.save")}</PrimaryButton>
       </div>
     </Box>
   );

@@ -121,8 +121,8 @@ export interface MockContext {
 
 type NetworkApi = Pick<
   ApiClient,
-  "network" | "rules" | "catalog" | "franchises" | "manual" | "financials" | "businessProfile" | "franchisee"
-> & { bishop: Pick<BishopRepository, "getPortfolio" | "listAgreements"> } & { documents: Pick<ApiClient["documents"], "listDocuments" | "listContracts" | "uploadDocument"> };
+  "rules" | "catalog" | "franchises" | "manual" | "financials" | "businessProfile" | "franchisee"
+> & { network: Omit<ApiClient["network"], "setOfficeSignature"> } & { bishop: Pick<BishopRepository, "getPortfolio" | "listAgreements"> } & { documents: Pick<ApiClient["documents"], "listDocuments" | "listContracts" | "uploadDocument"> };
 
 const PRIORITIES = ["minimo", "alto_valor", "opcional", "tercero", "fuera"];
 const AREA_KEY_BY_CODE = Object.fromEntries(Object.entries(AREA_BY_KEY).map(([key, code]) => [code, key])) as Record<AreaCode, string>;
@@ -244,7 +244,8 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
   const reportedIn = (month: string) => db.franchiseReports.filter((r) => r.month === month && r.status !== "due");
 
   // ---------- Network (SM Global) ----------
-  const network: NetworkRepository = {
+  // The office signature lives in ./index.ts (it needs the admin flag of the current user).
+  const network: Omit<NetworkRepository, "setOfficeSignature"> = {
     getSummary: async () => {
       globalOnly();
       const offices = db.orgs.filter((o) => o.kind === "sm");
@@ -478,6 +479,8 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       if (!Number.isInteger(next.document_review_days) || next.document_review_days < 1) throw new Error("invalid_review_days");
       if (next.intake_documents.some((d) => !d.name.trim())) throw new Error("name_required");
       if (!Number.isInteger(next.program_amount) || (next.program_amount ?? 0) < 1) throw new Error("invalid_program_amount");
+      if (next.opportunity_visibility !== undefined && next.opportunity_visibility !== "presented" && next.opportunity_visibility !== "all") throw new Error("invalid_visibility");
+      if (next.oa_waiting_days !== undefined && (!Number.isInteger(next.oa_waiting_days) || next.oa_waiting_days < 0 || next.oa_waiting_days > 60)) throw new Error("invalid_waiting_days");
       const known = new Set(db.catalog.filter((c) => !c.archived).map((c) => c.code));
       if (new Set(next.required_task_codes).size !== next.required_task_codes.length || next.required_task_codes.some((c) => !known.has(c))) throw new Error("unknown_task_code");
       const fields = Object.keys(next) as (keyof PlatformRules)[];

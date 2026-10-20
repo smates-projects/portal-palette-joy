@@ -11,7 +11,8 @@ import * as seedLeads from "./seed-leads";
 import * as seedNetwork from "./seed-network";
 import { createNetworkRepositories, type NetworkDb } from "./network";
 import { createIntake, type IntakeRecord } from "./intake";
-import { createOpportunities, type OpportunityView } from "./opportunities";
+import { createOpportunities, type OpportunityView, type Presentation } from "./opportunities";
+import { outcomeBlock } from "@/lib/leads/entry-flow";
 import { createFunds, type FundRecord, type StoredDistLine } from "./funds";
 import { seedFunds } from "./seed-funds";
 import { createAccounts } from "./accounts";
@@ -19,7 +20,7 @@ import { isActiveFirm, isActiveUser } from "@/lib/accounts/permissions";
 import type { AccountEvent, BrandEvent, BrandProposal, BusinessBrand, FirmEvent } from "../types";
 import { readyToStart, validDay1, programDayOn } from "@/lib/leads/funds";
 import { tripartiteState } from "@/lib/leads/opportunity";
-import { LEAD_NOTIFICATION_KINDS, type FundPayment, type NotificationKind } from "../types";
+import { BISHOP_NOTIFICATION_KINDS, LEAD_NOTIFICATION_KINDS, type FundPayment, type NotificationKind } from "../types";
 import catalogJson from "@/data/catalogo_metodo180.json";
 import { DEFAULT_PLATFORM_RULES } from "../franchisability";
 import { AREA_BY_KEY, generateProgramTasks, type CatalogEntry } from "../program";
@@ -107,6 +108,7 @@ export function createMockApi(): MockApi {
     agreements: structuredClone(seedNetwork.agreements),
     frameworkContracts: structuredClone(seedNetwork.frameworkContracts),
     oppViews: [] as OpportunityView[],
+    presentations: [] as Presentation[],
     // Bishop funds and their distribution to the firms (./funds). Money: SM and that Bishop only.
     fundRecords: [] as FundRecord[],
     fundPayments: [] as FundPayment[],
@@ -133,10 +135,11 @@ export function createMockApi(): MockApi {
   const notifs = structuredClone(seed.notifications);
   const dueRead = new Set<string>(); // "userId|notificationId"
   const prefs = new Map<string, NotificationPreference[]>();
-  /** Lead notifications (bishop_accepted, funds_reported) exist only for the SM team. */
+  /** Lead notifications (bishop_accepted, funds_reported...) exist only for the SM team; opportunity_presented only for Bishops. */
   const kindsFor = (userId: string) => {
     const role = db.users.find((u) => u.id === userId)?.role;
-    return NOTIFICATION_KINDS.filter((k) => role === "sm_team" || !LEAD_NOTIFICATION_KINDS.includes(k));
+    return NOTIFICATION_KINDS.filter((k) =>
+      (role === "sm_team" || !LEAD_NOTIFICATION_KINDS.includes(k)) && (role === "bishop" || !BISHOP_NOTIFICATION_KINDS.includes(k)));
   };
   const prefsOf = (userId: string) => {
     if (!prefs.has(userId)) prefs.set(userId, kindsFor(userId).map((kind) => ({ kind, in_app: true, email: false })));
@@ -148,15 +151,26 @@ export function createMockApi(): MockApi {
     id: string; user_id: string; kind: NotificationKind; lead_id: string; actor_user_id: string | null; created_at: string; read: boolean;
     /** Automatic entry: who did it (the owner, not a user), the lead's place and the meeting time. */
     actor_name?: string | undefined; place?: string | undefined; meeting_at?: string | undefined;
+    /** meeting_outcome_pending: the meeting to answer. */
+    meeting_id?: string | undefined;
   }[] = [];
+  /** To a Bishop: SM presented him a business (never its name: he sees it once he accepts). */
+  const bishopNotifs: { id: string; user_id: string; kind: NotificationKind; lead_id: string; actor_user_id: string | null; created_at: string; read: boolean }[] = [];
+  const notifyBishop = (l: Lead, bishopUserId: string) =>
+    bishopNotifs.push({ id: newId(), user_id: bishopUserId, kind: "opportunity_presented", lead_id: l.id, actor_user_id: currentUserId, created_at: nowIso(), read: false });
   /** Every SM person of the lead's office hears about it (the review and the funds are team work). */
   const notifyLead = (l: Lead, kind: NotificationKind) => {
     for (const u of db.users.filter((x) => x.role === "sm_team" && x.organization_id === l.office_id && x.id !== currentUserId))
       leadNotifs.push({ id: newId(), user_id: u.id, kind, lead_id: l.id, actor_user_id: currentUserId, created_at: nowIso(), read: false });
   };
   /** Automatic entry: only the lead's consultant hears about it, even when the demo runs as him. */
-  const notifyConsultant = (l: Lead, kind: NotificationKind, extra: { place?: string; meeting_at?: string; actor_name?: string }) =>
+  const notifyConsultant = (l: Lead, kind: NotificationKind, extra: { place?: string; meeting_at?: string; actor_name?: string; meeting_id?: string }) =>
     leadNotifs.push({ id: newId(), user_id: l.consultant_user_id, kind, lead_id: l.id, actor_user_id: null, created_at: nowIso(), read: false, ...extra });
+  // Sample: meetings already asked "¿Se hizo?" without an answer (Rivera) are in the consultant's bell.
+  for (const l of db.leads)
+    for (const m of [l.meeting, l.expansion_meeting ?? null])
+      if (m?.outcome_prompted_at && !m.outcome)
+        leadNotifs.push({ id: newId(), user_id: l.consultant_user_id, kind: "meeting_outcome_pending", lead_id: l.id, actor_user_id: null, created_at: m.outcome_prompted_at, read: false, meeting_at: m.starts_at, meeting_id: m.id });
   let currentUserId = seed.U_LUCIA;
   // Login, logout, invitations, magic links and reset (./session). Starts signed in as currentUserId.
   const auth = createSession({ db, newId, delay, getUserId: () => currentUserId, setUserId: (id) => { currentUserId = id; } });
@@ -253,8 +267,16 @@ export function createMockApi(): MockApi {
     l.stage_entered_at = nowIso();
     l.last_contact_at = nowIso();
   };
+  /** Reunión → Documentación: the MOU (four points to confirm) and the entry documents, locked until it is signed. */
+  const sendMouAndMove = (l: Lead) => {
+    const r = intake.record(l.id);
+    if (!r) throw new Error("invalid_state");
+    intake.sendMou(r, l, { sentOn: TODAY });
+    setStage(l, "documents");
+    pushLeadEvent({ lead_id: l.id, kind: "mou_sent", from: "meeting", to: "documents", body: null });
+  };
   const opps = createOpportunities({
-    db, intake, me, newId, delay, findLead, readableLeads, withBooking: (l) => withBooking(l), pushLeadEvent, notifyLead,
+    db, intake, me, newId, delay, findLead, readableLeads, withBooking: (l) => withBooking(l), pushLeadEvent, notifyLead, notifyBishop,
     agreedAmount: (l) => fundsMod.recordOf(l)?.total ?? null,
   });
   opps.seed({ jefferson: seedNetwork.U_JEFFERSON, laura: seedNetwork.U_LAURA });
@@ -263,7 +285,12 @@ export function createMockApi(): MockApi {
   const accounts = createAccounts({
     db, me, newId, delay, notify, recordTaskChange: recordChange, personLabel, pushLeadEvent, withBooking: (l) => withBooking(l), findLead,
   });
-  const entry = createEntry({ db, me, newId, delay, findLead, visibleLeads, withBooking: (l) => withBooking(l), findTask, computed, notifyConsultant });
+  /** The booking (or "Enviar NDA"): owner account, business in onboarding and the NDA, Strategic Mates pre-signed. */
+  const openNda = (l: Lead, actor: string | null) => {
+    intake.open(l, { sentOn: TODAY });
+    db.leadEvents.push({ id: newId(), lead_id: l.id, kind: "nda_sent", actor_user_id: actor, created_at: nowIso(), from: null, to: null, body: null });
+  };
+  const entry = createEntry({ db, me, newId, delay, findLead, visibleLeads, withBooking: (l) => withBooking(l), findTask, computed, notifyConsultant, openNda: (l) => openNda(l, null) });
   entry.seed(seed.ORG_SM);
 
   /**
@@ -367,8 +394,48 @@ export function createMockApi(): MockApi {
           const { c, party } = contractInScope(contractId);
           return delay(intake.setSignerStatus(c, party, "declined", reason));
         },
+        acknowledge: async (contractId, points) => {
+          const { c, party } = contractInScope(contractId);
+          if (party !== "owner") throw new Error("owner_only");
+          return delay(intake.acknowledge(c, points));
+        },
+        proposeOwnNda: async (contractId, file) => {
+          const { c, party } = contractInScope(contractId);
+          if (party !== "owner") throw new Error("owner_only");
+          intake.proposeOwn(c, file.name);
+          const l = leadOfBusiness(c.business_id);
+          if (l) {
+            pushLeadEvent({ lead_id: l.id, kind: "own_nda_proposed", from: null, to: null, body: c.own_file_name ?? null });
+            notifyConsultant(l, "own_nda_proposed", { actor_name: me().full_name });
+          }
+          return delay(c);
+        },
+        acceptOwnNda: async (contractId) => {
+          const c = smContract(contractId);
+          intake.acceptOwn(c);
+          const l = leadOfBusiness(c.business_id);
+          if (l) pushLeadEvent({ lead_id: l.id, kind: "own_nda_accepted", from: null, to: null, body: null });
+          return delay(c);
+        },
+        rejectOwnNda: async (contractId, comment) => {
+          const c = smContract(contractId);
+          intake.rejectOwn(c, comment);
+          const l = leadOfBusiness(c.business_id);
+          if (l) pushLeadEvent({ lead_id: l.id, kind: "own_nda_rejected", from: null, to: null, body: comment.trim() });
+          return delay(c);
+        },
       },
     };
+  };
+  const leadOfBusiness = (businessId: string) => db.leads.find((l) => l.business_id === businessId);
+  /** An entry contract of the current SM team person's office (SM writes are SM team only). */
+  const smContract = (contractId: string) => {
+    const u = me();
+    const c = db.contracts.find((x) => x.id === contractId && x.area === "intake");
+    const b = c && db.businesses.find((x) => x.id === c.business_id);
+    if (!c || !b) throw new Error("not_found");
+    if (u.role !== "sm_team" || u.organization_id !== b.office_id) throw new Error("sm_only");
+    return c;
   };
 
   const net = createNetworkRepositories({ db, me, newId, delay });
@@ -390,6 +457,7 @@ export function createMockApi(): MockApi {
     businessFile: entry.businessFile,
     notifications: {
       list: () => {
+        entry.promptOutcomes();
         const u = me();
         const visible = visibleTasks();
         const tasksById = new Map(db.tasks.map((t) => [t.id, t]));
@@ -416,14 +484,27 @@ export function createMockApi(): MockApi {
             return [{
               id: n.id, user_id: n.user_id, kind: n.kind, task_id: "", task_code: "", task_name: "", business_id: l.business_id ?? "", business_name: l.business.name,
               actor_user_id: n.actor_user_id, actor_name: n.actor_name ?? name(n.actor_user_id), created_at: n.created_at, read_at: n.read ? n.created_at : null, change: null, lead_id: l.id,
-              lead_place: n.place ?? null, meeting_at: n.meeting_at ?? null,
+              lead_place: n.place ?? null, meeting_at: n.meeting_at ?? null, meeting_id: n.meeting_id ?? null,
+            }];
+          });
+        // To a Bishop: the business SM presented to him, by place only (the name comes once he accepts it).
+        const presented: AppNotification[] = u.role !== "bishop" ? [] : bishopNotifs
+          .filter((n) => n.user_id === u.id)
+          .flatMap((n) => {
+            const l = db.leads.find((x) => x.id === n.lead_id);
+            if (!l) return [];
+            return [{
+              id: n.id, user_id: n.user_id, kind: n.kind, task_id: "", task_code: "", task_name: "", business_id: "", business_name: "",
+              actor_user_id: n.actor_user_id, actor_name: name(n.actor_user_id), created_at: n.created_at, read_at: n.read ? n.created_at : null, change: null,
+              lead_place: `${l.contact.city}, ${l.contact.state}`, opportunity_id: l.id,
             }];
           });
         const enabled = new Set(prefsOf(u.id).filter((p) => p.in_app).map((p) => p.kind));
-        return delay([...stored, ...due, ...aboutLeads].filter((n) => enabled.has(n.kind)).sort((a, b) => b.created_at.localeCompare(a.created_at)));
+        return delay([...stored, ...due, ...aboutLeads, ...presented].filter((n) => enabled.has(n.kind)).sort((a, b) => b.created_at.localeCompare(a.created_at)));
       },
       markRead: async (id) => {
-        const n = notifs.find((x) => x.id === id && x.user_id === currentUserId) ?? leadNotifs.find((x) => x.id === id && x.user_id === currentUserId);
+        const n = notifs.find((x) => x.id === id && x.user_id === currentUserId) ?? leadNotifs.find((x) => x.id === id && x.user_id === currentUserId)
+          ?? bishopNotifs.find((x) => x.id === id && x.user_id === currentUserId);
         if (n) n.read = true;
         else dueRead.add(`${currentUserId}|${id}`);
         return delay(undefined);
@@ -431,6 +512,7 @@ export function createMockApi(): MockApi {
       markAllRead: async () => {
         notifs.filter((n) => n.user_id === currentUserId).forEach((n) => (n.read = true));
         leadNotifs.filter((n) => n.user_id === currentUserId).forEach((n) => (n.read = true));
+        bishopNotifs.filter((n) => n.user_id === currentUserId).forEach((n) => (n.read = true));
         const due = me().role !== "partner_firm" ? [] : dueNotifications(currentUserId, visibleTasks().map((t) => withComputed(t, db.tasks)), db.businesses);
         due.forEach((n) => dueRead.add(`${currentUserId}|${n.id}`));
         return delay(undefined);
@@ -559,6 +641,20 @@ export function createMockApi(): MockApi {
     ...withIntakeDocuments(net),
     // After the spread: replaces net.rules.
     rules,
+    network: {
+      ...net.network,
+      /** "Firma de la oficina": SM Global, or the admin of that office. PNG only; the mock keeps the name. */
+      setOfficeSignature: async (officeId, file) => {
+        const u = me();
+        const office = db.orgs.find((o) => o.id === officeId && o.kind === "sm");
+        if (!office) throw new Error("not_found");
+        if (u.role !== "sm_global" && !(u.role === "sm_team" && u.is_admin && u.organization_id === officeId)) throw new Error("forbidden");
+        if (!/\.png$/i.test(file.name.trim())) throw new Error("invalid_file");
+        office.signature_file_id = newId();
+        office.signature_file_name = file.name.trim();
+        return delay({ ...office });
+      },
+    },
     // Inviting a team member creates an account behind it; handing the business over needs the owner.
     businessProfile: { ...net.businessProfile, ...accounts.businessProfile },
     brand: accounts.brand,
@@ -574,8 +670,12 @@ export function createMockApi(): MockApi {
       ...opps.leads,
       ...accounts.leads,
       ...entry.leads,
-      list: async (opts) => delay(readableLeads().filter((l) => !opts?.office_id || l.office_id === opts.office_id).map(withBooking)),
+      list: async (opts) => {
+        entry.promptOutcomes();
+        return delay(readableLeads().filter((l) => !opts?.office_id || l.office_id === opts.office_id).map(withBooking));
+      },
       get: async (id) => {
+        entry.promptOutcomes();
         const l = readableLeads().find((x) => x.id === id);
         if (!l) return delay(null);
         return delay({ lead: withBooking(l), events: db.leadEvents.filter((e) => e.lead_id === id).sort((a, b) => a.created_at.localeCompare(b.created_at)) });
@@ -608,12 +708,39 @@ export function createMockApi(): MockApi {
         l.last_contact_at = nowIso();
         return delay(pushLeadEvent({ lead_id: id, kind: "note", from: null, to: null, body: body.trim() }));
       },
-      sendNdaMou: async (id) => {
+      sendNda: async (id) => {
+        const l = findLead(id);
+        if (l.stage !== "evaluated" && l.stage !== "meeting") throw new Error("invalid_transition");
+        if (intake.record(l.id)) throw new Error("invalid_state");
+        openNda(l, currentUserId);
+        l.last_contact_at = nowIso();
+        return delay(withBooking(l));
+      },
+      sendMou: async (id) => {
         const l = findLead(id);
         if (l.stage !== "meeting") throw new Error("invalid_transition");
-        intake.open(l, { sentOn: TODAY });
-        setStage(l, "documents");
-        pushLeadEvent({ lead_id: id, kind: "nda_sent", from: "meeting", to: "documents", body: null });
+        sendMouAndMove(l);
+        return delay(withBooking(l));
+      },
+      setMeetingOutcome: async (leadId, meetingId, input) => {
+        const l = findLead(leadId);
+        const initial = !!l.meeting?.id && l.meeting.id === meetingId;
+        const m = initial ? l.meeting : l.expansion_meeting?.id === meetingId ? l.expansion_meeting ?? null : null;
+        const block = outcomeBlock(m, input.outcome);
+        if (block || !m) throw new Error(block ?? "not_found");
+        if (l.stage !== (initial ? "meeting" : "accepted")) throw new Error("invalid_transition");
+        const now = nowIso();
+        m.outcome = input.outcome;
+        m.notes_at = now;
+        l.last_contact_at = now;
+        const note = input.outcome === "held" ? input.note?.trim() || null : null;
+        pushLeadEvent({ lead_id: l.id, kind: "meeting_outcome", from: null, to: null, body: note, outcome: input.outcome, meeting_kind: m.kind ?? "initial" });
+        if (input.outcome === "held" && initial) {
+          // "Se hizo" sends the MOU (and the NDA first when the booking did not create it).
+          if (!intake.record(l.id)) openNda(l, currentUserId);
+          sendMouAndMove(l);
+        }
+        if (input.outcome === "held" && !initial) l.expansion_meeting_held_at = now;
         return delay(withBooking(l));
       },
       getIntake: async (id) => {

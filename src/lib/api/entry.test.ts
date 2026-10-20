@@ -17,13 +17,19 @@ describe("automatic entry (mock)", () => {
     for (const name of ["Torres Concrete", "Andes Painting", "Pinturas Mamá Lucy", "Limpieza Total Orlando"])
       expect(leads.find((l) => l.business.name === name)).toMatchObject({ stage: "evaluated", meeting: null, summary_sent_at: null });
     const rivera = leads.find((l) => l.business.name === "Rivera Roofing & Remodel")!;
-    expect(rivera).toMatchObject({ stage: "meeting", meeting: { starts_at: "2026-10-15T14:00:00Z", duration_minutes: 30, notes_at: null } });
+    // Held yesterday and nobody answered "¿Se hizo?": the portal already asked.
+    expect(rivera).toMatchObject({
+      stage: "meeting",
+      meeting: { kind: "initial", starts_at: "2026-10-13T14:00:00Z", duration_minutes: 30, outcome: null, outcome_prompted_at: "2026-10-13T14:30:00Z" },
+    });
     expect(rivera.summary_sent_at).not.toBeNull();
+    // The booking created his account and the NDA: the lead already has its entry checklist.
+    expect(rivera.intake).toMatchObject({ nda_signed: false, mou_sent: false });
     expect((await api.leads.listMeetings()).map((m) => m.business_name)).toEqual(["Rivera Roofing & Remodel"]);
     const events = (await api.leads.get(rivera.id))!.events;
     expect(events.find((e) => e.kind === "meeting_booked")).toMatchObject({ actor_user_id: null, to: "meeting" });
-    // The meeting is tomorrow: no note yet.
-    await expect(api.leads.addMeetingNote(rivera.id, "Hablamos")).rejects.toThrow("invalid_transition");
+    // Nicolás has it in his bell, pointing at the meeting.
+    expect((await api.notifications.list()).find((n) => n.kind === "meeting_outcome_pending")).toMatchObject({ lead_id: rivera.id, meeting_id: rivera.meeting!.id });
   });
 
   it("Simular assessment: routed by zone to SM Miami, in Evaluado with no email sent, and the consultant hears about it", async () => {

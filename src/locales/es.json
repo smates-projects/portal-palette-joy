@@ -719,14 +719,14 @@
     "cal_on_short": "Calendar conectado",
     "cal_off_short": "Sin Calendar",
     "cal_title": "Google Calendar",
-    "cal_on": "Conectado como {{email}}. Las reuniones confirmadas se agregan a tu calendario.",
-    "cal_off": "No conectado. Conéctalo para que las reuniones confirmadas se agreguen solas a tu calendario.",
+    "cal_on": "Conectado como {{email}}. Las reuniones que agendan contigo aparecen solas en cada lead.",
+    "cal_off": "No conectado. Conéctalo para que las reuniones que agendan contigo aparezcan solas en cada lead.",
     "cal_connect": "Conectar Google Calendar",
     "cal_disconnect": "Desconectar Google Calendar",
-    "cal_note": "Simulación: en esta versión la conexión no llega a Google.",
+    "cal_note": "Al conectarlo, Google te pide permiso. El portal solo lee tu calendario: muestra tus eventos junto a tus tareas y suma a cada lead la reunión que agendó contigo, con su link de Meet.",
     "t_connected": "Google Calendar conectado como {{email}}",
     "t_disconnected": "Google Calendar desconectado",
-    "cal_return_connected": "Google Calendar conectado. Las reuniones confirmadas se van a agregar a tu calendario.",
+    "cal_return_connected": "Google Calendar conectado. Desde ahora, las reuniones que agendan contigo aparecen solas en cada lead.",
     "cal_return_denied": "No diste permiso para usar tu Google Calendar. Puedes intentarlo de nuevo cuando quieras.",
     "cal_return_error": "No pudimos conectar tu Google Calendar. Prueba de nuevo en unos minutos.",
     "cal_return_dismiss": "Cerrar",
@@ -745,7 +745,24 @@
     "booking_invalid": "Escribe un link completo, que empiece con https://",
     "my_team_title": "Mi equipo",
     "my_team_hint": "Invita a las personas de tu firma y desactiva a las que ya no trabajan contigo.",
-    "my_team_empty": "Todavía no hay más personas en tu firma. Invita a la primera."
+    "my_team_empty": "Todavía no hay más personas en tu firma. Invita a la primera.",
+    "two_factor": {
+      "title": "Verificación en dos pasos",
+      "state_on": "Activada",
+      "state_off": "Desactivada",
+      "on": "Al entrar te pedimos tu contraseña y un código de tu app de autenticación.",
+      "off": "Actívala para que nadie pueda entrar a tu cuenta solo con tu contraseña.",
+      "enable": "Activar",
+      "disable": "Desactivar",
+      "cancel": "Cancelar",
+      "disable_title": "Desactivar la verificación en dos pasos",
+      "disable_body": "Para confirmar, escribe el código que ves ahora en tu app de autenticación.",
+      "disable_submit": "Desactivar verificación",
+      "disable_pending": "Desactivando…",
+      "t_enabled": "Activaste la verificación en dos pasos.",
+      "t_disabled": "Desactivaste la verificación en dos pasos.",
+      "error": "Intenta de nuevo en unos minutos."
+    }
   },
   "report": {
     "heading": "¿Cómo va mi trabajo?",
@@ -822,7 +839,14 @@
     "pref_calendar_disconnected": "Tu Google Calendar necesita conectarse de nuevo",
     "kind_brand_logo_rejected": "El logo de {{business}} no pasó la revisión. Súbelo de nuevo",
     "pref_brand_logo_rejected": "Un logo que subiste no pasó la revisión",
-    "profile_ref": "Tu perfil"
+    "profile_ref": "Tu perfil",
+    "kind_meeting_outcome_pending": "¿Se hizo la reunión con {{business}}? Marca el resultado",
+    "kind_own_nda_proposed": "{{owner}} subió su propio NDA para revisar",
+    "kind_opportunity_presented": "Strategic Mates te presentó un negocio de {{place}}",
+    "pref_meeting_outcome_pending": "Una reunión terminó y falta marcar el resultado",
+    "pref_own_nda_proposed": "Un dueño sube su propio NDA",
+    "pref_opportunity_presented": "Strategic Mates te presenta un negocio",
+    "opportunity_ref": "Oportunidades"
   },
   "soon": {
     "manual": "Aquí verás el manual operativo de tu negocio a medida que las firmas lo escriban y tú lo apruebes.",
@@ -1149,17 +1173,19 @@
       "view_program": "Ver programa",
       "restore": "Reactivar lead",
       "discard": "Descartar",
-      "send_nda": "Enviar NDA y MOU",
+      "send_nda": "Enviar NDA",
       "review_docs_one": "Revisar documentos ({{count}} nuevo)",
       "review_docs_other": "Revisar documentos ({{count}} nuevos)",
       "approve_docs": "Aprobar documentación",
       "wait_investor": "Esperando que un inversor acepte",
-      "send_tripartite": "Enviar contrato tripartito",
+      "send_tripartite": "Enviar Operating Agreement",
       "record_funds": "Registrar fondos recibidos",
-      "wait_signatures": "Esperando las firmas del contrato",
+      "wait_signatures": "Esperando las firmas del Operating Agreement",
       "start_program": "Confirmar inicio del programa",
       "join_meet": "Unirse a Google Meet",
-      "meeting_note": "Cargar nota de la reunión"
+      "send_mou": "Enviar MOU",
+      "meeting_outcome": "Marcar el resultado de la reunión",
+      "rebook": "Enviar enlace para reagendar"
     },
     "move": {
       "no_skip": "{{name}} no puede pasar a {{to}}: se vuelve de a una etapa.",
@@ -1242,13 +1268,13 @@
       "restored": "{{actor}} lo reactivó",
       "note": "{{actor}} escribió una nota",
       "contract_signed": "{{actor}} inició el programa con día 1 el {{date}}.",
-      "nda_sent": "{{actor}} envió el NDA y el MOU y creó la cuenta del dueño",
+      "nda_sent": "Se envió el NDA y se creó la cuenta del dueño",
       "doc_accepted": "{{actor}} aceptó un documento",
       "doc_requested": "{{actor}} pidió otro documento",
       "docs_approved": "{{actor}} aprobó la documentación",
       "bishop_accepted": "Un inversor aceptó la oportunidad",
       "bishop_released": "{{actor}} liberó la oportunidad",
-      "tripartite_sent": "{{actor}} envió el contrato tripartito",
+      "tripartite_sent": "{{actor}} envió el Operating Agreement",
       "funds_recorded": "{{actor}} registró un pago del inversor",
       "funds_reported": "{{actor}} subió un comprobante de pago",
       "funds_confirmed": "{{actor}} confirmó un pago del inversor",
@@ -1258,31 +1284,49 @@
       "assessment_sent": "{{actor}} envió el assessment",
       "summary_sent": "Automático: se envió el resumen a {{owner}} con el link de la reunión",
       "meeting_booked": "Automático: reunión agendada por {{owner}}",
-      "meeting_note": "{{actor}} cargó la nota de la reunión"
+      "meeting_note": "{{actor}} cargó la nota de la reunión",
+      "meeting_outcome": "{{actor}} marcó la reunión: {{outcome}}",
+      "mou_sent": "Se envió el MOU y el negocio pasó a Documentación",
+      "own_nda_proposed": "{{owner}} subió su propio NDA para revisar",
+      "own_nda_accepted": "{{actor}} aceptó el NDA propio del dueño",
+      "own_nda_rejected": "{{actor}} pidió firmar el NDA mutuo",
+      "presented_to_bishops": "{{actor}} presentó el negocio a inversores",
+      "expansion_booked": "Automático: reunión de ampliación agendada por {{owner}}"
     },
     "error_title": "No pudimos cargar el embudo.",
     "retry": "Reintentar",
     "network_filtered": "Mostrando solo {{name}}",
     "network_all": "Ver toda la red",
     "keyboard_hint": "Shift + flecha mueve el lead a la etapa de al lado.",
-    "t_nda_sent": "Enviamos el NDA y el MOU a {{name}}. Ya tiene su cuenta.",
+    "t_nda_sent": "Enviamos el NDA a {{name}}. Ya tiene su cuenta.",
     "t_docs_approved": "Documentación de {{name}} aprobada.",
     "investors": {
       "title": "Inversores",
       "none": "Ningún inversor la aceptó todavía.",
       "accepted_by": "La aceptó {{name}} el {{date}}.",
       "release": "Liberar oportunidad",
-      "viewed_one": "{{count}} inversor vio la oportunidad.",
-      "viewed_other": "{{count}} inversores vieron la oportunidad.",
       "viewed_on": "La vio el {{date}}",
       "passed_on": "no le interesa ({{date}})",
       "passed_one": "{{count}} dijo que no le interesa.",
       "passed_other": "{{count}} dijeron que no les interesa.",
       "release_title": "¿Liberar la oportunidad de {{name}}?",
-      "release_body": "Vuelve a estar disponible para todos los inversores. Si había un contrato tripartito sin firmar, se anula.",
+      "release_body": "Vuelve a estar disponible para los inversores. Si había un Operating Agreement sin firmar, se anula.",
       "release_label": "Motivo",
       "release_confirm": "Liberar oportunidad",
-      "t_released": "Liberaste la oportunidad de {{name}}."
+      "t_released": "Liberaste la oportunidad de {{name}}.",
+      "present": "Presentar a Bishops",
+      "none_presented": "Se presentó a inversores. Ninguno la aceptó todavía.",
+      "summary": "Presentada a {{presented}} · la vieron {{viewed}}",
+      "presented_on": "Presentada el {{date}}",
+      "not_viewed": "todavía no la abrió",
+      "accepted_on": "la aceptó el {{date}}",
+      "present_title": "Presentar {{name}} a inversores",
+      "present_body": "Elige a qué inversores mostrarle este negocio. Solo aparecen los activos que firmaron el acuerdo marco. Les llega un aviso.",
+      "present_empty": "No hay inversores activos con el acuerdo marco firmado.",
+      "already_presented": "Ya se le presentó",
+      "present_confirm": "Presentar",
+      "t_presented_one": "Presentaste {{name}} a {{count}} inversor.",
+      "t_presented_other": "Presentaste {{name}} a {{count}} inversores."
     },
     "t_tripartite_sent": "Enviamos el contrato tripartito de {{name}}.",
     "manual": {
@@ -1309,7 +1353,8 @@
       "err_ranges": "Completa el rubro, las ventas, el margen, el equipo, los años y si el dueño es hispano.",
       "activity_other": "¿Qué vertiente de la construcción?",
       "err_activity_other": "Escribe en qué vertiente de la construcción trabaja el negocio."
-    }
+    },
+    "t_mou_sent": "Enviamos el MOU a {{name}}. El negocio pasó a Documentación."
   },
   "entry": {
     "phases_title": "Cómo entró",
@@ -1351,18 +1396,16 @@
       "with": "Con {{name}}",
       "join": "Unirse a Google Meet",
       "join_short": "Unirse",
-      "held": "La reunión ya pasó. Carga la nota y decide: enviar NDA y MOU, o descartar.",
-      "note_done": "Nota cargada el {{date}}.",
-      "manual": "Pasó a Reunión sin reserva del dueño. Acuerda la fecha con él."
+      "manual": "Pasó a Reunión sin reserva del dueño. Acuerda la fecha con él.",
+      "expansion_title": "Reunión de ampliación"
     },
     "note": {
       "title": "Nota de la reunión con {{name}}",
-      "body": "Cuenta qué se habló. Después decides: Enviar NDA y MOU para aceptarlo, o Descartar con el motivo.",
+      "body": "Cuenta qué se habló, si quieres. Al guardar se envía el MOU al dueño y el negocio pasa a Documentación.",
       "label": "Nota",
       "placeholder": "Qué se habló y qué sigue",
-      "confirm": "Guardar nota",
-      "required": "Escribe la nota de la reunión.",
-      "t_saved": "Guardaste la nota. El siguiente paso es enviar el NDA y el MOU, o descartar."
+      "confirm": "Guardar: se hizo",
+      "body_expansion": "Cuenta qué se habló, si quieres. Al guardar ya puedes enviar el Operating Agreement."
     },
     "sim": {
       "button": "Simular entrada",
@@ -1440,7 +1483,61 @@
       "col_block": "Bloque del assessment",
       "map_save": "Guardar áreas",
       "t_map_saved": "Guardaste las áreas de cada bloque. Se aplican a los programas que empiecen desde ahora.",
-      "map_history": "áreas por bloque"
+      "map_history": "áreas por bloque",
+      "flow": {
+        "title": "Ingreso: inversores y Operating Agreement",
+        "hint": "Cómo se presenta un negocio aprobado a los inversores y cuándo se firma el Operating Agreement.",
+        "visibility": "¿Qué negocios ve cada inversor?",
+        "visibility_presented": "Solo los que Strategic Mates le presenta",
+        "visibility_presented_hint": "El equipo elige a qué inversores mostrar cada negocio aprobado. Los demás no lo ven.",
+        "visibility_all": "Todos los negocios aprobados",
+        "visibility_all_hint": "Cada inversor con el acuerdo marco firmado ve todos los negocios. El primero que acepta se lo queda.",
+        "waiting_days": "Días de espera para firmar el Operating Agreement",
+        "waiting_days_hint": "Se cuentan desde el día en que se envía. Nadie puede firmar antes.",
+        "waiting_days_error": "Escribe un número de días entre 0 y 60.",
+        "require_expansion_meeting": "Pedir la reunión de ampliación antes del Operating Agreement",
+        "require_expansion_meeting_hint": "El equipo no puede enviar el Operating Agreement hasta que la reunión de ampliación se haga.",
+        "nda_auto_signed_by_sm": "El NDA y el MOU salen ya firmados por Strategic Mates",
+        "nda_auto_signed_by_sm_hint": "Se usa la firma de la oficina. El dueño solo tiene que firmar su parte.",
+        "save": "Guardar reglas de ingreso",
+        "t_saved": "Guardaste las reglas de ingreso.",
+        "default_value": "valor por defecto",
+        "yes": "sí",
+        "no": "no"
+      }
+    },
+    "outcome": {
+      "question": "¿Se hizo la reunión?",
+      "pending": "Resultado de la reunión pendiente",
+      "held": "Se hizo",
+      "no_show": "No se presentó",
+      "reschedule": "Reagendar",
+      "hint": "Si se hizo, el portal le envía el MOU al dueño. Si no, le mandamos de nuevo el enlace para reservar.",
+      "hint_expansion": "Si se hizo, ya puedes enviar el Operating Agreement.",
+      "rebook_hint": "Esperando que el dueño reserve otra fecha con el enlace de tu agenda.",
+      "done_held": "Reunión hecha. Lo marcaste el {{date}}.",
+      "done_no_show": "El dueño no se presentó. Lo marcaste el {{date}}.",
+      "done_reschedule": "Se va a reagendar. Lo marcaste el {{date}}.",
+      "card_no_show": "No se presentó · esperando nueva reserva",
+      "card_reschedule": "Para reagendar · esperando nueva reserva",
+      "t_held": "Listo. Le enviamos el MOU a {{name}}.",
+      "t_no_show": "Marcaste que {{name}} no se presentó.",
+      "t_reschedule": "Marcaste que la reunión con {{name}} se reagenda.",
+      "t_held_expansion": "Reunión de ampliación hecha con {{name}}. Ya puedes enviar el Operating Agreement.",
+      "t_no_show_expansion": "Marcaste que {{name}} no se presentó a la reunión de ampliación.",
+      "t_reschedule_expansion": "Marcaste que la reunión de ampliación con {{name}} se reagenda."
+    },
+    "oa": {
+      "needs_expansion": "Primero tiene que hacerse la reunión de ampliación con el dueño y el inversor.",
+      "waiting_sm": "Nadie puede firmar hasta el {{date}} (plazo de espera)."
+    },
+    "errors": {
+      "outcome_already_set": "Esa reunión ya tiene un resultado.",
+      "expansion_meeting_required": "Primero tiene que hacerse la reunión de ampliación.",
+      "invalid_transition": "Todavía no se puede hacer eso. Revisa la hora de la reunión.",
+      "acknowledgment_required": "Antes de firmar, marca \"Entendí\" en los cuatro puntos del MOU.",
+      "own_nda_pending": "Tu NDA está en revisión. Te avisamos cuando Strategic Mates responda.",
+      "waiting_period": "Todavía no se puede firmar. Podrás hacerlo desde el {{date}}."
     }
   },
   "business_file": {
@@ -1924,7 +2021,17 @@
       "checklist_done": "Listo",
       "checklist_pending": "Pendiente",
       "checklist_ready": "La lista está completa. Ya puedes activar la oficina.",
-      "checklist_hint": "Cada punto se marca solo cuando los datos de la oficina lo cumplen."
+      "checklist_hint": "Cada punto se marca solo cuando los datos de la oficina lo cumplen.",
+      "signature": {
+        "title": "Firma de la oficina",
+        "hint": "Imagen PNG de la firma con la que el NDA y el MOU salen firmados por Strategic Mates.",
+        "none": "Todavía no hay una firma cargada.",
+        "loaded": "Firma cargada: {{file}}",
+        "upload": "Subir firma",
+        "replace": "Cambiar firma",
+        "only_png": "La firma tiene que ser una imagen PNG.",
+        "t_saved": "Guardaste la firma de {{name}}."
+      }
     },
     "funnel": {
       "question": "¿Cuántos negocios entran a la red?",
@@ -2052,7 +2159,11 @@
         "document_review_days": "Plazo de revisión de documentos",
         "intake_documents": "Documentos de ingreso",
         "program_amount": "Monto del programa",
-        "assessment_area_map": "Áreas por bloque del assessment"
+        "assessment_area_map": "Áreas por bloque del assessment",
+        "opportunity_visibility": "Negocios que ve cada inversor",
+        "oa_waiting_days": "Días de espera del Operating Agreement",
+        "require_expansion_meeting": "Reunión de ampliación antes del Operating Agreement",
+        "nda_auto_signed_by_sm": "NDA y MOU firmados por Strategic Mates"
       },
       "percent": "{{value}}%",
       "days_one": "{{count}} día",
@@ -2406,7 +2517,8 @@
       "all_phases": "Todas las fases",
       "empty_filter": "No hay oportunidades en esta fase.",
       "col_phase": "Fase",
-      "col_score": "Puntaje"
+      "col_score": "Puntaje",
+      "presented_by_sm": "Strategic Mates te presentó este negocio el {{date}}"
     },
     "opportunity_detail": {
       "question": "¿Me conviene este negocio?",
@@ -2796,27 +2908,94 @@
     },
     "owner": {
       "question": "¿Qué te falta para empezar?",
-      "step": "Paso {{n}} de 4",
+      "step": "Paso {{n}}",
       "done": "Listo",
       "next": "Después",
-      "s1_title": "Firma tus acuerdos",
-      "s1_body": "Firma el NDA mutuo y el MOU. Así cuidamos tu información y la nuestra.",
-      "s1_cta": "Firmar {{name}}",
-      "s2_title": "Sube tus documentos",
-      "s2_body": "Te faltan {{count}} documentos. Si te pedimos uno de nuevo, aparece primero con nuestro comentario.",
       "s2_cta": "Subir documentos",
-      "s3_title": "Estamos revisando tus documentos: día {{day}} de {{total}}",
       "s3_paused": "Te pedimos otro documento. Súbelo para que sigamos con la revisión.",
-      "s3_body": "Te avisamos si necesitamos algo más.",
-      "s4_title": "Tu negocio fue aceptado. Estamos cerrando el inicio de tu programa.",
-      "s4_body": "Cuando esté listo, te pediremos que firmes el contrato de tu programa.",
-      "s4_cta": "Firma el contrato de tu programa"
+      "steps": {
+        "nda": "Firma el NDA",
+        "meeting": "Tu reunión",
+        "mou": "MOU",
+        "documents": "Documentos",
+        "expansion": "Reunión de ampliación",
+        "operating_agreement": "Operating Agreement"
+      },
+      "nda": {
+        "not_sent": "Te lo enviamos cuando reserves tu reunión.",
+        "body": "Es un acuerdo para cuidar tu información y la nuestra. Strategic Mates ya lo firmó; falta tu firma.",
+        "sign": "Firmar el NDA",
+        "own": "Prefiero usar mi propio NDA",
+        "waiting_review": "Esperando revisión de Strategic Mates",
+        "own_rejected": "Strategic Mates te pide firmar el NDA mutuo: {{comment}}",
+        "signed": "Firmaste el NDA.",
+        "own_accepted": "Strategic Mates aceptó tu propio NDA.",
+        "t_own_sent": "Recibimos tu NDA. Te avisamos cuando lo revisemos.",
+        "own_pending": "Ya enviaste tu NDA. Espera la revisión de Strategic Mates."
+      },
+      "meeting": {
+        "book": "Reserva tu reunión con tu consultor.",
+        "rebook": "La reunión no se hizo. Reserva otra fecha cuando puedas.",
+        "book_cta": "Reservar mi reunión",
+        "when": "{{date}} · {{minutes}} min",
+        "with": "Con {{name}}",
+        "join": "Entrar a Google Meet",
+        "waiting_outcome": "La reunión ya pasó. Tu consultor está cerrando lo que hablaron.",
+        "held": "Reunión hecha el {{date}}.",
+        "held_short": "Reunión hecha."
+      },
+      "expansion": {
+        "book": "Ya aprobamos tus documentos. Reserva la reunión de ampliación: es más larga y participa el inversor."
+      },
+      "mou": {
+        "not_sent": "Te lo enviamos después de tu reunión.",
+        "body": "El MOU explica cómo vamos a trabajar juntos. Lee cada punto y marca \"Entendí\". Cuando marques los cuatro, podrás firmar.",
+        "understood": "Entendí",
+        "ready": "Marcaste los cuatro puntos. Ya puedes firmar.",
+        "missing": "Te faltan {{n}} puntos por marcar.",
+        "sign": "Firmar",
+        "signed": "Firmaste el MOU.",
+        "t_error": "No pudimos guardar tus respuestas. Prueba de nuevo.",
+        "points": {
+          "funds_finance_intervention": {
+            "title": "El dinero del inversor paga el trabajo en tu negocio",
+            "body": "Un inversor (Bishop) paga el programa. Con ese dinero, las firmas trabajan contigo para ordenar tu negocio. Tú no pagas el programa."
+          },
+          "business_stays_yours": {
+            "title": "Tu negocio sigue siendo tuyo",
+            "body": "No vendes tu negocio ni entregas una parte de él. Sigues siendo el dueño y decides cómo trabaja."
+          },
+          "franchisor_entity_participation": {
+            "title": "El inversor participa en la empresa que vende las franquicias",
+            "body": "Durante el programa se arma una empresa nueva para vender franquicias de tu negocio. El inversor y Strategic Mates tienen una parte de esa empresa nueva, no de tu negocio."
+          },
+          "do_it_together_no_debt": {
+            "title": "Lo hacemos juntos y no quedas con deudas",
+            "body": "Trabajamos contigo durante los 180 días del programa. Si algo no sale como esperamos, no le debes dinero a nadie por el programa."
+          }
+        }
+      },
+      "docs": {
+        "locked": "Tus documentos se abren cuando firmes el MOU. Así sabes desde el principio cómo vamos a trabajar.",
+        "missing_one": "Te falta {{count}} documento. Si te pedimos uno de nuevo, aparece primero con nuestro comentario.",
+        "missing_other": "Te faltan {{count}} documentos. Si te pedimos uno de nuevo, aparece primero con nuestro comentario.",
+        "in_review": "Estamos revisando tus documentos: día {{day}} de {{total}}.",
+        "approved": "Aprobamos tus documentos."
+      },
+      "oa": {
+        "not_sent": "Te lo enviamos después de la reunión de ampliación.",
+        "body": "Es el contrato del programa entre tú, el inversor y Strategic Mates.",
+        "waiting": "Tómate unos días para leerlo con calma. Podrás firmar desde el {{date}}.",
+        "sign": "Firmar el Operating Agreement",
+        "signed": "Firmaste el Operating Agreement. Te avisamos cuando firmen los demás."
+      }
     },
     "owner_docs": {
-      "locked": "Podrás subir tus documentos cuando firmes el NDA mutuo.",
+      "locked": "Podrás subir tus documentos cuando firmes el MOU.",
       "sm_comment": "Comentario de Strategic Mates: {{comment}}",
       "sign": "Firmar",
-      "upload_new": "Subir nuevo"
+      "upload_new": "Subir nuevo",
+      "go_home": "Firmar en Tu ingreso"
     },
     "rules": {
       "days_title": "Plazo de revisión de documentos",
@@ -2836,6 +3015,26 @@
       "name_required": "Cada documento necesita un nombre.",
       "count_one": "{{count}} documento",
       "count_other": "{{count}} documentos"
+    },
+    "locked_until_mou": "se abre cuando firme el MOU",
+    "mou_points": "Puntos del MOU confirmados: {{n}} de {{m}}",
+    "nda_status": {
+      "signed": "NDA firmado",
+      "pending": "NDA pendiente",
+      "own_review": "NDA propio por revisar"
+    },
+    "own_nda": {
+      "review": "El dueño subió su propio NDA ({{file}}). Revísalo y decide.",
+      "accept": "Aceptar",
+      "reject": "Pedir el mutuo",
+      "accepted": "Se usa el NDA propio del dueño ({{file}}).",
+      "rejected_note": "Le pedimos firmar el NDA mutuo: {{comment}}",
+      "t_accepted": "Aceptaste el NDA del dueño.",
+      "t_rejected": "Le pediste al dueño que firme el NDA mutuo.",
+      "reject_title": "Pedir el NDA mutuo",
+      "reject_body": "Cuéntale al dueño por qué es mejor firmar el NDA mutuo de Strategic Mates. Lo verá en su portal.",
+      "reject_label": "Comentario para el dueño",
+      "reject_confirm": "Pedir el mutuo"
     }
   },
   "funds": {
@@ -3040,7 +3239,10 @@
       "forgot": "¿Olvidaste tu contraseña?",
       "use_magic": "Entrar con un enlace por correo",
       "demo_hint": "Demo: todas las cuentas de prueba usan la contraseña {{password}}",
-      "reset_done": "Listo, ya cambiaste tu contraseña. Entra con la nueva."
+      "reset_done": "Listo, ya cambiaste tu contraseña. Entra con la nueva.",
+      "two_factor_enabled": "Listo. Entra de nuevo con tu contraseña y el código.",
+      "two_factor_restart": "Entra de nuevo",
+      "two_factor_restart_help": "Por seguridad, el paso del código venció. Escribe otra vez tu correo y tu contraseña."
     },
     "magic": {
       "title": "Entra con un enlace",
@@ -3104,6 +3306,62 @@
     "logout": {
       "action": "Cerrar sesión",
       "error": "No pudimos cerrar tu sesión. Intenta de nuevo."
+    },
+    "two_factor": {
+      "title": "Escribe tu código",
+      "subtitle": "Abre tu app de autenticación y escribe el código de 6 números que ves para Strategic Mates.",
+      "code_label": "Código de 6 números",
+      "code_hint": "El código cambia cada 30 segundos en la app. Escribe el que ves ahora.",
+      "code_required": "Escribe los {{digits}} números del código.",
+      "demo_hint": "Demo: el código es {{code}}.",
+      "submit": "Verificar y entrar",
+      "pending": "Verificando…",
+      "use_recovery": "Usar un código de recuperación",
+      "use_app": "Usar el código de la app",
+      "recovery_title": "Usa un código de recuperación",
+      "recovery_subtitle": "Escribe uno de los códigos que guardaste cuando activaste la verificación en dos pasos.",
+      "recovery_label": "Código de recuperación",
+      "recovery_hint": "Cada código sirve una sola vez.",
+      "recovery_required": "Escribe tu código de recuperación.",
+      "recovery_submit": "Entrar con este código",
+      "invalid_code": "El código no es correcto",
+      "invalid_code_help": "Revisa que sea el que ves ahora en la app. Si cambió, escribe el nuevo.",
+      "invalid_recovery_help": "Revisa que esté bien escrito. Si ya usaste ese código, prueba con otro.",
+      "challenge_invalid": "Este paso ya no sirve",
+      "challenge_expired": "Pasó demasiado tiempo",
+      "challenge_help": "Por seguridad, el código se pide pocos minutos después de escribir tu contraseña. Entra de nuevo con tu correo y tu contraseña.",
+      "missing_title": "Primero entra con tu correo",
+      "missing_body": "Para pedirte el código, primero necesitamos tu correo y tu contraseña.",
+      "restart": "Entrar de nuevo"
+    },
+    "two_factor_setup": {
+      "title": "Activa la verificación en dos pasos",
+      "subtitle": "Además de tu contraseña, al entrar te vamos a pedir un código de tu teléfono. Así nadie más puede entrar a tu cuenta.",
+      "required_note": "Tu cuenta necesita este paso para entrar al portal. Al entrar, además de tu contraseña, te vamos a pedir un código de tu teléfono.",
+      "loading": "Preparando tu clave…",
+      "step_app_title": "Agrega tu cuenta en la app",
+      "step_app_body": "Abre tu app de autenticación (por ejemplo Google Authenticator o Microsoft Authenticator) y agrega una cuenta nueva con esta clave.",
+      "secret_label": "Clave para escribir a mano",
+      "open_app": "Abrir en la app de autenticación",
+      "open_app_hint": "Si estás en tu teléfono, este enlace abre la app con la clave ya cargada.",
+      "step_code_title": "Escribe el código que te muestra la app",
+      "submit": "Activar verificación",
+      "pending": "Activando…",
+      "codes_title": "Guarda tus códigos de recuperación",
+      "codes_body": "Si un día no tienes tu teléfono, puedes entrar con uno de estos códigos. Cada uno sirve una sola vez. No los vamos a mostrar de nuevo.",
+      "codes_list_label": "Códigos de recuperación",
+      "copy": "Copiar códigos",
+      "copied": "Copiaste los códigos. Pégalos en un lugar seguro.",
+      "copy_failed": "No pudimos copiarlos. Selecciónalos y cópialos a mano.",
+      "done": "Ya los guardé, continuar",
+      "token_invalid_title": "Este paso venció",
+      "token_invalid_body": "Entra de nuevo con tu correo y tu contraseña para empezar otra vez.",
+      "already_enabled": "Ya tienes la verificación en dos pasos activada."
+    },
+    "entry_link": {
+      "title": "Tu ingreso",
+      "pending": "Abriendo tu ingreso…",
+      "help": "Los enlaces de ingreso sirven una sola vez y tienen fecha de vencimiento. Pide un enlace nuevo y te llegará otro correo."
     }
   }
 }

@@ -93,11 +93,15 @@ import type {
   RoutingRules,
   ZoneRule,
   ZoneRuleInput,
+  MeetingOutcomeInput,
+  MouAcknowledgmentPoint,
 } from "./types";
+
+import type { RecoveryCodes, SignInResult, TwoFactorSetup, TwoFactorVerifyInput } from "./auth-types";
 
 /**
  * The signed-in person. Every other repository answers "unauthenticated" while there is no session.
- * Tokens (invitation, magic link, reset) always travel in the body, never in the API URL.
+ * Tokens (invitation, magic link, entry link, reset) always travel in the body, never in the API URL.
  */
 export interface SessionRepository {
   /** Rejects with "unauthenticated" when nobody is signed in. */
@@ -106,19 +110,43 @@ export interface SessionRepository {
   setViewAs(userId: Uuid): Promise<User>;
   /** Synchronous read for the route guard: is there a session right now? */
   isAuthenticated(): boolean;
-  /** "invalid_credentials" for a wrong email or password (never says which); "account_inactive" for a deactivated person. */
-  login(input: LoginInput): Promise<User>;
+  /**
+   * "invalid_credentials" for a wrong email or password (never says which); "account_inactive" for a deactivated
+   * person. Only a User starts the session; a two-factor answer (SignInResult) means one more step.
+   */
+  login(input: LoginInput): Promise<SignInResult>;
   logout(): Promise<void>;
   /** "Cerrar sesión en todos lados": revokes every session of the current person. */
   logoutAll(): Promise<void>;
   /** Always resolves, whether the email has an account or not. The link lasts 15 minutes and works once. */
   requestMagicLink(email: string): Promise<void>;
-  /** Starts the session. token_invalid | token_expired | token_used | account_inactive. */
-  exchangeMagicLink(token: string): Promise<User>;
+  /** Starts the session (or answers a two-factor step). token_invalid | token_expired | token_used | account_inactive. */
+  exchangeMagicLink(token: string): Promise<SignInResult>;
+  /**
+   * Entry link of a business owner (sent when the meeting is booked, opens "Tu ingreso"). Same answers and codes as
+   * the magic link. POST /auth/entry-link/exchange { token }.
+   */
+  exchangeEntryLink(token: string): Promise<SignInResult>;
   /** Reads the invitation without using it. token_invalid | token_expired | token_used. */
   exchangeInvitation(token: string): Promise<InvitationPreview>;
-  /** Sets name and password, activates the account and starts the session. Also name_required | weak_password | terms_required. */
-  acceptInvitation(input: AcceptInvitationInput): Promise<User>;
+  /** Sets name and password, activates the account and starts the session (or answers a two-factor step). Also name_required | weak_password | terms_required. */
+  acceptInvitation(input: AcceptInvitationInput): Promise<SignInResult>;
+  /** Second step with the 6-digit TOTP code: starts the session. invalid_code | challenge_invalid | challenge_expired. */
+  verifyTwoFactor(input: TwoFactorVerifyInput): Promise<User>;
+  /** Same as verifyTwoFactor with one of the recovery codes (each works once). */
+  recoverTwoFactor(input: TwoFactorVerifyInput): Promise<User>;
+  /**
+   * Starts turning TOTP on: signed in (no token) or with the setup token of a 202 setup-required sign-in.
+   * setup_token_invalid | two_factor_already_enabled.
+   */
+  setupTwoFactor(setupToken?: string | null): Promise<TwoFactorSetup>;
+  /**
+   * Turns TOTP on with the first code from the app and answers the recovery codes (shown once). With a setup token
+   * no session starts: the token is used up and the next login asks for the code. invalid_code | setup_token_invalid.
+   */
+  confirmTwoFactor(code: string, setupToken?: string | null): Promise<RecoveryCodes>;
+  /** Signed in: turns TOTP off with a current code. invalid_code. */
+  disableTwoFactor(code: string): Promise<void>;
   /** Always resolves, whether the email has an account or not. The reset link lasts 1 hour. */
   forgotPassword(email: string): Promise<void>;
   /** Sets a new password. Does not start a session: the person signs in again. token_* | weak_password. */
@@ -220,8 +248,30 @@ export interface LeadsRepository {
   /** Required reason. Not allowed once in program. */
   discard(id: Uuid, reason: string): Promise<LeadWithComputed>;
   addNote(id: Uuid, body: string): Promise<LeadEvent>;
-  /** meeting → documents: owner account (invite), business in onboarding, NDA + MOU sent, documents requested. */
-  sendNdaMou(id: Uuid): Promise<LeadWithComputed>;
+  /**
+   * POST /leads/{id}/send-nda. The booking already does it by itself; SM uses it for a lead moved to Reunión by hand:
+   * owner account (no password, entry link), business in onboarding and the mutual NDA, Strategic Mates pre-signed
+   * when the rule says so. invalid_state when the NDA already exists.
+   */
+  sendNda(id: Uuid): Promise<LeadWithComputed>;
+  /**
+   * POST /leads/{id}/send-mou. "Se hizo" on the initial meeting does it by itself; SM uses it when there was no
+   * booked meeting. Reunión → Documentación: the MOU (with the four points to confirm) and the entry documents,
+   * locked until the owner signs the MOU. invalid_state without the NDA or with the MOU already sent.
+   */
+  sendMou(id: Uuid): Promise<LeadWithComputed>;
+  /**
+   * POST /leads/{id}/meetings/{meetingId}/outcome (If-Match on the lead), the answer to "¿Se hizo?". held on the
+   * initial meeting sends the MOU; held on the expansion meeting sets expansion_meeting_held_at. no_show and
+   * reschedule wait for a new booking. outcome_already_set once answered; invalid_transition before the meeting started
+   * (except reschedule).
+   */
+  setMeetingOutcome(leadId: Uuid, meetingId: Uuid, input: MeetingOutcomeInput): Promise<LeadWithComputed>;
+  /**
+   * POST /leads/{id}/present-to-bishops { bishop_user_ids }: SM picks which Bishops see the approved business (with
+   * the rule "presented" only they see it). Accepted leads only; Bishops with the framework signed. Each one is told.
+   */
+  presentToBishops(id: Uuid, bishopUserIds: Uuid[]): Promise<LeadInvestors>;
   /** Entry checklist. SM team of the office and SM Global. */
   getIntake(id: Uuid): Promise<LeadIntake | null>;
   /** Any SM person of the office. The verified fact is what the Bishop sees. */
@@ -249,7 +299,11 @@ export interface LeadsRepository {
   getInvestors(id: Uuid): Promise<LeadInvestors | null>;
   /** Gives the opportunity back to every Bishop (reason required). Drops an unsigned tripartite contract. */
   releaseOpportunity(id: Uuid, reason: string): Promise<LeadWithComputed>;
-  /** accepted with a Bishop: contract signed by owner, SM and Bishop, each from his own portal. */
+  /**
+   * "Enviar Operating Agreement": accepted with a Bishop, signed by owner, SM and Bishop, each from his own portal.
+   * expansion_meeting_required while the expansion meeting was not held (rule require_expansion_meeting). Nobody signs
+   * it before oa_waiting_days from the day it went out (waiting_period).
+   */
   sendTripartite(id: Uuid): Promise<Contract>;
   /**
    * SM team of the office: a business that did not come through the assessment (referral, event). Enters Evaluado
@@ -258,14 +312,14 @@ export interface LeadsRepository {
   createManual(input: ManualLeadInput): Promise<LeadWithComputed>;
   /** SM team: sends the assessment link to a manual lead (simulated); it shows "Assessment pendiente" until the result arrives. */
   sendAssessment(id: Uuid): Promise<LeadWithComputed>;
-  /** After the meeting: the consultant's note. Next step: Enviar NDA y MOU (accept) or Descartar. */
-  addMeetingNote(id: Uuid, body: string): Promise<LeadEvent>;
   /** Booked meetings of the current SM person's leads (consultant), soonest first. */
   listMeetings(): Promise<LeadMeetingItem[]>;
   /**
    * Demo only (in production these come by webhook). SM team. A new assessment with credible data, routed by zone,
-   * in Evaluado with no email sent; and a booking on an evaluated lead, which moves it to Reunión by itself and
-   * sends the summary email with the meeting.
+   * in Evaluado with no email sent; and a booking on an evaluated lead, which moves it to Reunión by itself, creates
+   * the owner account with the NDA (Strategic Mates pre-signed) and sends the summary email with the meeting. On a lead
+   * in Reunión whose meeting was answered "No se presentó" or "Reagendar" it books again; on an accepted lead it books
+   * the expansion meeting.
    */
   simulateAssessment(): Promise<LeadWithComputed>;
   simulateBooking(id: Uuid): Promise<LeadWithComputed>;
@@ -407,6 +461,12 @@ export interface NetworkRepository {
   pauseOffice(officeId: Uuid, reason: string): Promise<OfficeSummary>;
   /** SM Global only: an office in opening goes live only with its checklist complete; a paused one resumes. */
   activateOffice(officeId: Uuid): Promise<OfficeSummary>;
+  /**
+   * "Firma de la oficina" (PNG): the signature the NDA and the MOU go out pre-signed with. SM Global, or the admin of
+   * that office. The HTTP adapter uploads the File first (PATCH /offices/{id}/signature { file_id }); the mock keeps
+   * the name.
+   */
+  setOfficeSignature(officeId: Uuid, file: DocumentUpload): Promise<Organization>;
 }
 
 /** Platform rules. Everyone reads them; only SM Global changes them, and every change is logged. */
@@ -485,9 +545,24 @@ export interface DocumentsRepository {
    * person of the office signs as Strategic Mates. Opening again only answers the contract (and the embed) again.
    */
   openContract(contractId: Uuid): Promise<OpenedContract>;
-  /** The signature the person drew, typed or uploaded (DocuSeal collects it in production). */
+  /**
+   * The signature the person drew, typed or uploaded (DocuSeal collects it in production). A MOU needs the owner's
+   * four points first (acknowledgment_required); the Operating Agreement waits oa_waiting_days from the day it went
+   * out (waiting_period, the date in the error's detail).
+   */
   signContract(contractId: Uuid, signature?: ContractSignature): Promise<Contract>;
   declineContract(contractId: Uuid, reason: string): Promise<Contract>;
+  /** Owner, MOU: the four points confirmed with "Entendí" (POST /contracts/{id}/acknowledge). All four, or invalid_points. */
+  acknowledge(contractId: Uuid, points: MouAcknowledgmentPoint[]): Promise<Contract>;
+  /**
+   * Owner, NDA: "Prefiero usar mi propio NDA". Uploads the PDF (the HTTP adapter sends the File first) and proposes it
+   * (POST /contracts/{id}/propose-own { file_id }); SM is told. own_nda_pending while one waits for review.
+   */
+  proposeOwnNda(contractId: Uuid, file: DocumentUpload): Promise<Contract>;
+  /** SM: accepts the owner's NDA (source becomes "own" and it counts as signed). */
+  acceptOwnNda(contractId: Uuid): Promise<Contract>;
+  /** SM: "Pedir el mutuo", with a comment for the owner; the mutual NDA stays to sign. */
+  rejectOwnNda(contractId: Uuid, comment: string): Promise<Contract>;
 }
 
 export interface FinancialsRepository {

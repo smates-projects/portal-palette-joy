@@ -1,7 +1,7 @@
 // Types for the SM network (Global, offices), franchisors, franchises, Bishop and owner data.
 // Same conventions as types.ts: snake_case, UUID string ids, ISO dates.
 import type { AreaCode, BusinessStatus, IsoDate, IsoDateTime, Lead, LeadBand, LeadIndustry, LeadResult, LeadStage, OfficeStatus, Organization, ReviewClock, User, Uuid } from "./types";
-import type { AssessmentAreaMap } from "./entry-types";
+import type { AssessmentAreaMap, MouAcknowledgmentPoint, OpportunityVisibility } from "./entry-types";
 
 /** Month as YYYY-MM. */
 export type IsoMonth = string;
@@ -161,6 +161,15 @@ export interface PlatformRules {
   program_amount?: number | undefined;
   /** Assessment block → areas whose tasks start as "A validar" when the block is strong (see lib/leads/prevalidation). */
   assessment_area_map?: AssessmentAreaMap | undefined;
+  // Revised entry. Absent = the default of lib/leads/entry-flow (ENTRY_RULE_DEFAULTS).
+  /** presented: a Bishop sees only the businesses SM presented to him. all: every approved business. */
+  opportunity_visibility?: OpportunityVisibility | undefined;
+  /** Nobody signs the Operating Agreement before this many days from the day it went out. */
+  oa_waiting_days?: number | undefined;
+  /** The Operating Agreement goes out only after the expansion meeting was held. */
+  require_expansion_meeting?: boolean | undefined;
+  /** The NDA (and the MOU) go out already signed by Strategic Mates with the office signature. */
+  nda_auto_signed_by_sm?: boolean | undefined;
 }
 
 export interface IntakeDocRule {
@@ -429,6 +438,8 @@ export interface BusinessDocument {
   reviewed_at?: IsoDate | null | undefined;
   /** Intervals while SM waited for a replacement (they pause the review clock). */
   pauses?: { from: IsoDate; to: IsoDate | null }[] | undefined;
+  /** Entry documents: the owner cannot upload it until he signs the MOU. */
+  locked_until_mou?: boolean | undefined;
 }
 
 /** Same states DocuSeal reports. */
@@ -457,19 +468,28 @@ export interface Signer {
   history?: { status: SignerStatus; at: IsoDate }[] | undefined;
   decline_reason?: string | null | undefined;
   signature?: ContractSignature | null | undefined;
+  /** MOU, owner: the points he confirmed with "Entendí" (all four are needed before signing). */
+  acknowledgments?: MouAcknowledgmentPoint[] | null | undefined;
 }
 
 export interface Contract {
   id: Uuid;
   business_id: Uuid;
   area: AreaCode | "diagnosis" | "closing" | "intake";
-  /** Entry contracts. */
+  /** Entry contracts. tripartite is the Operating Agreement (owner, SM and Bishop). */
   kind?: "nda" | "mou" | "tripartite" | "framework" | undefined;
   name: string;
   state: ContractState;
   sent_at: IsoDate | null;
   signed_at: IsoDate | null;
   signers: Signer[];
+  /** NDA: SM's mutual NDA, or the owner's own once SM accepted it. Absent = sm. */
+  source?: "sm" | "own" | undefined;
+  /** NDA: the owner's own NDA. With source "sm" it waits for SM's review ("Esperando revisión de Strategic Mates"). */
+  own_file_id?: Uuid | null | undefined;
+  own_file_name?: string | null | undefined;
+  /** NDA: why SM asked for the mutual NDA instead of the owner's own. */
+  own_review_comment?: string | null | undefined;
 }
 
 export interface FinancialChange {
@@ -618,6 +638,8 @@ export interface BishopOpportunity {
   review: ReviewClock | null;
   decision: OpportunityDecision;
   decided_at: IsoDateTime | null;
+  /** When SM presented this business to this Bishop ("Strategic Mates te presentó este negocio"); null otherwise. */
+  presented_at?: IsoDateTime | null | undefined;
 }
 
 export interface OpportunityVerifiedItem {
@@ -647,6 +669,10 @@ export interface LeadInvestors {
   views: { bishop_user_id: Uuid; name: string; viewed_at: IsoDateTime; decision: OpportunityDecision; decided_at: IsoDateTime | null }[];
   bishop: { user_id: Uuid; name: string; accepted_at: IsoDateTime } | null;
   tripartite: Contract | null;
+  /** Bishops SM presented the business to ("Presentar a Bishops"), oldest first. */
+  presented?: { bishop_user_id: Uuid; name: string; presented_at: IsoDateTime }[] | undefined;
+  /** Who SM can present it to: active Bishops with the framework agreement signed. */
+  candidates?: { user_id: Uuid; name: string }[] | undefined;
 }
 
 export type AgreementState = "draft" | "sent" | "signed";

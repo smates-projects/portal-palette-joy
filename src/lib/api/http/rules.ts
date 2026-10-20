@@ -24,6 +24,17 @@ const toRules = (rules: PlatformRulesResponse): PlatformRules => ({
   ...(rules.assessment_area_map !== undefined
     ? { assessment_area_map: rules.assessment_area_map }
     : {}),
+  // Revised entry: absent until the API sends them (lib/leads/entry-flow applies the defaults then).
+  ...(rules.opportunity_visibility !== undefined
+    ? { opportunity_visibility: rules.opportunity_visibility }
+    : {}),
+  ...(rules.oa_waiting_days !== undefined ? { oa_waiting_days: rules.oa_waiting_days } : {}),
+  ...(rules.require_expansion_meeting !== undefined
+    ? { require_expansion_meeting: rules.require_expansion_meeting }
+    : {}),
+  ...(rules.nda_auto_signed_by_sm !== undefined
+    ? { nda_auto_signed_by_sm: rules.nda_auto_signed_by_sm }
+    : {}),
 });
 
 export function createHttpRulesRepository(client: HttpClient): RulesRepository {

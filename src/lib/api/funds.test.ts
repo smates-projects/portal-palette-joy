@@ -13,13 +13,35 @@ async function as(userId: string) {
 const leadNamed = async (api: Awaited<ReturnType<typeof as>>, name: string) => (await api.leads.list()).find((l) => l.business.name === name)!;
 const receipt = { file_name: "comprobante.pdf", size_kb: 120 };
 
+/**
+ * Techos Delgado's Operating Agreement is in its waiting period in the sample data. To exercise the funds, SM Global
+ * drops the waiting days, the three sign today (Oct 14) and SM records USD 100,000 of 150,000. Ends as Camila.
+ */
+async function fundTechos(api: Awaited<ReturnType<typeof as>>) {
+  await api.session.setViewAs(seed.U_MARYLIN);
+  await api.rules.update({ oa_waiting_days: 0 });
+  await api.session.setViewAs(seed.U_CAMILA);
+  const lead = await leadNamed(api, "Techos Delgado");
+  const oa = (await api.leads.getInvestors(lead.id))!.tripartite!;
+  const owner = (await api.users.list()).find((u) => u.business_id === lead.business_id && u.role === "business_owner")!;
+  await api.documents.signContract(oa.id);
+  for (const id of [owner.id, net.U_JEFFERSON]) {
+    await api.session.setViewAs(id);
+    await api.documents.signContract(oa.id);
+  }
+  await api.session.setViewAs(seed.U_CAMILA);
+  await api.funds.recordPayment(lead.business_id!, { amount: 100000, paid_on: "2026-10-10", method: "wire", reference: "WIRE-812907", receipt });
+  return lead;
+}
+
 describe("sample data", () => {
-  it("Techos Delgado: tripartite signed, funds partial USD 100,000 of 150,000, next step record funds", async () => {
+  it("Techos Delgado: Operating Agreement in its waiting period, no funds yet; once signed by the three, funds open", async () => {
     const api = await as(seed.U_CAMILA);
-    const lead = await leadNamed(api, "Techos Delgado");
-    expect(lead).toMatchObject({ stage: "accepted", tripartite: "signed", funds: { status: "partial", ready_to_start: false } });
+    expect(await leadNamed(api, "Techos Delgado")).toMatchObject({ stage: "accepted", tripartite: "pending", funds: null });
+    const lead = await fundTechos(api);
+    expect(await leadNamed(api, "Techos Delgado")).toMatchObject({ tripartite: "signed", funds: { status: "partial", ready_to_start: false } });
     const f = (await api.funds.get(lead.business_id!))!;
-    expect(f).toMatchObject({ total: 150000, received: 100000, status: "partial", bishop_name: "Laura Ortega", completed_on: null });
+    expect(f).toMatchObject({ total: 150000, received: 100000, status: "partial", bishop_name: "Jefferson Paula", completed_on: null });
   });
   it("Vossler, Prime 10 and Enyermy: Bishop, funds received and a distribution with paid, pending and one overdue", async () => {
     const api = await as(seed.U_NICOLAS);
@@ -41,27 +63,27 @@ describe("sample data", () => {
 describe("recording funds and confirming the start (day 1)", () => {
   it("cannot start with partial funds; the payment that completes them proposes the later date as day 1", async () => {
     const api = await as(seed.U_CAMILA);
-    const lead = await leadNamed(api, "Techos Delgado");
+    const lead = await fundTechos(api);
     await expect(api.leads.confirmProgramStart(lead.id, "2026-10-14")).rejects.toThrow("funds_incomplete");
     await expect(api.funds.recordPayment(lead.business_id!, { amount: 60000, paid_on: "2026-10-10", method: "wire", reference: null, receipt })).rejects.toThrow("invalid_over_total");
-    const f = await api.funds.recordPayment(lead.business_id!, { amount: 50000, paid_on: "2026-10-10", method: "wire", reference: "WIRE-1", receipt });
-    expect(f).toMatchObject({ status: "received", received: 150000, completed_on: "2026-10-10" });
+    const f = await api.funds.recordPayment(lead.business_id!, { amount: 50000, paid_on: "2026-10-12", method: "wire", reference: "WIRE-1", receipt });
+    expect(f).toMatchObject({ status: "received", received: 150000, completed_on: "2026-10-12" });
     const after = await leadNamed(api, "Techos Delgado");
-    // Tripartite signed on Sep 15, funds complete on Oct 10: the later one is day 1.
-    expect(after.funds).toMatchObject({ ready_to_start: true, proposed_day1: "2026-10-10" });
-    await expect(api.leads.confirmProgramStart(lead.id, "2026-10-09")).rejects.toThrow("invalid_date");
-    const r = await api.leads.confirmProgramStart(lead.id, "2026-10-10");
+    // Funds complete on Oct 12, Operating Agreement signed by the three on Oct 14: the later one is day 1.
+    expect(after.funds).toMatchObject({ ready_to_start: true, proposed_day1: "2026-10-14" });
+    await expect(api.leads.confirmProgramStart(lead.id, "2026-10-13")).rejects.toThrow("invalid_date");
+    const r = await api.leads.confirmProgramStart(lead.id, "2026-10-14");
     expect(r.lead.stage).toBe("in_program");
     expect(r.task_count).toBeGreaterThan(0);
     const biz = (await api.businesses.list()).find((b) => b.id === r.business_id)!;
-    expect(biz).toMatchObject({ status: "in_program", program_start_date: "2026-10-10", program_day: 5 });
-    expect((await api.leads.get(lead.id))!.events.at(-1)).toMatchObject({ kind: "program_started", signed_on: "2026-10-10" });
+    expect(biz).toMatchObject({ status: "in_program", program_start_date: "2026-10-14", program_day: 1 });
+    expect((await api.leads.get(lead.id))!.events.at(-1)).toMatchObject({ kind: "program_started", signed_on: "2026-10-14" });
     // The funds close once the program runs.
     await expect(api.funds.recordPayment(lead.business_id!, { amount: 1, paid_on: "2026-10-10", method: "wire", reference: null, receipt: null })).rejects.toThrow();
   });
   it("SM can pick a later day 1, never start without the tripartite signed", async () => {
     const api = await as(seed.U_CAMILA);
-    const lead = await leadNamed(api, "Techos Delgado");
+    const lead = await fundTechos(api);
     await api.funds.recordPayment(lead.business_id!, { amount: 50000, paid_on: "2026-10-01", method: "transfer", reference: null, receipt: null });
     const r = await api.leads.confirmProgramStart(lead.id, "2026-10-20");
     const biz = (await api.businesses.list()).find((b) => b.id === r.business_id)!;
@@ -71,7 +93,7 @@ describe("recording funds and confirming the start (day 1)", () => {
   });
   it("undo of a recorded payment removes it", async () => {
     const api = await as(seed.U_CAMILA);
-    const lead = await leadNamed(api, "Techos Delgado");
+    const lead = await fundTechos(api);
     const f = await api.funds.recordPayment(lead.business_id!, { amount: 20000, paid_on: "2026-10-12", method: "other", reference: null, receipt: null });
     const back = await api.funds.removePayment(lead.business_id!, f.payments.at(-1)!.id);
     expect(back.received).toBe(100000);
@@ -89,22 +111,22 @@ describe("recording funds and confirming the start (day 1)", () => {
     const lead = await leadNamed(api, "Sol Remodeling");
     expect((await api.funds.get(lead.business_id!))!.total).toBe(160000);
     // Signed before the change: keeps its amount.
-    expect((await api.funds.get((await leadNamed(api, "Techos Delgado")).business_id!))!.total).toBe(150000);
+    expect((await api.funds.get(seed.BIZ_VOSSLER))!.total).toBe(150000);
   });
 });
 
 describe("the Bishop uploads his receipt and SM confirms it", () => {
   it("reported payments do not count until SM confirms; SM hears about it in the bell", async () => {
     const api = await as(seed.U_CAMILA);
-    const businessId = (await leadNamed(api, "Techos Delgado")).business_id!;
-    await api.session.setViewAs(net.U_LAURA);
+    const businessId = (await fundTechos(api)).business_id!;
+    await api.session.setViewAs(net.U_JEFFERSON);
     await expect(api.funds.reportPayment(businessId, { amount: 50000, paid_on: "2026-10-13", method: "wire", reference: null, receipt: null })).rejects.toThrow("invalid_receipt");
     const f = await api.funds.reportPayment(businessId, { amount: 50000, paid_on: "2026-10-13", method: "wire", reference: "W-99", receipt });
     expect(f).toMatchObject({ received: 100000, to_confirm: 50000, status: "partial" });
-    expect((await api.funds.listMine()).map((x) => x.business_name)).toEqual(expect.arrayContaining(["Techos Delgado", "Prime 10 Solutions"]));
+    expect((await api.funds.listMine()).map((x) => x.business_name)).toEqual(expect.arrayContaining(["Techos Delgado", "Vossler"]));
     await api.session.setViewAs(seed.U_CAMILA);
     const bell = await api.notifications.list();
-    expect(bell.find((n) => n.kind === "funds_reported")).toMatchObject({ business_name: "Techos Delgado", actor_name: "Laura Ortega" });
+    expect(bell.find((n) => n.kind === "funds_reported")).toMatchObject({ business_name: "Techos Delgado", actor_name: "Jefferson Paula" });
     expect((await leadNamed(api, "Techos Delgado")).funds?.to_confirm).toBe(true);
     const reported = (await api.funds.get(businessId))!.payments.find((p) => p.status === "reported")!;
     const done = await api.funds.confirmPayment(businessId, reported.id);

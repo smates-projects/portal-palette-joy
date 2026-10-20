@@ -14,16 +14,23 @@ import { AssessmentBadge, BandBadge, STAGE_BAR, StageBadge } from "./LeadBadges"
  */
 export function EntryState({ lead }: { lead: LeadWithComputed }) {
   const { t, i18n } = useTranslation();
+  // The portal asked "¿Se hizo?" and nobody answered: the consultant has to answer on the meeting card.
+  const asked = (m: LeadWithComputed["meeting"] | undefined) => !!m?.outcome_prompted_at && !m.outcome;
+  if ((lead.stage === "meeting" && asked(lead.meeting)) || (lead.stage === "accepted" && asked(lead.expansion_meeting)))
+    return <span className="mt-1.5 block text-xs font-medium text-status-warning-fg">{t("entry.outcome.pending")}</span>;
   // Added by hand: the assessment badge already tells where it is; the automatic phases do not apply.
   if ((lead.stage !== "evaluated" && lead.stage !== "meeting") || lead.source === "manual") return null;
   const phase = entryPhase(lead);
   const unbooked = unbookedDays(lead);
+  const answered = lead.stage === "meeting" ? lead.meeting?.outcome : null;
   return (
     <span className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs">
       {isNewLead(lead) && (
         <span className="rounded-[4px] border border-status-info-border bg-status-info-bg px-1.5 py-0.5 font-medium leading-none text-status-info-fg">{t("entry.new")}</span>
       )}
-      {unbooked !== null ? (
+      {answered === "no_show" || answered === "reschedule" ? (
+        <span className="text-status-warning-fg">{t(`entry.outcome.card_${answered}`)}</span>
+      ) : unbooked !== null ? (
         <span className="text-status-warning-fg">{t("entry.unbooked", { count: unbooked })}</span>
       ) : (phase === "meeting_scheduled" || phase === "summary_sent") && lead.meeting ? (
         <span className="text-muted-foreground">{t("entry.meeting_on", { date: formatDateTime(lead.meeting.starts_at, i18n.language) })}</span>

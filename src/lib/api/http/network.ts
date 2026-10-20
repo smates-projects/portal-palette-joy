@@ -9,10 +9,12 @@ import type {
   NetworkSummary,
   OfficeDetail,
   OfficeSummary,
+  Organization,
   StructureTree,
   Uuid,
 } from "../types";
 import { getOrNull, type HttpClient } from "./client";
+import { invalidFile, isBlob, uploadFile } from "./files";
 
 const officePath = (id: Uuid) => `/offices/${encodeURIComponent(id)}`;
 
@@ -48,5 +50,12 @@ export function createHttpNetworkRepository(client: HttpClient): NetworkReposito
       client.post<OfficeSummary>(`${officePath(officeId)}/pause`, { reason }),
 
     activateOffice: (officeId) => client.post<OfficeSummary>(`${officePath(officeId)}/activate`),
+
+    /** The PNG is stored first (context contract_signature), then PATCH /offices/{id}/signature { file_id }. */
+    setOfficeSignature: async (officeId, file) => {
+      if (!isBlob(file)) throw invalidFile("Pick the PNG of the office signature.");
+      const fileId = await uploadFile(client, file, { context: "contract_signature", name: file.name });
+      return client.patch<Organization>(`${officePath(officeId)}/signature`, { file_id: fileId });
+    },
   };
 }

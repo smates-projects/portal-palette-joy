@@ -79,6 +79,8 @@ export function useSetGoogleCalendar() {
 }
 
 // ---------- Sign-in (public screens) ----------
+import { isSignedInUser } from "./auth-types";
+
 /** Queries of the sign-in screens themselves; kept when the session changes. */
 const AUTH_KEY = "auth";
 
@@ -95,12 +97,56 @@ export function useIsAuthenticated(): boolean {
   return api.session.isAuthenticated();
 }
 
-function useSessionStart<V>(fn: (vars: V) => Promise<unknown>) {
+/** Only a User means a session started; a two-factor step (challenge or setup token) keeps the cache as it is. */
+function useSessionStart<V, R extends import("./types").SignInResult>(fn: (vars: V) => Promise<R>) {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: fn, onSuccess: () => resetSessionCache(qc) });
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: (result) => {
+      if (isSignedInUser(result)) resetSessionCache(qc);
+    },
+  });
 }
 export const useLogin = () => useSessionStart((v: import("./types").LoginInput) => api.session.login(v));
 export const useAcceptInvitation = () => useSessionStart((v: import("./types").AcceptInvitationInput) => api.session.acceptInvitation(v));
+/** Second step of a sign-in with TOTP: the 6-digit code, or one recovery code. Both start the session. */
+export const useVerifyTwoFactor = () => useSessionStart((v: import("./types").TwoFactorVerifyInput) => api.session.verifyTwoFactor(v));
+export const useRecoverTwoFactor = () => useSessionStart((v: import("./types").TwoFactorVerifyInput) => api.session.recoverTwoFactor(v));
+
+/**
+ * The secret to add to the authenticator app. A query (not a mutation) so StrictMode or a remount does not ask for a
+ * second secret that would replace the one on screen. Signed in: setupToken null; after a 202 setup-required: the token.
+ */
+export const useTwoFactorSetup = (setupToken: string | null) =>
+  useQuery({
+    queryKey: [AUTH_KEY, "2fa-setup", setupToken ?? "session"],
+    queryFn: () => api.session.setupTwoFactor(setupToken),
+    retry: false,
+    staleTime: Infinity,
+    // Dropped as soon as the setup screen closes: opening it again starts with a fresh secret.
+    gcTime: 0,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
+
+/** Turns TOTP on and answers the recovery codes. Signed in, the profile refreshes; with a setup token nobody is signed in yet. */
+export function useConfirmTwoFactor() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { code: string; setupToken: string | null }) => api.session.confirmTwoFactor(v.code, v.setupToken),
+    onSuccess: (_, v) => {
+      if (!v.setupToken) void qc.invalidateQueries({ queryKey: queryKeys.me });
+    },
+  });
+}
+
+export function useDisableTwoFactor() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (code: string) => api.session.disableTwoFactor(code),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.me }),
+  });
+}
 
 export function useLogout() {
   const qc = useQueryClient();
@@ -123,13 +169,22 @@ export const useExchangeInvitation = (token: string) =>
  * shares the same exchange instead of spending the single-use token twice.
  */
 export function useExchangeMagicLink(token: string) {
+  return useSingleUseLink("magic-link", token, () => api.session.exchangeMagicLink(token));
+}
+
+/** Entry link of a business owner: same single-use exchange as the magic link, lands on "Tu ingreso". */
+export function useExchangeEntryLink(token: string) {
+  return useSingleUseLink("entry-link", token, () => api.session.exchangeEntryLink(token));
+}
+
+function useSingleUseLink(kind: string, token: string, exchange: () => Promise<import("./types").SignInResult>) {
   const qc = useQueryClient();
   return useQuery({
-    queryKey: [AUTH_KEY, "magic-link", token],
+    queryKey: [AUTH_KEY, kind, token],
     queryFn: async () => {
-      const user = await api.session.exchangeMagicLink(token);
-      resetSessionCache(qc);
-      return user;
+      const result = await exchange();
+      if (isSignedInUser(result)) resetSessionCache(qc);
+      return result;
     },
     retry: false,
     staleTime: Infinity,
@@ -233,7 +288,12 @@ export function useConfirmProgramStart() {
 // ---------- Automatic entry, zones, "Ya lo tenía", ficha del negocio ----------
 /** LeadMeetingItem[]: booked meetings of the current consultant's leads (SM team; empty for anyone else). */
 export const useLeadMeetings = (enabled = true) => useQuery({ queryKey: ["leads", "meetings"], queryFn: api.leads.listMeetings, enabled });
-export const useAddMeetingNote = () => useLeadMutation((v: { id: string; body: string }) => api.leads.addMeetingNote(v.id, v.body));
+/** "¿Se hizo?": Se hizo (with an optional note) / No se presentó / Reagendar. "Se hizo" may send the MOU: refresh the entry too. */
+export const useSetMeetingOutcome = () =>
+  useNetworkMutation(
+    (v: { leadId: string; meetingId: string; input: import("./types").MeetingOutcomeInput }) => api.leads.setMeetingOutcome(v.leadId, v.meetingId, v.input),
+    ["leads", "documents", "notifications"],
+  );
 /** Demo: they also notify the consultant, so the bell refreshes too. */
 export const useSimulateAssessment = () => useNetworkMutation((_: void) => api.leads.simulateAssessment(), ["leads", "notifications"]);
 export const useSimulateBooking = () => useNetworkMutation((id: string) => api.leads.simulateBooking(id), ["leads", "notifications"]);
@@ -296,7 +356,18 @@ export const useLeadInvestors = (id: string | undefined) =>
   useQuery({ queryKey: ["leads", "investors", id], queryFn: () => api.leads.getInvestors(id!), enabled: !!id });
 export const useReleaseOpportunity = () => useIntakeMutation((v: { id: string; reason: string }) => api.leads.releaseOpportunity(v.id, v.reason));
 export const useSendTripartite = () => useIntakeMutation((id: string) => api.leads.sendTripartite(id));
-export const useSendNdaMou = () => useIntakeMutation((id: string) => api.leads.sendNdaMou(id));
+/** Lead moved to Reunión by hand: "Enviar NDA" (owner account + NDA), then "Enviar MOU" (to Documentación). */
+export const useSendNda = () => useIntakeMutation((id: string) => api.leads.sendNda(id));
+export const useSendMou = () => useIntakeMutation((id: string) => api.leads.sendMou(id));
+/** "Presentar a Bishops": the Bishops the approved business is shown to. */
+export const usePresentToBishops = () => useIntakeMutation((v: { id: string; bishopUserIds: string[] }) => api.leads.presentToBishops(v.id, v.bishopUserIds));
+/** Owner, MOU: the four points confirmed with "Entendí". */
+export const useAcknowledgeMou = () => useIntakeMutation((v: { contractId: string; points: import("./types").MouAcknowledgmentPoint[] }) => api.documents.acknowledge(v.contractId, v.points));
+/** Owner: "Prefiero usar mi propio NDA" (PDF). */
+export const useProposeOwnNda = () => useIntakeMutation((v: { contractId: string; file: DocumentUpload }) => api.documents.proposeOwnNda(v.contractId, v.file));
+/** SM: Aceptar the owner's NDA / Pedir el mutuo (with a comment). */
+export const useAcceptOwnNda = () => useIntakeMutation((contractId: string) => api.documents.acceptOwnNda(contractId));
+export const useRejectOwnNda = () => useIntakeMutation((v: { contractId: string; comment: string }) => api.documents.rejectOwnNda(v.contractId, v.comment));
 export const useAcceptDocument = () => useIntakeMutation((v: { id: string; documentId: string; fact: string }) => api.leads.acceptDocument(v.id, v.documentId, v.fact));
 export const useRequestDocument = () => useIntakeMutation((v: { id: string; documentId: string; comment: string }) => api.leads.requestDocument(v.id, v.documentId, v.comment));
 export const useResendContract = () => useIntakeMutation((v: { id: string; contractId: string }) => api.leads.resendContract(v.id, v.contractId));
@@ -420,6 +491,9 @@ export const useCreateOffice = () => useNetworkMutation((input: CreateOfficeInpu
 export const usePauseOffice = () => useNetworkMutation((v: { officeId: string; reason: string }) => api.network.pauseOffice(v.officeId, v.reason), OFFICE_ROOTS);
 /** Opening office: only with its checklist complete. Paused office: resumes. */
 export const useActivateOffice = () => useNetworkMutation((officeId: string) => api.network.activateOffice(officeId), OFFICE_ROOTS);
+/** "Firma de la oficina" (PNG) the NDA and the MOU go out pre-signed with. */
+export const useSetOfficeSignature = () =>
+  useNetworkMutation((v: { officeId: string; file: DocumentUpload }) => api.network.setOfficeSignature(v.officeId, v.file), OFFICE_ROOTS);
 
 // ---------- SM Global: rules and catalog admin ----------
 /** PlatformRules: franchisability goal, required task codes, area amber days, amber tolerance. Readable by everyone. */

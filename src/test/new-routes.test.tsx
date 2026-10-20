@@ -11,6 +11,8 @@ describe("new role routes", () => {
     "/estructura", "/oficinas", "/oficinas/abc", "/reglas", "/embudo", "/catalogo",
     "/franquiciadora", "/franquicias", "/franquicias/abc", "/numeros", "/documentos", "/negocio",
     "/oportunidades", "/oportunidades/abc", "/acuerdos", "/manual", "/pagos",
+    // Public sign-in screens of the two-factor flow and the owner entry link.
+    "/verificacion", "/activar-verificacion", "/entrada/abc",
   ];
   it.each(paths)("matches %s", (path) => {
     expect(router.matchRoutes(path).at(-1)?.routeId).not.toBe(rootRouteId);

@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ActivarVerificacionRouteImport } from './routes/activar-verificacion'
 import { Route as AcuerdosRouteImport } from './routes/acuerdos'
 import { Route as CatalogoRouteImport } from './routes/catalogo'
 import { Route as ClientesRouteImport } from './routes/clientes'
@@ -31,7 +32,9 @@ import { Route as RecuperarRouteImport } from './routes/recuperar'
 import { Route as RedRouteImport } from './routes/red'
 import { Route as ReglasRouteImport } from './routes/reglas'
 import { Route as ReporteRouteImport } from './routes/reporte'
+import { Route as VerificacionRouteImport } from './routes/verificacion'
 import { Route as EnlaceTokenRouteImport } from './routes/enlace.$token'
+import { Route as EntradaTokenRouteImport } from './routes/entrada.$token'
 import { Route as FranquiciasIndexRouteImport } from './routes/franquicias.index'
 import { Route as FranquiciasFranchiseIdRouteImport } from './routes/franquicias.$franchiseId'
 import { Route as InvitacionTokenRouteImport } from './routes/invitacion.$token'
@@ -46,6 +49,11 @@ import { Route as TareasTaskIdRouteImport } from './routes/tareas.$taskId'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ActivarVerificacionRoute = ActivarVerificacionRouteImport.update({
+  id: '/activar-verificacion',
+  path: '/activar-verificacion',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AcuerdosRoute = AcuerdosRouteImport.update({
@@ -153,9 +161,19 @@ const ReporteRoute = ReporteRouteImport.update({
   path: '/reporte',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VerificacionRoute = VerificacionRouteImport.update({
+  id: '/verificacion',
+  path: '/verificacion',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EnlaceTokenRoute = EnlaceTokenRouteImport.update({
   id: '/enlace/$token',
   path: '/enlace/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EntradaTokenRoute = EntradaTokenRouteImport.update({
+  id: '/entrada/$token',
+  path: '/entrada/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FranquiciasIndexRoute = FranquiciasIndexRouteImport.update({
@@ -212,6 +230,7 @@ const TareasTaskIdRoute = TareasTaskIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/activar-verificacion': typeof ActivarVerificacionRoute
   '/acuerdos': typeof AcuerdosRoute
   '/catalogo': typeof CatalogoRoute
   '/clientes': typeof ClientesRoute
@@ -233,7 +252,9 @@ export interface FileRoutesByFullPath {
   '/red': typeof RedRoute
   '/reglas': typeof ReglasRoute
   '/reporte': typeof ReporteRoute
+  '/verificacion': typeof VerificacionRoute
   '/enlace/$token': typeof EnlaceTokenRoute
+  '/entrada/$token': typeof EntradaTokenRoute
   '/franquicias/$franchiseId': typeof FranquiciasFranchiseIdRoute
   '/invitacion/$token': typeof InvitacionTokenRoute
   '/oficinas/$officeId': typeof OficinasOfficeIdRoute
@@ -247,6 +268,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/activar-verificacion': typeof ActivarVerificacionRoute
   '/acuerdos': typeof AcuerdosRoute
   '/catalogo': typeof CatalogoRoute
   '/clientes': typeof ClientesRoute
@@ -268,7 +290,9 @@ export interface FileRoutesByTo {
   '/red': typeof RedRoute
   '/reglas': typeof ReglasRoute
   '/reporte': typeof ReporteRoute
+  '/verificacion': typeof VerificacionRoute
   '/enlace/$token': typeof EnlaceTokenRoute
+  '/entrada/$token': typeof EntradaTokenRoute
   '/franquicias/$franchiseId': typeof FranquiciasFranchiseIdRoute
   '/invitacion/$token': typeof InvitacionTokenRoute
   '/oficinas/$officeId': typeof OficinasOfficeIdRoute
@@ -283,6 +307,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/activar-verificacion': typeof ActivarVerificacionRoute
   '/acuerdos': typeof AcuerdosRoute
   '/catalogo': typeof CatalogoRoute
   '/clientes': typeof ClientesRoute
@@ -304,7 +329,9 @@ export interface FileRoutesById {
   '/red': typeof RedRoute
   '/reglas': typeof ReglasRoute
   '/reporte': typeof ReporteRoute
+  '/verificacion': typeof VerificacionRoute
   '/enlace/$token': typeof EnlaceTokenRoute
+  '/entrada/$token': typeof EntradaTokenRoute
   '/franquicias/$franchiseId': typeof FranquiciasFranchiseIdRoute
   '/invitacion/$token': typeof InvitacionTokenRoute
   '/oficinas/$officeId': typeof OficinasOfficeIdRoute
@@ -320,6 +347,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/activar-verificacion'
     | '/acuerdos'
     | '/catalogo'
     | '/clientes'
@@ -341,7 +369,9 @@ export interface FileRouteTypes {
     | '/red'
     | '/reglas'
     | '/reporte'
+    | '/verificacion'
     | '/enlace/$token'
+    | '/entrada/$token'
     | '/franquicias/$franchiseId'
     | '/invitacion/$token'
     | '/oficinas/$officeId'
@@ -355,6 +385,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/activar-verificacion'
     | '/acuerdos'
     | '/catalogo'
     | '/clientes'
@@ -376,7 +407,9 @@ export interface FileRouteTypes {
     | '/red'
     | '/reglas'
     | '/reporte'
+    | '/verificacion'
     | '/enlace/$token'
+    | '/entrada/$token'
     | '/franquicias/$franchiseId'
     | '/invitacion/$token'
     | '/oficinas/$officeId'
@@ -390,6 +423,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/activar-verificacion'
     | '/acuerdos'
     | '/catalogo'
     | '/clientes'
@@ -411,7 +445,9 @@ export interface FileRouteTypes {
     | '/red'
     | '/reglas'
     | '/reporte'
+    | '/verificacion'
     | '/enlace/$token'
+    | '/entrada/$token'
     | '/franquicias/$franchiseId'
     | '/invitacion/$token'
     | '/oficinas/$officeId'
@@ -426,6 +462,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ActivarVerificacionRoute: typeof ActivarVerificacionRoute
   AcuerdosRoute: typeof AcuerdosRoute
   CatalogoRoute: typeof CatalogoRoute
   ClientesRoute: typeof ClientesRoute
@@ -447,7 +484,9 @@ export interface RootRouteChildren {
   RedRoute: typeof RedRoute
   ReglasRoute: typeof ReglasRoute
   ReporteRoute: typeof ReporteRoute
+  VerificacionRoute: typeof VerificacionRoute
   EnlaceTokenRoute: typeof EnlaceTokenRoute
+  EntradaTokenRoute: typeof EntradaTokenRoute
   FranquiciasFranchiseIdRoute: typeof FranquiciasFranchiseIdRoute
   InvitacionTokenRoute: typeof InvitacionTokenRoute
   OficinasOfficeIdRoute: typeof OficinasOfficeIdRoute
@@ -467,6 +506,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/activar-verificacion': {
+      id: '/activar-verificacion'
+      path: '/activar-verificacion'
+      fullPath: '/activar-verificacion'
+      preLoaderRoute: typeof ActivarVerificacionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/acuerdos': {
@@ -616,11 +662,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReporteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/verificacion': {
+      id: '/verificacion'
+      path: '/verificacion'
+      fullPath: '/verificacion'
+      preLoaderRoute: typeof VerificacionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/enlace/$token': {
       id: '/enlace/$token'
       path: '/enlace/$token'
       fullPath: '/enlace/$token'
       preLoaderRoute: typeof EnlaceTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/entrada/$token': {
+      id: '/entrada/$token'
+      path: '/entrada/$token'
+      fullPath: '/entrada/$token'
+      preLoaderRoute: typeof EntradaTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/franquicias/': {
@@ -698,6 +758,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ActivarVerificacionRoute: ActivarVerificacionRoute,
   AcuerdosRoute: AcuerdosRoute,
   CatalogoRoute: CatalogoRoute,
   ClientesRoute: ClientesRoute,
@@ -719,7 +780,9 @@ const rootRouteChildren: RootRouteChildren = {
   RedRoute: RedRoute,
   ReglasRoute: ReglasRoute,
   ReporteRoute: ReporteRoute,
+  VerificacionRoute: VerificacionRoute,
   EnlaceTokenRoute: EnlaceTokenRoute,
+  EntradaTokenRoute: EntradaTokenRoute,
   FranquiciasFranchiseIdRoute: FranquiciasFranchiseIdRoute,
   InvitacionTokenRoute: InvitacionTokenRoute,
   OficinasOfficeIdRoute: OficinasOfficeIdRoute,

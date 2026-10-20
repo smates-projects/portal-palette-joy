@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useLogin, useRequestMagicLink } from "@/lib/api/hooks";
 import { DEMO_PASSWORD } from "@/lib/api/mock";
 import { authErrorCode, emailProblem, focusFirstError } from "@/lib/auth/form";
-import { safeNextPath } from "@/lib/auth/redirect";
+import { nextStepAfterSignIn } from "@/lib/auth/two-factor";
 import { AuthHeading, AuthLayout } from "./AuthLayout";
 import { AuthField, FormAlert, SubmitButton, TextButton } from "./AuthFields";
 
@@ -74,7 +74,12 @@ export function LoginPage({
     login.mutate(
       { email: email.trim(), password },
       {
-        onSuccess: () => void navigate({ href: safeNextPath(next) ?? "/", replace: true }),
+        onSuccess: (result) => {
+          // Signed in, or one more step: the code of the authenticator app, or turning it on first.
+          const step = nextStepAfterSignIn(result, next);
+          if (step.kind === "signed_in") return void navigate({ href: step.href, replace: true });
+          void navigate({ to: step.to, search: step.search, state: step.state });
+        },
         onError: (err) => {
           const code = authErrorCode(err);
           if (code === "invalid_credentials") {
@@ -120,6 +125,14 @@ export function LoginPage({
       <form ref={formRef} onSubmit={onSubmit} noValidate className="space-y-4">
         {notice === "password_reset" && !serverError && (
           <FormAlert tone="success" title={t("auth.login.reset_done")} />
+        )}
+        {notice === "two_factor_enabled" && !serverError && (
+          <FormAlert tone="success" title={t("auth.login.two_factor_enabled")} />
+        )}
+        {notice === "two_factor_restart" && !serverError && (
+          <FormAlert tone="error" title={t("auth.login.two_factor_restart")}>
+            {t("auth.login.two_factor_restart_help")}
+          </FormAlert>
         )}
         {serverError === "invalid_credentials" && (
           <FormAlert tone="error" title={t("auth.errors.invalid_credentials")}>

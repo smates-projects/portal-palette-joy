@@ -4,6 +4,7 @@ import { FlaskConical } from "lucide-react";
 import { useCurrentUser, useOrganizations, useSimulateAssessment, useSimulateBooking } from "@/lib/api/hooks";
 import type { LeadWithComputed } from "@/lib/api/types";
 import { formatDateTime } from "@/lib/format";
+import { bookingKind } from "@/lib/leads/entry-flow";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 /**
@@ -20,7 +21,8 @@ export function SimulateEntry({ leads, selectedId, onOpen }: { leads: LeadWithCo
 
   const fail = () => toast.error(t("pipeline.t_error"));
   const evaluated = leads.filter((l) => l.stage === "evaluated" && !l.meeting).sort((a, b) => b.submitted_at.localeCompare(a.submitted_at));
-  const target = leads.find((l) => l.id === selectedId && l.stage === "evaluated") ?? evaluated[0];
+  // The open lead when a booking applies to it (first meeting, a new one after "No se presentó", or the expansion).
+  const target = leads.find((l) => l.id === selectedId && bookingKind(l) !== null) ?? evaluated[0];
 
   const simulateAssessment = () =>
     assessment.mutate(undefined, {
@@ -40,10 +42,12 @@ export function SimulateEntry({ leads, selectedId, onOpen }: { leads: LeadWithCo
       return;
     }
     booking.mutate(target.id, {
-      onSuccess: (l) =>
-        toast.success(t("entry.sim.t_booking", { owner: l.contact.name, date: l.meeting ? formatDateTime(l.meeting.starts_at, i18n.language) : "" }), {
+      onSuccess: (l) => {
+        const m = l.stage === "accepted" ? l.expansion_meeting : l.meeting;
+        toast.success(t("entry.sim.t_booking", { owner: l.contact.name, date: m ? formatDateTime(m.starts_at, i18n.language) : "" }), {
           action: { label: t("entry.sim.open"), onClick: () => onOpen(l.id) },
-        }),
+        });
+      },
       onError: fail,
     });
   };

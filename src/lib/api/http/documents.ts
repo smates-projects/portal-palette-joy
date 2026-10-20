@@ -134,6 +134,28 @@ export function createHttpDocumentsRepository(client: HttpClient): HttpDocuments
     declineContract: (contractId, reason) =>
       client.post<Contract>(`${contractPath(contractId)}/decline`, { reason }),
 
+    /** POST /acknowledge { points }: the four points of the MOU, before signing it. */
+    acknowledge: (contractId, points) =>
+      client.post<Contract>(`${contractPath(contractId)}/acknowledge`, { points }),
+
+    /** The owner's PDF is stored first (context contract), then POST /propose-own { file_id }. */
+    proposeOwnNda: async (contractId, file) => {
+      if (!isRealFile(file)) {
+        throw new ApiError({ code: "invalid_file", status: 422, detail: "Pick the PDF of your NDA." });
+      }
+      const fileId = await uploadFile(client, file, {
+        context: "contract",
+        name: file.name,
+        businessId: client.session().user?.business_id ?? null,
+      });
+      return client.post<Contract>(`${contractPath(contractId)}/propose-own`, { file_id: fileId });
+    },
+
+    acceptOwnNda: (contractId) => client.post<Contract>(`${contractPath(contractId)}/accept-own`),
+
+    rejectOwnNda: (contractId, comment) =>
+      client.post<Contract>(`${contractPath(contractId)}/reject-own`, { comment }),
+
     getSignedDocument: (contractId) =>
       client.get<SignedDocument>(`${contractPath(contractId)}/signed-document`),
   };

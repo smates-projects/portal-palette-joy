@@ -90,6 +90,8 @@ export interface RequestOptions {
    * is guarded by the ETag of GET /businesses/{id}. Defaults to the path.
    */
   resource?: string | undefined;
+  /** Extra headers of this call only (X-Setup-Token of the two-factor setup). Never overrides the client's own. */
+  headers?: Record<string, string> | undefined;
 }
 
 /** "Who is signed in" as the client last saw it. undefined = not asked yet; null = no session. */
@@ -242,8 +244,10 @@ export function createHttpClient(config: HttpClientConfig = {}): HttpClient {
     resource: string,
     hasBody: boolean,
     idempotencyKey: string | null,
+    extra: Record<string, string> = {},
   ) {
     const headers: Record<string, string> = {
+      ...extra,
       Accept: "application/json, application/problem+json",
       "X-Request-Id": newUuid(),
     };
@@ -274,7 +278,7 @@ export function createHttpClient(config: HttpClientConfig = {}): HttpClient {
         response = await fetchImpl(url, {
           method,
           credentials: "include",
-          headers: headersFor(method, resource, hasBody, idempotencyKey),
+          headers: headersFor(method, resource, hasBody, idempotencyKey, options.headers),
           ...(hasBody ? { body: JSON.stringify(options.body) } : {}),
         });
       } catch (cause) {

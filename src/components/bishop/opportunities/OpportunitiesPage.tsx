@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useBishopAgreements, useBishopOpportunities } from "@/lib/api/hooks";
 import { OPPORTUNITY_PHASES, type OpportunityPhase } from "@/lib/api/types";
-import { formatUsd } from "@/lib/format";
+import { formatDate, formatUsd } from "@/lib/format";
 import { EmptyBlock, ErrorBlock, LoadingBlocks, Panel, ProvisionalTag, Screen } from "@/components/bishop/ui";
 import { sortByDecision } from "@/components/bishop/portfolio/recovery";
 import { DecisionTag, PhaseTag, ReviewDay, useOpportunityTitle } from "./parts";
@@ -72,6 +72,7 @@ export function OpportunitiesPage() {
                     <Link to="/oportunidades/$opportunityId" params={{ opportunityId: o.id }} className="min-w-0 font-medium text-link hover:underline">{title(o)}</Link>
                     <DecisionTag decision={o.decision} />
                   </div>
+                  {o.presented_at && <p className="text-xs text-muted-foreground">{t("bishop.opportunities.presented_by_sm", { date: formatDate(o.presented_at, lng) })}</p>}
                   <div className="flex flex-wrap items-center gap-2"><PhaseTag phase={o.phase} /><ReviewDay o={o} /></div>
                   <dl className="grid grid-cols-3 gap-2 text-xs">
                     <div><dt className="text-muted-foreground">{t("bishop.opportunities.col_score")}</dt><dd className="font-display text-sm tabular-nums">{o.score}</dd></div>
@@ -102,6 +103,7 @@ export function OpportunitiesPage() {
                         <Link to="/oportunidades/$opportunityId" params={{ opportunityId: o.id }} className="font-medium text-link hover:underline">
                           {title(o)}
                         </Link>
+                        {o.presented_at && <p className="mt-0.5 text-xs text-muted-foreground">{t("bishop.opportunities.presented_by_sm", { date: formatDate(o.presented_at, lng) })}</p>}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-col items-start gap-1"><PhaseTag phase={o.phase} /><ReviewDay o={o} /></div>

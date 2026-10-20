@@ -10,6 +10,8 @@ import { ApiError, type HttpClient } from "./client";
 /** `files.owner_type` values the front uploads to today (FILE_CONTEXTS of the API). */
 export type FileContext =
   | "intake_document"
+  /** A whole contract document (the owner's own NDA, PDF). */
+  | "contract"
   | "contract_signature"
   | "fund_payment"
   | "distribution_payment"

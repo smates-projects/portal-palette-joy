@@ -47,11 +47,12 @@ describe("entry phase inside the stage", () => {
     expect(entryTimeline(lead({}), NOW).map((s) => s.state)).toEqual(["current", "pending", "pending", "pending"]);
     expect(entryTimeline(lead({ stage: "accepted", meeting: meeting("2026-10-01T14:00:00Z", "2026-10-01T15:00:00Z") }), NOW).every((s) => s.state === "done")).toBe(true);
   });
-  it("one primary action at a time in Reunión: join, then the note, then NDA and MOU", () => {
+  it("one primary action at a time in Reunión: join, then the outcome; without a booking, the NDA and then the MOU", () => {
     expect(primaryActionFor({ stage: "meeting", meeting: meeting("2026-10-15T14:00:00Z") }, NOW)).toBe("join_meet");
-    expect(primaryActionFor({ stage: "meeting", meeting: meeting("2026-10-14T10:00:00Z") }, NOW)).toBe("meeting_note");
-    expect(primaryActionFor({ stage: "meeting", meeting: meeting("2026-10-14T10:00:00Z", "2026-10-14T11:00:00Z") }, NOW)).toBe("send_nda");
+    expect(primaryActionFor({ stage: "meeting", meeting: meeting("2026-10-14T10:00:00Z") }, NOW)).toBe("meeting_outcome");
+    expect(primaryActionFor({ stage: "meeting", meeting: { ...meeting("2026-10-14T10:00:00Z"), outcome: "no_show" } }, NOW)).toBe("rebook");
     expect(primaryActionFor({ stage: "meeting", meeting: null }, NOW)).toBe("send_nda");
+    expect(primaryActionFor({ stage: "meeting", meeting: null, intake: {} as never }, NOW)).toBe("send_mou");
   });
   it("meetingHeld uses the end of the meeting", () => {
     expect(meetingHeld(meeting("2026-10-14T15:30:00Z"), NOW)).toBe(true);

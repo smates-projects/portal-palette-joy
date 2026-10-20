@@ -14,7 +14,12 @@ interface AuthFieldProps {
   value: string;
   onChange: (value: string) => void;
   type?: "email" | "password" | "text";
-  autoComplete: "email" | "current-password" | "new-password" | "name";
+  autoComplete: "email" | "current-password" | "new-password" | "name" | "one-time-code" | "off";
+  /** "numeric" for the 6-digit code: the phone opens the number pad. */
+  inputMode?: "numeric" | "text" | undefined;
+  maxLength?: number | undefined;
+  /** Bigger, spaced digits for codes. */
+  code?: boolean | undefined;
   /** Shown in red under the field; also marks it invalid for screen readers and focus. */
   error?: string | null | undefined;
   /** Marks the field invalid without a message under it (the form alert already explains it). */
@@ -39,6 +44,9 @@ export const AuthField = forwardRef<HTMLInputElement, AuthFieldProps>(function A
     hint,
     placeholder,
     disabled,
+    inputMode,
+    maxLength,
+    code,
   },
   ref,
 ) {
@@ -61,9 +69,13 @@ export const AuthField = forwardRef<HTMLInputElement, AuthFieldProps>(function A
         disabled={disabled}
         aria-invalid={isInvalid ? true : undefined}
         aria-describedby={describedBy}
-        spellCheck={type === "text" ? undefined : false}
+        spellCheck={type === "text" && !code ? undefined : false}
+        inputMode={inputMode}
+        maxLength={maxLength}
+        autoCapitalize={code ? "characters" : undefined}
         className={cn(
           "h-10 rounded-[4px] bg-surface",
+          code && "font-mono text-base tracking-[0.3em]",
           isInvalid && "border-destructive focus-visible:ring-destructive",
         )}
       />

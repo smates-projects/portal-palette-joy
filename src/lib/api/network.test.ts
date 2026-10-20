@@ -448,8 +448,8 @@ describe("Business Bishop", () => {
   it("agreements: framework first, tripartite to sign, equity agreement signed, Vossler in draft", async () => {
     const agreements = await (await asBishop()).bishop.listAgreements();
     expect(agreements[0]?.kind).toBe("framework");
-    // Part 3: the Vossler and Enyermy tripartite contracts are signed too.
-    expect(agreements.map((a) => `${a.state}`).sort()).toEqual(["draft", "sent", "signed", "signed", "signed", "signed"]);
+    // Part 3: the Vossler and Enyermy tripartite contracts are signed too; Techos Delgado's Operating Agreement waits.
+    expect(agreements.map((a) => `${a.state}`).sort()).toEqual(["draft", "sent", "sent", "signed", "signed", "signed", "signed"]);
     expect(agreements.find((a) => a.business_id === seed.BIZ_BIMBO)?.signed_at).toBe("2025-11-14");
   });
 });

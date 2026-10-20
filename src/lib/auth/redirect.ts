@@ -8,6 +8,9 @@ export const PUBLIC_AUTH_PATHS = [
   "/invitacion",
   "/recuperar",
   "/restablecer",
+  "/entrada",
+  "/verificacion",
+  "/activar-verificacion",
 ] as const;
 
 export const isPublicAuthPath = (pathname: string) =>
@@ -42,7 +45,11 @@ export interface AuthHistoryState {
   /** The email the person just used, shown back on the next screen. */
   authEmail?: string | undefined;
   /** Shown once on the login screen. */
-  authNotice?: "password_reset" | undefined;
+  authNotice?: "password_reset" | "two_factor_enabled" | "two_factor_restart" | undefined;
+  /** Challenge of a 202 two_factor_required sign-in, carried to /verificacion (single use, short lived). */
+  twoFactorChallenge?: string | undefined;
+  /** Setup token of a 202 two_factor_setup_required sign-in, carried to /activar-verificacion. Never in the URL. */
+  setupToken?: string | undefined;
 }
 
 declare module "@tanstack/history" {

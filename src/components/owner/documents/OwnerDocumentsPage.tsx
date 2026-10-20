@@ -2,7 +2,9 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { FileText, Upload } from "lucide-react";
-import { useContracts, useCurrentUser, useDocuments, useIntake, useUploadDocument } from "@/lib/api/hooks";
+import { Link } from "@tanstack/react-router";
+import { useContracts, useCurrentUser, useDocuments, useRules, useUploadDocument } from "@/lib/api/hooks";
+import { entryRules, oaWaitingUntil, ownNdaPending } from "@/lib/leads/entry-flow";
 import type { Contract } from "@/lib/api/types";
 import { DocuSealSigner } from "@/components/docuseal/DocuSealSigner";
 import { SignedContractDialog } from "@/components/docuseal/SignedContractDialog";
@@ -31,15 +33,17 @@ export function OwnerDocumentsPage() {
 
   const documents = documentsQ.data ?? [];
   const contracts = contractsQ.data ?? [];
-  const intakeQ = useIntake();
   const me = useCurrentUser().data;
   const [signing, setSigning] = useState<Contract | null>(null);
   const [viewing, setViewing] = useState<Contract | null>(null);
   // Documents asked again go first, with the Strategic Mates comment.
   const requested = [...documents.filter((d) => d.state === "rejected"), ...documents.filter((d) => d.state === "requested")];
   const received = documents.filter((d) => d.state !== "requested" && d.state !== "rejected");
-  // Entry documents unlock once the owner signed the NDA.
-  const locked = !!intakeQ.data && !intakeQ.data.nda_signed_by_owner;
+  // Entry documents unlock once the owner signed the MOU (locked_until_mou on each one).
+  const locked = requested.some((d) => d.area === "intake" && d.locked_until_mou);
+  const rules = entryRules(useRules().data);
+  /** The MOU is signed from "Tu ingreso" (the four points first); the Operating Agreement only after its waiting period. */
+  const signableHere = (c: Contract) => c.kind !== "mou" && !(c.kind === "tripartite" && oaWaitingUntil(c, rules.oa_waiting_days)) && !(c.kind === "nda" && ownNdaPending(c));
 
   const areaLabel = (area: BusinessDocument["area"]) => (area === "diagnosis" || area === "closing" || area === "intake" ? t(`owner_extra.documents.area_${area}`) : t(`areas.${area}`));
 
@@ -76,7 +80,7 @@ export function OwnerDocumentsPage() {
           <input ref={fileInput} type="file" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => onFile(e.target.files?.[0])} />
 
           <Panel title={t("owner_extra.documents.requested_title")} aside={t("owner_extra.documents.count", { count: requested.length })}>
-            {locked && requested.some((d) => d.area === "intake") && (
+            {locked && (
               <p className="border-t border-border bg-muted px-4 py-2 text-sm">{t("intake.owner_docs.locked")}</p>
             )}
             {requested.length === 0 ? (
@@ -94,7 +98,7 @@ export function OwnerDocumentsPage() {
                         <p className="mt-1 text-xs text-status-warning-fg">{t("intake.owner_docs.sm_comment", { comment: d.review_comment })}</p>
                       )}
                     </div>
-                    <button className={secondaryButtonCls} disabled={upload.isPending || (locked && d.area === "intake")} onClick={() => pick(d.id)}>
+                    <button className={secondaryButtonCls} disabled={upload.isPending || !!d.locked_until_mou} onClick={() => pick(d.id)}>
                       <Upload className="h-4 w-4" />
                       {uploadingId === d.id && upload.isPending ? t("owner_extra.documents.uploading") : d.state === "rejected" ? t("intake.owner_docs.upload_new") : t("owner_extra.documents.upload")}
                     </button>
@@ -146,7 +150,9 @@ export function OwnerDocumentsPage() {
                         </p>
                       </div>
                       {c.signers.some((x) => x.party === "owner" && (x.status === "sent" || x.status === "opened")) && (
-                        <button className={secondaryButtonCls} onClick={() => setSigning(c)}>{t("intake.owner_docs.sign")}</button>
+                        signableHere(c)
+                          ? <button className={secondaryButtonCls} onClick={() => setSigning(c)}>{t("intake.owner_docs.sign")}</button>
+                          : <Link to="/" className={secondaryButtonCls}>{t("intake.owner_docs.go_home")}</Link>
                       )}
                       {c.signers.some((x) => x.signed_at) && (
                         <button className={secondaryButtonCls} onClick={() => setViewing(c)}><FileText className="h-4 w-4" />{t("intake.docuseal.view_signed")}</button>

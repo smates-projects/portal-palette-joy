@@ -30,6 +30,9 @@ const DOT: Record<NotificationKind, string> = {
   meeting_booked: "bg-primary",
   calendar_disconnected: "bg-status-warning-fg",
   brand_logo_rejected: "bg-status-danger-fg",
+  meeting_outcome_pending: "bg-status-warning-fg",
+  own_nda_proposed: "bg-link",
+  opportunity_presented: "bg-gold",
 };
 
 export function NotificationBell() {
@@ -57,7 +60,11 @@ export function NotificationBell() {
     setOpen(false);
     // Lead notifications open the lead in the Embudo; the calendar one, the profile (connect again); a rejected logo
     // without a task, the business (load the logo again); the rest open the task.
-    if (n.lead_id) void navigate({ to: "/embudo", search: { lead: n.lead_id } });
+    // "Resultado de la reunión pendiente" opens the lead with its meeting card in focus; a Bishop's "te presentó un
+    // negocio" opens his opportunities.
+    if (n.kind === "meeting_outcome_pending" && n.lead_id) void navigate({ to: "/embudo", search: { lead: n.lead_id, focus: "meeting" } });
+    else if (n.lead_id) void navigate({ to: "/embudo", search: { lead: n.lead_id } });
+    else if (n.kind === "opportunity_presented") void navigate({ to: "/oportunidades" });
     else if (n.kind === "calendar_disconnected") void navigate({ to: "/perfil" });
     else if (n.kind === "brand_logo_rejected" && !n.task_id) void navigate({ to: "/negocios", search: { biz: n.business_id } });
     else void navigate({ to: "/tareas", search: { task: n.task_id } });
@@ -133,6 +140,8 @@ export function NotificationBell() {
                       <span className="block truncate text-xs text-muted-foreground">
                         {n.lead_id ? (
                           <>{t("notifications.lead_ref", { name: n.business_name })}</>
+                        ) : n.kind === "opportunity_presented" ? (
+                          <>{t("notifications.opportunity_ref")}</>
                         ) : !n.task_id ? (
                           // About the person (calendar) or a business (logo): no task to name.
                           <>{n.business_name || t("notifications.profile_ref")}</>

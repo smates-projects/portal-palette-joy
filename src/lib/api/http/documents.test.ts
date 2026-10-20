@@ -271,4 +271,53 @@ describe("http documents", () => {
       path: `/contracts/${CONTRACT}/signed-document`,
     });
   });
+
+  const POINTS = ["funds_finance_intervention", "business_stays_yours", "franchisor_entity_participation", "do_it_together_no_debt"] as const;
+
+  it("acknowledge: POST /contracts/{id}/acknowledge with the four points", async () => {
+    const mou = contractFixture({ kind: "mou" });
+    const { calls } = stubFetch(dataResponse(mou));
+    expect(await asOwner().acknowledge(CONTRACT, [...POINTS])).toEqual(mou);
+    expect(calls[0]).toMatchObject({ method: "POST", path: `/contracts/${CONTRACT}/acknowledge`, body: { points: [...POINTS] } });
+  });
+
+  it("signContract: a MOU without the four points answers acknowledgment_required", async () => {
+    stubFetch(presigned({ "Content-Type": "image/png" }), emptyResponse(200), fileMetadata(), problemResponse(409, "acknowledgment_required"));
+    await expect(asOwner().signContract(CONTRACT, { kind: "drawn", image_url: PNG_DATA_URL })).rejects.toThrow("acknowledgment_required");
+  });
+
+  it("proposeOwnNda: uploads the PDF (context contract), then POST /propose-own { file_id }", async () => {
+    const nda = contractFixture({ kind: "nda", own_file_id: FILE_ID });
+    const { calls } = stubFetch(presigned(), emptyResponse(200), fileMetadata(), dataResponse(nda));
+    const file = new File(["%PDF-1.7 nda"], "mi-nda.pdf", { type: "application/pdf" });
+    expect(await asOwner().proposeOwnNda(CONTRACT, file)).toEqual(nda);
+    expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual([
+      "POST /files/presign",
+      `PUT ${UPLOAD_URL}`,
+      `POST /files/${FILE_ID}/complete`,
+      `POST /contracts/${CONTRACT}/propose-own`,
+    ]);
+    expect(calls[0]?.body).toMatchObject({ context: "contract", original_name: "mi-nda.pdf" });
+    expect(calls[3]?.body).toEqual({ file_id: FILE_ID });
+  });
+
+  it("proposeOwnNda: a name without the file is invalid_file, without calling the API", async () => {
+    const { calls } = stubFetch();
+    await expect(asOwner().proposeOwnNda(CONTRACT, { name: "mi-nda.pdf" })).rejects.toThrow("invalid_file");
+    expect(calls).toHaveLength(0);
+  });
+
+  it("acceptOwnNda / rejectOwnNda: POST /accept-own and /reject-own { comment }", async () => {
+    const { calls } = stubFetch(dataResponse(contractFixture({ source: "own" })), dataResponse(contractFixture()));
+    const documents = asOwner();
+    await documents.acceptOwnNda(CONTRACT);
+    await documents.rejectOwnNda(CONTRACT, "Firma el mutuo, por favor");
+    expect(calls[0]).toMatchObject({ method: "POST", path: `/contracts/${CONTRACT}/accept-own` });
+    expect(calls[1]).toMatchObject({ method: "POST", path: `/contracts/${CONTRACT}/reject-own`, body: { comment: "Firma el mutuo, por favor" } });
+  });
+
+  it("signContract: the Operating Agreement before its waiting period answers waiting_period with the date in detail", async () => {
+    stubFetch(presigned({ "Content-Type": "image/png" }), emptyResponse(200), fileMetadata(), problemResponse(409, "waiting_period", { detail: "2026-10-18" }));
+    await expect(asOwner().signContract(CONTRACT, { kind: "drawn", image_url: PNG_DATA_URL })).rejects.toMatchObject({ code: "waiting_period", detail: "2026-10-18" });
+  });
 });

@@ -13,6 +13,7 @@ import {
   newPasswordProblem,
   type TokenErrorCode,
 } from "@/lib/auth/form";
+import { nextStepAfterSignIn } from "@/lib/auth/two-factor";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { AuthHeading, AuthLayout } from "./AuthLayout";
@@ -155,7 +156,11 @@ function AcceptForm({
     accept.mutate(
       { token, name: name.trim(), password, accepted_terms: true },
       {
-        onSuccess: () => void navigate({ to: "/", replace: true }),
+        onSuccess: (result) => {
+          const step = nextStepAfterSignIn(result);
+          if (step.kind === "signed_in") return void navigate({ href: step.href, replace: true });
+          void navigate({ to: step.to, search: step.search, state: step.state, replace: true });
+        },
         onError: (err) => {
           const code = authErrorCode(err);
           if (isTokenError(code)) return onTokenError(code);

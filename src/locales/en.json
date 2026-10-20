@@ -719,14 +719,14 @@
     "cal_on_short": "Calendar connected",
     "cal_off_short": "No Calendar",
     "cal_title": "Google Calendar",
-    "cal_on": "Connected as {{email}}. Confirmed meetings are added to your calendar.",
-    "cal_off": "Not connected. Connect it so confirmed meetings are added to your calendar automatically.",
+    "cal_on": "Connected as {{email}}. Meetings booked with you show up on each lead automatically.",
+    "cal_off": "Not connected. Connect it so meetings booked with you show up on each lead automatically.",
     "cal_connect": "Connect Google Calendar",
     "cal_disconnect": "Disconnect Google Calendar",
-    "cal_note": "Simulation: in this version the connection doesn't reach Google.",
+    "cal_note": "When you connect it, Google asks for your permission. The portal only reads your calendar: it shows your events next to your tasks and adds to each lead the meeting it booked with you, with its Meet link.",
     "t_connected": "Google Calendar connected as {{email}}",
     "t_disconnected": "Google Calendar disconnected",
-    "cal_return_connected": "Google Calendar connected. Confirmed meetings will be added to your calendar.",
+    "cal_return_connected": "Google Calendar connected. From now on, meetings booked with you show up on each lead automatically.",
     "cal_return_denied": "You did not allow access to your Google Calendar. You can try again whenever you want.",
     "cal_return_error": "We could not connect your Google Calendar. Try again in a few minutes.",
     "cal_return_dismiss": "Close",
@@ -745,7 +745,24 @@
     "booking_invalid": "Type a full link starting with https://",
     "my_team_title": "My team",
     "my_team_hint": "Invite the people of your firm and deactivate those who no longer work with you.",
-    "my_team_empty": "There is nobody else in your firm yet. Invite the first person."
+    "my_team_empty": "There is nobody else in your firm yet. Invite the first person.",
+    "two_factor": {
+      "title": "Two-step verification",
+      "state_on": "On",
+      "state_off": "Off",
+      "on": "When you sign in we ask for your password and a code from your authenticator app.",
+      "off": "Turn it on so nobody can get into your account with only your password.",
+      "enable": "Turn on",
+      "disable": "Turn off",
+      "cancel": "Cancel",
+      "disable_title": "Turn off two-step verification",
+      "disable_body": "To confirm, type the code you see now in your authenticator app.",
+      "disable_submit": "Turn off verification",
+      "disable_pending": "Turning off…",
+      "t_enabled": "You turned on two-step verification.",
+      "t_disabled": "You turned off two-step verification.",
+      "error": "Try again in a few minutes."
+    }
   },
   "report": {
     "heading": "How is my work going?",
@@ -822,7 +839,14 @@
     "pref_calendar_disconnected": "Your Google Calendar needs to be connected again",
     "kind_brand_logo_rejected": "The logo of {{business}} did not pass the check. Upload it again",
     "pref_brand_logo_rejected": "A logo you uploaded did not pass the check",
-    "profile_ref": "Your profile"
+    "profile_ref": "Your profile",
+    "kind_meeting_outcome_pending": "Did the meeting with {{business}} happen? Mark the outcome",
+    "kind_own_nda_proposed": "{{owner}} uploaded their own NDA to review",
+    "kind_opportunity_presented": "Strategic Mates presented you a business in {{place}}",
+    "pref_meeting_outcome_pending": "A meeting ended and its outcome is missing",
+    "pref_own_nda_proposed": "An owner uploads their own NDA",
+    "pref_opportunity_presented": "Strategic Mates presents you a business",
+    "opportunity_ref": "Opportunities"
   },
   "soon": {
     "manual": "Here you'll see your business's operations manual as the firms write it and you approve it.",
@@ -1149,17 +1173,19 @@
       "view_program": "View program",
       "restore": "Reactivate lead",
       "discard": "Discard",
-      "send_nda": "Send NDA and MOU",
+      "send_nda": "Send NDA",
       "review_docs_one": "Review documents ({{count}} new)",
       "review_docs_other": "Review documents ({{count}} new)",
       "approve_docs": "Approve documents",
       "wait_investor": "Waiting for an investor to accept",
-      "send_tripartite": "Send three-party contract",
+      "send_tripartite": "Send Operating Agreement",
       "record_funds": "Record funds received",
-      "wait_signatures": "Waiting for contract signatures",
+      "wait_signatures": "Waiting for the Operating Agreement signatures",
       "start_program": "Confirm program start",
       "join_meet": "Join Google Meet",
-      "meeting_note": "Add meeting note"
+      "send_mou": "Send MOU",
+      "meeting_outcome": "Mark the meeting outcome",
+      "rebook": "Send link to reschedule"
     },
     "move": {
       "no_skip": "{{name}} cannot move to {{to}}: go back one stage at a time.",
@@ -1242,13 +1268,13 @@
       "restored": "{{actor}} reactivated it",
       "note": "{{actor}} wrote a note",
       "contract_signed": "{{actor}} started the program with day 1 on {{date}}.",
-      "nda_sent": "{{actor}} sent the NDA and MOU and created the owner account",
+      "nda_sent": "The NDA went out and the owner's account was created",
       "doc_accepted": "{{actor}} accepted a document",
       "doc_requested": "{{actor}} asked for another document",
       "docs_approved": "{{actor}} approved the documents",
       "bishop_accepted": "An investor accepted the opportunity",
       "bishop_released": "{{actor}} released the opportunity",
-      "tripartite_sent": "{{actor}} sent the tripartite contract",
+      "tripartite_sent": "{{actor}} sent the Operating Agreement",
       "funds_recorded": "{{actor}} recorded an investor payment",
       "funds_reported": "{{actor}} uploaded a payment receipt",
       "funds_confirmed": "{{actor}} confirmed an investor payment",
@@ -1258,31 +1284,49 @@
       "assessment_sent": "{{actor}} sent the assessment",
       "summary_sent": "Automatic: summary sent to {{owner}} with the meeting link",
       "meeting_booked": "Automatic: meeting booked by {{owner}}",
-      "meeting_note": "{{actor}} added the meeting note"
+      "meeting_note": "{{actor}} added the meeting note",
+      "meeting_outcome": "{{actor}} marked the meeting: {{outcome}}",
+      "mou_sent": "The MOU went out and the business moved to Documents",
+      "own_nda_proposed": "{{owner}} uploaded their own NDA to review",
+      "own_nda_accepted": "{{actor}} accepted the owner's own NDA",
+      "own_nda_rejected": "{{actor}} asked to sign the mutual NDA",
+      "presented_to_bishops": "{{actor}} presented the business to investors",
+      "expansion_booked": "Automatic: expansion meeting booked by {{owner}}"
     },
     "error_title": "We could not load the pipeline.",
     "retry": "Retry",
     "network_filtered": "Showing only {{name}}",
     "network_all": "View the whole network",
     "keyboard_hint": "Shift + arrow moves the lead to the next stage.",
-    "t_nda_sent": "We sent the NDA and MOU to {{name}}. Their account is ready.",
+    "t_nda_sent": "We sent the NDA to {{name}}. They already have their account.",
     "t_docs_approved": "Documents of {{name}} approved.",
     "investors": {
       "title": "Investors",
       "none": "No investor has accepted it yet.",
       "accepted_by": "Accepted by {{name}} on {{date}}.",
       "release": "Release opportunity",
-      "viewed_one": "{{count}} investor saw the opportunity.",
-      "viewed_other": "{{count}} investors saw the opportunity.",
       "viewed_on": "Saw it on {{date}}",
       "passed_on": "not interested ({{date}})",
       "passed_one": "{{count}} said they are not interested.",
       "passed_other": "{{count}} said they are not interested.",
       "release_title": "Release the {{name}} opportunity?",
-      "release_body": "It becomes available to every investor again. An unsigned tripartite contract is cancelled.",
+      "release_body": "It becomes available to the investors again. An unsigned Operating Agreement is cancelled.",
       "release_label": "Reason",
       "release_confirm": "Release opportunity",
-      "t_released": "You released the {{name}} opportunity."
+      "t_released": "You released the {{name}} opportunity.",
+      "present": "Present to Bishops",
+      "none_presented": "Presented to investors. None accepted it yet.",
+      "summary": "Presented to {{presented}} · viewed by {{viewed}}",
+      "presented_on": "Presented on {{date}}",
+      "not_viewed": "has not opened it yet",
+      "accepted_on": "accepted it on {{date}}",
+      "present_title": "Present {{name}} to investors",
+      "present_body": "Pick which investors see this business. Only active investors with the framework agreement signed show up. They get a notice.",
+      "present_empty": "There are no active investors with the framework agreement signed.",
+      "already_presented": "Already presented",
+      "present_confirm": "Present",
+      "t_presented_one": "You presented {{name}} to {{count}} investor.",
+      "t_presented_other": "You presented {{name}} to {{count}} investors."
     },
     "t_tripartite_sent": "We sent the tripartite contract for {{name}}.",
     "manual": {
@@ -1309,7 +1353,8 @@
       "err_ranges": "Complete the industry, revenue, margin, team, years and Hispanic owner.",
       "activity_other": "Which branch of construction?",
       "err_activity_other": "Write which branch of construction the business works in."
-    }
+    },
+    "t_mou_sent": "We sent the MOU to {{name}}. The business moved to Documents."
   },
   "entry": {
     "phases_title": "How it came in",
@@ -1351,18 +1396,16 @@
       "with": "With {{name}}",
       "join": "Join Google Meet",
       "join_short": "Join",
-      "held": "The meeting is over. Add the note and decide: send the NDA and MOU, or discard.",
-      "note_done": "Note added on {{date}}.",
-      "manual": "Moved to Meeting without a booking from the owner. Agree on the date with them."
+      "manual": "Moved to Meeting without a booking from the owner. Agree on the date with them.",
+      "expansion_title": "Expansion meeting"
     },
     "note": {
       "title": "Meeting note with {{name}}",
-      "body": "Write what you talked about. Then decide: Send NDA and MOU to accept it, or Discard with the reason.",
+      "body": "Write what you talked about, if you want. Saving sends the MOU to the owner and moves the business to Documents.",
       "label": "Note",
       "placeholder": "What you talked about and what comes next",
-      "confirm": "Save note",
-      "required": "Write the meeting note.",
-      "t_saved": "You saved the note. Next: send the NDA and MOU, or discard."
+      "confirm": "Save: it happened",
+      "body_expansion": "Write what you talked about, if you want. Once saved you can send the Operating Agreement."
     },
     "sim": {
       "button": "Simulate entry",
@@ -1440,7 +1483,61 @@
       "col_block": "Assessment block",
       "map_save": "Save areas",
       "t_map_saved": "You saved the areas of each block. They apply to programs starting from now.",
-      "map_history": "areas per block"
+      "map_history": "areas per block",
+      "flow": {
+        "title": "Entry: investors and Operating Agreement",
+        "hint": "How an approved business is shown to investors and when the Operating Agreement is signed.",
+        "visibility": "Which businesses does each investor see?",
+        "visibility_presented": "Only the ones Strategic Mates presents to them",
+        "visibility_presented_hint": "The team picks which investors see each approved business. The rest do not see it.",
+        "visibility_all": "Every approved business",
+        "visibility_all_hint": "Every investor with the framework agreement signed sees every business. The first one to accept takes it.",
+        "waiting_days": "Waiting days to sign the Operating Agreement",
+        "waiting_days_hint": "Counted from the day it is sent. Nobody can sign before.",
+        "waiting_days_error": "Type a number of days between 0 and 60.",
+        "require_expansion_meeting": "Require the expansion meeting before the Operating Agreement",
+        "require_expansion_meeting_hint": "The team cannot send the Operating Agreement until the expansion meeting happened.",
+        "nda_auto_signed_by_sm": "The NDA and the MOU go out already signed by Strategic Mates",
+        "nda_auto_signed_by_sm_hint": "The office signature is used. The owner only signs their part.",
+        "save": "Save entry rules",
+        "t_saved": "You saved the entry rules.",
+        "default_value": "default value",
+        "yes": "yes",
+        "no": "no"
+      }
+    },
+    "outcome": {
+      "question": "Did the meeting happen?",
+      "pending": "Meeting outcome pending",
+      "held": "It happened",
+      "no_show": "Did not show up",
+      "reschedule": "Reschedule",
+      "hint": "If it happened, the portal sends the MOU to the owner. If not, we send the booking link again.",
+      "hint_expansion": "If it happened, you can send the Operating Agreement.",
+      "rebook_hint": "Waiting for the owner to book another date with your calendar link.",
+      "done_held": "Meeting held. You marked it on {{date}}.",
+      "done_no_show": "The owner did not show up. You marked it on {{date}}.",
+      "done_reschedule": "It will be rescheduled. You marked it on {{date}}.",
+      "card_no_show": "Did not show up · waiting for a new booking",
+      "card_reschedule": "To reschedule · waiting for a new booking",
+      "t_held": "Done. We sent the MOU to {{name}}.",
+      "t_no_show": "You marked that {{name}} did not show up.",
+      "t_reschedule": "You marked that the meeting with {{name}} will be rescheduled.",
+      "t_held_expansion": "Expansion meeting held with {{name}}. You can send the Operating Agreement.",
+      "t_no_show_expansion": "You marked that {{name}} did not show up to the expansion meeting.",
+      "t_reschedule_expansion": "You marked that the expansion meeting with {{name}} will be rescheduled."
+    },
+    "oa": {
+      "needs_expansion": "The expansion meeting with the owner and the investor has to happen first.",
+      "waiting_sm": "Nobody can sign until {{date}} (waiting period)."
+    },
+    "errors": {
+      "outcome_already_set": "That meeting already has an outcome.",
+      "expansion_meeting_required": "The expansion meeting has to happen first.",
+      "invalid_transition": "That cannot be done yet. Check the meeting time.",
+      "acknowledgment_required": "Before signing, tick \"I understand\" on the four points of the MOU.",
+      "own_nda_pending": "Your NDA is being reviewed. We will let you know when Strategic Mates answers.",
+      "waiting_period": "It cannot be signed yet. You can sign from {{date}}."
     }
   },
   "business_file": {
@@ -1924,7 +2021,17 @@
       "checklist_done": "Done",
       "checklist_pending": "Pending",
       "checklist_ready": "The checklist is complete. You can activate the office now.",
-      "checklist_hint": "Each item ticks itself when the office data meets it."
+      "checklist_hint": "Each item ticks itself when the office data meets it.",
+      "signature": {
+        "title": "Office signature",
+        "hint": "PNG image of the signature the NDA and the MOU go out signed with on behalf of Strategic Mates.",
+        "none": "No signature uploaded yet.",
+        "loaded": "Signature uploaded: {{file}}",
+        "upload": "Upload signature",
+        "replace": "Change signature",
+        "only_png": "The signature has to be a PNG image.",
+        "t_saved": "You saved the signature of {{name}}."
+      }
     },
     "funnel": {
       "question": "How many businesses enter the network?",
@@ -2052,7 +2159,11 @@
         "document_review_days": "Document review deadline",
         "intake_documents": "Entry documents",
         "program_amount": "Program amount",
-        "assessment_area_map": "Areas per assessment block"
+        "assessment_area_map": "Areas per assessment block",
+        "opportunity_visibility": "Businesses each investor sees",
+        "oa_waiting_days": "Operating Agreement waiting days",
+        "require_expansion_meeting": "Expansion meeting before the Operating Agreement",
+        "nda_auto_signed_by_sm": "NDA and MOU signed by Strategic Mates"
       },
       "percent": "{{value}}%",
       "days_one": "{{count}} day",
@@ -2406,7 +2517,8 @@
       "all_phases": "All phases",
       "empty_filter": "No opportunities in this phase.",
       "col_phase": "Phase",
-      "col_score": "Score"
+      "col_score": "Score",
+      "presented_by_sm": "Strategic Mates presented this business to you on {{date}}"
     },
     "opportunity_detail": {
       "question": "Is this business right for me?",
@@ -2796,27 +2908,94 @@
     },
     "owner": {
       "question": "What is left before you start?",
-      "step": "Step {{n}} of 4",
+      "step": "Step {{n}}",
       "done": "Done",
       "next": "Later",
-      "s1_title": "Sign your agreements",
-      "s1_body": "Sign the mutual NDA and the MOU. This protects your information and ours.",
-      "s1_cta": "Sign {{name}}",
-      "s2_title": "Upload your documents",
-      "s2_body": "{{count}} documents left. If we ask for one again, it shows first with our comment.",
       "s2_cta": "Upload documents",
-      "s3_title": "We are reviewing your documents: day {{day}} of {{total}}",
       "s3_paused": "We asked you for another document. Upload it so we can continue the review.",
-      "s3_body": "We will let you know if we need anything else.",
-      "s4_title": "Your business was accepted. We are closing the start of your program.",
-      "s4_body": "When it is ready, we will ask you to sign your program contract.",
-      "s4_cta": "Sign your program contract"
+      "steps": {
+        "nda": "Sign the NDA",
+        "meeting": "Your meeting",
+        "mou": "MOU",
+        "documents": "Documents",
+        "expansion": "Expansion meeting",
+        "operating_agreement": "Operating Agreement"
+      },
+      "nda": {
+        "not_sent": "We send it when you book your meeting.",
+        "body": "It is an agreement to protect your information and ours. Strategic Mates already signed it; your signature is missing.",
+        "sign": "Sign the NDA",
+        "own": "I prefer to use my own NDA",
+        "waiting_review": "Waiting for Strategic Mates' review",
+        "own_rejected": "Strategic Mates asks you to sign the mutual NDA: {{comment}}",
+        "signed": "You signed the NDA.",
+        "own_accepted": "Strategic Mates accepted your own NDA.",
+        "t_own_sent": "We received your NDA. We will let you know once we review it.",
+        "own_pending": "You already sent your NDA. Wait for Strategic Mates' review."
+      },
+      "meeting": {
+        "book": "Book your meeting with your consultant.",
+        "rebook": "The meeting did not happen. Book another date when you can.",
+        "book_cta": "Book my meeting",
+        "when": "{{date}} · {{minutes}} min",
+        "with": "With {{name}}",
+        "join": "Join Google Meet",
+        "waiting_outcome": "The meeting is over. Your consultant is wrapping up what you talked about.",
+        "held": "Meeting held on {{date}}.",
+        "held_short": "Meeting held."
+      },
+      "expansion": {
+        "book": "We approved your documents. Book the expansion meeting: it is longer and the investor joins."
+      },
+      "mou": {
+        "not_sent": "We send it after your meeting.",
+        "body": "The MOU explains how we will work together. Read each point and tick \"I understand\". Once you tick the four, you can sign.",
+        "understood": "I understand",
+        "ready": "You ticked the four points. You can sign now.",
+        "missing": "{{n}} points left to tick.",
+        "sign": "Sign",
+        "signed": "You signed the MOU.",
+        "t_error": "We could not save your answers. Try again.",
+        "points": {
+          "funds_finance_intervention": {
+            "title": "The investor's money pays for the work on your business",
+            "body": "An investor (Bishop) pays for the program. With that money, the firms work with you to organize your business. You do not pay for the program."
+          },
+          "business_stays_yours": {
+            "title": "Your business stays yours",
+            "body": "You do not sell your business or hand over any part of it. You stay the owner and decide how it works."
+          },
+          "franchisor_entity_participation": {
+            "title": "The investor takes part in the company that sells the franchises",
+            "body": "During the program a new company is set up to sell franchises of your business. The investor and Strategic Mates own part of that new company, not of your business."
+          },
+          "do_it_together_no_debt": {
+            "title": "We do it together and you are left with no debt",
+            "body": "We work with you for the 180 days of the program. If something does not turn out as expected, you owe nobody money for the program."
+          }
+        }
+      },
+      "docs": {
+        "locked": "Your documents open when you sign the MOU. That way you know from the start how we will work.",
+        "missing_one": "{{count}} document is missing. If we ask for one again, it shows first with our comment.",
+        "missing_other": "{{count}} documents are missing. If we ask for one again, it shows first with our comment.",
+        "in_review": "We are reviewing your documents: day {{day}} of {{total}}.",
+        "approved": "We approved your documents."
+      },
+      "oa": {
+        "not_sent": "We send it after the expansion meeting.",
+        "body": "It is the program contract between you, the investor and Strategic Mates.",
+        "waiting": "Take a few days to read it calmly. You can sign from {{date}}.",
+        "sign": "Sign the Operating Agreement",
+        "signed": "You signed the Operating Agreement. We will let you know when the others sign."
+      }
     },
     "owner_docs": {
-      "locked": "You can upload your documents once you sign the mutual NDA.",
+      "locked": "You can upload your documents once you sign the MOU.",
       "sm_comment": "Strategic Mates comment: {{comment}}",
       "sign": "Sign",
-      "upload_new": "Upload new one"
+      "upload_new": "Upload new one",
+      "go_home": "Sign in Your entry"
     },
     "rules": {
       "days_title": "Document review deadline",
@@ -2836,6 +3015,26 @@
       "name_required": "Every document needs a name.",
       "count_one": "{{count}} document",
       "count_other": "{{count}} documents"
+    },
+    "locked_until_mou": "opens when they sign the MOU",
+    "mou_points": "MOU points confirmed: {{n}} of {{m}}",
+    "nda_status": {
+      "signed": "NDA signed",
+      "pending": "NDA pending",
+      "own_review": "Own NDA to review"
+    },
+    "own_nda": {
+      "review": "The owner uploaded their own NDA ({{file}}). Review it and decide.",
+      "accept": "Accept",
+      "reject": "Ask for the mutual one",
+      "accepted": "The owner's own NDA is used ({{file}}).",
+      "rejected_note": "We asked them to sign the mutual NDA: {{comment}}",
+      "t_accepted": "You accepted the owner's NDA.",
+      "t_rejected": "You asked the owner to sign the mutual NDA.",
+      "reject_title": "Ask for the mutual NDA",
+      "reject_body": "Tell the owner why it is better to sign the Strategic Mates mutual NDA. They will see it in their portal.",
+      "reject_label": "Comment for the owner",
+      "reject_confirm": "Ask for the mutual one"
     }
   },
   "funds": {
@@ -3040,7 +3239,10 @@
       "forgot": "Forgot your password?",
       "use_magic": "Sign in with a link by email",
       "demo_hint": "Demo: every test account uses the password {{password}}",
-      "reset_done": "Done, your password is changed. Sign in with the new one."
+      "reset_done": "Done, your password is changed. Sign in with the new one.",
+      "two_factor_enabled": "Done. Sign in again with your password and the code.",
+      "two_factor_restart": "Sign in again",
+      "two_factor_restart_help": "For your security, the code step expired. Type your email and password again."
     },
     "magic": {
       "title": "Sign in with a link",
@@ -3104,6 +3306,62 @@
     "logout": {
       "action": "Sign out",
       "error": "We could not sign you out. Try again."
+    },
+    "two_factor": {
+      "title": "Type your code",
+      "subtitle": "Open your authenticator app and type the 6-digit code you see for Strategic Mates.",
+      "code_label": "6-digit code",
+      "code_hint": "The code changes every 30 seconds in the app. Type the one you see now.",
+      "code_required": "Type the {{digits}} digits of the code.",
+      "demo_hint": "Demo: the code is {{code}}.",
+      "submit": "Verify and sign in",
+      "pending": "Verifying…",
+      "use_recovery": "Use a recovery code",
+      "use_app": "Use the code from the app",
+      "recovery_title": "Use a recovery code",
+      "recovery_subtitle": "Type one of the codes you saved when you turned on two-step verification.",
+      "recovery_label": "Recovery code",
+      "recovery_hint": "Each code works only once.",
+      "recovery_required": "Type your recovery code.",
+      "recovery_submit": "Sign in with this code",
+      "invalid_code": "The code is not right",
+      "invalid_code_help": "Check that it is the one you see now in the app. If it changed, type the new one.",
+      "invalid_recovery_help": "Check that it is typed right. If you already used that code, try another one.",
+      "challenge_invalid": "This step no longer works",
+      "challenge_expired": "Too much time went by",
+      "challenge_help": "For your security, the code is asked for a few minutes after you type your password. Sign in again with your email and password.",
+      "missing_title": "First sign in with your email",
+      "missing_body": "To ask for your code, we first need your email and password.",
+      "restart": "Sign in again"
+    },
+    "two_factor_setup": {
+      "title": "Turn on two-step verification",
+      "subtitle": "Besides your password, when you sign in we will ask for a code from your phone. That way nobody else can get into your account.",
+      "required_note": "Your account needs this step to enter the portal. When you sign in, besides your password, we will ask for a code from your phone.",
+      "loading": "Preparing your key…",
+      "step_app_title": "Add your account in the app",
+      "step_app_body": "Open your authenticator app (for example Google Authenticator or Microsoft Authenticator) and add a new account with this key.",
+      "secret_label": "Key to type by hand",
+      "open_app": "Open in the authenticator app",
+      "open_app_hint": "If you are on your phone, this link opens the app with the key already filled in.",
+      "step_code_title": "Type the code the app shows you",
+      "submit": "Turn on verification",
+      "pending": "Turning on…",
+      "codes_title": "Save your recovery codes",
+      "codes_body": "If one day you do not have your phone, you can sign in with one of these codes. Each one works only once. We will not show them again.",
+      "codes_list_label": "Recovery codes",
+      "copy": "Copy codes",
+      "copied": "You copied the codes. Paste them somewhere safe.",
+      "copy_failed": "We could not copy them. Select them and copy them by hand.",
+      "done": "I saved them, continue",
+      "token_invalid_title": "This step expired",
+      "token_invalid_body": "Sign in again with your email and password to start over.",
+      "already_enabled": "You already have two-step verification on."
+    },
+    "entry_link": {
+      "title": "Your intake",
+      "pending": "Opening your intake…",
+      "help": "Entry links work once and have an expiration date. Ask for a new link and you will get another email."
     }
   }
 }

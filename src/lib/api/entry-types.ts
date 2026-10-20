@@ -2,16 +2,67 @@
 // business already had, and the assessment snapshot kept by the business. Same shapes as the Laravel API.
 import type { AreaCode, AssessmentBlock, IsoDateTime, Lead, LeadBand, LeadResult, Uuid } from "./types";
 
+/** initial: the first meeting (presentación integral). expansion: the "reunión de ampliación" after the approval. */
+export type MeetingKind = "initial" | "expansion";
+
+/**
+ * What the consultant answers after the meeting ("¿Se hizo?"). held on the initial meeting sends the MOU; held on the
+ * expansion meeting opens the Operating Agreement. no_show and reschedule leave the lead waiting for a new booking.
+ */
+export const MEETING_OUTCOMES = ["held", "no_show", "reschedule"] as const;
+export type MeetingOutcome = (typeof MEETING_OUTCOMES)[number];
+
+/** POST /leads/{id}/meetings/{meetingId}/outcome. The note only travels with "held". */
+export interface MeetingOutcomeInput {
+  outcome: MeetingOutcome;
+  note?: string | null | undefined;
+}
+
 /** Meeting the owner booked from the summary email, as it arrives from the consultant's calendar. */
 export interface LeadMeeting {
+  /** Needed to answer the outcome. Older rows may come without it. */
+  id?: Uuid | undefined;
+  /** Absent = initial. */
+  kind?: MeetingKind | undefined;
   starts_at: IsoDateTime;
   duration_minutes: number;
   meet_url: string;
   consultant_user_id: Uuid;
   /** When the owner booked it. */
   booked_at: IsoDateTime;
-  /** When the consultant wrote the note after the meeting (null until then). */
+  /** When the consultant answered the outcome (or wrote the note, before outcomes existed); null until then. */
   notes_at: IsoDateTime | null;
+  /** The consultant's answer after the meeting; null while nobody answered. */
+  outcome?: MeetingOutcome | null | undefined;
+  /** When the portal asked "¿Se hizo?" (the meeting ended and nobody answered yet). */
+  outcome_prompted_at?: IsoDateTime | null | undefined;
+}
+
+/**
+ * The four points of the MOU the owner confirms one by one ("Entendí") before signing. The API refuses the signature of
+ * a MOU without the four (409 acknowledgment_required).
+ */
+export const MOU_ACKNOWLEDGMENT_POINTS = [
+  "funds_finance_intervention",
+  "business_stays_yours",
+  "franchisor_entity_participation",
+  "do_it_together_no_debt",
+] as const;
+export type MouAcknowledgmentPoint = (typeof MOU_ACKNOWLEDGMENT_POINTS)[number];
+
+/** Which Bishops see an approved opportunity: only the ones SM presented it to, or every Bishop with the framework signed. */
+export type OpportunityVisibility = "presented" | "all";
+
+/**
+ * What the owner's "Tu ingreso" needs about the entry that lives on the lead (the owner never reads the lead):
+ * the meetings, the booking link of the consultant and whether the expansion meeting already happened.
+ */
+export interface OwnerEntry {
+  meeting: LeadMeeting | null;
+  expansion_meeting: LeadMeeting | null;
+  expansion_meeting_held_at: IsoDateTime | null;
+  booking_url: string | null;
+  consultant_name: string | null;
 }
 
 /** A booked meeting of one lead, for the consultant's calendar and the SM home. */

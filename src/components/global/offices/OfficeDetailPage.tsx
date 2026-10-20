@@ -14,6 +14,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { officeHealth } from "../logic";
 import { BusinessSheet, EmptyBox, ErrorBox, GlobalHeader, HealthBadge, OfficeStatusBadge } from "../shared";
 import { PauseOfficeDialog } from "./OfficeDialogs";
+import { OfficeSignatureSection } from "./OfficeSignatureSection";
 
 /** Ficha de una oficina: data, manager and team, opening checklist, firms by area, businesses and its Red (read only). */
 export function OfficeDetailPage({ officeId }: { officeId: string }) {
@@ -203,6 +204,8 @@ export function OfficeDetailPage({ officeId }: { officeId: string }) {
       </div>
 
       {/* Firms by area: an area without a firm is flagged */}
+      <OfficeSignatureSection office={office} />
+
       <section className="mt-4 rounded-md border border-border bg-surface">
         <div className="border-b border-border px-4 py-3"><h2 className="text-sm font-semibold">{t("global.office.firms_title")}</h2></div>
         <ul className="divide-y divide-border">

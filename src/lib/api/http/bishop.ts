@@ -42,6 +42,8 @@ const toOpportunity = (opportunity: BishopOpportunity): BishopOpportunity => ({
   review: opportunity.review,
   decision: opportunity.decision,
   decided_at: opportunity.decided_at,
+  // "Strategic Mates te presentó este negocio": absent until the API sends it.
+  ...(opportunity.presented_at !== undefined ? { presented_at: opportunity.presented_at } : {}),
 });
 
 const toDetail = (detail: OpportunityDetail): OpportunityDetail => ({

@@ -46,13 +46,15 @@ export function resolveLeadMove(from: LeadStage, to: LeadStage): LeadMove {
 }
 
 export type LeadPrimaryAction =
-  | "schedule" | "join_meet" | "meeting_note" | "send_nda" | "review_docs" | "approve_docs" | "wait_investor" | "send_tripartite" | "wait_signatures"
-  | "record_funds" | "start_program" | "view_program" | "restore";
+  | "schedule" | "join_meet" | "meeting_outcome" | "rebook" | "send_nda" | "send_mou" | "review_docs" | "approve_docs" | "wait_investor"
+  | "send_tripartite" | "wait_signatures" | "record_funds" | "start_program" | "view_program" | "restore";
 
 /**
  * One primary action per stage, from the next pending step. In Reunión with a booked meeting: join it until it is
- * over, then write the meeting note, then accept (Enviar NDA y MOU). In Aceptado: wait for a Bishop, send the
- * tripartite contract, wait for the three signatures, record the funds, and once everything is in, confirm the start.
+ * over, then answer "¿Se hizo?" on the meeting card ("Se hizo" sends the MOU and moves the lead to Documentación by
+ * itself). Not shown or to reschedule: send the booking link again. Moved to Reunión by hand (no booking): send the
+ * NDA, then the MOU. In Aceptado: wait for a Bishop, send the Operating Agreement, wait for the three signatures,
+ * record the funds, and once everything is in, confirm the start.
  */
 export function primaryActionFor(
   lead: Pick<Lead, "stage"> & {
@@ -67,9 +69,10 @@ export function primaryActionFor(
   switch (lead.stage) {
     case "evaluated": return "schedule";
     case "meeting":
-      if (lead.meeting && !meetingHeld(lead.meeting, now)) return "join_meet";
-      if (lead.meeting && !lead.meeting.notes_at) return "meeting_note";
-      return "send_nda";
+      if (lead.meeting && !lead.meeting.outcome && !meetingHeld(lead.meeting, now)) return "join_meet";
+      if (lead.meeting && !lead.meeting.outcome) return "meeting_outcome";
+      if (lead.meeting && lead.meeting.outcome !== "held") return "rebook";
+      return lead.intake ? "send_mou" : "send_nda";
     case "documents": return lead.intake && lead.intake.to_review > 0 ? "review_docs" : "approve_docs";
     case "accepted":
       if (!lead.bishop_user_id) return "wait_investor";
@@ -143,6 +146,8 @@ export interface LeadsSearch {
   revenue?: RevenueRange;
   quick?: LeadQuick;
   lead?: string;
+  /** Opened from the bell: the part of the lead to bring into view ("Resultado de la reunión pendiente"). */
+  focus?: "meeting";
 }
 
 const ALL_STAGES: LeadStage[] = [...LEAD_STAGES, "discarded"];
@@ -170,6 +175,7 @@ export function validateLeadsSearch(raw: Record<string, unknown>): LeadsSearch {
   const quick = pick(raw["quick"], QUICKS);
   if (quick) out.quick = quick;
   if (typeof raw["lead"] === "string" && raw["lead"]) out.lead = raw["lead"];
+  if (raw["focus"] === "meeting" && out.lead) out.focus = "meeting";
   return out;
 }
 

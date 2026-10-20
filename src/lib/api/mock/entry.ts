@@ -12,6 +12,7 @@ import type {
   Lead,
   LeadEvent,
   LeadIndustry,
+  LeadMeeting,
   LeadMeetingItem,
   LeadWithComputed,
   MarginRange,
@@ -32,6 +33,7 @@ import type {
 import type { PlatformRules } from "../network-types";
 import type { BusinessFileRepository, LeadsRepository, RoutingRepository, TasksRepository } from "../repositories";
 import { meetingHeld, resolveOffice, validateZone } from "@/lib/leads/entry";
+import { bookingKind } from "@/lib/leads/entry-flow";
 import { DEFAULT_ASSESSMENT_AREA_MAP, checkPreValidation, markPreValidation, strongAreas } from "@/lib/leads/prevalidation";
 import { readinessOutcome } from "@/lib/leads/readiness";
 import { buildMilestones, buildSnapshot, ownerSnapshot } from "@/lib/business/file";
@@ -62,7 +64,9 @@ interface Deps {
   findTask: (id: Uuid) => Task;
   computed: (t: Task) => TaskWithComputed;
   /** Bell notification to the lead's consultant (also when he caused it: the demo runs as him). */
-  notifyConsultant: (l: Lead, kind: NotificationKind, extra: { place?: string; meeting_at?: string; actor_name?: string }) => void;
+  notifyConsultant: (l: Lead, kind: NotificationKind, extra: { place?: string; meeting_at?: string; actor_name?: string; meeting_id?: string }) => void;
+  /** The booking creates the owner account and the NDA (see intake.open). */
+  openNda: (l: Lead) => void;
 }
 
 const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(Math.random() * xs.length)]!;
@@ -160,24 +164,46 @@ export function createEntry(d: Deps) {
     }
   };
 
-  // ---------- Leads: meeting note, calendar, simulation ----------
-  const leads: Pick<LeadsRepository, "addMeetingNote" | "listMeetings" | "simulateAssessment" | "simulateBooking"> = {
-    addMeetingNote: async (id, body) => {
-      if (!body.trim()) throw new Error("note_required");
-      const l = d.findLead(id);
-      if (l.stage !== "meeting" || !l.meeting || !meetingHeld(l.meeting)) throw new Error("invalid_transition");
-      l.meeting.notes_at = nowIso();
-      l.last_contact_at = nowIso();
-      const e: LeadEvent = { id: newId(), lead_id: id, kind: "meeting_note", actor_user_id: me().id, created_at: nowIso(), from: null, to: null, body: body.trim() };
-      db.leadEvents.push(e);
-      return delay(e);
-    },
+  /**
+   * "¿Se hizo?": a meeting that ended without an answer is marked as asked, and its consultant hears about it once
+   * (meeting_outcome_pending). The backend does it with a job when the meeting ends; the mock does it on every read.
+   */
+  const promptOutcomes = () => {
+    const now = nowIso();
+    for (const l of db.leads) {
+      for (const m of [l.meeting, l.expansion_meeting ?? null]) {
+        if (!m || m.outcome || m.outcome_prompted_at || !meetingHeld(m, now)) continue;
+        m.outcome_prompted_at = now;
+        d.notifyConsultant(l, "meeting_outcome_pending", { meeting_at: m.starts_at, ...(m.id ? { meeting_id: m.id } : {}) });
+      }
+    }
+  };
+
+  /** As it comes from the consultant's calendar: within the next 7 days, 30 minutes (60 for the expansion), a Meet link. */
+  const bookedMeeting = (l: Lead, kind: "initial" | "expansion"): LeadMeeting => {
+    const day = addDays(TODAY, 1 + Math.floor(Math.random() * 7));
+    const hour = 13 + Math.floor(Math.random() * 7);
+    const code = () => Math.random().toString(36).slice(2, 5).padEnd(3, "x");
+    return {
+      id: newId(), kind,
+      starts_at: `${day}T${pad(hour)}:${Math.random() < 0.5 ? "00" : "30"}:00Z`, duration_minutes: kind === "expansion" ? 75 : 30,
+      meet_url: `https://meet.google.com/${code()}-${code()}${code().slice(0, 1)}-${code()}`,
+      consultant_user_id: l.consultant_user_id, booked_at: nowIso(), notes_at: null, outcome: null, outcome_prompted_at: null,
+    };
+  };
+
+  // ---------- Leads: calendar, simulation ----------
+  const leads: Pick<LeadsRepository, "listMeetings" | "simulateAssessment" | "simulateBooking"> = {
     listMeetings: async () => {
       const u = me();
       if (u.role !== "sm_team") return delay([]);
+      // The initial meeting while in Reunión, and the expansion meeting of an accepted lead until it is held.
       const items: LeadMeetingItem[] = d.visibleLeads()
-        .filter((l) => l.stage === "meeting" && l.meeting && l.consultant_user_id === u.id)
-        .map((l) => ({ lead_id: l.id, business_name: l.business.name, owner_name: l.contact.name, city: l.contact.city, state: l.contact.state, meeting: l.meeting! }))
+        .filter((l) => l.consultant_user_id === u.id)
+        .flatMap((l) => {
+          const m = l.stage === "meeting" ? l.meeting : l.stage === "accepted" && !l.expansion_meeting_held_at ? l.expansion_meeting ?? null : null;
+          return m ? [{ lead_id: l.id, business_name: l.business.name, owner_name: l.contact.name, city: l.contact.city, state: l.contact.state, meeting: m }] : [];
+        })
         .sort((a, b) => a.meeting.starts_at.localeCompare(b.meeting.starts_at));
       return delay(items);
     },
@@ -236,24 +262,26 @@ export function createEntry(d: Deps) {
     },
     simulateBooking: async (id) => {
       const l = d.findLead(id);
-      if (l.stage !== "evaluated") throw new Error("invalid_transition");
-      // As it comes from the consultant's calendar: within the next 7 days, 30 minutes, a Meet link.
-      const day = addDays(TODAY, 1 + Math.floor(Math.random() * 7));
-      const hour = 13 + Math.floor(Math.random() * 7);
+      const kind = bookingKind(l);
+      if (!kind) throw new Error("invalid_transition");
       const now = nowIso();
-      const code = () => Math.random().toString(36).slice(2, 5).padEnd(3, "x");
-      l.meeting = {
-        starts_at: `${day}T${pad(hour)}:${Math.random() < 0.5 ? "00" : "30"}:00Z`, duration_minutes: 30,
-        meet_url: `https://meet.google.com/${code()}-${code()}${code().slice(0, 1)}-${code()}`,
-        consultant_user_id: l.consultant_user_id, booked_at: now, notes_at: null,
-      };
-      // Automatic: SM did not contact the owner, so last_contact_at stays as it was.
-      l.stage = "meeting";
-      l.stage_entered_at = now;
-      // The booking sends the summary email with the date, time and Meet link.
-      l.summary_sent_at = now;
-      autoEvent({ lead_id: l.id, kind: "meeting_booked", created_at: now, from: "evaluated", to: "meeting", body: null });
-      autoEvent({ lead_id: l.id, kind: "summary_sent", created_at: now, from: null, to: null, body: null });
+      if (kind === "expansion") {
+        l.expansion_meeting = bookedMeeting(l, "expansion");
+        autoEvent({ lead_id: l.id, kind: "expansion_booked", created_at: now, from: null, to: null, body: null });
+        d.notifyConsultant(l, "meeting_booked", { meeting_at: l.expansion_meeting.starts_at, actor_name: l.contact.name });
+        return delay(d.withBooking(l));
+      }
+      l.meeting = bookedMeeting(l, "initial");
+      if (kind === "initial") {
+        // Automatic: SM did not contact the owner, so last_contact_at stays as it was.
+        l.stage = "meeting";
+        l.stage_entered_at = now;
+        // The booking sends the summary email with the date, time and Meet link, and the NDA with its entry link.
+        l.summary_sent_at = now;
+        d.openNda(l);
+      }
+      autoEvent({ lead_id: l.id, kind: "meeting_booked", created_at: now, from: kind === "initial" ? "evaluated" : null, to: kind === "initial" ? "meeting" : null, body: null });
+      if (kind === "initial") autoEvent({ lead_id: l.id, kind: "summary_sent", created_at: now, from: null, to: null, body: null });
       d.notifyConsultant(l, "meeting_booked", { meeting_at: l.meeting.starts_at, actor_name: l.contact.name });
       return delay(d.withBooking(l));
     },
@@ -366,5 +394,5 @@ export function createEntry(d: Deps) {
     return delay(d.computed(t));
   };
 
-  return { seed, takeSnapshot, markBusiness, leads, routing: routingRepo, businessFile, resolvePreValidation };
+  return { seed, takeSnapshot, markBusiness, leads, promptOutcomes, routing: routingRepo, businessFile, resolvePreValidation };
 }

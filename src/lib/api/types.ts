@@ -45,6 +45,9 @@ export interface Organization {
   phone: string | null;
   /** SM offices: booking link used when the assigned consultant has none. */
   default_booking_url?: string | null;
+  /** SM offices: the signature image (PNG) the NDA and the MOU go out pre-signed with. */
+  signature_file_id?: Uuid | null | undefined;
+  signature_file_name?: string | null | undefined;
   /** Partner firm: its SM office. SM office: SM Global. */
   parent_id?: Uuid | null;
   /** SM offices only. */
@@ -127,6 +130,8 @@ export interface User {
   activated_at?: IsoDateTime | null | undefined;
   deactivated_at?: IsoDateTime | null | undefined;
   deactivation_reason?: string | null | undefined;
+  /** The person turned on the verification in two steps (TOTP). Absent = unknown, read as off. */
+  two_factor_enabled?: boolean | undefined;
 }
 
 /** Who to invite. The organization and business depend on the role: SM people have an organization, owners a business. */
@@ -387,9 +392,18 @@ export const NOTIFICATION_KINDS = [
   "calendar_disconnected",
   // Brand (API): to whoever uploaded the logo, the file failed verification and left the brand.
   "brand_logo_rejected",
+  // Revised entry. To the consultant: a meeting ended and nobody answered "¿Se hizo?"; the owner uploaded his own NDA.
+  "meeting_outcome_pending",
+  "own_nda_proposed",
+  // To a Bishop: SM presented him an approved business (opens his opportunities).
+  "opportunity_presented",
 ] as const;
 /** Kinds about a lead of the Embudo. Only the SM team of the lead's office gets them. */
-export const LEAD_NOTIFICATION_KINDS: readonly NotificationKind[] = ["bishop_accepted", "funds_reported", "lead_assessment", "meeting_booked"];
+export const LEAD_NOTIFICATION_KINDS: readonly NotificationKind[] = [
+  "bishop_accepted", "funds_reported", "lead_assessment", "meeting_booked", "meeting_outcome_pending", "own_nda_proposed",
+];
+/** Kinds only a Bishop gets. */
+export const BISHOP_NOTIFICATION_KINDS: readonly NotificationKind[] = ["opportunity_presented"];
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 export type NotificationChannel = "in_app" | "email";
 
@@ -415,6 +429,10 @@ export interface AppNotification {
   lead_place?: string | null;
   /** meeting_booked: when the meeting starts. */
   meeting_at?: IsoDateTime | null;
+  /** meeting_outcome_pending: the meeting to answer (the lead opens with its meeting card in focus). */
+  meeting_id?: Uuid | null;
+  /** opportunity_presented: the opportunity to open (same id as the lead, but the Bishop never gets lead_id). */
+  opportunity_id?: Uuid | null;
 }
 
 export interface NotificationPreference {
@@ -618,6 +636,10 @@ export interface Lead {
   /** Bishop who accepted the opportunity (null while nobody took it, or after SM released it). */
   bishop_user_id: Uuid | null;
   bishop_accepted_at: IsoDateTime | null;
+  /** Reunión de ampliación, booked after the approval (kind "expansion"). Absent or null until booked. */
+  expansion_meeting?: LeadMeeting | null | undefined;
+  /** When the expansion meeting was answered as held: the Operating Agreement can go out from then. */
+  expansion_meeting_held_at?: IsoDateTime | null | undefined;
 }
 
 /** Tripartite contract (Bishop + SM + owner) of an accepted lead. */
@@ -658,11 +680,17 @@ export interface IntakeSummary {
   to_review: number;
   nda_signed: boolean;
   mou_signed: boolean;
-  /** Signed by the owner: unlocks the upload. */
+  /** Signed by the owner. */
   nda_signed_by_owner: boolean;
   clock: ReviewClock;
   approval: DocsApproval;
   approved_at: IsoDateTime | null;
+  /** The MOU went out (after the meeting answered "Se hizo"). Absent = unknown (older answers). */
+  mou_sent?: boolean | undefined;
+  /** Signed by the owner: unlocks the documents (locked_until_mou). */
+  mou_signed_by_owner?: boolean | undefined;
+  /** Meetings and booking link for the owner's "Tu ingreso" (the owner never reads the lead). */
+  entry?: OwnerEntry | null | undefined;
 }
 
 export type LeadEventKind =
@@ -673,7 +701,11 @@ export type LeadEventKind =
   // Business added by hand and the assessment sent to it afterwards.
   | "created_manual" | "assessment_sent"
   // Automatic entry (actor null): summary email sent, meeting booked by the owner. meeting_note: the consultant's note after it.
-  | "summary_sent" | "meeting_booked" | "meeting_note";
+  | "summary_sent" | "meeting_booked" | "meeting_note"
+  // Revised entry: outcome of a meeting, MOU sent, own NDA proposed / accepted / rejected, presented to Bishops,
+  // expansion meeting booked.
+  | "meeting_outcome" | "mou_sent" | "own_nda_proposed" | "own_nda_accepted" | "own_nda_rejected"
+  | "presented_to_bishops" | "expansion_booked";
 
 export interface LeadEvent {
   id: Uuid;
@@ -687,10 +719,14 @@ export interface LeadEvent {
   body: string | null;
   /** contract_signed / program_started: day 1 of the program. */
   signed_on?: IsoDate | null;
+  /** meeting_outcome: what the consultant answered and about which meeting. */
+  outcome?: MeetingOutcome | null | undefined;
+  meeting_kind?: MeetingKind | null | undefined;
 }
 
 export * from "./network-types";
 import type { FundsStatus } from "./network-types";
 export * from "./entry-types";
-import type { ApprovalSource, LeadMeeting, PreValidation } from "./entry-types";
+import type { ApprovalSource, LeadMeeting, MeetingKind, MeetingOutcome, OwnerEntry, PreValidation } from "./entry-types";
+export * from "./auth-types";
 

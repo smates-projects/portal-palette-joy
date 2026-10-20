@@ -3,7 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { localeTag } from "@/lib/format";
-import { useDiscardLead, useLeads, useMoveLead, useSendNdaMou, useUsers } from "@/lib/api/hooks";
+import { useDiscardLead, useLeads, useMoveLead, useSendMou, useSendNda, useUsers } from "@/lib/api/hooks";
 import { LEAD_STAGES, type LeadStage, type LeadWithComputed } from "@/lib/api/types";
 import {
   INDUSTRIES,
@@ -36,7 +36,8 @@ export function PipelinePage({ search }: { search: LeadsSearch }) {
   const usersQ = useUsers();
   const move = useMoveLead();
   const discard = useDiscardLead();
-  const sendNda = useSendNdaMou();
+  const sendNda = useSendNda();
+  const sendMou = useSendMou();
   const [discardFor, setDiscardFor] = useState<LeadWithComputed | null>(null);
   const [adding, setAdding] = useState(false);
 
@@ -81,6 +82,8 @@ export function PipelinePage({ search }: { search: LeadsSearch }) {
     }
     if (action === "send_nda")
       return sendNda.mutate(lead.id, { onSuccess: () => toast.success(t("pipeline.t_nda_sent", { name: lead.business.name })), onError: fail });
+    if (action === "send_mou")
+      return sendMou.mutate(lead.id, { onSuccess: () => toast.success(t("pipeline.t_mou_sent", { name: lead.business.name })), onError: fail });
     if (action === "restore") return doMove(lead, "evaluated");
     if (action === "schedule") {
       // Open synchronously from the click so the browser does not block the new tab.
@@ -195,7 +198,7 @@ export function PipelinePage({ search }: { search: LeadsSearch }) {
             {t("pipeline.filters.clear")}
           </button>
         )}
-        <SimulateEntry leads={all} selectedId={search.lead} onOpen={(id) => setSearch({ lead: id })} />
+        <SimulateEntry leads={all} selectedId={search.lead} onOpen={(id) => setSearch({ lead: id, focus: undefined })} />
       </div>
 
       <div className="mt-4">
@@ -204,23 +207,24 @@ export function PipelinePage({ search }: { search: LeadsSearch }) {
         ) : rows.length === 0 ? (
           <Empty title={t("pipeline.empty_title")} body={t("pipeline.empty_body")} />
         ) : view === "board" ? (
-          <LeadBoard leads={rows} selectedId={search.lead} consultantName={consultantName} onOpen={(id) => setSearch({ lead: id })} onDrop={onDrop} />
+          <LeadBoard leads={rows} selectedId={search.lead} consultantName={consultantName} onOpen={(id) => setSearch({ lead: id, focus: undefined })} onDrop={onDrop} />
         ) : (
-          <LeadTable leads={rows} selectedId={search.lead} consultantName={consultantName} onOpen={(id) => setSearch({ lead: id })} />
+          <LeadTable leads={rows} selectedId={search.lead} consultantName={consultantName} onOpen={(id) => setSearch({ lead: id, focus: undefined })} />
         )}
       </div>
 
-      <Sheet open={!!search.lead} onOpenChange={(o) => !o && setSearch({ lead: undefined })}>
+      <Sheet open={!!search.lead} onOpenChange={(o) => !o && setSearch({ lead: undefined, focus: undefined })}>
         <SheetContent className="w-full overflow-y-auto bg-surface p-0 sm:max-w-xl [&>button]:hidden">
           <SheetTitle className="sr-only">{selected?.business.name ?? t("pipeline.detail.open_full")}</SheetTitle>
           <SheetDescription className="sr-only">{selected?.contact.name ?? ""}</SheetDescription>
           {search.lead && (
             <LeadDetail
               leadId={search.lead}
-              onClose={() => setSearch({ lead: undefined })}
+              onClose={() => setSearch({ lead: undefined, focus: undefined })}
               onPrimary={onPrimary}
               onDiscard={setDiscardFor}
-              pending={move.isPending || sendNda.isPending}
+              pending={move.isPending || sendNda.isPending || sendMou.isPending}
+              focus={search.focus}
             />
           )}
         </SheetContent>

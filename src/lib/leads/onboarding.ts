@@ -46,8 +46,11 @@ export const fullySigned = (c: Contract | undefined) => !!c && c.signers.length 
 
 /** "Aprobar documentación" needs NDA and MOU signed by both and every required document accepted. */
 export function docsApproval(contracts: Contract[], docs: BusinessDocument[]): DocsApproval {
-  const unsigned = (["nda", "mou"] as const).map((k) => contracts.find((c) => c.kind === k)).filter((c) => !fullySigned(c));
-  if (unsigned.length) return { ok: false, reason: "contracts", missing: unsigned.map((c) => c?.name ?? "") };
+  // A contract not sent yet (the MOU before "Se hizo") is missing too, under its usual name.
+  const unsigned = (["nda", "mou"] as const)
+    .map((k) => ({ k, c: contracts.find((c) => c.kind === k) }))
+    .filter(({ c }) => !fullySigned(c));
+  if (unsigned.length) return { ok: false, reason: "contracts", missing: unsigned.map(({ k, c }) => c?.name ?? (k === "nda" ? "NDA mutuo" : "MOU")) };
   const missing = docs.filter((d) => d.required && d.state !== "reviewed").map((d) => d.name);
   return missing.length ? { ok: false, reason: "documents", missing } : { ok: true };
 }

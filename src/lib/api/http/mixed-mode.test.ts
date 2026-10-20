@@ -1,16 +1,20 @@
 import { describe, expect, it, vi } from "vitest";
 import type { SessionRepository } from "../repositories";
-import type { User } from "../types";
+import type { SignInResult, User } from "../types";
 import { withMockUserSync } from "./mixed-mode";
 
 const marilyn = { id: "api-1", email: "marilyn@strategicmates.com" } as User;
+const challenge = { two_factor_required: true as const, challenge_id: "ch-1" };
 
 const setup = () => {
   const session = {
     getCurrentUser: vi.fn(async () => marilyn),
-    login: vi.fn(async () => marilyn),
-    acceptInvitation: vi.fn(async () => marilyn),
-    exchangeMagicLink: vi.fn(async () => marilyn),
+    login: vi.fn(async (): Promise<SignInResult> => marilyn),
+    acceptInvitation: vi.fn(async (): Promise<SignInResult> => marilyn),
+    exchangeMagicLink: vi.fn(async (): Promise<SignInResult> => marilyn),
+    exchangeEntryLink: vi.fn(async (): Promise<SignInResult> => marilyn),
+    verifyTwoFactor: vi.fn(async () => marilyn),
+    recoverTwoFactor: vi.fn(async () => marilyn),
     setViewAs: vi.fn(async () => marilyn),
     logout: vi.fn(async () => undefined),
     logoutAll: vi.fn(async () => undefined),
@@ -30,10 +34,25 @@ describe("withMockUserSync", () => {
     await wrapped.login(credentials);
     await wrapped.acceptInvitation(accept);
     await wrapped.exchangeMagicLink("t");
+    await wrapped.exchangeEntryLink("t");
+    await wrapped.verifyTwoFactor({ challenge_id: "ch-1", code: "123456" });
+    await wrapped.recoverTwoFactor({ challenge_id: "ch-1", code: "SMDEMO-0001" });
     await wrapped.setViewAs("api-2");
 
-    expect(mock.adopt).toHaveBeenCalledTimes(5);
+    expect(mock.adopt).toHaveBeenCalledTimes(8);
     expect(mock.adopt).toHaveBeenCalledWith("marilyn@strategicmates.com");
+  });
+
+  it("does not adopt anyone when the sign-in answers a two-factor step", async () => {
+    const { wrapped, session, mock } = setup();
+    vi.mocked(session.login).mockResolvedValueOnce(challenge);
+    vi.mocked(session.exchangeEntryLink).mockResolvedValueOnce({
+      two_factor_setup_required: true,
+      setup_token: "st-1",
+    });
+    expect(await wrapped.login({ email: "x", password: "y" })).toEqual(challenge);
+    await wrapped.exchangeEntryLink("t");
+    expect(mock.adopt).not.toHaveBeenCalled();
   });
 
   it("resets the mock after logout and logoutAll", async () => {
@@ -47,7 +66,9 @@ describe("withMockUserSync", () => {
     const { wrapped, session, mock } = setup();
     vi.mocked(session.login).mockRejectedValueOnce(new Error("invalid_credentials"));
     vi.mocked(session.logout).mockRejectedValueOnce(new Error("boom"));
-    await expect(wrapped.login({ email: "x", password: "y" })).rejects.toThrow("invalid_credentials");
+    await expect(wrapped.login({ email: "x", password: "y" })).rejects.toThrow(
+      "invalid_credentials",
+    );
     await expect(wrapped.logout()).rejects.toThrow("boom");
     expect(mock.adopt).not.toHaveBeenCalled();
     expect(mock.reset).not.toHaveBeenCalled();

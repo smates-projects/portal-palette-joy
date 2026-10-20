@@ -79,7 +79,7 @@ export function createHttpLeadsRepository(client: HttpClient): HttpLeadsReposito
   };
 
   /**
-   * move, discard, approve-documents and confirm-program-start require If-Match with the lead's ETag. When none is
+   * move, discard, approve-documents, confirm-program-start and the meeting outcome require If-Match with the lead's ETag. When none is
    * known (the board only lists leads), the lead is read first; a stale one answers precondition_failed.
    */
   const guardedWrite = async <T = LeadWithComputed>(id: Uuid, action: string, body?: unknown) => {
@@ -119,7 +119,32 @@ export function createHttpLeadsRepository(client: HttpClient): HttpLeadsReposito
         await client.post<LeadEvent>(`${leadPath(id)}/notes`, { body }, { idempotent: true }),
       ),
 
-    sendNdaMou: (id) => leadWrite(id, "send-nda-mou", undefined, true),
+    /** POST /send-nda (Idempotency-Key): owner account and NDA for a lead without a booking; the new ETag is kept. */
+    sendNda: (id) => leadWrite(id, "send-nda", undefined, true),
+
+    /** POST /send-mou (Idempotency-Key): Reunión → Documentación with the MOU; the new ETag is kept. */
+    sendMou: (id) => leadWrite(id, "send-mou", undefined, true),
+
+    /**
+     * POST /meetings/{meetingId}/outcome (If-Match on the lead): the answer to "¿Se hizo?". The note travels only
+     * with "held" and only when there is one.
+     */
+    setMeetingOutcome: (leadId, meetingId, input) => {
+      const note = input.outcome === "held" ? input.note?.trim() : undefined;
+      return guardedWrite(leadId, `meetings/${encodeURIComponent(meetingId)}/outcome`, {
+        outcome: input.outcome,
+        ...(note ? { note } : {}),
+      });
+    },
+
+    /** POST /present-to-bishops { bishop_user_ids }: answers who SM presented it to (the investors of the lead). */
+    presentToBishops: async (id, bishopUserIds) =>
+      forgetVersion(
+        id,
+        await client.post<LeadInvestors>(`${leadPath(id)}/present-to-bishops`, {
+          bishop_user_ids: bishopUserIds,
+        }),
+      ),
 
     getIntake: (id) => getOrNull<LeadIntake>(client, `${leadPath(id)}/intake`),
 
@@ -190,16 +215,6 @@ export function createHttpLeadsRepository(client: HttpClient): HttpLeadsReposito
       ),
 
     sendAssessment: (id) => leadWrite(id, "send-assessment", undefined, true),
-
-    addMeetingNote: async (id, body) =>
-      forgetVersion(
-        id,
-        await client.post<LeadEvent>(
-          `${leadPath(id)}/meeting-note`,
-          { body },
-          { idempotent: true },
-        ),
-      ),
 
     listMeetings: () => client.get<LeadMeetingItem[]>("/meetings"),
 

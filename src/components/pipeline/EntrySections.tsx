@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, ExternalLink, Video } from "lucide-react";
-import type { LeadWithComputed } from "@/lib/api/types";
+import { nowIso } from "@/config/app";
+import type { LeadMeeting, LeadWithComputed, MeetingOutcome } from "@/lib/api/types";
 import { emailItems, entryTimeline, meetingHeld } from "@/lib/leads/entry";
+import { outcomePending } from "@/lib/leads/entry-flow";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -94,31 +96,72 @@ export function SummaryEmail({ lead }: { lead: LeadWithComputed }) {
   );
 }
 
-/** The booked meeting: date, time, consultant and the Meet link. */
-export function MeetingCard({ lead, consultantName }: { lead: LeadWithComputed; consultantName: string }) {
+/**
+ * The booked meeting: date, time, consultant and the Meet link. Once it started, the consultant answers "¿Se hizo?":
+ * Se hizo (with a note), No se presentó, Reagendar. Initial meeting while in Reunión; expansion meeting while accepted.
+ * `focused` (from the bell) scrolls to it and outlines it.
+ */
+export function MeetingCard(props: {
+  lead: LeadWithComputed;
+  consultantName: string;
+  readOnly?: boolean;
+  focused?: boolean;
+  pending?: boolean;
+  onOutcome?: (meeting: LeadMeeting, outcome: MeetingOutcome) => void;
+}) {
   const { t, i18n } = useTranslation();
-  const m = lead.meeting;
-  if (lead.stage !== "meeting") return null;
+  const { lead } = props;
+  const ref = useRef<HTMLElement>(null);
+  const expansion = lead.stage === "accepted";
+  const m = expansion ? lead.expansion_meeting ?? null : lead.meeting;
+  useEffect(() => {
+    if (props.focused) ref.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [props.focused]);
+  if (lead.stage !== "meeting" && !(expansion && m)) return null;
+  const started = !!m && Date.parse(m.starts_at) <= Date.parse(nowIso());
+  const asked = outcomePending(m) && !!m?.outcome_prompted_at;
   return (
-    <section>
-      <h3 className={sectionTitle}>{t("entry.meeting.title")}</h3>
+    <section ref={ref} id="lead-meeting">
+      <h3 className={sectionTitle}>{t(expansion ? "entry.meeting.expansion_title" : "entry.meeting.title")}</h3>
       {!m ? (
         <p className="mt-2 rounded-md border border-dashed border-border px-3 py-3 text-sm text-muted-foreground">{t("entry.meeting.manual")}</p>
       ) : (
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-3 rounded-md border border-border px-4 py-3 text-sm">
-          <div>
-            <p className="font-medium tabular-nums">{t("entry.meeting.when", { date: formatDateTime(m.starts_at, i18n.language), minutes: m.duration_minutes })}</p>
-            <p className="text-xs text-muted-foreground">{t("entry.meeting.with", { name: consultantName })}</p>
-            {meetingHeld(m) && (
-              <p className="mt-1 text-xs text-muted-foreground">
-                {m.notes_at ? t("entry.meeting.note_done", { date: formatDateTime(m.notes_at, i18n.language) }) : t("entry.meeting.held")}
-              </p>
+        <div className={cn("mt-2 rounded-md border px-4 py-3 text-sm", props.focused ? "border-primary ring-2 ring-primary/20" : "border-border")}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="font-medium tabular-nums">{t("entry.meeting.when", { date: formatDateTime(m.starts_at, i18n.language), minutes: m.duration_minutes })}</p>
+              <p className="text-xs text-muted-foreground">{t("entry.meeting.with", { name: props.consultantName })}</p>
+              {m.outcome && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t(`entry.outcome.done_${m.outcome}`, { date: m.notes_at ? formatDateTime(m.notes_at, i18n.language) : "" })}
+                </p>
+              )}
+            </div>
+            {!meetingHeld(m) && !m.outcome && (
+              <a href={m.meet_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-sm text-link hover:underline">
+                <Video className="h-4 w-4" />{t("entry.meeting.join")}<ExternalLink className="h-3 w-3" />
+              </a>
             )}
           </div>
-          {!meetingHeld(m) && (
-            <a href={m.meet_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-sm text-link hover:underline">
-              <Video className="h-4 w-4" />{t("entry.meeting.join")}<ExternalLink className="h-3 w-3" />
-            </a>
+          {!m.outcome && started && (
+            <div className="mt-3 border-t border-border pt-3">
+              <p className={cn("text-sm", asked ? "font-medium text-status-warning-fg" : "font-medium")}>{t(asked ? "entry.outcome.pending" : "entry.outcome.question")}</p>
+              {!props.readOnly && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <PrimaryButton disabled={!!props.pending} onClick={() => props.onOutcome?.(m, "held")}>{t("entry.outcome.held")}</PrimaryButton>
+                  {(["no_show", "reschedule"] as const).map((o) => (
+                    <button key={o} disabled={!!props.pending} onClick={() => props.onOutcome?.(m, o)}
+                      className="inline-flex h-9 items-center rounded-[4px] border border-border bg-surface px-3 text-sm font-medium hover:bg-muted disabled:opacity-50">
+                      {t(`entry.outcome.${o}`)}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {!props.readOnly && <p className="mt-2 text-xs text-muted-foreground">{t(expansion ? "entry.outcome.hint_expansion" : "entry.outcome.hint")}</p>}
+            </div>
+          )}
+          {(m.outcome === "no_show" || m.outcome === "reschedule") && (
+            <p className="mt-2 text-xs text-muted-foreground">{t("entry.outcome.rebook_hint")}</p>
           )}
         </div>
       )}
@@ -126,17 +169,16 @@ export function MeetingCard({ lead, consultantName }: { lead: LeadWithComputed; 
   );
 }
 
-/** After the meeting: the consultant's note. Then Enviar NDA y MOU (accept) or Descartar. */
-export function MeetingNoteDialog(props: { name: string; pending: boolean; onClose: () => void; onConfirm: (body: string) => void }) {
+/** "Se hizo": an optional note of the meeting. On the first meeting it sends the MOU; on the expansion, it opens the Operating Agreement. */
+export function MeetingNoteDialog(props: { name: string; expansion?: boolean; pending: boolean; onClose: () => void; onConfirm: (body: string) => void }) {
   const { t } = useTranslation();
   const [body, setBody] = useState("");
-  const [tried, setTried] = useState(false);
   return (
     <Dialog open onOpenChange={(o) => !o && props.onClose()}>
       <DialogContent className="bg-surface sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{t("entry.note.title", { name: props.name })}</DialogTitle>
-          <DialogDescription>{t("entry.note.body")}</DialogDescription>
+          <DialogDescription>{t(props.expansion ? "entry.note.body_expansion" : "entry.note.body")}</DialogDescription>
         </DialogHeader>
         <label className="block space-y-1.5">
           <span className="text-sm font-medium">{t("entry.note.label")}</span>
@@ -146,13 +188,12 @@ export function MeetingNoteDialog(props: { name: string; pending: boolean; onClo
             value={body}
             onChange={(e) => setBody(e.target.value)}
             placeholder={t("entry.note.placeholder")}
-            className="w-full resize-none rounded-md border border-input bg-surface px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30"
+            className="w-full resize-none rounded-[4px] border border-input bg-surface px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30"
           />
-          {tried && !body.trim() && <span className="text-xs text-status-danger-fg">{t("entry.note.required")}</span>}
         </label>
         <DialogFooter>
           <SecondaryButton onClick={props.onClose}>{t("pipeline.cancel")}</SecondaryButton>
-          <PrimaryButton onClick={() => { setTried(true); if (body.trim()) props.onConfirm(body.trim()); }} disabled={props.pending}>{t("entry.note.confirm")}</PrimaryButton>
+          <PrimaryButton onClick={() => props.onConfirm(body.trim())} disabled={props.pending}>{t("entry.note.confirm")}</PrimaryButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

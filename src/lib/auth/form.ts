@@ -1,5 +1,13 @@
 // Small helpers shared by the sign-in screens. The server checks everything again; these only spare a round trip.
-import { AUTH_ERROR_CODES, MIN_PASSWORD_LENGTH, type AuthErrorCode } from "@/lib/api/types";
+import {
+  AUTH_ERROR_CODES,
+  MIN_PASSWORD_LENGTH,
+  TWO_FACTOR_ERROR_CODES,
+  type AuthErrorCode,
+  type TwoFactorErrorCode,
+} from "@/lib/api/types";
+
+const KNOWN_AUTH_CODES: readonly string[] = [...AUTH_ERROR_CODES, ...TWO_FACTOR_ERROR_CODES];
 
 export const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
@@ -15,10 +23,10 @@ export function newPasswordProblem(value: string): "password_short" | null {
 }
 
 /** The repository error as one of the known codes; anything else (network, 500) is "generic". */
-export function authErrorCode(error: unknown): AuthErrorCode | "generic" {
+export function authErrorCode(error: unknown): AuthErrorCode | TwoFactorErrorCode | "generic" {
   const message = error instanceof Error ? error.message : "";
-  return (AUTH_ERROR_CODES as readonly string[]).includes(message)
-    ? (message as AuthErrorCode)
+  return KNOWN_AUTH_CODES.includes(message)
+    ? (message as AuthErrorCode | TwoFactorErrorCode)
     : "generic";
 }
 

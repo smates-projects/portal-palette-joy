@@ -1,25 +1,57 @@
 // SessionRepository over the real API: cookie session, email links, and "Ver como" as real impersonation.
 import type { SessionRepository } from "../repositories";
-import type {
-  Business,
-  InvitationPreview,
-  Organization,
-  User,
-  UserRole,
-  Uuid,
-  ViewAsOption,
+import {
+  isSignedInUser,
+  type Business,
+  type InvitationPreview,
+  type Organization,
+  type RecoveryCodes,
+  type SignInResult,
+  type TwoFactorSetup,
+  type User,
+  type UserRole,
+  type Uuid,
+  type ViewAsOption,
 } from "../types";
-import { ApiError, isApiError, type HttpClient, type SessionSnapshot } from "./client";
+import {
+  ApiError,
+  isApiError,
+  type HttpClient,
+  type RequestOptions,
+  type SessionSnapshot,
+} from "./client";
 
 /** GET /me: the User plus who SM Global is viewing as (null when it is a normal session). */
 export interface MeResponse extends User {
   impersonating: { id: Uuid; name: string } | null;
 }
 
-/** 202 of POST /auth/login when the account has two-factor on. */
-interface TwoFactorChallenge {
-  two_factor_required: true;
-  challenge_id: string;
+/** Header that carries the setup token of a 202 two_factor_setup_required sign-in. */
+export const SETUP_TOKEN_HEADER = "X-Setup-Token";
+
+const setupOptions = (setupToken: string | null | undefined): RequestOptions =>
+  setupToken ? { headers: { [SETUP_TOKEN_HEADER]: setupToken } } : {};
+
+/**
+ * With a setup token and no session, the API's guard answers 401 "unauthenticated" when the token is gone (used or
+ * expired). For the screens that is "setup_token_invalid": sign in again to get a new one.
+ */
+async function withSetupToken<T>(
+  setupToken: string | null | undefined,
+  call: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await call();
+  } catch (error) {
+    if (setupToken && isApiError(error) && error.status === 401)
+      throw new ApiError({
+        code: "setup_token_invalid",
+        status: 401,
+        detail: error.detail,
+        requestId: error.requestId,
+      });
+    throw error;
+  }
 }
 
 /** The API's Me carries `impersonating`; the front's User does not. */
@@ -57,11 +89,6 @@ export const VIEW_AS_ROLES: readonly UserRole[] = [
   "franchisee",
 ];
 
-const isTwoFactorChallenge = (value: unknown): value is TwoFactorChallenge =>
-  typeof value === "object" &&
-  value !== null &&
-  (value as Record<string, unknown>)["two_factor_required"] === true;
-
 export function createHttpSessionRepository(client: HttpClient): SessionRepository {
   /**
    * Options built while the real SM Global person was signed in. While impersonating, GET /users answers with the
@@ -75,6 +102,13 @@ export function createHttpSessionRepository(client: HttpClient): SessionReposito
     viewAsCache = null;
     return toUser(user);
   };
+
+  /**
+   * Answer of an entry route (login, magic link, invitation, entry link): 200 is the User and the session started;
+   * a 202 two-factor step is handed back as is and starts nothing (no cookie was set).
+   */
+  const settleSignIn = (result: SignInResult): SignInResult =>
+    isSignedInUser(result) ? startSession(result) : result;
 
   const endSession = () => {
     client.setSession(null);
@@ -152,20 +186,43 @@ export function createHttpSessionRepository(client: HttpClient): SessionReposito
      */
     isAuthenticated: () => client.session().user !== null,
 
-    login: async (input) => {
-      const result = await client.post<User | TwoFactorChallenge>("/auth/login", {
-        email: input.email,
-        password: input.password,
-      });
-      if (isTwoFactorChallenge(result)) {
-        // Gap: the front has no TOTP step yet. The challenge id travels in `detail` for when it does.
-        throw new ApiError({
-          code: "two_factor_required",
-          status: 202,
-          detail: result.challenge_id,
-        });
-      }
-      return startSession(result);
+    login: async (input) =>
+      settleSignIn(
+        await client.post<SignInResult>("/auth/login", {
+          email: input.email,
+          password: input.password,
+        }),
+      ),
+
+    verifyTwoFactor: async (input) =>
+      startSession(
+        await client.post<User>("/auth/2fa/verify", {
+          challenge_id: input.challenge_id,
+          code: input.code,
+        }),
+      ),
+
+    recoverTwoFactor: async (input) =>
+      startSession(
+        await client.post<User>("/auth/2fa/recovery", {
+          challenge_id: input.challenge_id,
+          code: input.code,
+        }),
+      ),
+
+    setupTwoFactor: (setupToken) =>
+      withSetupToken(setupToken, () =>
+        client.post<TwoFactorSetup>("/auth/2fa/setup", undefined, setupOptions(setupToken)),
+      ),
+
+    confirmTwoFactor: (code, setupToken) =>
+      withSetupToken(setupToken, () =>
+        client.post<RecoveryCodes>("/auth/2fa/confirm", { code }, setupOptions(setupToken)),
+      ),
+
+    // Assumed endpoint: the API has no POST /auth/2fa/disable yet (pending on the API side). Same body as confirm.
+    disableTwoFactor: async (code) => {
+      await client.post<void>("/auth/2fa/disable", { code });
     },
 
     logout: async () => {
@@ -192,14 +249,18 @@ export function createHttpSessionRepository(client: HttpClient): SessionReposito
     },
 
     exchangeMagicLink: async (token) =>
-      startSession(await client.post<User>("/auth/magic-link/exchange", { token })),
+      settleSignIn(await client.post<SignInResult>("/auth/magic-link/exchange", { token })),
+
+    // Assumed endpoint (same contract as the magic link): not in the API yet.
+    exchangeEntryLink: async (token) =>
+      settleSignIn(await client.post<SignInResult>("/auth/entry-link/exchange", { token })),
 
     exchangeInvitation: (token) =>
       client.post<InvitationPreview>("/auth/invitations/exchange", { token }),
 
     acceptInvitation: async (input) =>
-      startSession(
-        await client.post<User>("/auth/invitations/accept", {
+      settleSignIn(
+        await client.post<SignInResult>("/auth/invitations/accept", {
           token: input.token,
           name: input.name,
           password: input.password,

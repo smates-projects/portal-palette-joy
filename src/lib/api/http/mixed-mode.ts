@@ -2,7 +2,7 @@
 // against its own current user, so it is kept pointing at the person who is really signed in (matched by email:
 // ids differ between the mock seed and the API, the seeded emails are the same).
 import type { SessionRepository } from "../repositories";
-import type { User } from "../types";
+import { isSignedInUser, type SignInResult, type User } from "../types";
 
 export interface MockUserControl {
   /** Makes the mock act as the user with that email. Returns false (and changes nothing) when it has none. */
@@ -16,10 +16,11 @@ export function withMockUserSync(
   session: SessionRepository,
   mock: MockUserControl,
 ): SessionRepository {
-  const mirror = async (pending: Promise<User>) => {
-    const user = await pending;
-    mock.adopt(user.email);
-    return user;
+  const mirror = async <T extends SignInResult>(pending: Promise<T>): Promise<T> => {
+    const result = await pending;
+    // A two-factor step (202) started no session: nobody to adopt yet.
+    if (isSignedInUser(result)) mock.adopt((result as User).email);
+    return result;
   };
   const afterSignOut = async (pending: Promise<void>) => {
     await pending;
@@ -32,6 +33,9 @@ export function withMockUserSync(
     login: (input) => mirror(session.login(input)),
     acceptInvitation: (input) => mirror(session.acceptInvitation(input)),
     exchangeMagicLink: (token) => mirror(session.exchangeMagicLink(token)),
+    exchangeEntryLink: (token) => mirror(session.exchangeEntryLink(token)),
+    verifyTwoFactor: (input) => mirror(session.verifyTwoFactor(input)),
+    recoverTwoFactor: (input) => mirror(session.recoverTwoFactor(input)),
     setViewAs: (userId) => mirror(session.setViewAs(userId)),
     logout: () => afterSignOut(session.logout()),
     logoutAll: () => afterSignOut(session.logoutAll()),

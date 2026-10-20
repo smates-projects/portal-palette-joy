@@ -144,13 +144,24 @@ describe("http leads", () => {
     expect(client.etags.has(LEAD_PATH)).toBe(false);
   });
 
-  it("sendNdaMou: POST /send-nda-mou, and the lead's new ETag is kept", async () => {
-    const inDocuments = leadFixture({ stage: "documents", business_id: IDS.business });
-    const { calls } = stubFetch(dataResponse(inDocuments, 200, { ETag: '"6"' }));
+  it("sendNda: POST /send-nda with an Idempotency-Key, and the lead's new ETag is kept", async () => {
+    const withNda = leadFixture({ stage: "meeting", business_id: IDS.business });
+    const { calls } = stubFetch(dataResponse(withNda, 200, { ETag: '"6"' }));
     const { leads, client } = setup();
-    expect(await leads.sendNdaMou(LEAD)).toEqual(inDocuments);
-    expect(calls[0]).toMatchObject({ method: "POST", path: `${LEAD_PATH}/send-nda-mou` });
+    expect(await leads.sendNda(LEAD)).toEqual(withNda);
+    expect(calls[0]).toMatchObject({ method: "POST", path: `${LEAD_PATH}/send-nda` });
+    expect(calls[0]?.headers["Idempotency-Key"]).toBeTruthy();
     expect(client.etags.get(LEAD_PATH)).toBe('"6"');
+  });
+
+  it("sendMou: POST /send-mou with an Idempotency-Key, and the lead's new ETag is kept", async () => {
+    const inDocuments = leadFixture({ stage: "documents", business_id: IDS.business });
+    const { calls } = stubFetch(dataResponse(inDocuments, 200, { ETag: '"7"' }));
+    const { leads, client } = setup();
+    expect(await leads.sendMou(LEAD)).toEqual(inDocuments);
+    expect(calls[0]).toMatchObject({ method: "POST", path: `${LEAD_PATH}/send-mou` });
+    expect(calls[0]?.headers["Idempotency-Key"]).toBeTruthy();
+    expect(client.etags.get(LEAD_PATH)).toBe('"7"');
   });
 
   it("getIntake: GET /leads/{id}/intake; null before NDA and MOU", async () => {
@@ -240,15 +251,45 @@ describe("http leads", () => {
     expect(client.etags.get(LEAD_PATH)).toBe('"2"');
   });
 
-  it("addMeetingNote: POST /meeting-note with the note", async () => {
-    const note = leadEventFixture({ kind: "meeting_note", body: "Quiere franquiciar en 2027" });
-    const { calls } = stubFetch(dataResponse(note, 201));
-    expect(await setup().leads.addMeetingNote(LEAD, "Quiere franquiciar en 2027")).toEqual(note);
-    expect(calls[0]).toMatchObject({
+  it("setMeetingOutcome: reads the lead for its ETag, then POST /meetings/{m}/outcome with If-Match and the note only for held", async () => {
+    const MEETING = IDS.zone;
+    const inDocuments = leadFixture({ stage: "documents" });
+    const { calls } = stubFetch(
+      dataResponse(detailFixture(), 200, { ETag: '"3"' }),
+      dataResponse(inDocuments, 200, { ETag: '"4"' }),
+      dataResponse(leadFixture(), 200, { ETag: '"5"' }),
+    );
+    const { leads, client } = setup();
+    expect(await leads.setMeetingOutcome(LEAD, MEETING, { outcome: "held", note: " Quiere franquiciar en 2027 " })).toEqual(inDocuments);
+    expect(calls[0]).toMatchObject({ method: "GET", path: LEAD_PATH });
+    expect(calls[1]).toMatchObject({
       method: "POST",
-      path: `${LEAD_PATH}/meeting-note`,
-      body: { body: "Quiere franquiciar en 2027" },
+      path: `${LEAD_PATH}/meetings/${MEETING}/outcome`,
+      body: { outcome: "held", note: "Quiere franquiciar en 2027" },
     });
+    expect(calls[1]?.headers["If-Match"]).toBe('"3"');
+    // No note with no_show (even if one is given), and the known ETag is used.
+    await leads.setMeetingOutcome(LEAD, MEETING, { outcome: "no_show", note: "x" });
+    expect(calls[2]).toMatchObject({ body: { outcome: "no_show" } });
+    expect(calls[2]?.headers["If-Match"]).toBe('"4"');
+    expect(client.etags.get(LEAD_PATH)).toBe('"5"');
+  });
+
+  it("setMeetingOutcome: outcome_already_set arrives as the error code", async () => {
+    stubFetch(problemResponse(409, "outcome_already_set"));
+    const { leads, client } = setup();
+    client.etags.set(LEAD_PATH, '"1"');
+    await expect(leads.setMeetingOutcome(LEAD, IDS.zone, { outcome: "reschedule" })).rejects.toThrow("outcome_already_set");
+  });
+
+  it("presentToBishops: POST /present-to-bishops { bishop_user_ids } answers the investors; the cached ETag is dropped", async () => {
+    const investors = { views: [], bishop: null, tripartite: null, presented: [{ bishop_user_id: IDS.member, name: "Jefferson Paula", presented_at: "2026-10-14T12:00:00Z" }] };
+    const { calls } = stubFetch(dataResponse(investors));
+    const { leads, client } = setup();
+    client.etags.set(LEAD_PATH, '"2"');
+    expect(await leads.presentToBishops(LEAD, [IDS.member])).toEqual(investors);
+    expect(calls[0]).toMatchObject({ method: "POST", path: `${LEAD_PATH}/present-to-bishops`, body: { bishop_user_ids: [IDS.member] } });
+    expect(client.etags.has(LEAD_PATH)).toBe(false);
   });
 
   it("listMeetings: GET /meetings", async () => {

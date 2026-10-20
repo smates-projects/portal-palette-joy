@@ -49,29 +49,39 @@ describe("Aprobar documentación", () => {
 });
 
 describe("entry flow in the mock", () => {
-  it("Enviar NDA y MOU creates the owner, the business in onboarding, both contracts and the 7 documents", async () => {
+  it("'Se hizo' on Rivera's meeting sends the MOU: Documentación, the 7 documents locked until the MOU is signed", async () => {
     const api = createMockApi();
     await api.session.setViewAs(seed.U_NICOLAS);
     const rivera = (await api.leads.list()).find((l) => l.business.name === "Rivera Roofing & Remodel")!;
-    const moved = await api.leads.sendNdaMou(rivera.id);
+    // The booking already created the NDA, Strategic Mates pre-signed.
+    const before = (await api.leads.getIntake(rivera.id))!;
+    expect(before.contracts.map((c) => c.kind)).toEqual(["nda"]);
+    expect(before.contracts[0]!.signers.find((s) => s.party === "sm")!.status).toBe("signed");
+    expect(before.documents).toHaveLength(0);
+    const moved = await api.leads.setMeetingOutcome(rivera.id, rivera.meeting!.id!, { outcome: "held", note: "Quiere empezar en enero" });
     expect(moved.stage).toBe("documents");
     const intake = (await api.leads.getIntake(rivera.id))!;
     expect(intake.contracts.map((c) => c.kind)).toEqual(["nda", "mou"]);
     expect(intake.documents).toHaveLength(7);
+    expect(intake.documents.every((d) => d.locked_until_mou)).toBe(true);
     expect(intake.summary.clock.status).toBe("waiting_upload");
     // Program screens do not list a business that is still entering.
     expect((await api.businesses.list()).some((b) => b.id === moved.business_id)).toBe(false);
   });
-  it("the owner uploads only after signing the NDA", async () => {
+  it("the owner uploads only after confirming the four MOU points and signing it", async () => {
     const api = createMockApi();
     await api.session.setViewAs(seed.U_NICOLAS);
     const rivera = (await api.leads.list()).find((l) => l.business.name === "Rivera Roofing & Remodel")!;
-    await api.leads.sendNdaMou(rivera.id);
+    await api.leads.setMeetingOutcome(rivera.id, rivera.meeting!.id!, { outcome: "held" });
     const { documents, contracts } = (await api.leads.getIntake(rivera.id))!;
+    const mou = contracts.find((c) => c.kind === "mou")!;
     const owner = (await api.users.list()).find((u) => u.email === rivera.contact.email)!;
     await api.session.setViewAs(owner.id);
-    await expect(api.documents.uploadDocument(documents[0]!.id, { name: "banco.pdf" })).rejects.toThrow("nda_required");
-    await api.documents.signContract(contracts.find((c) => c.kind === "nda")!.id);
+    await expect(api.documents.uploadDocument(documents[0]!.id, { name: "banco.pdf" })).rejects.toThrow("mou_required");
+    await expect(api.documents.signContract(mou.id)).rejects.toThrow("acknowledgment_required");
+    await expect(api.documents.acknowledge(mou.id, ["business_stays_yours"])).rejects.toThrow("invalid_points");
+    await api.documents.acknowledge(mou.id, ["funds_finance_intervention", "business_stays_yours", "franchisor_entity_participation", "do_it_together_no_debt"]);
+    await api.documents.signContract(mou.id);
     expect((await api.documents.uploadDocument(documents[0]!.id, { name: "banco.pdf" })).state).toBe("received");
   });
   it("sample data: Castillo paused with 5 of 7 uploaded and 3 accepted; Navarro at day 17 of 15", async () => {
@@ -84,7 +94,7 @@ describe("entry flow in the mock", () => {
     const glow = leads.find((l) => l.business.name === "Navarro Cercas y Portones")!.intake!;
     expect(glow.clock).toMatchObject({ day: 17, total: 15, tone: "red" });
   });
-  it("sample data: Yesenia Morales signed the NDA, the MOU waits for her and 3 of 7 documents are uploaded", async () => {
+  it("sample data: Yesenia Morales signed the NDA, the MOU waits for her and her 7 documents stay locked", async () => {
     const api = createMockApi();
     const owner = (await api.session.getViewAsOptions()).find((o) => o.business?.name === "Morales Pisos y Cerámica")!;
     expect(owner.user).toMatchObject({ full_name: "Yesenia Morales", role: "business_owner" });
@@ -99,13 +109,23 @@ describe("entry flow in the mock", () => {
     expect(mou.signers.find((s) => s.party === "owner")!.status).toBe("opened");
     await api.session.setViewAs(seed.U_NICOLAS);
     const intake = (await api.leads.list()).find((l) => l.business.name === "Morales Pisos y Cerámica")!.intake!;
-    expect(intake).toMatchObject({ uploaded: 3, accepted: 1, required_total: 7 });
-    // Not everything is uploaded: the 15-day clock has not started (day 0); it shows as paused while a document is asked again.
-    expect(intake.clock).toMatchObject({ day: 0, status: "paused", tone: "ok" });
+    expect(intake).toMatchObject({ uploaded: 0, accepted: 0, required_total: 7, mou_sent: true, mou_signed_by_owner: false });
+    expect(intake.clock).toMatchObject({ day: 0, status: "waiting_upload", tone: "ok" });
     const docs = (await api.leads.getIntake((await api.leads.list()).find((l) => l.business.name === "Morales Pisos y Cerámica")!.id))!.documents;
-    expect(docs.map((d) => d.state).sort()).toEqual(["received", "rejected", "requested", "requested", "requested", "requested", "reviewed"]);
-    expect(docs.find((d) => d.state === "reviewed")!.verified_fact).toBeTruthy();
-    expect(docs.find((d) => d.state === "rejected")!.review_comment).toBeTruthy();
+    expect(docs.every((d) => d.state === "requested" && d.locked_until_mou)).toBe(true);
+    // She has not confirmed the four points yet.
+    expect(mou.signers.find((s) => s.party === "owner")!.acknowledgments ?? []).toEqual([]);
+  });
+  it("sample data: Castillo signed the NDA and the MOU after confirming the four points", async () => {
+    const api = createMockApi();
+    const owner = (await api.session.getViewAsOptions()).find((o) => o.business?.name === "Castillo Instalaciones")!;
+    await api.session.setViewAs(owner.user.id);
+    const contracts = (await api.documents.listContracts()).filter((c) => c.area === "intake");
+    expect(contracts.find((c) => c.kind === "nda")!.state).toBe("signed");
+    const mou = contracts.find((c) => c.kind === "mou")!;
+    expect(mou.state).toBe("signed");
+    expect(mou.signers.find((s) => s.party === "owner")!.acknowledgments).toHaveLength(4);
+    expect((await api.documents.listDocuments()).filter((d) => d.area === "intake").some((d) => d.locked_until_mou)).toBe(false);
   });
   it("only an admin approves, and only when everything is signed and accepted", async () => {
     const api = createMockApi();

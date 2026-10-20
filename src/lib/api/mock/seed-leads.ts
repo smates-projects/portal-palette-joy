@@ -28,6 +28,8 @@ export interface LeadSpec {
    * built from their path; a lead in Reunión without it was moved there by hand.
    */
   meeting_at?: string;
+  /** Accepted leads: the expansion meeting already held (start and when the consultant answered "Se hizo"). */
+  expansion?: { starts_at: string; held_at: string };
 }
 
 const addDays = (date: string, n: number) => {
@@ -44,12 +46,24 @@ function seededMeeting(s: LeadSpec, n: number): Lead["meeting"] {
   if (i < 0) return null;
   const booked = s.path[i]![1];
   const next = s.path[i + 1];
-  const base = { duration_minutes: 30, meet_url: meetUrl(n), consultant_user_id: s.lead.consultant_user_id, booked_at: at(booked, "13:30:00") };
-  if (!next) return s.meeting_at ? { ...base, starts_at: s.meeting_at, notes_at: null } : null;
-  // Went further: the meeting happened before the next step, and the consultant wrote the note right after it.
+  const base = {
+    id: uuid("0a900000", n), kind: "initial" as const, duration_minutes: 30, meet_url: meetUrl(n),
+    consultant_user_id: s.lead.consultant_user_id, booked_at: at(booked, "13:30:00"),
+  };
+  if (!next) {
+    if (!s.meeting_at) return null;
+    // Already over: the portal asked "¿Se hizo?" half an hour after it ended and nobody answered yet.
+    const ended = Date.parse(s.meeting_at) + 30 * 60_000;
+    const prompted = ended <= Date.parse(at(TODAY_SEED, "12:00:00")) ? new Date(ended).toISOString().replace(".000Z", "Z") : null;
+    return { ...base, starts_at: s.meeting_at, notes_at: null, outcome: null, outcome_prompted_at: prompted };
+  }
+  // Went further: the meeting happened before the next step, and the consultant answered "Se hizo" right after it.
   const day = addDays(booked, Math.min(2, dayGap(booked, next[1])));
-  return { ...base, starts_at: at(day, "14:00:00"), notes_at: at(day, "15:00:00") };
+  return { ...base, starts_at: at(day, "14:00:00"), notes_at: at(day, "15:00:00"), outcome: "held", outcome_prompted_at: at(day, "14:30:00") };
 }
+
+/** Same fixed demo day as src/config/app.ts (kept here so the seed does not depend on the clock). */
+const TODAY_SEED = "2026-10-14";
 
 const specs: LeadSpec[] = [
   {
@@ -116,10 +130,11 @@ const specs: LeadSpec[] = [
   },
   {
     path: [["submitted", "2026-10-02"], ["meeting", "2026-10-06"]],
-    // Booked from the summary email for Thursday 15 at 10:00 (Miami).
-    meeting_at: "2026-10-15T14:00:00Z",
+    // Booked from the summary email for Tuesday 13 at 10:00 (Miami): the meeting is over and nobody answered
+    // "¿Se hizo?" yet. The booking created his account and the NDA (he opened it, has not signed).
+    meeting_at: "2026-10-13T14:00:00Z",
     contacted: true,
-    notes: [["2026-10-06", "Reunión agendada para el jueves. Quiere entender cuánto tiempo le va a pedir el programa."]],
+    notes: [["2026-10-06", "Reunión agendada para el martes. Quiere entender cuánto tiempo le va a pedir el programa."]],
     lead: {
       consultant_user_id: U_NICOLAS, business_id: null,
       contact: { name: "Javier Rivera", email: "javier@riveraroofing.com", phone: "+1 954 555 0129", city: "Fort Lauderdale", state: "FL", hispanic_owner: "yes" },
@@ -214,12 +229,14 @@ const specs: LeadSpec[] = [
     },
   },
   {
-    // Accepted with a Bishop (Laura): tripartite signed by the three, funds partial (USD 100,000 of 150,000).
+    // Accepted: SM presented it to Jefferson and Laura and Jefferson took it. Expansion meeting held on Oct 8; the
+    // Operating Agreement went out 3 days ago and the waiting period is still running (see the opportunities seed).
     path: [["submitted", "2026-08-10"], ["meeting", "2026-08-13"], ["documents", "2026-08-19"], ["accepted", "2026-09-01"]],
     contacted: true,
-    notes: [["2026-09-26", "Laura transfirió USD 100.000. El resto llega antes de fin de octubre."]],
+    notes: [["2026-10-08", "Reunión de ampliación hecha con Rosa y Jefferson. Sale el Operating Agreement."]],
+    expansion: { starts_at: "2026-10-08T15:00:00Z", held_at: "2026-10-08T16:20:00Z" },
     lead: {
-      consultant_user_id: U_CAMILA, business_id: null, bishop_user_id: U_LAURA_LEAD, bishop_accepted_at: at("2026-09-03"),
+      consultant_user_id: U_CAMILA, business_id: null, bishop_user_id: U_JEFFERSON_LEAD, bishop_accepted_at: at("2026-09-03"),
       contact: { name: "Rosa Delgado", email: "rosa@techosdelgado.com", phone: "+1 305 555 0124", city: "Westchester", state: "FL", hispanic_owner: "yes" },
       business: { name: "Techos Delgado", industry: "construction", activity: "Techos residenciales y reparación de filtraciones", revenue_range: "750k_1m", margin_range: "margin_21_40", team_range: "team_6_10", years_range: "years_10_plus", has_active_clients: true },
       result: { readiness: "ready", band: "high", score: 81, eligible_program: true, eligibility_gaps: [], blocks: blocks("smsmsmm"),
@@ -294,6 +311,14 @@ export function buildLeads(leadSpecs: LeadSpec[], opts: LeadSeedOptions): { lead
       discard_reason: discard_reason ?? null,
       bishop_user_id: bishop_user_id ?? null,
       bishop_accepted_at: bishop_accepted_at ?? null,
+      expansion_meeting: s.expansion
+        ? {
+            id: uuid("0a910000", i + 1), kind: "expansion", starts_at: s.expansion.starts_at, duration_minutes: 75, meet_url: meetUrl(500 + i),
+            consultant_user_id: s.lead.consultant_user_id, booked_at: at(addDays(s.expansion.starts_at.slice(0, 10), -4), "12:00:00"),
+            notes_at: s.expansion.held_at, outcome: "held", outcome_prompted_at: s.expansion.held_at,
+          }
+        : null,
+      expansion_meeting_held_at: s.expansion?.held_at ?? null,
       submitted_at: at(submitted, "13:00:00"),
       stage_entered_at: at(last[1], last[0] === "submitted" ? "13:00:00" : "15:00:00"),
       last_contact_at: s.path.length > 1 || s.contacted ? at(last[1]) : null,

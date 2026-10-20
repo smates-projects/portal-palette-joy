@@ -1,5 +1,5 @@
-// Sample funds and distribution: the three programs already running (Vossler, Prime 10, Enyermy) and one accepted
-// lead with partial funds (Techos Delgado). Same ids every run.
+// Sample funds and distribution: the three programs already running (Vossler, Prime 10, Enyermy). Techos Delgado,
+// accepted, has its Operating Agreement in the waiting period, so it has no funds yet. Same ids every run.
 import { TODAY } from "@/config/app";
 import type { AreaCode, Business, Lead, PaymentMethod, PaymentPlanKind } from "../types";
 import type { FundsDb, Funds, StoredDistLine } from "./funds";
@@ -57,11 +57,6 @@ export function seedFunds({ db, funds, seedSignedTripartite }: SeedDeps) {
       lead: "Enyermy Clean Pro",
       tripartite: { sent: "2026-10-05", owner: "2026-10-06", sm: "2026-10-05", bishop: "2026-10-07" },
       payments: [{ amount: 150000, on: "2026-10-08", method: "transfer", reference: "TRF-20261008-JP", by: "bishop" }],
-    },
-    {
-      lead: "Techos Delgado",
-      tripartite: { sent: "2026-09-08", owner: "2026-09-10", sm: "2026-09-08", bishop: "2026-09-15" },
-      payments: [{ amount: 100000, on: "2026-09-25", method: "wire", reference: "WIRE-812907", by: "sm" }],
     },
   ];
 

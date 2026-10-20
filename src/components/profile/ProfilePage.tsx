@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { NotificationPreferences } from "@/components/profile/NotificationPreferences";
 import { BookingUrlSection } from "@/components/profile/BookingUrlSection";
+import { TwoFactorSection } from "@/components/profile/TwoFactorSection";
 import { CalendarDays, Mail, MapPin, Phone, UserPlus } from "lucide-react";
 import { useCurrentUser, useOrganizations, useSetGoogleCalendar, useUsersWithInactive } from "@/lib/api/hooks";
 import { isCalendarConsent } from "@/lib/api/repositories";
@@ -185,6 +186,7 @@ export function ProfilePage({ calendarStatus, onDismissCalendarStatus }: { calen
             <p className="mt-3 text-xs text-muted-foreground">{t("profile.cal_note")}</p>
           </section>
 
+          <TwoFactorSection me={me} />
           <BookingUrlSection />
           <NotificationPreferences />
         </div>

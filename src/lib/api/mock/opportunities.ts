@@ -4,6 +4,13 @@ import { PROFIT_SPLIT } from "@/config/economics";
 import { TODAY, nowIso } from "@/config/app";
 import { projectYears } from "@/lib/bishop/split";
 import { opportunityPhase, tripartiteState, acceptBlock } from "@/lib/leads/opportunity";
+import { bishopSees, entryRules, oaSendBlock } from "@/lib/leads/entry-flow";
+
+const addDaysIso = (date: string, n: number) => {
+  const x = new Date(`${date}T12:00:00Z`);
+  x.setUTCDate(x.getUTCDate() + n);
+  return x.toISOString().slice(0, 10);
+};
 import type {
   BishopAgreement, BishopOpportunity, Contract, Lead, LeadEvent, LeadInvestors, LeadWithComputed,
   OpportunityDecision, OpportunityDetail, RevenueRange, Signer, User, Uuid,
@@ -20,6 +27,14 @@ export interface OpportunityView {
   decided_at: string | null;
 }
 
+/** SM presented an approved business to one Bishop ("Presentar a Bishops"). */
+export interface Presentation {
+  lead_id: Uuid;
+  bishop_user_id: Uuid;
+  presented_at: string;
+  presented_by: Uuid | null;
+}
+
 export interface OpportunitiesDb {
   leads: Lead[];
   users: User[];
@@ -27,6 +42,7 @@ export interface OpportunitiesDb {
   rules: PlatformRules;
   frameworkContracts: Contract[];
   oppViews: OpportunityView[];
+  presentations: Presentation[];
 }
 
 interface Deps {
@@ -41,9 +57,14 @@ interface Deps {
   pushLeadEvent: (e: Omit<LeadEvent, "id" | "actor_user_id" | "created_at">) => LeadEvent;
   /** Bell notification to the SM team of the lead's office. */
   notifyLead: (l: Lead, kind: "bishop_accepted") => void;
+  /** Bell notification to one Bishop: SM presented him the business. */
+  notifyBishop: (l: Lead, bishopUserId: Uuid) => void;
   /** Program amount agreed for this lead once its funds exist (it does not move if SM Global changes the rule). */
   agreedAmount: (l: Lead) => number | null;
 }
+
+/** The Operating Agreement: the program contract between the owner, Strategic Mates and the Bishop. */
+export const OPERATING_AGREEMENT_NAME = "Operating Agreement";
 
 /** Midpoint of the declared revenue range, only to scale the provisional projection. */
 const REVENUE_MID: Record<RevenueRange, number> = {
@@ -68,6 +89,10 @@ export function createOpportunities(d: Deps) {
   const frameworkOf = (userId: Uuid) => db.frameworkContracts.find((c) => c.signers.some((s) => s.party === "bishop" && s.user_id === userId)) ?? null;
   const frameworkSigned = (userId: Uuid) => frameworkOf(userId)?.state === "signed";
   const viewOf = (leadId: Uuid, userId: Uuid) => db.oppViews.find((v) => v.lead_id === leadId && v.bishop_user_id === userId);
+  const presentationOf = (leadId: Uuid, userId: Uuid) => db.presentations.find((p) => p.lead_id === leadId && p.bishop_user_id === userId);
+  /** Active Bishops with the framework agreement signed: the ones SM can present a business to. */
+  const candidates = () =>
+    db.users.filter((u) => u.role === "bishop" && (u.status === undefined || u.status === "active") && frameworkSigned(u.id));
 
   const bishopOnly = () => {
     const u = d.me();
@@ -87,6 +112,7 @@ export function createOpportunities(d: Deps) {
       score: l.result?.score ?? 0, band: l.result?.band ?? "track",
       review: phase === "in_review" ? intake.summaryFor(l)?.clock ?? null : null,
       decision: v?.decision ?? "none", decided_at: v?.decided_at ?? null,
+      presented_at: presentationOf(l.id, u.id)?.presented_at ?? null,
     };
   };
 
@@ -118,7 +144,15 @@ export function createOpportunities(d: Deps) {
     };
   };
 
-  const visibleTo = (u: User) => (frameworkSigned(u.id) ? db.leads.filter((l) => phaseFor(l, u.id) !== null) : []);
+  /**
+   * Framework signed, a phase for him, and the visibility rule: with "presented" only what SM presented to him (or
+   * what he already took); with "all" every business with NDA and MOU signed.
+   */
+  const visibleTo = (u: User) => {
+    if (!frameworkSigned(u.id)) return [];
+    const visibility = entryRules(db.rules).opportunity_visibility;
+    return db.leads.filter((l) => phaseFor(l, u.id) !== null && bishopSees(visibility, !!presentationOf(l.id, u.id) || l.bishop_user_id === u.id));
+  };
   const myLead = (id: Uuid) => {
     const u = bishopOnly();
     const l = visibleTo(u).find((x) => x.id === id);
@@ -141,7 +175,7 @@ export function createOpportunities(d: Deps) {
     const bishop = db.users.find((u) => u.id === l.bishop_user_id)!;
     const owner = db.users.find((u) => u.role === "business_owner" && u.business_id === l.business_id);
     return {
-      id: d.newId(), business_id: l.business_id!, area: "intake", kind: "tripartite", name: "Contrato tripartito del Método 180",
+      id: d.newId(), business_id: l.business_id!, area: "intake", kind: "tripartite", name: OPERATING_AGREEMENT_NAME,
       state: "sent", sent_at: TODAY, signed_at: null,
       signers: [signerFromUser("owner", owner?.full_name ?? l.contact.name, owner?.id ?? null), signerFromUser("sm", "Strategic Mates", null), signerFromUser("bishop", bishop.full_name, bishop.id)],
     };
@@ -196,16 +230,41 @@ export function createOpportunities(d: Deps) {
     return out;
   };
 
+  const investorsOf = (l: Lead): LeadInvestors => {
+    const name = (uid: Uuid) => db.users.find((u) => u.id === uid)?.full_name ?? "";
+    return {
+      views: db.oppViews.filter((v) => v.lead_id === l.id).map((v) => ({ ...v, name: name(v.bishop_user_id) })),
+      bishop: l.bishop_user_id ? { user_id: l.bishop_user_id, name: name(l.bishop_user_id), accepted_at: l.bishop_accepted_at ?? "" } : null,
+      tripartite: tripartiteOf(l),
+      presented: db.presentations
+        .filter((p) => p.lead_id === l.id)
+        .sort((a, b) => a.presented_at.localeCompare(b.presented_at))
+        .map((p) => ({ bishop_user_id: p.bishop_user_id, name: name(p.bishop_user_id), presented_at: p.presented_at })),
+      candidates: candidates().map((u) => ({ user_id: u.id, name: u.full_name })),
+    };
+  };
+
   const leads = {
     getInvestors: async (id: Uuid): Promise<LeadInvestors | null> => {
       const l = d.readableLeads().find((x) => x.id === id);
-      if (!l) return d.delay(null);
-      const name = (uid: Uuid) => db.users.find((u) => u.id === uid)?.full_name ?? "";
-      return d.delay({
-        views: db.oppViews.filter((v) => v.lead_id === id).map((v) => ({ ...v, name: name(v.bishop_user_id) })),
-        bishop: l.bishop_user_id ? { user_id: l.bishop_user_id, name: name(l.bishop_user_id), accepted_at: l.bishop_accepted_at ?? "" } : null,
-        tripartite: tripartiteOf(l),
-      });
+      return d.delay(l ? investorsOf(l) : null);
+    },
+    /** "Presentar a Bishops": accepted and not taken yet; only Bishops with the framework signed. Each one is told. */
+    presentToBishops: async (id: Uuid, bishopUserIds: Uuid[]): Promise<LeadInvestors> => {
+      const l = d.findLead(id);
+      if (l.stage !== "accepted" || l.bishop_user_id) throw new Error("invalid_state");
+      const ids = [...new Set(bishopUserIds)];
+      if (ids.length === 0) throw new Error("bishops_required");
+      const allowed = new Set(candidates().map((u) => u.id));
+      if (ids.some((x) => !allowed.has(x))) throw new Error("invalid_bishop");
+      const fresh = ids.filter((x) => !presentationOf(l.id, x));
+      for (const bishopId of fresh) {
+        db.presentations.push({ lead_id: l.id, bishop_user_id: bishopId, presented_at: nowIso(), presented_by: d.me().id });
+        d.notifyBishop(l, bishopId);
+      }
+      if (fresh.length > 0)
+        d.pushLeadEvent({ lead_id: id, kind: "presented_to_bishops", from: null, to: null, body: fresh.map((x) => db.users.find((u) => u.id === x)?.full_name ?? "").join(", ") });
+      return d.delay(investorsOf(l));
     },
     releaseOpportunity: async (id: Uuid, reason: string) => {
       if (!reason.trim()) throw new Error("reason_required");
@@ -223,6 +282,7 @@ export function createOpportunities(d: Deps) {
     sendTripartite: async (id: Uuid) => {
       const l = d.findLead(id);
       if (l.stage !== "accepted" || !l.bishop_user_id || !l.business_id || tripartiteOf(l)) throw new Error("invalid_state");
+      if (oaSendBlock(l, entryRules(db.rules)) === "expansion_meeting_required") throw new Error("expansion_meeting_required");
       const c = makeTripartite(l);
       db.contracts.push(c);
       d.pushLeadEvent({ lead_id: id, kind: "tripartite_sent", from: null, to: null, body: null });
@@ -254,6 +314,25 @@ export function createOpportunities(d: Deps) {
       c.state = "opened";
       db.contracts.push(c);
     }
+    // Techos Delgado: presented to Jefferson and Laura, both opened it, Jefferson took it; the expansion meeting was held
+    // and the Operating Agreement went out 3 days ago, so nobody can sign it until the waiting period ends.
+    const techos = db.leads.find((l) => l.business.name === "Techos Delgado");
+    if (techos?.business_id) {
+      db.presentations.push(
+        { lead_id: techos.id, bishop_user_id: ids.jefferson, presented_at: "2026-09-02T14:00:00Z", presented_by: null },
+        { lead_id: techos.id, bishop_user_id: ids.laura, presented_at: "2026-09-02T14:00:00Z", presented_by: null },
+      );
+      db.oppViews.push(
+        { lead_id: techos.id, bishop_user_id: ids.jefferson, viewed_at: "2026-09-02T18:00:00Z", decision: "none", decided_at: null },
+        { lead_id: techos.id, bishop_user_id: ids.laura, viewed_at: "2026-09-03T10:00:00Z", decision: "none", decided_at: null },
+      );
+      const c = makeTripartite(techos);
+      c.id = "9d000000-0000-4000-8000-000000000002";
+      const sentOn = addDaysIso(TODAY, -3);
+      c.sent_at = sentOn;
+      for (const s of c.signers) s.history = [{ status: "sent", at: sentOn }];
+      db.contracts.push(c);
+    }
   };
 
   /** Sample data: a tripartite contract the three already signed (programs funded before today). */
@@ -273,5 +352,5 @@ export function createOpportunities(d: Deps) {
     db.contracts.push(c);
   };
 
-  return { bishop, leads, seed, seedSignedTripartite, signableAgreements, tripartiteOf, frameworkOf };
+  return { bishop, leads, seed, seedSignedTripartite, signableAgreements, tripartiteOf, frameworkOf, candidates };
 }

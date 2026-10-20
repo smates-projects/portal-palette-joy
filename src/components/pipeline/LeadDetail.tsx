@@ -3,9 +3,11 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Mail, MapPin, Phone, X } from "lucide-react";
 import {
-  useAddLeadNote, useAddMeetingNote, useApproveDocuments, useBusinessFunds, useConfirmProgramStart, useCurrentUser, useLeadDetail, useRecordFundPayment,
-  useRejectDocuments, useRemoveFundPayment, useSendTripartite, useUsers,
+  useAddLeadNote, useApproveDocuments, useBusinessFunds, useConfirmProgramStart, useCurrentUser, useLeadDetail, useRecordFundPayment,
+  useRejectDocuments, useRemoveFundPayment, useRules, useSendTripartite, useSetMeetingOutcome, useUsers,
 } from "@/lib/api/hooks";
+import { entryRules, oaSendBlock } from "@/lib/leads/entry-flow";
+import type { LeadMeeting, MeetingOutcome } from "@/lib/api/types";
 import { validateFundPayment } from "@/lib/leads/funds";
 import { FundsPanel } from "@/components/funds/FundsPanel";
 import { PaymentDialog, type PaymentFormValue } from "@/components/funds/parts";
@@ -34,6 +36,8 @@ export function LeadDetail(props: {
   onPrimary?: (lead: LeadWithComputed) => void;
   onDiscard?: (lead: LeadWithComputed) => void;
   pending?: boolean;
+  /** "meeting": opened from the bell ("Resultado de la reunión pendiente"), the meeting card in focus. */
+  focus?: "meeting" | undefined;
 }) {
   const { t, i18n } = useTranslation();
   const lng = i18n.language;
@@ -51,8 +55,9 @@ export function LeadDetail(props: {
   const start = useConfirmProgramStart();
   const [recording, setRecording] = useState(false);
   const [starting, setStarting] = useState(false);
-  const [noting, setNoting] = useState(false);
-  const meetingNote = useAddMeetingNote();
+  const [noting, setNoting] = useState<LeadMeeting | null>(null);
+  const outcome = useSetMeetingOutcome();
+  const rules = entryRules(useRules().data);
   const businessIdForFunds = q.data?.lead.funds ? q.data.lead.business_id ?? undefined : undefined;
   const fundsQ = useBusinessFunds(businessIdForFunds);
   const userName = (id: string | null) => (id ? usersQ.data?.find((u) => u.id === id)?.full_name ?? "" : "");
@@ -77,8 +82,22 @@ export function LeadDetail(props: {
     action === "approve_docs" && !admin ? t("intake.admin_only") :
     action === "approve_docs" && approval && !approval.ok
       ? t(approval.reason === "contracts" ? "intake.missing_contracts" : "intake.missing_docs", { list: approval.missing.join(", ") })
-      : null;
-  const fail = () => toast.error(t("pipeline.t_error"));
+      : action === "send_tripartite" && oaSendBlock(lead, rules) === "expansion_meeting_required"
+        ? t("entry.oa.needs_expansion")
+        : action === "meeting_outcome" ? ""
+          : null;
+  const fail = (e?: unknown) =>
+    toast.error(e instanceof Error && ["outcome_already_set", "expansion_meeting_required", "invalid_transition"].includes(e.message)
+      ? t(`entry.errors.${e.message}`) : t("pipeline.t_error"));
+  /** "Se hizo" asks for the note first; the other two answers go at once. */
+  const answer = (m: LeadMeeting, value: MeetingOutcome, note?: string) => {
+    if (!m.id) return;
+    outcome.mutate({ leadId: lead.id, meetingId: m.id, input: { outcome: value, note: note ?? null } }, {
+      onSuccess: () => { setNoting(null); toast.success(t(`entry.outcome.t_${value}${m.kind === "expansion" ? "_expansion" : ""}`, { name: lead.business.name })); },
+      onError: fail,
+    });
+  };
+  const onOutcome = (m: LeadMeeting, value: MeetingOutcome) => (value === "held" ? setNoting(m) : answer(m, value));
   const runPrimary = () => {
     if (action === "review_docs") return document.getElementById("intake-docs")?.scrollIntoView({ behavior: "smooth", block: "start" });
     if (action === "approve_docs")
@@ -91,7 +110,12 @@ export function LeadDetail(props: {
       if (lead.meeting) window.open(lead.meeting.meet_url, "_blank", "noopener,noreferrer");
       return;
     }
-    if (action === "meeting_note") return setNoting(true);
+    if (action === "meeting_outcome") return document.getElementById("lead-meeting")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (action === "rebook") {
+      // Open synchronously from the click so the browser does not block the new tab.
+      if (lead.booking_url) window.open(lead.booking_url, "_blank", "noopener,noreferrer");
+      return;
+    }
     props.onPrimary?.(lead);
   };
   const remaining = fundsQ.data ? Math.max(0, fundsQ.data.total - fundsQ.data.received) : 0;
@@ -125,7 +149,10 @@ export function LeadDetail(props: {
   const describe = (e: LeadEvent) => {
     const actor = userName(e.actor_user_id);
     const stage = (s: string | null) => (s ? t(`pipeline.stages.${s}`) : "");
-    return t(`pipeline.events.${e.kind}`, { actor, owner: lead.contact.name, from: stage(e.from), to: stage(e.to), date: e.signed_on ? formatDate(e.signed_on, lng) : "" });
+    return t(`pipeline.events.${e.kind}`, {
+      actor, owner: lead.contact.name, from: stage(e.from), to: stage(e.to), date: e.signed_on ? formatDate(e.signed_on, lng) : "",
+      outcome: e.outcome ? t(`entry.outcome.${e.outcome}`) : "",
+    });
   };
   const submitNote = () => {
     if (!note.trim()) return;
@@ -168,7 +195,7 @@ export function LeadDetail(props: {
         ) : (
           <>
             <div className="mt-4 flex flex-wrap items-center gap-3">
-              <PrimaryButton onClick={runPrimary} disabled={(props.pending ?? false) || approve.isPending || sendTripartite.isPending || record.isPending || start.isPending || meetingNote.isPending || blockedHint !== null}>
+              <PrimaryButton onClick={runPrimary} disabled={(props.pending ?? false) || approve.isPending || sendTripartite.isPending || record.isPending || start.isPending || outcome.isPending || (blockedHint !== null && action !== "meeting_outcome")}>
                 {t(`pipeline.actions.${action}`, { count: lead.intake?.to_review ?? 0 })}
               </PrimaryButton>
               {canDiscard && !props.readOnly && (
@@ -189,11 +216,11 @@ export function LeadDetail(props: {
       <div className="flex-1 space-y-6 px-6 py-5">
         {/* 1a. Automatic entry: the four phases, the booked meeting and the summary email */}
         {lead.source !== "manual" && <EntryTimeline lead={lead} />}
-        <MeetingCard lead={lead} consultantName={consultant?.full_name ?? ""} />
+        <MeetingCard lead={lead} consultantName={consultant?.full_name ?? ""} readOnly={!!props.readOnly} focused={props.focus === "meeting"} pending={outcome.isPending} onOutcome={onOutcome} />
         {/* 1b. Entry checklist (from NDA + MOU on) */}
         {lead.intake && <IntakeChecklist leadId={lead.id} readOnly={!!props.readOnly} />}
         {(lead.stage === "documents" || lead.stage === "accepted") && lead.intake && (
-          <InvestorsSection leadId={lead.id} businessName={lead.business.name} readOnly={!!props.readOnly} />
+          <InvestorsSection leadId={lead.id} businessName={lead.business.name} readOnly={!!props.readOnly} canPresent={lead.stage === "accepted"} />
         )}
         {/* 1c. Bishop funds, once the three signed the tripartite contract (SM only: money) */}
         {lead.funds && lead.business_id && (
@@ -286,9 +313,10 @@ export function LeadDetail(props: {
       {noting && (
         <MeetingNoteDialog
           name={lead.business.name}
-          pending={meetingNote.isPending}
-          onClose={() => setNoting(false)}
-          onConfirm={(body) => meetingNote.mutate({ id: lead.id, body }, { onSuccess: () => { setNoting(false); toast.success(t("entry.note.t_saved")); }, onError: fail })}
+          expansion={noting.kind === "expansion"}
+          pending={outcome.isPending}
+          onClose={() => setNoting(null)}
+          onConfirm={(body) => answer(noting, "held", body)}
         />
       )}
       {rejecting && (
