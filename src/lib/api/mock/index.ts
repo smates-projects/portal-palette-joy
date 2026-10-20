@@ -28,6 +28,7 @@ import { resolveLeadMove } from "@/lib/leads/pipeline";
 import { DEFAULT_ASSESSMENT_AREA_MAP } from "@/lib/leads/prevalidation";
 import { createEntry } from "./entry";
 import { createSession, type MockSessionControls } from "./session";
+import { createCalendar } from "./calendar";
 
 export { DEMO_PASSWORD } from "./session";
 import type { AreaCode, Business, BusinessEvent, CatalogAdminItem, Lead, LeadEvent, LeadWithComputed } from "../types";
@@ -285,6 +286,9 @@ export function createMockApi(): MockApi {
   const accounts = createAccounts({
     db, me, newId, delay, notify, recordTaskChange: recordChange, personLabel, pushLeadEvent, withBooking: (l) => withBooking(l), findLead,
   });
+  // Calendar v2: connections, availability and portal meetings (./calendar), with its own notifications.
+  const cal = createCalendar({ db, me, newId, delay, visibleUsers: accounts.visibleUsers, externalEvents: seed.calendarEvents });
+  cal.seed();
   /** The booking (or "Enviar NDA"): owner account, business in onboarding and the NDA, Strategic Mates pre-signed. */
   const openNda = (l: Lead, actor: string | null) => {
     intake.open(l, { sentOn: TODAY });
@@ -500,19 +504,20 @@ export function createMockApi(): MockApi {
             }];
           });
         const enabled = new Set(prefsOf(u.id).filter((p) => p.in_app).map((p) => p.kind));
-        return delay([...stored, ...due, ...aboutLeads, ...presented].filter((n) => enabled.has(n.kind)).sort((a, b) => b.created_at.localeCompare(a.created_at)));
+        return delay([...stored, ...due, ...aboutLeads, ...presented, ...cal.notificationsFor(u.id)].filter((n) => enabled.has(n.kind)).sort((a, b) => b.created_at.localeCompare(a.created_at)));
       },
       markRead: async (id) => {
         const n = notifs.find((x) => x.id === id && x.user_id === currentUserId) ?? leadNotifs.find((x) => x.id === id && x.user_id === currentUserId)
           ?? bishopNotifs.find((x) => x.id === id && x.user_id === currentUserId);
         if (n) n.read = true;
-        else dueRead.add(`${currentUserId}|${id}`);
+        else if (!cal.markRead(currentUserId, id)) dueRead.add(`${currentUserId}|${id}`);
         return delay(undefined);
       },
       markAllRead: async () => {
         notifs.filter((n) => n.user_id === currentUserId).forEach((n) => (n.read = true));
         leadNotifs.filter((n) => n.user_id === currentUserId).forEach((n) => (n.read = true));
         bishopNotifs.filter((n) => n.user_id === currentUserId).forEach((n) => (n.read = true));
+        cal.markAllRead(currentUserId);
         const due = me().role !== "partner_firm" ? [] : dueNotifications(currentUserId, visibleTasks().map((t) => withComputed(t, db.tasks)), db.businesses);
         due.forEach((n) => dueRead.add(`${currentUserId}|${n.id}`));
         return delay(undefined);
@@ -622,7 +627,7 @@ export function createMockApi(): MockApi {
       ...accounts.users,
       setGoogleCalendar: async (email) => {
         const u = me();
-        u.google_calendar_email = email;
+        cal.setConnected(u, email);
         return delay({ ...u });
       },
       setBookingUrl: async (url) => {
@@ -658,9 +663,20 @@ export function createMockApi(): MockApi {
     // Inviting a team member creates an account behind it; handing the business over needs the owner.
     businessProfile: { ...net.businessProfile, ...accounts.businessProfile },
     brand: accounts.brand,
+    calendar: cal.calendar,
     bishop: {
       ...net.bishop,
       ...opps.bishop,
+      // Calendar v2: the consultant of each funded business, so the Bishop can schedule with him.
+      getPortfolio: async () => {
+        const p = await net.bishop.getPortfolio();
+        const consultantOf = (businessId: string) => {
+          const id = db.businesses.find((b) => b.id === businessId)?.consultant_id;
+          const u = id ? db.users.find((x) => x.id === id) : undefined;
+          return u ? { user_id: u.id, name: u.full_name } : null;
+        };
+        return { ...p, investments: p.investments.map((i) => ({ ...i, consultant: consultantOf(i.business_id) })) };
+      },
       listAgreements: async () => {
         const base = await net.bishop.listAgreements();
         return [...opps.signableAgreements(me()), ...base];

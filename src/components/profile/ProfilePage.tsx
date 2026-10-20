@@ -1,43 +1,28 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { NotificationPreferences } from "@/components/profile/NotificationPreferences";
 import { BookingUrlSection } from "@/components/profile/BookingUrlSection";
 import { TwoFactorSection } from "@/components/profile/TwoFactorSection";
-import { CalendarDays, Mail, MapPin, Phone, UserPlus } from "lucide-react";
-import { useCurrentUser, useOrganizations, useSetGoogleCalendar, useUsersWithInactive } from "@/lib/api/hooks";
-import { isCalendarConsent } from "@/lib/api/repositories";
+import { Mail, MapPin, Phone, UserPlus } from "lucide-react";
+import { useCurrentUser, useOrganizations, useUsersWithInactive } from "@/lib/api/hooks";
 import type { User } from "@/lib/api/types";
 import { isActiveUser, isFirmAdmin } from "@/lib/accounts/permissions";
+import { isCalendarConnected } from "@/lib/calendar/scheduling";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AccountHistorySheet, AdminTag, primaryBtn, UserStatusBadge, userStatus } from "@/components/accounts/shared";
 import { DeactivatePersonDialog, InvitePersonDialog, PersonActions } from "@/components/accounts/AccountDialogs";
+import { GoogleCalendarCard, type CalendarReturnStatus } from "./GoogleCalendarCard";
+
+export type { CalendarReturnStatus } from "./GoogleCalendarCard";
 
 const initials = (n: string) => n.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
-
-/** How Google's consent ended, as the API's callback reports it on /perfil?calendar=. */
-export type CalendarReturnStatus = "connected" | "denied" | "error";
-
-const CALENDAR_NOTE_TONE: Record<CalendarReturnStatus, string> = {
-  connected: "border-status-success-border bg-status-success-bg text-status-success-fg",
-  denied: "border-status-warning-border bg-status-warning-bg text-status-warning-fg",
-  error: "border-status-danger-border bg-status-danger-bg text-status-danger-fg",
-};
-
-/** Real API: connecting answers Google's consent screen and the person goes there; the mock connects at once. */
-const goToConsent = (answer: unknown): boolean => {
-  if (!isCalendarConsent(answer)) return false;
-  window.location.assign(answer.consent_url);
-  return true;
-};
 
 export function ProfilePage({ calendarStatus, onDismissCalendarStatus }: { calendarStatus?: CalendarReturnStatus | undefined; onDismissCalendarStatus?: () => void } = {}) {
   const { t } = useTranslation();
   const meQ = useCurrentUser();
   const orgsQ = useOrganizations();
   const usersQ = useUsersWithInactive();
-  const setCal = useSetGoogleCalendar();
   const [inviting, setInviting] = useState(false);
   const [deactivating, setDeactivating] = useState<User | null>(null);
   const [history, setHistory] = useState<User | null>(null);
@@ -49,27 +34,6 @@ export function ProfilePage({ calendarStatus, onDismissCalendarStatus }: { calen
   const team = (usersQ.data ?? []).filter((u) => u.organization_id && u.organization_id === me?.organization_id && (admin || isActiveUser(u)))
     .sort((a, b) => Number(b.id === me?.id) - Number(a.id === me?.id) || Number(!isActiveUser(a)) - Number(!isActiveUser(b)) || a.full_name.localeCompare(b.full_name));
   const loading = meQ.isLoading || orgsQ.isLoading || usersQ.isLoading;
-
-  const connect = () => {
-    if (!me) return;
-    setCal.mutate(me.email, {
-      onSuccess: (answer) => {
-        if (!goToConsent(answer)) toast.success(t("profile.t_connected", { email: me.email }));
-      },
-      onError: () => toast.error(t("taskDetail.t_error")),
-    });
-  };
-  const disconnect = () => {
-    const prev = me?.google_calendar_email ?? null;
-    setCal.mutate(null, {
-      onSuccess: () =>
-        toast.success(t("profile.t_disconnected"), {
-          // Undo connects again: with the real API that means Google's consent screen once more.
-          action: { label: t("profile.undo"), onClick: () => setCal.mutate(prev, { onSuccess: goToConsent }) },
-        }),
-      onError: () => toast.error(t("taskDetail.t_error")),
-    });
-  };
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-8">
@@ -136,7 +100,7 @@ export function ProfilePage({ calendarStatus, onDismissCalendarStatus }: { calen
                       <PersonActions user={u} orgs={orgsQ.data ?? []} onDeactivate={setDeactivating} onHistory={setHistory} />
                     ) : (
                       <span className="hidden text-xs text-muted-foreground sm:inline">
-                        {u.google_calendar_email ? t("profile.cal_on_short") : t("profile.cal_off_short")}
+                        {isCalendarConnected(u) ? t("profile.cal_on_short") : t("profile.cal_off_short")}
                       </span>
                     )}
                   </li>
@@ -145,46 +109,8 @@ export function ProfilePage({ calendarStatus, onDismissCalendarStatus }: { calen
             )}
           </section>
 
-          {/* Google Calendar */}
-          <section className="rounded-md border border-border bg-surface px-5 py-4">
-            {calendarStatus && (
-              <div role="status" className={cn("mb-4 flex items-start justify-between gap-3 rounded-[4px] border px-3 py-2 text-sm", CALENDAR_NOTE_TONE[calendarStatus])}>
-                <p>{t(`profile.cal_return_${calendarStatus}`)}</p>
-                {onDismissCalendarStatus && (
-                  <button onClick={onDismissCalendarStatus} className="shrink-0 text-xs underline-offset-2 hover:underline">{t("profile.cal_return_dismiss")}</button>
-                )}
-              </div>
-            )}
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <CalendarDays className="mt-0.5 h-5 w-5 text-muted-foreground" />
-                <div>
-                  <h2 className="text-sm font-semibold">{t("profile.cal_title")}</h2>
-                  <p className="mt-0.5 text-sm text-muted-foreground">
-                    {me.google_calendar_email ? t("profile.cal_on", { email: me.google_calendar_email }) : t("profile.cal_off")}
-                  </p>
-                </div>
-              </div>
-              {me.google_calendar_email ? (
-                <button
-                  onClick={disconnect}
-                  disabled={setCal.isPending}
-                  className="h-8 rounded-md border border-border px-3 text-sm transition-colors hover:bg-accent disabled:opacity-50"
-                >
-                  {t("profile.cal_disconnect")}
-                </button>
-              ) : (
-                <button
-                  onClick={connect}
-                  disabled={setCal.isPending}
-                  className="h-8 rounded-md bg-primary px-3 font-display text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
-                >
-                  {t("profile.cal_connect")}
-                </button>
-              )}
-            </div>
-            <p className="mt-3 text-xs text-muted-foreground">{t("profile.cal_note")}</p>
-          </section>
+          {/* Google Calendar: read and write, for every role */}
+          <GoogleCalendarCard me={me} returnStatus={calendarStatus} onDismissReturn={onDismissCalendarStatus} />
 
           <TwoFactorSection me={me} />
           <BookingUrlSection />

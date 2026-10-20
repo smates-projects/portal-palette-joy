@@ -271,6 +271,19 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
                   </div>
                 ))}
               </div>
+            ) : view === "calendar" ? (
+              // The calendar shows portal meetings too, so it opens even without tasks (a Bishop from the bell).
+              <TaskCalendar
+                rows={rows}
+                businessName={businessName}
+                onOpen={(id) => {
+                  setSubmitFor(null);
+                  setChangesFor(null);
+                  void setSearch({ task: id });
+                }}
+                focusMeetingId={search.meeting}
+                onFocusMeeting={(id) => void setSearch({ meeting: id ?? undefined })}
+              />
             ) : tasksQ.data?.length === 0 ? (
               <EmptyState inline title={t("tasks.empty_title")} body={t("tasks.empty_body")} />
             ) : rows.length === 0 ? (
@@ -281,16 +294,6 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
                 action={{
                   label: t("tasks.filters.clear"),
                   onClick: () => setSearch(clearFilters),
-                }}
-              />
-            ) : view === "calendar" ? (
-              <TaskCalendar
-                rows={rows}
-                businessName={businessName}
-                onOpen={(id) => {
-                  setSubmitFor(null);
-                  setChangesFor(null);
-                  void setSearch({ task: id });
                 }}
               />
             ) : view === "roadmap" ? (

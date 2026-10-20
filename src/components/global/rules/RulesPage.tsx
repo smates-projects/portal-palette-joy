@@ -2,8 +2,9 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useCatalogAdmin, useRules, useRulesHistory, useUpdateRules, useUsers } from "@/lib/api/hooks";
-import type { IntakeDocRule, PlatformRules } from "@/lib/api/network-types";
+import type { IntakeDocRule, MeetingHours, PlatformRules } from "@/lib/api/network-types";
 import { IntakeDocsEditor } from "./IntakeDocsEditor";
+import { MeetingHoursRules, zoneKey } from "./MeetingHoursRules";
 import { AssessmentMapEditor, EntryFlowRules, ZonesSection } from "./EntryRules";
 import { cn } from "@/lib/utils";
 import { formatUsd } from "@/lib/format";
@@ -45,6 +46,11 @@ export function RulesPage() {
     // Revised entry: absent before SM Global set it (the default applied).
     value === undefined || value === null
       ? t("entry.rules.flow.default_value")
+      : field === "meeting_hours"
+      ? (() => {
+          const h = value as MeetingHours;
+          return t("calendar.rules.value", { start: h.start, end: h.end, zone: t(`calendar.rules.zones.${zoneKey(h.timezone)}`, { defaultValue: h.timezone }) });
+        })()
       : field === "opportunity_visibility"
       ? t(`entry.rules.flow.visibility_${String(value)}`)
       : field === "require_expansion_meeting" || field === "nda_auto_signed_by_sm"
@@ -83,6 +89,7 @@ export function RulesPage() {
       <RulesEditor key={JSON.stringify(rulesQ.data)} rules={rulesQ.data} catalog={catalogQ.data ?? []} />
       <IntakeDocsEditor key={`docs-${JSON.stringify(rulesQ.data.intake_documents)}`} rules={rulesQ.data} />
       <EntryFlowRules key={`flow-${rulesQ.data.opportunity_visibility}-${rulesQ.data.oa_waiting_days}-${rulesQ.data.require_expansion_meeting}-${rulesQ.data.nda_auto_signed_by_sm}`} rules={rulesQ.data} />
+      <MeetingHoursRules key={`hours-${JSON.stringify(rulesQ.data.meeting_hours ?? null)}`} rules={rulesQ.data} />
       <ZonesSection />
       <AssessmentMapEditor key={`map-${JSON.stringify(rulesQ.data.assessment_area_map)}`} rules={rulesQ.data} />
       {historyQ.isError ? (

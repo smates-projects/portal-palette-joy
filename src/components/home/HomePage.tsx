@@ -4,7 +4,9 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { CalendarDays, Maximize2, ChevronDown, Plus, ChevronLeft, ChevronRight, ChevronUp, ClipboardList, Lock, Target } from "lucide-react";
 import { TODAY } from "@/config/app";
-import { useBusinesses, useStartTask, useTasks, useUpcomingMeetings } from "@/lib/api/hooks";
+import { useBusinesses, useMyMeetings, useStartTask, useTasks, useUpcomingMeetings } from "@/lib/api/hooks";
+import { localDay, visibleRange } from "@/lib/tasks/calendar";
+import { GoogleMark, MeetingStatusChip } from "@/components/calendar/parts";
 import type { TaskWithComputed, VisibleTaskStatus } from "@/lib/api/types";
 import { formatDate, formatDateTime, localeTag } from "@/lib/format";
 import { buildProgress, buildSummary, buildToday, nextDue, SUMMARY_FILTER, type TodayReason } from "@/lib/tasks/home";
@@ -47,6 +49,11 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
   const week = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const meetings = meetingsQ.data ?? [];
   const dayMeetings = meetings.filter((m) => m.starts_at.slice(0, 10) === day);
+  // Calendar v2: the portal meetings of the visible week (cancelled ones stay in the calendar screen only).
+  const weekRange = visibleRange(week);
+  const portalQ = useMyMeetings(weekRange.from, weekRange.to);
+  const portal = (portalQ.data ?? []).filter((m) => m.status !== "cancelled");
+  const dayPortal = portal.filter((m) => localDay(m.starts_at) === day);
 
   const tasks = tasksQ.data ?? [];
   const bizName = (id: string) => bizQ.data?.find((b) => b.id === id)?.name ?? "";
@@ -280,7 +287,7 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
                   <div className="grid flex-1 grid-cols-7 gap-1">
                     {week.map((d) => {
                       const sel = d === day;
-                      const has = meetings.some((m) => m.starts_at.slice(0, 10) === d);
+                      const has = meetings.some((m) => m.starts_at.slice(0, 10) === d) || portal.some((m) => localDay(m.starts_at) === d);
                       const dt = new Date(`${d}T12:00:00`);
                       return (
                         <button
@@ -310,12 +317,29 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
                     <Skeleton className="h-20 rounded-md" />
                   ) : meetingsQ.isError ? (
                     <p className="text-sm text-muted-foreground">{t("home.meetings_error")}</p>
-                  ) : meetings.length === 0 ? (
+                  ) : meetings.length === 0 && portal.length === 0 ? (
                     <p className="rounded-md border border-border bg-muted p-4 text-sm text-muted-foreground">{t("home.meetings_empty")}</p>
-                  ) : dayMeetings.length === 0 ? (
+                  ) : dayMeetings.length === 0 && dayPortal.length === 0 ? (
                     <p className="rounded-md border border-border bg-muted p-4 text-sm text-muted-foreground">{t("home.day_empty")}</p>
                   ) : (
-                    dayMeetings.map((m) => {
+                    [...dayPortal.map((m) => (
+                      <button
+                        key={m.id}
+                        onClick={() => void navigate({ to: "/tareas", search: { view: "calendar", meeting: m.id } })}
+                        className="w-full rounded-md border border-border p-4 text-left transition-[filter] hover:brightness-95"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm font-semibold">{m.topic}</p>
+                          <span className="flex shrink-0 items-center gap-1.5">
+                            {m.google_synced && <GoogleMark />}
+                            <MeetingStatusChip status={m.status} className="text-[11px]" />
+                          </span>
+                        </div>
+                        <p className="mt-1 font-display text-xs tabular-nums text-muted-foreground">{formatDateTime(m.starts_at, lng)}</p>
+                        <p className="mt-2 truncate text-xs text-muted-foreground">{m.participants.map((p) => p.name).join(", ")}</p>
+                      </button>
+                    )),
+                    ...dayMeetings.map((m) => {
                       const task = tasks.find((x) => x.id === m.task_id);
                       return (
                         <button
@@ -344,7 +368,7 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
                           {task && <AreaTag area={task.area} className="mt-2 text-xs text-muted-foreground" />}
                         </button>
                       );
-                    })
+                    })]
                   )}
                 </div>
               </section>
@@ -397,7 +421,7 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
                 )}
               </section>
             </aside>
-            <AddEventDialog open={addOpen} onOpenChange={setAddOpen} day={day} tasks={tasks} bizName={bizName} />
+            <AddEventDialog open={addOpen} onOpenChange={setAddOpen} tasks={tasks} bizName={bizName} />
           </div>
         </>
       )}

@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { Link } from "@tanstack/react-router";
+import { ScheduleMeetingDialog } from "@/components/calendar/ScheduleMeetingDialog";
 import { useTranslation } from "react-i18next";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useBishopOpportunities, useBishopPortfolio, useMyFunds } from "@/lib/api/hooks";
@@ -24,6 +26,7 @@ export function BishopPortfolioPage() {
   const portfolioQ = useBishopPortfolio();
   const oppsQ = useBishopOpportunities();
   const fundsQ = useMyFunds();
+  const [meetingWith, setMeetingWith] = useState<BishopInvestment | null>(null);
 
   if (portfolioQ.isError || oppsQ.isError)
     return (
@@ -161,6 +164,12 @@ export function BishopPortfolioPage() {
                     <td className="px-4 py-3">
                       <p className="font-medium">{i.business_name}</p>
                       <p className="text-xs text-muted-foreground">{t("bishop.portfolio.since", { date: formatDate(i.invested_at, lng) })}</p>
+                      {/* Calendar v2: a meeting with the consultant of the business he funds. */}
+                      {i.consultant && (
+                        <button onClick={() => setMeetingWith(i)} className="mt-1 text-xs text-link hover:underline">
+                          {t("calendar.schedule_with", { name: i.consultant.name })}
+                        </button>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums">{money(i.invested)}</td>
                     <td className="w-56 px-4 py-3">
@@ -183,6 +192,13 @@ export function BishopPortfolioPage() {
         {/* 5. Opportunities */}
         <OpportunitiesPanel total={opportunities.length} shown={shownOpportunities} lng={lng} />
       </div>
+      <ScheduleMeetingDialog
+        open={!!meetingWith}
+        onOpenChange={(o) => !o && setMeetingWith(null)}
+        context={meetingWith ? { kind: "business", business_id: meetingWith.business_id } : undefined}
+        participants={meetingWith?.consultant ? [meetingWith.consultant] : []}
+        defaultTopic={meetingWith?.business_name}
+      />
     </Screen>
   );
 }

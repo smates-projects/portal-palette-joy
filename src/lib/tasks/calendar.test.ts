@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildCalendarItems, monthGrid, shiftAnchor, weekDays } from "./calendar";
-import type { Meeting, TaskWithComputed } from "@/lib/api/types";
+import { buildCalendarItems, localDay, monthGrid, shiftAnchor, visibleRange, weekDays } from "./calendar";
+import type { Meeting, PortalMeeting, TaskWithComputed } from "@/lib/api/types";
 
 const task = (id: string, code: string, due: string) => ({ id, code, due_date: due }) as TaskWithComputed;
 const meeting = (task_id: string, status: Meeting["status"]) =>
@@ -27,5 +27,19 @@ describe("calendar items", () => {
     const all = [...map.values()].flat();
     expect(all.filter((i) => i.kind === "meeting")).toHaveLength(1);
     expect(map.get("2026-10-20")?.[0]?.kind).toBe("due");
+  });
+
+  it("adds the portal meetings of every kind, timed items before due dates", () => {
+    // Local noon: the same calendar day in any time zone the tests run in.
+    const portal = { id: "p1", kind: "business", starts_at: new Date("2026-10-20T12:00:00").toISOString(), status: "proposed" } as PortalMeeting;
+    const map = buildCalendarItems([task("a", "B6-02", "2026-10-20")], [], [], [], [portal]);
+    expect(localDay(portal.starts_at)).toBe("2026-10-20");
+    expect(map.get("2026-10-20")?.map((i) => i.kind)).toEqual(["portal", "due"]);
+  });
+
+  it("the visible range runs from the first day's midnight to the day after the last one", () => {
+    const range = visibleRange(["2026-10-12", "2026-10-18"]);
+    expect(range.from).toBe(new Date("2026-10-12T00:00:00").toISOString());
+    expect(range.to).toBe(new Date("2026-10-19T00:00:00").toISOString());
   });
 });

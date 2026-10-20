@@ -24,6 +24,7 @@ import { StageBadge } from "./LeadBadges";
 import { ManualLeadSection } from "./ManualLeadSection";
 import { AssessmentResult, KnowHow } from "./AssessmentResult";
 import { EntryTimeline, MeetingCard, MeetingNoteDialog, SummaryEmail } from "./EntrySections";
+import { ScheduleMeetingDialog } from "@/components/calendar/ScheduleMeetingDialog";
 
 /**
  * Detail of one lead. With `readOnly` (SM Global) there are no actions and no note box: it only shows what the
@@ -56,6 +57,7 @@ export function LeadDetail(props: {
   const [recording, setRecording] = useState(false);
   const [starting, setStarting] = useState(false);
   const [noting, setNoting] = useState<LeadMeeting | null>(null);
+  const [scheduling, setScheduling] = useState(false);
   const outcome = useSetMeetingOutcome();
   const rules = entryRules(useRules().data);
   const businessIdForFunds = q.data?.lead.funds ? q.data.lead.business_id ?? undefined : undefined;
@@ -74,6 +76,11 @@ export function LeadDetail(props: {
 
   const { lead, events } = q.data;
   const action = primaryActionFor(lead);
+  // The owner's account exists from the booking (or "Enviar NDA") on.
+  const leadOwner = lead.business_id ? usersQ.data?.find((u) => u.role === "business_owner" && u.business_id === lead.business_id) : undefined;
+  const scheduleGuests = [leadOwner, usersQ.data?.find((u) => u.id === lead.consultant_user_id)]
+    .filter((u): u is NonNullable<typeof u> => !!u && u.id !== meQ.data?.id)
+    .map((u) => ({ user_id: u.id, name: u.full_name }));
   const admin = isDocsAdmin(meQ.data, lead.office_id);
   const approval = lead.intake?.approval;
   // Why the primary action is disabled (shown under it), or null when it can be used.
@@ -111,6 +118,9 @@ export function LeadDetail(props: {
       return;
     }
     if (action === "meeting_outcome") return document.getElementById("lead-meeting")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    // Calendar v2: a lead whose owner already has an account is scheduled with the portal's dialog; without an
+    // account the booking link keeps doing it (the person books on the consultant's calendar).
+    if ((action === "schedule" || action === "rebook") && leadOwner) return setScheduling(true);
     if (action === "rebook") {
       // Open synchronously from the click so the browser does not block the new tab.
       if (lead.booking_url) window.open(lead.booking_url, "_blank", "noopener,noreferrer");
@@ -204,6 +214,9 @@ export function LeadDetail(props: {
               {lead.stage === "documents" && !props.readOnly && (
                 <button onClick={() => setRejecting(true)} className="text-sm text-muted-foreground hover:text-foreground hover:underline">{t("intake.reject")}</button>
               )}
+              {leadOwner && !props.readOnly && action !== "schedule" && action !== "rebook" && lead.stage !== "discarded" && (
+                <button onClick={() => setScheduling(true)} className="text-sm text-link hover:underline">{t("calendar.schedule")}</button>
+              )}
             </div>
             {blockedHint && <p className="mt-2 text-xs text-muted-foreground">{blockedHint}</p>}
             {action === "record_funds" && lead.funds?.to_confirm && <p className="mt-2 text-xs text-status-warning-fg">{t("funds.to_confirm_hint")}</p>}
@@ -212,6 +225,15 @@ export function LeadDetail(props: {
           </>
         )}
       </header>
+      {leadOwner && (
+        <ScheduleMeetingDialog
+          open={scheduling}
+          onOpenChange={setScheduling}
+          context={{ kind: "lead", lead_id: lead.id }}
+          participants={scheduleGuests}
+          defaultTopic={lead.business.name}
+        />
+      )}
 
       <div className="flex-1 space-y-6 px-6 py-5">
         {/* 1a. Automatic entry: the four phases, the booked meeting and the summary email */}

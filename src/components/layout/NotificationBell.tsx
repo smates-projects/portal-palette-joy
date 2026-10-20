@@ -33,7 +33,17 @@ const DOT: Record<NotificationKind, string> = {
   meeting_outcome_pending: "bg-status-warning-fg",
   own_nda_proposed: "bg-link",
   opportunity_presented: "bg-gold",
+  meeting_scheduled: "bg-primary",
+  meeting_moved: "bg-link",
+  meeting_cancelled: "bg-status-danger-fg",
+  calendar_connect_suggested: "bg-link",
+  calendar_reconnect_required: "bg-status-warning-fg",
 };
+
+/** Calendar v2: these open the calendar with the meeting in focus. */
+const MEETING_KINDS: ReadonlySet<NotificationKind> = new Set(["meeting_scheduled", "meeting_moved", "meeting_cancelled"]);
+/** These open Mi perfil, on the Google Calendar card. */
+const PROFILE_KINDS: ReadonlySet<NotificationKind> = new Set(["calendar_disconnected", "calendar_connect_suggested", "calendar_reconnect_required"]);
 
 export function NotificationBell() {
   const { t, i18n } = useTranslation();
@@ -61,11 +71,12 @@ export function NotificationBell() {
     // Lead notifications open the lead in the Embudo; the calendar one, the profile (connect again); a rejected logo
     // without a task, the business (load the logo again); the rest open the task.
     // "Resultado de la reunión pendiente" opens the lead with its meeting card in focus; a Bishop's "te presentó un
-    // negocio" opens his opportunities.
-    if (n.kind === "meeting_outcome_pending" && n.lead_id) void navigate({ to: "/embudo", search: { lead: n.lead_id, focus: "meeting" } });
+    // negocio" opens his opportunities. A portal meeting (scheduled, moved, cancelled) opens the calendar with it in focus.
+    if (MEETING_KINDS.has(n.kind) && n.meeting_id) void navigate({ to: "/tareas", search: { view: "calendar", meeting: n.meeting_id } });
+    else if (PROFILE_KINDS.has(n.kind)) void navigate({ to: "/perfil" });
+    else if (n.kind === "meeting_outcome_pending" && n.lead_id) void navigate({ to: "/embudo", search: { lead: n.lead_id, focus: "meeting" } });
     else if (n.lead_id) void navigate({ to: "/embudo", search: { lead: n.lead_id } });
     else if (n.kind === "opportunity_presented") void navigate({ to: "/oportunidades" });
-    else if (n.kind === "calendar_disconnected") void navigate({ to: "/perfil" });
     else if (n.kind === "brand_logo_rejected" && !n.task_id) void navigate({ to: "/negocios", search: { biz: n.business_id } });
     else void navigate({ to: "/tareas", search: { task: n.task_id } });
   };
@@ -138,7 +149,10 @@ export function NotificationBell() {
                             })}
                       </span>
                       <span className="block truncate text-xs text-muted-foreground">
-                        {n.lead_id ? (
+                        {MEETING_KINDS.has(n.kind) ? (
+                          // A portal meeting: its subject (task, business) when there is one, or the calendar.
+                          <>{n.task_code ? <><span className="font-display tabular-nums text-foreground">{n.task_code}</span> {n.task_name} · {n.business_name}</> : n.business_name || t("notifications.calendar_ref")}</>
+                        ) : n.lead_id ? (
                           <>{t("notifications.lead_ref", { name: n.business_name })}</>
                         ) : n.kind === "opportunity_presented" ? (
                           <>{t("notifications.opportunity_ref")}</>

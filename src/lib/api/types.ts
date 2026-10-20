@@ -132,6 +132,11 @@ export interface User {
   deactivation_reason?: string | null | undefined;
   /** The person turned on the verification in two steps (TOTP). Absent = unknown, read as off. */
   two_factor_enabled?: boolean | undefined;
+  /**
+   * Calendar v2: Google Calendar connected with read and write access (the portal reads free time and creates the
+   * meetings). Absent in older rows: read from google_calendar_email (lib/calendar/scheduling isCalendarConnected).
+   */
+  calendar_connected?: boolean | undefined;
 }
 
 /** Who to invite. The organization and business depend on the role: SM people have an organization, owners a business. */
@@ -360,6 +365,97 @@ export interface Meeting {
   status: "proposed" | "confirmed" | "cancelled";
 }
 
+// ---------- Calendar v2: portal meetings created in Google Calendar ----------
+
+/** What a portal meeting is about: a task, a business (owner, consultant, Bishop) or a lead of the Embudo. */
+export type PortalMeetingKind = "task" | "business" | "lead";
+/** Google's answer of each guest. */
+export type MeetingResponse = "needsAction" | "accepted" | "declined" | "tentative";
+/** proposed: someone still has to confirm (an organizer or a guest without the calendar connected). */
+export type PortalMeetingStatus = "proposed" | "confirmed" | "cancelled";
+
+export interface PortalMeetingParticipant {
+  user_id: Uuid;
+  name: string;
+  response: MeetingResponse;
+}
+
+/** GET /meetings/{id}, GET /me/meetings. `version` travels back as If-Match on PATCH and DELETE. */
+export interface PortalMeeting {
+  id: Uuid;
+  kind: PortalMeetingKind;
+  task_id: Uuid | null;
+  business_id: Uuid | null;
+  lead_id: Uuid | null;
+  topic: string;
+  starts_at: IsoDateTime;
+  ends_at: IsoDateTime;
+  /** Only when the meeting was created in Google (google_synced). */
+  meet_url: string | null;
+  organizer: { user_id: Uuid; name: string };
+  participants: PortalMeetingParticipant[];
+  status: PortalMeetingStatus;
+  /** The event exists in the organizer's Google Calendar and the invitations went out. */
+  google_synced: boolean;
+  version: number;
+}
+
+/** GET /me/calendar and GET /users/{id}/calendar-status. */
+export type CalendarConnectionStatus = "connected" | "not_connected" | "reconnect_required";
+
+export interface CalendarConnection {
+  connected: boolean;
+  email: string | null;
+  /** Google scopes granted (space separated); null when not connected. */
+  scope: string | null;
+  status: CalendarConnectionStatus;
+}
+
+/** POST /calendar/availability. Times are ISO; the API keeps only the common free slots inside meeting_hours. */
+export interface AvailabilityInput {
+  participant_user_ids: Uuid[];
+  from: IsoDateTime;
+  to: IsoDateTime;
+  duration_minutes: number;
+}
+
+export interface TimeSlot {
+  starts_at: IsoDateTime;
+  ends_at: IsoDateTime;
+}
+
+/** Why a participant's free time could not be read: calendar_not_connected, calendar_reconnect_required... */
+export interface UnavailableParticipant {
+  user_id: Uuid;
+  reason: string;
+}
+
+export interface Availability {
+  slots: TimeSlot[];
+  unavailable_participants: UnavailableParticipant[];
+}
+
+/** POST /meetings. The organizer is the current user; the id of the kind's subject is required. */
+export interface ScheduleMeetingInput {
+  kind: PortalMeetingKind;
+  task_id?: Uuid | null | undefined;
+  business_id?: Uuid | null | undefined;
+  lead_id?: Uuid | null | undefined;
+  participant_user_ids: Uuid[];
+  starts_at: IsoDateTime;
+  duration_minutes: number;
+  topic: string;
+  note?: string | null | undefined;
+}
+
+/** PATCH /meetings/{id} ("Mover"): a new time, optionally a new length or topic. */
+export interface RescheduleMeetingInput {
+  starts_at: IsoDateTime;
+  duration_minutes?: number | undefined;
+  topic?: string | undefined;
+  note?: string | null | undefined;
+}
+
 /** Event from the user's own Google Calendar (simulated). Read-only in the portal. */
 export interface ExternalCalendarEvent {
   id: Uuid;
@@ -397,6 +493,12 @@ export const NOTIFICATION_KINDS = [
   "own_nda_proposed",
   // To a Bishop: SM presented him an approved business (opens his opportunities).
   "opportunity_presented",
+  // Calendar v2 (every role). The first three open the calendar with the meeting focused; the last two, the profile.
+  "meeting_scheduled",
+  "meeting_moved",
+  "meeting_cancelled",
+  "calendar_connect_suggested",
+  "calendar_reconnect_required",
 ] as const;
 /** Kinds about a lead of the Embudo. Only the SM team of the lead's office gets them. */
 export const LEAD_NOTIFICATION_KINDS: readonly NotificationKind[] = [

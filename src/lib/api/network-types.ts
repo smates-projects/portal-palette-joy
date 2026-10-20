@@ -170,6 +170,15 @@ export interface PlatformRules {
   require_expansion_meeting?: boolean | undefined;
   /** The NDA (and the MOU) go out already signed by Strategic Mates with the office signature. */
   nda_auto_signed_by_sm?: boolean | undefined;
+  /** Calendar v2: window where meetings can be scheduled. Absent = 09:00-18:00 America/New_York (lib/calendar). */
+  meeting_hours?: MeetingHours | undefined;
+}
+
+/** "HH:MM" start and end of the day, in an IANA time zone. */
+export interface MeetingHours {
+  start: string;
+  end: string;
+  timezone: string;
 }
 
 export interface IntakeDocRule {
@@ -588,6 +597,11 @@ export interface BishopInvestment {
   estimated_payback_month: IsoMonth | null;
   franchises: number;
   recovery: RecoveryPoint[];
+  /**
+   * Calendar v2: the SM consultant of the business, so the Bishop can schedule a meeting with him (a Bishop does
+   * not see the office's people). Absent when the API does not send it: the portfolio then hides the action.
+   */
+  consultant?: { user_id: Uuid; name: string } | null | undefined;
 }
 
 export interface BishopPortfolio {

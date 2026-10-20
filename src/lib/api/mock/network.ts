@@ -6,6 +6,7 @@ import { isActiveFirm, isActiveUser } from "@/lib/accounts/permissions";
 import { bishopShareAt, estimatePaybackMonth } from "@/lib/bishop/split";
 import { computeReportAmounts, nextMonth, previousMonth } from "@/lib/franchise/fees";
 import { buildPipelineCounters } from "@/lib/leads/pipeline";
+import { validateMeetingHours } from "@/lib/calendar/scheduling";
 import { expectedFranchisePct } from "@/lib/tasks/office";
 import { buildNetworkMatrix } from "@/lib/tasks/sm";
 import { areaHealth, AREAS } from "@/lib/tasks/owner";
@@ -481,6 +482,7 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       if (!Number.isInteger(next.program_amount) || (next.program_amount ?? 0) < 1) throw new Error("invalid_program_amount");
       if (next.opportunity_visibility !== undefined && next.opportunity_visibility !== "presented" && next.opportunity_visibility !== "all") throw new Error("invalid_visibility");
       if (next.oa_waiting_days !== undefined && (!Number.isInteger(next.oa_waiting_days) || next.oa_waiting_days < 0 || next.oa_waiting_days > 60)) throw new Error("invalid_waiting_days");
+      if (next.meeting_hours !== undefined && validateMeetingHours(next.meeting_hours)) throw new Error("invalid_meeting_hours");
       const known = new Set(db.catalog.filter((c) => !c.archived).map((c) => c.code));
       if (new Set(next.required_task_codes).size !== next.required_task_codes.length || next.required_task_codes.some((c) => !known.has(c))) throw new Error("unknown_task_code");
       const fields = Object.keys(next) as (keyof PlatformRules)[];

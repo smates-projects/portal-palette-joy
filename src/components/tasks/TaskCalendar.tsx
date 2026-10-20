@@ -4,9 +4,12 @@ import { useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight, Lock, Video } from "lucide-react";
 import { TODAY } from "@/config/app";
 import { localeTag } from "@/lib/format";
-import { useCalendarEvents, useCurrentUser, useLeadMeetings, useMeetings } from "@/lib/api/hooks";
+import { useCalendarEvents, useCurrentUser, useLeadMeetings, useMeetings, useMyMeetings, usePortalMeeting } from "@/lib/api/hooks";
 import type { TaskWithComputed } from "@/lib/api/types";
-import { CAL_MODES, buildCalendarItems, monthGrid, shiftAnchor, weekDays, type CalItem, type CalMode } from "@/lib/tasks/calendar";
+import {
+  CAL_MODES, buildCalendarItems, localDay, monthGrid, shiftAnchor, visibleRange, weekDays, type CalItem, type CalMode,
+} from "@/lib/tasks/calendar";
+import { MeetingPanel } from "@/components/calendar/MeetingPanel";
 import { cn } from "@/lib/utils";
 import { AreaLegend, areaAccentStyle } from "@/components/AreaTag";
 import { AREAS } from "@/lib/tasks/owner";
@@ -17,6 +20,9 @@ export function TaskCalendar(props: {
   rows: TaskWithComputed[];
   businessName: (id: string) => string;
   onOpen: (id: string) => void;
+  /** Portal meeting shown in the side panel (?meeting= from the bell). */
+  focusMeetingId?: string | undefined;
+  onFocusMeeting: (id: string | null) => void;
 }) {
   const { t, i18n } = useTranslation();
   const locale = localeTag(i18n.language);
@@ -27,12 +33,22 @@ export function TaskCalendar(props: {
   const navigate = useNavigate();
   // Entry meetings the owners booked with this consultant (SM team only).
   const leadMeetingsQ = useLeadMeetings(useCurrentUser().data?.role === "sm_team");
+  const days = mode === "month" ? monthGrid(anchor) : weekDays(anchor);
+  const range = visibleRange(days);
+  // Calendar v2: the portal meetings of every kind in the visible weeks.
+  const portalQ = useMyMeetings(range.from, range.to);
+  // Opened from the bell: jump once to the focused meeting's day.
+  const focusQ = usePortalMeeting(props.focusMeetingId);
+  const [anchoredFor, setAnchoredFor] = useState<string | null>(null);
+  if (focusQ.data && anchoredFor !== focusQ.data.id) {
+    setAnchoredFor(focusQ.data.id);
+    setAnchor(localDay(focusQ.data.starts_at));
+  }
 
   const items = useMemo(
-    () => buildCalendarItems(props.rows, meetingsQ.data ?? [], eventsQ.data ?? [], leadMeetingsQ.data ?? []),
-    [props.rows, meetingsQ.data, eventsQ.data, leadMeetingsQ.data],
+    () => buildCalendarItems(props.rows, meetingsQ.data ?? [], eventsQ.data ?? [], leadMeetingsQ.data ?? [], portalQ.data ?? []),
+    [props.rows, meetingsQ.data, eventsQ.data, leadMeetingsQ.data, portalQ.data],
   );
-  const days = mode === "month" ? monthGrid(anchor) : weekDays(anchor);
   const fmt = (o: Intl.DateTimeFormatOptions, iso: string) =>
     new Intl.DateTimeFormat(locale, o).format(new Date(iso.length === 10 ? `${iso}T12:00:00` : iso));
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -67,6 +83,26 @@ export function TaskCalendar(props: {
           <span className="truncate">{compact ? it.item.business_name : t("entry.calendar.title", { name: it.item.business_name })}</span>
         </button>
       );
+    if (it.kind === "portal") {
+      const m = it.meeting;
+      return (
+        <button
+          onClick={() => props.onFocusMeeting(m.id)}
+          title={`${m.topic} · ${time(it.at)} · ${t(`calendar.status.${m.status}`)}${m.google_synced ? ` · ${t("calendar.google_mark")}` : ""}`}
+          className={cn(
+            base,
+            "border border-primary bg-surface text-foreground hover:bg-accent",
+            m.status === "proposed" && "border-dashed",
+            m.status === "cancelled" && "border-border text-muted-foreground line-through",
+            props.focusMeetingId === m.id && "ring-2 ring-ring",
+          )}
+        >
+          {m.meet_url ? <Video className="h-2.5 w-2.5 shrink-0" /> : null}
+          <span className="shrink-0 whitespace-nowrap tabular-nums">{time(it.at)}</span>
+          <span className="truncate">{m.topic}</span>
+        </button>
+      );
+    }
     if (it.kind === "meeting") {
       const proposed = it.meeting.status === "proposed";
       return (
@@ -122,6 +158,7 @@ export function TaskCalendar(props: {
             <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-[2px] border border-border bg-surface" />{t("tasks.calendar.legend_confirmed")}</span>
             <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-[2px] border border-dashed border-border bg-surface" />{t("tasks.calendar.legend_proposed")}</span>
             <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-[2px] border border-border bg-muted" />{t("tasks.calendar.legend_google")}</span>
+            <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-[2px] border border-primary bg-surface" />{t("calendar.legend_portal")}</span>
             {(leadMeetingsQ.data?.length ?? 0) > 0 && (
               <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-[2px] border border-primary bg-accent/60" />{t("entry.calendar.legend")}</span>
             )}
@@ -173,7 +210,7 @@ export function TaskCalendar(props: {
                   </span>
                 )}
                 {shown.map((it) => (
-                  <Item key={`${it.kind}-${it.kind === "due" ? it.task.id : it.kind === "meeting" ? it.meeting.id : it.kind === "lead" ? it.item.lead_id : it.event.id}`} it={it} compact={mode === "month"} />
+                  <Item key={`${it.kind}-${it.kind === "due" ? it.task.id : it.kind === "meeting" || it.kind === "portal" ? it.meeting.id : it.kind === "lead" ? it.item.lead_id : it.event.id}`} it={it} compact={mode === "month"} />
                 ))}
                 {list.length > shown.length && (
                   <button
@@ -188,6 +225,7 @@ export function TaskCalendar(props: {
           })}
         </div>
       </div>
+      <MeetingPanel meetingId={props.focusMeetingId ?? null} onClose={() => props.onFocusMeeting(null)} />
     </div>
   );
 }

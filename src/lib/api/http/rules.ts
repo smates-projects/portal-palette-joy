@@ -35,6 +35,8 @@ const toRules = (rules: PlatformRulesResponse): PlatformRules => ({
   ...(rules.nda_auto_signed_by_sm !== undefined
     ? { nda_auto_signed_by_sm: rules.nda_auto_signed_by_sm }
     : {}),
+  // Calendar v2: absent until SM Global sets it (lib/calendar applies 09:00-18:00 America/New_York).
+  ...(rules.meeting_hours !== undefined ? { meeting_hours: rules.meeting_hours } : {}),
 });
 
 export function createHttpRulesRepository(client: HttpClient): RulesRepository {

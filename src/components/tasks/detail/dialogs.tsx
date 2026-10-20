@@ -179,58 +179,6 @@ export function OwnerRequestDialog(props: {
   );
 }
 
-export function MeetingDialog(props: {
-  open: boolean;
-  onOpenChange: (o: boolean) => void;
-  pending: boolean;
-  onSubmit: (v: { topic: string; starts_at: string; duration_minutes: number }) => void;
-}) {
-  const { t } = useTranslation();
-  const [topic, setTopic] = useState("");
-  const [date, setDate] = useState(TODAY);
-  const [time, setTime] = useState("10:00");
-  const [duration, setDuration] = useState(30);
-  return (
-    <Dialog open={props.open} onOpenChange={(o) => { props.onOpenChange(o); if (!o) setTopic(""); }}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{t("taskDetail.d_meeting_title")}</DialogTitle>
-          <DialogDescription className="sr-only">{t("taskDetail.d_meeting_topic")}</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4">
-          <Field label={t("taskDetail.d_meeting_topic")}>
-            <input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder={t("taskDetail.d_meeting_topic_placeholder")} className={inputCls} />
-          </Field>
-          <div className="grid grid-cols-3 gap-3">
-            <Field label={t("taskDetail.d_meeting_date")}>
-              <input type="date" min={TODAY} value={date} onChange={(e) => setDate(e.target.value)} className={inputCls} />
-            </Field>
-            <Field label={t("taskDetail.d_meeting_time")}>
-              <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className={inputCls} />
-            </Field>
-            <Field label={t("taskDetail.d_meeting_duration")}>
-              <select value={duration} onChange={(e) => setDuration(Number(e.target.value))} className={inputCls}>
-                {[15, 30, 45, 60, 90].map((m) => (
-                  <option key={m} value={m}>{t("taskDetail.minutes", { count: m })}</option>
-                ))}
-              </select>
-            </Field>
-          </div>
-        </div>
-        <DialogFooter>
-          <SecondaryButton onClick={() => props.onOpenChange(false)}>{t("taskDetail.d_cancel")}</SecondaryButton>
-          <PrimaryButton
-            disabled={!topic.trim() || !date || !time || props.pending}
-            onClick={() => props.onSubmit({ topic: topic.trim(), starts_at: new Date(`${date}T${time}:00`).toISOString(), duration_minutes: duration })}
-          >
-            {t("taskDetail.d_meeting_send")}
-          </PrimaryButton>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 /** Owner: request changes on a delivered version. The note is required. */
 export function RequestChangesDialog(props: {
   open: boolean;

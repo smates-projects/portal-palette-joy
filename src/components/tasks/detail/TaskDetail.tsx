@@ -7,10 +7,14 @@ import {
 import { toast } from "sonner";
 import { TODAY } from "@/config/app";
 import {
-  useAddComment, useAddOwnerRequest, useAnswerOwnerRequest, useApproveTask, useBusinesses, useConfirmMeeting, useCurrentUser,
-  useOrganizations, useProposeMeeting, useRequestChanges, useSetOwnerRequestResolved, useStartTask,
+  useAddComment, useAddOwnerRequest, useAnswerOwnerRequest, useApproveTask, useBusinesses, useCalendarConnection, useConfirmMeeting,
+  useCurrentUser, useMyMeetings, useOrganizations, useRequestChanges, useSetOwnerRequestResolved, useStartTask,
   useSubmitVersion, useTaskDetail, useTasks, useUsers,
 } from "@/lib/api/hooks";
+import { isCalendarConnected } from "@/lib/calendar/scheduling";
+import { addDays } from "@/lib/tasks/roadmap";
+import { ScheduleMeetingDialog } from "@/components/calendar/ScheduleMeetingDialog";
+import { GoogleMark, MeetingStatusChip } from "@/components/calendar/parts";
 import type { TaskComment, TaskEvent, User, VisibleTaskStatus } from "@/lib/api/types";
 import { BRAND_TASK_CODE } from "@/lib/brand/scope";
 import { firstName, formatDate, formatDateTime, formatShortDate } from "@/lib/format";
@@ -24,13 +28,16 @@ import { describeChange } from "@/lib/tasks/changes";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MentionInput, MentionText } from "./mentions";
 import {
-  AnswerRequestDialog, MeetingDialog, OwnerRequestDialog, PrimaryButton, RequestChangesDialog, SecondaryButton, SubmitDeliverableDialog,
+  AnswerRequestDialog, OwnerRequestDialog, PrimaryButton, RequestChangesDialog, SecondaryButton, SubmitDeliverableDialog,
 } from "./dialogs";
 import type { OwnerRequest } from "@/lib/api/types";
 import { AreaTag } from "@/components/AreaTag";
 import { areaColorVar } from "@/lib/tasks/area-color";
 
 export type DetailMode = "panel" | "page";
+
+const MEETINGS_FROM = new Date(`${addDays(TODAY, -30)}T00:00:00Z`).toISOString();
+const MEETINGS_TO = new Date(`${addDays(TODAY, 60)}T00:00:00Z`).toISOString();
 
 
 /** The one task detail. Rendered inside the side panel or as the /tareas/:id page. */
@@ -48,8 +55,11 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
   const addComment = useAddComment();
   const addRequest = useAddOwnerRequest();
   const setResolved = useSetOwnerRequestResolved();
-  const propose = useProposeMeeting();
   const me = useCurrentUser();
+  const connectionQ = useCalendarConnection();
+  const meConnected = connectionQ.data?.connected ?? isCalendarConnected(me.data);
+  // Portal meetings of this task: a month back and two ahead of the demo day.
+  const portalQ = useMyMeetings(MEETINGS_FROM, MEETINGS_TO);
   const orgsQ = useOrganizations();
   const approve = useApproveTask();
   const requestChanges = useRequestChanges();
@@ -142,6 +152,7 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
   }
 
   const { task, versions, comments, owner_requests, meetings, events } = detail;
+  const taskMeetings = (portalQ.data ?? []).filter((m) => m.task_id === task.id);
   const users = usersQ.data ?? [];
   const userName = (id: string) => users.find((u) => u.id === id)?.full_name ?? "";
   const business = bizQ.data?.find((b) => b.id === task.business_id);
@@ -468,12 +479,43 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
           )}
         </Section>
 
-        {/* 5. Meetings */}
+        {/* 5. Meetings: the portal meetings of this task (calendar v2) and the older proposals */}
         <Section
           title={t("taskDetail.s_meetings")}
-          action={!isFirm || cancelled ? undefined : <SecondaryButton onClick={() => setMeetingOpen(true)}><Plus className="h-3.5 w-3.5" />{t("taskDetail.propose_meeting")}</SecondaryButton>}
+          action={!(isFirm || isSm || isOwner) || cancelled ? undefined : (
+            <SecondaryButton onClick={() => setMeetingOpen(true)}>
+              <Plus className="h-3.5 w-3.5" />
+              {t(meConnected ? "calendar.schedule" : "calendar.propose")}
+            </SecondaryButton>
+          )}
         >
-          {meetings.length === 0 ? (
+          {taskMeetings.length > 0 && (
+            <ul className="mb-3 divide-y divide-border rounded-md border border-border">
+              {taskMeetings.map((m) => (
+                <li key={m.id} className="flex items-start gap-3 px-4 py-3">
+                  <div className="min-w-0 flex-1">
+                    <p className={cn("text-sm font-medium", m.status === "cancelled" && "line-through")}>{m.topic}</p>
+                    <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
+                      {formatDateTime(m.starts_at, lng)} · {m.participants.map((p) => firstName(p.name)).join(", ")}
+                    </p>
+                    <div className="mt-1 flex flex-wrap items-center gap-3 text-xs">
+                      {m.meet_url && m.status !== "cancelled" && (
+                        <a href={m.meet_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-link hover:underline">
+                          <Video className="h-3 w-3" />{t("calendar.panel.join")}
+                        </a>
+                      )}
+                      <Link to="/tareas" search={{ view: "calendar", meeting: m.id }} className="text-link hover:underline">{t("notifications.calendar_ref")}</Link>
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    {m.google_synced && <GoogleMark />}
+                    <MeetingStatusChip status={m.status} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          {meetings.length === 0 && taskMeetings.length > 0 ? null : meetings.length === 0 ? (
             <Empty>{t("taskDetail.meetings_empty", { name: ownerFirst })}</Empty>
           ) : (
             <ul className="divide-y divide-border rounded-md border border-border">
@@ -609,13 +651,15 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
           addRequest.mutate({ id: task.id, ...v }, { onSuccess: () => { setRequestOpen(false); toast.success(t("taskDetail.t_request", { name: ownerFirst })); }, onError: fail })
         }
       />
-      <MeetingDialog
+      <ScheduleMeetingDialog
         open={meetingOpen}
         onOpenChange={setMeetingOpen}
-        pending={propose.isPending}
-        onSubmit={(v) =>
-          propose.mutate({ id: task.id, ...v }, { onSuccess: () => { setMeetingOpen(false); toast.success(t("taskDetail.t_meeting", { name: ownerFirst })); }, onError: fail })
-        }
+        context={{ kind: "task", task_id: task.id }}
+        participants={[task.assignee_user_id, business?.owner_user_id]
+          .filter((id): id is string => !!id)
+          .map((id) => ({ user_id: id, name: userName(id) }))
+          .filter((p) => p.name)}
+        defaultTopic={`${task.code} · ${task.name}`}
       />
     </div>
   );

@@ -10,6 +10,7 @@ import { createHttpBrandRepository } from "./brand";
 import { createHttpBusinessFileRepository } from "./business-file";
 import { createHttpBusinessProfileRepository } from "./business-profile";
 import { createHttpBusinessesRepository } from "./businesses";
+import { createHttpCalendarRepository } from "./calendar";
 import { createHttpCatalogRepository } from "./catalog";
 import { createHttpDistributionRepository } from "./distribution";
 import { createHttpDocumentsRepository } from "./documents";
@@ -34,6 +35,7 @@ export type RepositoryMode = "mock" | "http";
 export const HTTP_REPOSITORIES = {
   session: "SESSION",
   users: "USERS",
+  calendar: "CALENDAR",
   organizations: "ORGANIZATIONS",
   businesses: "BUSINESSES",
   businessProfile: "BUSINESS_PROFILE",
@@ -82,6 +84,7 @@ export function createHttpRepositories(client: HttpClient): HttpRepositories {
   return {
     session: createHttpSessionRepository(client),
     users: createHttpUsersRepository(client),
+    calendar: createHttpCalendarRepository(client),
     organizations: createHttpOrganizationsRepository(client),
     businesses: createHttpBusinessesRepository(client),
     businessProfile: createHttpBusinessProfileRepository(client),

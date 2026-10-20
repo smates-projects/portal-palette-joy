@@ -15,7 +15,8 @@ State at 17 October 2026, branch `main`. This file is the full picture that does
 Data and logic (`src/lib`):
 
 - `api/types.ts`, `api/network-types.ts`, `api/entry-types.ts`: every entity, snake_case, UUID ids, ISO dates.
-- `api/repositories.ts`: repository interfaces (Session, Organizations, Businesses, Users, Leads, Tasks, Notifications, Documents, Funds, Brand, BusinessProfile, Bishop, Rules, Catalog, Network, Franchises, Manual...).
+- `api/repositories.ts`: repository interfaces (Session, Organizations, Businesses, Users, Calendar, Leads, Tasks, Notifications, Documents, Funds, Brand, BusinessProfile, Bishop, Rules, Catalog, Network, Franchises, Manual...).
+- `api/mock/calendar.ts` and `api/http/calendar.ts`: the Calendar repository (calendar v2, see "Calendar"). `calendar/`: its pure rules (`slots.ts`: 30-minute grid, time zones, grouping by day; `scheduling.ts`: who is connected, confirmed or proposal, success note, meeting hours).
 - `api/hooks.ts`: TanStack Query hooks; components only use these.
 - `api/mock/`: in-memory backend with authorization by current user (`index.ts`, `seed*.ts`, `intake.ts`, `funds.ts`, `accounts.ts`, `entry.ts`, `opportunities.ts`, `network.ts`, `session.ts`).
 - `api/http/`: adapters to the real API (NestJS, separate repo), one file per repository, chosen in `api/index.ts` by `VITE_API_MODE` (`mock` by default, so Lovable and the preview never need it) or per repository with `VITE_API_MODE_<REPO>`; `VITE_API_URL` points to the API. Never edit this folder in Lovable. Every repository now has an adapter; the mock stays the default for all of them, and only the demo-only actions (simulated entry, simulated invitation acceptance) have no endpoint.
@@ -40,6 +41,7 @@ Screens (`src/components`):
 - `docuseal/`: `SignaturePad` (draw, type, upload), `DocuSealSigner`, `SignedContractDialog`.
 - `brand/`: `Logo` (SM marks from `public/brand`), `BrandLogo`, `BrandPanel`, `BrandCaptureSection`, `BrandPreview`.
 - `tasks/`: list, calendar, detail (one component used everywhere), SM actions, pre-validation.
+- `calendar/`: `ScheduleMeetingDialog` (the one scheduling dialog), `MeetingPanel` (side panel of a meeting in the calendar), status chip and Google mark.
 - `auth/`: public screens outside the rail (`AuthLayout`): login (password or magic link), magic link sent / exchange, entry link exchange, two-step verification (code or recovery code) and its activation, accept invitation, forgot and reset password. Routes `/login`, `/enlace-enviado`, `/enlace/$token`, `/entrada/$token`, `/verificacion`, `/activar-verificacion`, `/invitacion/$token`, `/recuperar`, `/restablecer/$token`. Pure helpers in `src/lib/auth/` (safe `next` redirect, form validation, `nextStepAfterSignIn` for the 2FA routing).
 
 ## Industries
@@ -66,6 +68,19 @@ Strategic Mates works only with construction trades, the same keys as the public
 - "Ya lo tenía": the program is still 180 days at the same price, with fewer tasks. Tasks of the areas the assessment rated strong start as "A validar: el negocio ya lo tendría" (block to area map editable by SM Global in Reglas). In the Diagnóstico SM decides per task: "Ya lo tenía" (evidence required; approved with the tag "Ya existía", no firm involved, counts for franchisability) or "Hay que hacerla". SM can also mark "Ya lo tenía" on any task not started, flagged by the assessment or not.
 - Franchisability = approved tasks over total, with a goal (85 %) and a list of mandatory tasks set by SM Global (may be empty).
 - Area health: red if a task is overdue; amber if something is due within 7 days or a deliverable waits for the owner over 7 days; green otherwise; grey if the area does not apply.
+
+## Calendar
+
+Calendar v2: the portal schedules meetings itself, in Google Calendar, for every role.
+
+- Who connects: everyone (owner and team, firm, SM, Bishop, franchisee) from the Google Calendar card of Mi perfil. The access is read and write: the portal reads free time to offer common slots and creates in the organizer's Google Calendar the meetings scheduled here, with the Meet link. When Google stops accepting the access the card shows a bordered amber note with "Volver a conectar" (`calendar_reconnect_required`). `User.calendar_connected` says who is connected (older rows: `google_calendar_email`).
+- The dialog (`ScheduleMeetingDialog`, the same everywhere): participants pre-filled from where it opens, plus anyone visible from a small people picker; topic; 30, 45 or 60 minutes. Then the slot picker asks `availability` for the next 14 days and shows only the slots where everyone is free, grouped by day in the viewer's time, with one line per person whose calendar could not be read ("Mariana todavía no conectó su calendario: le llegará la propuesta para confirmar"). Confirming creates the meeting; the note says "Te llegó la invitación de Google con el link de Meet" or "Queda propuesta hasta que X la confirme". `slot_unavailable` shows "Ese horario se acaba de ocupar, elige otro" and reads the slots again. Other codes: `participant_not_visible`, `calendar_write_scope_required`, `meeting_in_past`, `too_many_participants` (8 people, organizer included).
+- Fallback (`planMeeting`): organizer connected, the event goes to Google with the Meet link; confirmed when every guest is connected, proposed for the ones who are not. Organizer not connected: a proposal every guest confirms, nothing in Google. The dialog still opens: "Proponer reunión" instead of "Agendar reunión".
+- Where it opens: task detail (the task's firm person and the owner), the home agenda of a firm ("Agendar reunión", picking the task), the ficha del negocio and Mi negocio ("Agendar con mi consultor"), the lead detail (the lead's consultant and the owner, only when the owner already has an account; without one "Agendar reunión" keeps opening the booking link), and the Bishop's portfolio (the consultant of each funded business, `BishopInvestment.consultant`).
+- Calendar screen (Mis tareas, calendar view, `?meeting=` focuses one): due dates, Google events, entry meetings and the portal meetings of every kind (`GET /me/meetings`), with status chips Propuesta / Confirmada / Cancelada and a "Google" mark. A meeting opens a side panel: "Entrar a Meet", "Mover" (the slot picker again) and "Cancelar" (confirmed inside the panel, reason optional) for the organizer or SM; anyone else gets "Avisar que no puedo" (a comment on the task, or a mail to the organizer). It opens without tasks too, so a Bishop gets there from the bell.
+- Notifications: `meeting_scheduled`, `meeting_moved`, `meeting_cancelled` open the calendar with the meeting focused; `calendar_connect_suggested` and `calendar_reconnect_required` open Mi perfil.
+- Rules: SM Global sets `meeting_hours` (start, end, time zone from a short list of US zones) in Reglas. Default 09:00-18:00 America/New_York.
+- Mock: Carla, Lucía, Nicolás and Jefferson connected, Mariana not, Camila must reconnect; fake busy time per person; four sample meetings (Nicolás with Carla, Lucía with Carla on B6-03, Mariana's proposal to Carla, Jefferson with Nicolás). The old task proposals (`proposeMeeting`, `confirmMeeting`) keep working and still show in the task detail.
 
 ## Signing (DocuSeal, simulated)
 
@@ -102,6 +117,6 @@ The small business pays nothing. The Bishop pays SM the program amount (SM Globa
 
 ## Pending (not bugs)
 
-- Backend: the API (TypeScript, NestJS, PostgreSQL) exists in a separate repo, built on `src/lib/api` as the contract. The front switches to it with `VITE_API_MODE=http` (every repository) or `VITE_API_MODE_<REPO>=http` (one repository: SESSION, USERS, ORGANIZATIONS, BUSINESSES, BUSINESS_PROFILE, ROUTING, LEADS, DOCUMENTS, NOTIFICATIONS, BUSINESS_FILE, BISHOP, FUNDS, DISTRIBUTION, RULES, CATALOG, TASKS, BRAND, NETWORK, FRANCHISES, MANUAL, FINANCIALS, FRANCHISEE), with `VITE_API_URL` pointing to it (see `.env.example`). Without those variables everything runs on the mock, and the Lovable preview always stays on the mock. `src/lib/api/http` must never be edited in Lovable.
+- Backend: the API (TypeScript, NestJS, PostgreSQL) exists in a separate repo, built on `src/lib/api` as the contract. The front switches to it with `VITE_API_MODE=http` (every repository) or `VITE_API_MODE_<REPO>=http` (one repository: SESSION, USERS, CALENDAR, ORGANIZATIONS, BUSINESSES, BUSINESS_PROFILE, ROUTING, LEADS, DOCUMENTS, NOTIFICATIONS, BUSINESS_FILE, BISHOP, FUNDS, DISTRIBUTION, RULES, CATALOG, TASKS, BRAND, NETWORK, FRANCHISES, MANUAL, FINANCIALS, FRANCHISEE), with `VITE_API_URL` pointing to it (see `.env.example`). Without those variables everything runs on the mock, and the Lovable preview always stays on the mock. `src/lib/api/http` must never be edited in Lovable.
 - Real integrations on the API side: DocuSeal (embedded form when the API runs `SIGNING_DRIVER=docuseal`), Google Calendar (OAuth from the profile), file storage. Transactional email is still to come.
 - Decisions pending with Strategic Mates: MOU text, mandatory documents list, Bishop split (50/22/10 is provisional), zones by state or city, real names of the SM Miami team.

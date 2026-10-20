@@ -16,7 +16,7 @@ export const VISIBLE_STATUSES: VisibleTaskStatus[] = [
 ];
 const STEP_ORDER = ["survey", "design", "implement", "validate", "document"];
 
-const SEARCH_KEYS = ["business", "area", "status", "due", "blocked", "q", "sort", "dir", "group", "view", "task", "firm", "sup", "stale", "attention"] as const;
+const SEARCH_KEYS = ["business", "area", "status", "due", "blocked", "q", "sort", "dir", "group", "view", "task", "firm", "sup", "stale", "attention", "meeting"] as const;
 export type TasksSearch = { [K in (typeof SEARCH_KEYS)[number]]?: string | undefined };
 
 const str = (v: unknown) => (typeof v === "string" && v !== "" ? v : undefined);

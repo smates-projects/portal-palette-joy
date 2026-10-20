@@ -15,6 +15,9 @@ import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DOT, TEXT, firmName } from "@/components/office/shared";
 import { AssessmentResult, KnowHow } from "@/components/pipeline/AssessmentResult";
+import { CalendarPlus } from "lucide-react";
+import { SecondaryButton } from "@/components/tasks/detail/dialogs";
+import { ScheduleMeetingDialog } from "@/components/calendar/ScheduleMeetingDialog";
 
 /** Items per list of "Qué le falta" before "y N más". */
 const MAX_ITEMS = 5;
@@ -37,6 +40,7 @@ export function BusinessFile({ businessId, variant }: { businessId: string; vari
   const snapQ = useBusinessSnapshot(owner ? undefined : businessId);
   const business = bizQ.data?.find((b) => b.id === businessId);
   const me = useCurrentUser().data;
+  const [scheduling, setScheduling] = useState(false);
 
   const queries = [bizQ, tasksQ, versionsQ, orgsQ, usersQ, rulesQ, snapQ];
   if (queries.some((q) => q.isError))
@@ -52,8 +56,16 @@ export function BusinessFile({ businessId, variant }: { businessId: string; vari
 
   const tasks = (tasksQ.data ?? []).filter((x) => x.business_id === business.id && x.status !== "cancelled");
   const snapshot = snapQ.data ?? null;
+  // Calendar v2: the owner meets the consultant; SM meets the owner (and the consultant when it is someone else).
+  const guests = (owner ? [business.consultant_id] : [business.owner_user_id, business.consultant_id])
+    .map((id) => usersQ.data?.find((u) => u.id === id))
+    .filter((u): u is NonNullable<typeof u> => !!u && u.id !== me?.id)
+    .map((u) => ({ user_id: u.id, name: u.full_name }));
   return (
     <div className="space-y-6">
+      {guests.length > 0 && (
+        <ScheduleMeetingDialog open={scheduling} onOpenChange={setScheduling} context={{ kind: "business", business_id: business.id }} participants={guests} />
+      )}
       {/* Parts 1-3 are render helpers (not components) so they read the queries above without remounting. */}
       {WhoItIs({ business, snapshot, tasks, owner })}
       {!owner && <ProfileChanges businessId={business.id} readOnly={me?.role === "sm_global"} />}
@@ -83,6 +95,14 @@ export function BusinessFile({ businessId, variant }: { businessId: string; vari
           <Fact label={t("business_file.margin")} value={s ? t(`pipeline.margin_ranges.${s.business.margin_range ?? "unknown"}`) : none} />
           <Fact label={t("business_file.consultant")} value={user(p.business.consultant_id)?.full_name ?? t("office.biz.no_consultant")} />
         </dl>
+        {guests.length > 0 && (
+          <div className="mt-3">
+            <SecondaryButton onClick={() => setScheduling(true)}>
+              <CalendarPlus className="h-3.5 w-3.5" />
+              {t(p.owner ? "calendar.schedule_with_consultant" : "calendar.schedule")}
+            </SecondaryButton>
+          </div>
+        )}
         <p className="mt-4 text-xs font-medium text-muted-foreground">{t("business_file.firms")}</p>
         <ul className="mt-1.5 divide-y divide-border rounded-md border border-border text-sm">
           {cards.map((c) => (

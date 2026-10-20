@@ -95,6 +95,13 @@ import type {
   ZoneRuleInput,
   MeetingOutcomeInput,
   MouAcknowledgmentPoint,
+  Availability,
+  AvailabilityInput,
+  CalendarConnection,
+  IsoDateTime,
+  PortalMeeting,
+  RescheduleMeetingInput,
+  ScheduleMeetingInput,
 } from "./types";
 
 import type { RecoveryCodes, SignInResult, TwoFactorSetup, TwoFactorVerifyInput } from "./auth-types";
@@ -195,6 +202,35 @@ export const isCalendarConsent = (value: unknown): value is CalendarConsent =>
   typeof value === "object" &&
   value !== null &&
   typeof (value as Record<string, unknown>)["consent_url"] === "string";
+
+/**
+ * Calendar v2. Every role connects Google Calendar with read and write access: the portal reads free time to offer
+ * common slots and creates the meetings (with the Meet link) in the organizer's calendar. A meeting where the
+ * organizer or a guest is not connected stays "proposed" until they confirm. Error codes: participant_not_visible,
+ * slot_unavailable, calendar_write_scope_required, meeting_in_past, too_many_participants.
+ */
+export interface CalendarRepository {
+  /** GET /me/calendar. */
+  getConnection(): Promise<CalendarConnection>;
+  /** POST /me/calendar/connect: Google's consent URL (real API) or the connection itself (mock, at once). */
+  connect(): Promise<CalendarConsent | CalendarConnection>;
+  /** DELETE /me/calendar. */
+  disconnect(): Promise<CalendarConnection>;
+  /** SM: GET /users/{id}/calendar-status. */
+  getUserStatus(userId: Uuid): Promise<CalendarConnection>;
+  /** POST /calendar/availability: common free slots (30-minute grid inside meeting_hours) and who could not be read. */
+  availability(input: AvailabilityInput): Promise<Availability>;
+  /** POST /meetings (Idempotency-Key). Confirmed and in Google when everyone is connected, proposed otherwise. */
+  schedule(input: ScheduleMeetingInput): Promise<PortalMeeting>;
+  /** PATCH /meetings/{id} with If-Match ("Mover"). Organizer or SM. */
+  reschedule(id: Uuid, input: RescheduleMeetingInput): Promise<PortalMeeting>;
+  /** DELETE /meetings/{id} with If-Match, optional reason. Organizer or SM. */
+  cancel(id: Uuid, reason?: string | null): Promise<void>;
+  /** GET /me/meetings?from&to: meetings the current user organizes or joins, every kind, soonest first. */
+  listMyMeetings(from: IsoDateTime, to: IsoDateTime): Promise<PortalMeeting[]>;
+  /** GET /meetings/{id}; null when it does not exist or is not visible. */
+  getMeeting(id: Uuid): Promise<PortalMeeting | null>;
+}
 
 export interface UsersRepository {
   /** People in the current user's scope. Deactivated people are left out unless include_inactive. */
@@ -696,6 +732,7 @@ export interface ApiClient {
   organizations: OrganizationsRepository;
   businesses: BusinessesRepository;
   users: UsersRepository;
+  calendar: CalendarRepository;
   tasks: TasksRepository;
   leads: LeadsRepository;
   funds: FundsRepository;

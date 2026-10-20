@@ -2,6 +2,9 @@ import { keepPreviousData, useMutation, useQueries, useQuery, useQueryClient } f
 import { api } from "./index";
 import type { DocumentUpload, SetBrandInput, SubmitVersionInput } from "./repositories";
 import type {
+  AvailabilityInput,
+  RescheduleMeetingInput,
+  ScheduleMeetingInput,
   BusinessProfilePatch,
   CatalogItemInput,
   ContractSignature,
@@ -74,9 +77,51 @@ export function useSetGoogleCalendar() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (email: string | null) => api.users.setGoogleCalendar(email),
-    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: queryKeys.me }), qc.invalidateQueries({ queryKey: queryKeys.users })]),
+    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: queryKeys.me }), qc.invalidateQueries({ queryKey: queryKeys.users }), qc.invalidateQueries({ queryKey: ["calendar"] })]),
   });
 }
+
+// ---------- Calendar v2 ----------
+const CALENDAR_KEY = "calendar";
+
+/** CalendarConnection of the current user (Mi perfil, the scheduling dialog). */
+export const useCalendarConnection = () => useQuery({ queryKey: [CALENDAR_KEY, "connection"], queryFn: api.calendar.getConnection });
+/** PortalMeeting[] the current user organizes or joins in [from, to). */
+export const useMyMeetings = (from: string, to: string, enabled = true) =>
+  useQuery({ queryKey: [CALENDAR_KEY, "meetings", from, to], queryFn: () => api.calendar.listMyMeetings(from, to), enabled });
+export const usePortalMeeting = (id: string | null | undefined) =>
+  useQuery({ queryKey: [CALENDAR_KEY, "meeting", id], queryFn: () => api.calendar.getMeeting(id!), enabled: !!id });
+/** Common free slots; read again on every open of the slot picker (never cached between people). */
+export const useAvailability = (input: AvailabilityInput | null) =>
+  useQuery({
+    queryKey: [CALENDAR_KEY, "availability", input],
+    queryFn: () => api.calendar.availability(input!),
+    enabled: !!input,
+    staleTime: 0,
+    gcTime: 0,
+  });
+
+function useCalendarMutation<V, R>(fn: (vars: V) => Promise<R>) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: () =>
+      Promise.all([
+        qc.invalidateQueries({ queryKey: [CALENDAR_KEY] }),
+        qc.invalidateQueries({ queryKey: ["notifications"] }),
+        qc.invalidateQueries({ queryKey: queryKeys.me }),
+        qc.invalidateQueries({ queryKey: queryKeys.users }),
+      ]),
+  });
+}
+/** Real API: answers Google's consent URL (the caller redirects); the mock connects at once. */
+export const useConnectCalendar = () => useCalendarMutation((_: void) => api.calendar.connect());
+export const useDisconnectCalendar = () => useCalendarMutation((_: void) => api.calendar.disconnect());
+export const useScheduleMeeting = () => useCalendarMutation((input: ScheduleMeetingInput) => api.calendar.schedule(input));
+export const useRescheduleMeeting = () =>
+  useCalendarMutation((v: { id: string; input: RescheduleMeetingInput }) => api.calendar.reschedule(v.id, v.input));
+export const useCancelPortalMeeting = () =>
+  useCalendarMutation((v: { id: string; reason?: string | null }) => api.calendar.cancel(v.id, v.reason ?? null));
 
 // ---------- Sign-in (public screens) ----------
 import { isSignedInUser } from "./auth-types";

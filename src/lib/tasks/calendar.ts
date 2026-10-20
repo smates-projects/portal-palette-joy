@@ -1,4 +1,4 @@
-import type { ExternalCalendarEvent, LeadMeetingItem, Meeting, TaskWithComputed } from "@/lib/api/types";
+import type { ExternalCalendarEvent, LeadMeetingItem, Meeting, PortalMeeting, TaskWithComputed } from "@/lib/api/types";
 import { addDays } from "./roadmap";
 
 export const CAL_MODES = ["month", "week"] as const;
@@ -29,21 +29,31 @@ export const localDay = (iso: string) => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 
+/** The instants the visible grid covers, from the first day's local midnight to the day after the last one. */
+export function visibleRange(days: string[]): { from: string; to: string } {
+  const first = days[0] ?? "";
+  const last = days.at(-1) ?? first;
+  return { from: new Date(`${first}T00:00:00`).toISOString(), to: new Date(`${addDays(last, 1)}T00:00:00`).toISOString() };
+}
+
 export type CalItem =
   | { kind: "due"; day: string; task: TaskWithComputed }
   | { kind: "meeting"; day: string; at: string; meeting: Meeting; task: TaskWithComputed }
   | { kind: "google"; day: string; at: string; event: ExternalCalendarEvent }
-  | { kind: "lead"; day: string; at: string; item: LeadMeetingItem };
+  | { kind: "lead"; day: string; at: string; item: LeadMeetingItem }
+  | { kind: "portal"; day: string; at: string; meeting: PortalMeeting };
 
 /**
- * Due dates of the visible tasks, meetings only of those tasks, plus the user's Google events and the entry
- * meetings booked with the consultant (leads). Per day: timed items by hour first, then due dates by code.
+ * Due dates of the visible tasks, meetings only of those tasks, plus the user's Google events, the entry
+ * meetings booked with the consultant (leads) and the portal meetings of calendar v2 (every kind, cancelled ones
+ * included so the person sees what was dropped). Per day: timed items by hour first, then due dates by code.
  */
 export function buildCalendarItems(
   tasks: TaskWithComputed[],
   meetings: Meeting[],
   events: ExternalCalendarEvent[],
   leadMeetings: LeadMeetingItem[] = [],
+  portalMeetings: PortalMeeting[] = [],
 ): Map<string, CalItem[]> {
   const byId = new Map(tasks.map((t) => [t.id, t]));
   const items: CalItem[] = [
@@ -56,6 +66,7 @@ export function buildCalendarItems(
     }),
     ...events.map((event) => ({ kind: "google" as const, day: localDay(event.starts_at), at: event.starts_at, event })),
     ...leadMeetings.map((item) => ({ kind: "lead" as const, day: localDay(item.meeting.starts_at), at: item.meeting.starts_at, item })),
+    ...portalMeetings.map((meeting) => ({ kind: "portal" as const, day: localDay(meeting.starts_at), at: meeting.starts_at, meeting })),
   ];
   const map = new Map<string, CalItem[]>();
   for (const it of items) map.set(it.day, [...(map.get(it.day) ?? []), it]);
