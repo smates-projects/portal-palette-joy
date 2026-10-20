@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { Contract, LeadMeeting, Signer } from "@/lib/api/types";
 import {
-  ENTRY_RULE_DEFAULTS, acknowledgedAll, bishopSees, bookingKind, entryRules, missingAcknowledgments, ndaStatus, oaSendBlock,
-  oaSignableFrom, oaWaitingUntil, outcomeBlock, outcomePending, ownerMeetingView, ownerSteps, signBlock, validAcknowledgment,
+  ENTRY_RULE_DEFAULTS, INTAKE_DOCUMENT_ACCEPT, OWNER_STEPS, OWN_NDA_MAX_LENGTH, acknowledgedAll, bishopSees, bookingKind, cleanDocumentHelp,
+  entryRules, fillOwnNdaTemplate, intakeDocumentHelp, missingAcknowledgments, ndaStatus, oaSendBlock, oaSignableFrom, oaWaitingUntil,
+  outcomeBlock, outcomePending, ownNdaBodyError, ownNdaEditable, ownNdaView, ownerMeetingView, ownerSteps, signBlock, validAcknowledgment,
 } from "./entry-flow";
 
 const ALL = ["funds_finance_intervention", "business_stays_yours", "franchisor_entity_participation", "do_it_together_no_debt"] as const;
@@ -91,22 +92,70 @@ describe("meeting outcome", () => {
 });
 
 describe("NDA status and owner steps", () => {
-  it("firmado / pendiente / NDA propio por revisar", () => {
+  it("firmado / pendiente", () => {
     expect(ndaStatus(contract("nda", [signer("owner", "signed"), signer("sm", "signed")]))).toBe("signed");
     expect(ndaStatus(contract("nda", [signer("owner", "opened"), signer("sm", "signed")]))).toBe("pending");
-    expect(ndaStatus(contract("nda", [signer("owner", "opened"), signer("sm", "signed")], { own_file_id: "f" }))).toBe("own_review");
     expect(ndaStatus(null)).toBe("none");
+  });
+  it("the order is NDA, MOU, Tu reunión, Documentos; then the expansion meeting and the Operating Agreement", () => {
+    expect(OWNER_STEPS).toEqual(["nda", "mou", "meeting", "documents", "expansion", "operating_agreement"]);
   });
   it("four steps before the approval, six after; the first not done is the current one", () => {
     const nda = contract("nda", [signer("owner", "signed"), signer("sm", "signed")]);
     const mou = contract("mou", [signer("owner", "opened"), signer("sm", "signed")]);
+    // The MOU exists right after the NDA: it is the current step even before the meeting.
     const before = ownerSteps({ summary: { approved_at: null }, nda, mou, operatingAgreement: null, rules: ENTRY_RULE_DEFAULTS });
-    expect(before.map((s) => `${s.key}:${s.state}`)).toEqual(["nda:done", "meeting:done", "mou:current", "documents:upcoming"]);
+    expect(before.map((s) => `${s.key}:${s.state}`)).toEqual(["nda:done", "mou:current", "meeting:upcoming", "documents:upcoming"]);
+    // Signed before the meeting: the meeting is next.
+    const signedMou = { ...mou, signers: [signer("owner", "signed"), signer("sm", "signed")] };
+    const beforeMeeting = ownerSteps({ summary: { approved_at: null, required_total: 0 }, nda, mou: signedMou, operatingAgreement: null, rules: ENTRY_RULE_DEFAULTS });
+    expect(beforeMeeting.map((s) => `${s.key}:${s.state}`)).toEqual(["nda:done", "mou:done", "meeting:current", "documents:upcoming"]);
+    // The documents list went out (only after "Se hizo"): the meeting reads as held.
+    const withDocs = ownerSteps({ summary: { approved_at: null, required_total: 9 }, nda, mou: signedMou, operatingAgreement: null, rules: ENTRY_RULE_DEFAULTS });
+    expect(withDocs.map((s) => `${s.key}:${s.state}`)).toEqual(["nda:done", "mou:done", "meeting:done", "documents:current"]);
     const after = ownerSteps({
       summary: { approved_at: "2026-10-01T15:00:00Z", entry: { meeting: null, expansion_meeting: null, expansion_meeting_held_at: "2026-10-08T16:00:00Z", booking_url: null, consultant_name: null } },
-      nda, mou: { ...mou, signers: [signer("owner", "signed"), signer("sm", "signed")] }, operatingAgreement: contract("tripartite", [signer("owner", "sent")]), rules: ENTRY_RULE_DEFAULTS,
+      nda, mou: signedMou, operatingAgreement: contract("tripartite", [signer("owner", "sent")]), rules: ENTRY_RULE_DEFAULTS,
     });
-    expect(after.map((s) => `${s.key}:${s.state}`)).toEqual(["nda:done", "meeting:done", "mou:done", "documents:done", "expansion:done", "operating_agreement:current"]);
+    expect(after.map((s) => `${s.key}:${s.state}`)).toEqual(["nda:done", "mou:done", "meeting:done", "documents:done", "expansion:done", "operating_agreement:current"]);
+  });
+});
+
+describe("the owner's own NDA", () => {
+  it("none, waiting for Strategic Mates, signed by Strategic Mates, signed by both; editable only while nobody signed", () => {
+    expect(ownNdaView(null)).toBe("none");
+    expect(ownNdaView({ signed_by_sm: false, signed_by_owner: false })).toBe("waiting_sm");
+    expect(ownNdaView({ signed_by_sm: true, signed_by_owner: false })).toBe("signed_by_sm");
+    expect(ownNdaView({ signed_by_sm: true, signed_by_owner: true })).toBe("signed_by_both");
+    expect(ownNdaEditable({ signed_by_sm: false, signed_by_owner: false })).toBe(true);
+    expect(ownNdaEditable({ signed_by_sm: true, signed_by_owner: false })).toBe(false);
+    expect(ownNdaEditable(null)).toBe(false);
+  });
+  it("the body is required and has a maximum length; the template gets the business and the owner", () => {
+    expect(ownNdaBodyError("  ")).toBe("body_required");
+    expect(ownNdaBodyError("x".repeat(OWN_NDA_MAX_LENGTH + 1))).toBe("body_too_long");
+    expect(ownNdaBodyError("Mi acuerdo")).toBeNull();
+    expect(fillOwnNdaTemplate("Entre {{business_name}} y {{ owner_name }}, por {{business_name}}.", { business_name: "Vossler", owner_name: "Carla Méndez" }))
+      .toBe("Entre Vossler y Carla Méndez, por Vossler.");
+  });
+});
+
+describe("entry document help", () => {
+  const rules = {
+    intake_documents: [
+      { id: "r1", name: "Constitución", required: true, only_if_llc: false, verified_hint: "", archived: false, help: { what: " Tu empresa existe ", counts: ["Sunbiz", " ", "Articles"], tip: "" } },
+      { id: "r2", name: "EIN", required: true, only_if_llc: false, verified_hint: "", archived: false, help: { what: "", counts: [""], tip: " " } },
+    ],
+  };
+  it("comes from the rule of the document, trimmed, without empty lines; nothing written is no help", () => {
+    expect(intakeDocumentHelp({ area: "intake", rule_id: "r1" }, rules)).toEqual({ what: "Tu empresa existe", counts: ["Sunbiz", "Articles"], tip: "" });
+    expect(intakeDocumentHelp({ area: "intake", rule_id: "r2" }, rules)).toBeNull();
+    expect(intakeDocumentHelp({ area: "intake", rule_id: "nope" }, rules)).toBeNull();
+    expect(intakeDocumentHelp({ area: "B1", rule_id: "r1" }, rules)).toBeNull();
+    expect(cleanDocumentHelp(null)).toBeNull();
+  });
+  it("the upload takes photos and PDFs, like the API", () => {
+    for (const ext of [".pdf", ".png", ".jpg", ".jpeg", "image/png", "image/jpeg"]) expect(INTAKE_DOCUMENT_ACCEPT.split(",")).toContain(ext);
   });
 });
 
@@ -136,7 +185,7 @@ describe("owner meeting steps (API entry with meetings[])", () => {
       summary: { approved_at: null, entry: apiEntry([{ id: "i", kind: "initial", starts_at: "2026-10-14T05:44:18Z", outcome: "held" }]) },
       nda, mou: null, operatingAgreement: null, rules: ENTRY_RULE_DEFAULTS,
     });
-    expect(meetingOnly.map((s) => `${s.key}:${s.state}`)).toEqual(["nda:done", "meeting:done", "mou:current", "documents:upcoming"]);
+    expect(meetingOnly.map((s) => `${s.key}:${s.state}`)).toEqual(["nda:done", "mou:current", "meeting:done", "documents:upcoming"]);
     const mou = contract("mou", [signer("owner", "signed"), signer("sm", "signed")]);
     const afterExpansion = ownerSteps({
       summary: {
@@ -148,6 +197,6 @@ describe("owner meeting steps (API entry with meetings[])", () => {
       },
       nda, mou, operatingAgreement: contract("tripartite", [signer("owner", "sent")]), rules: ENTRY_RULE_DEFAULTS,
     });
-    expect(afterExpansion.map((s) => `${s.key}:${s.state}`)).toEqual(["nda:done", "meeting:done", "mou:done", "documents:done", "expansion:done", "operating_agreement:current"]);
+    expect(afterExpansion.map((s) => `${s.key}:${s.state}`)).toEqual(["nda:done", "mou:done", "meeting:done", "documents:done", "expansion:done", "operating_agreement:current"]);
   });
 });

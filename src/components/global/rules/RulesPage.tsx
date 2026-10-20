@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useCatalogAdmin, useRules, useRulesHistory, useUpdateRules, useUsers } from "@/lib/api/hooks";
 import type { IntakeDocRule, MeetingHours, PlatformRules } from "@/lib/api/network-types";
-import { IntakeDocsEditor } from "./IntakeDocsEditor";
+import { IntakeDocsEditor, IntakeTextsEditor } from "./IntakeDocsEditor";
 import { MeetingHoursRules, zoneKey } from "./MeetingHoursRules";
 import { AssessmentMapEditor, EntryFlowRules, ZonesSection } from "./EntryRules";
 import { cn } from "@/lib/utils";
@@ -59,6 +59,10 @@ export function RulesPage() {
       ? t("global.rules.days", { count: Number(value) })
       : field === "assessment_area_map"
       ? t("entry.rules.map_history")
+      : field === "owner_nda_template"
+      ? t("intake.rules.template_history")
+      : field === "intake_help_text"
+      ? String(value)
       : field === "program_amount"
       ? formatUsd(Number(value), i18n.language)
       : field === "intake_documents"
@@ -88,6 +92,7 @@ export function RulesPage() {
       {/* Re-keyed by the stored rules so the form starts from what was just saved. */}
       <RulesEditor key={JSON.stringify(rulesQ.data)} rules={rulesQ.data} catalog={catalogQ.data ?? []} />
       <IntakeDocsEditor key={`docs-${JSON.stringify(rulesQ.data.intake_documents)}`} rules={rulesQ.data} />
+      <IntakeTextsEditor key={`texts-${rulesQ.data.intake_help_text ?? ""}-${rulesQ.data.owner_nda_template ?? ""}`} rules={rulesQ.data} />
       <EntryFlowRules key={`flow-${rulesQ.data.opportunity_visibility}-${rulesQ.data.oa_waiting_days}-${rulesQ.data.require_expansion_meeting}-${rulesQ.data.nda_auto_signed_by_sm}`} rules={rulesQ.data} />
       <MeetingHoursRules key={`hours-${JSON.stringify(rulesQ.data.meeting_hours ?? null)}`} rules={rulesQ.data} />
       <ZonesSection />

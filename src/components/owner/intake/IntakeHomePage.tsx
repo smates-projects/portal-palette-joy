@@ -1,26 +1,30 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { Check, ExternalLink, Lock, Video } from "lucide-react";
-import { useContracts, useCurrentUser, useDocuments, useIntake, useProposeOwnNda, useRules } from "@/lib/api/hooks";
+import { useContracts, useCurrentUser, useDocuments, useIntake, useRules } from "@/lib/api/hooks";
 import type { Contract, LeadMeeting } from "@/lib/api/types";
 import { formatDate, formatDateTime } from "@/lib/format";
-import { entryRules, ndaStatus, oaWaitingUntil, ownNdaPending, ownerMeetingView, ownerSteps, type OwnerStepKey, type OwnerStepState } from "@/lib/leads/entry-flow";
+import { entryRules, ndaStatus, oaWaitingUntil, ownerMeetingView, ownerSteps, type OwnerStepKey, type OwnerStepState } from "@/lib/leads/entry-flow";
 import { entryMeetings } from "@/lib/leads/meetings";
 import { cn } from "@/lib/utils";
 import { DocuSealSigner } from "@/components/docuseal/DocuSealSigner";
+import { SignedContractDialog } from "@/components/docuseal/SignedContractDialog";
 import { ErrorState, LoadingState, PageHeader, primaryButtonCls } from "../shared";
+import { ContractExplainerCard } from "./ContractExplainer";
 import { MouAcceptance } from "./MouAcceptance";
+import { OwnNdaCard } from "./OwnNdaCard";
 
 const linkCls = "text-sm text-link hover:underline";
 
 /**
- * "Tu ingreso": what the owner still has to do before the program starts. Firma el NDA, Tu reunión, MOU (the four
- * points with "Entendí"), Documentos (locked until the MOU is signed); after the approval, the expansion meeting and
- * the Operating Agreement with its waiting period. One highlighted step at a time.
+ * "Tu ingreso": what the owner still has to do before the program starts. NDA (with the window that explains it,
+ * and "Protege tu información" for his own agreement), MOU (available once the NDA is signed: what it is, the full
+ * text, the four points with "Entendí"), Tu reunión, Documentos (locked until the MOU is signed); after the approval,
+ * the expansion meeting and the Operating Agreement with its waiting period. One highlighted step at a time.
+ * `focusStep` brings one step into view (the mou_ready notification).
  */
-export function IntakeHomePage() {
+export function IntakeHomePage({ focusStep }: { focusStep?: OwnerStepKey | undefined } = {}) {
   const { t, i18n } = useTranslation();
   const lng = i18n.language;
   const me = useCurrentUser().data;
@@ -28,10 +32,16 @@ export function IntakeHomePage() {
   const contractsQ = useContracts();
   const docsQ = useDocuments();
   const rulesQ = useRules();
-  const proposeOwn = useProposeOwnNda();
-  const fileInput = useRef<HTMLInputElement>(null);
   const [signing, setSigning] = useState<Contract | null>(null);
+  const [reading, setReading] = useState<Contract | null>(null);
   const queries = [intakeQ, contractsQ, docsQ];
+  const ready = !!intakeQ.data && !contractsQ.isLoading;
+
+  // Scroll only in the browser, once the steps are on screen.
+  useEffect(() => {
+    if (!focusStep || !ready) return;
+    document.getElementById(`intake-step-${focusStep}`)?.scrollIntoView({ block: "start", behavior: "smooth" });
+  }, [focusStep, ready]);
 
   if (queries.some((q) => q.isError)) return <Wrap><ErrorState onRetry={() => queries.forEach((q) => void q.refetch())} /></Wrap>;
   if (queries.some((q) => q.isLoading) || !intakeQ.data) return <Wrap><LoadingState rows={3} /></Wrap>;
@@ -42,20 +52,20 @@ export function IntakeHomePage() {
   const nda = contracts.find((c) => c.kind === "nda") ?? null;
   const mou = contracts.find((c) => c.kind === "mou") ?? null;
   const oa = contracts.find((c) => c.kind === "tripartite") ?? null;
+  const ownNda = contracts.find((c) => c.kind === "owner_nda") ?? null;
   const docs = (docsQ.data ?? []).filter((d) => d.area === "intake");
   const missing = docs.filter((d) => d.state === "requested" || d.state === "rejected").length;
   const entry = s.entry ?? null;
   const steps = ownerSteps({ summary: s, nda, mou, operatingAgreement: oa, rules });
   const ownerPending = (c: Contract | null) => !!c?.signers.some((x) => x.party === "owner" && (x.status === "sent" || x.status === "opened"));
-
-  const onOwnNda = (file: File | undefined) => {
-    if (fileInput.current) fileInput.current.value = "";
-    if (!file || !nda) return;
-    proposeOwn.mutate({ contractId: nda.id, file }, {
-      onSuccess: () => toast.success(t("intake.owner.nda.t_own_sent")),
-      onError: (e) => toast.error(e instanceof Error && e.message === "own_nda_pending" ? t("intake.owner.nda.own_pending") : t("owner_extra.common.t_error")),
-    });
-  };
+  const smSigned = (c: Contract | null) => !!c?.signers.some((x) => x.party === "sm" && x.status === "signed");
+  // The documents list goes out after "Se hizo": with it the meeting reads as held even without its row.
+  const docsSent = docs.length > 0;
+  const ownNdaCard = me?.business_id ? (
+    <OwnNdaCard businessId={me.business_id} own={s.own_nda ?? null} contract={ownNda} onView={setReading} onSign={setSigning} />
+  ) : null;
+  const readFull = (c: Contract, key: string) =>
+    c.body ? <button className={linkCls} onClick={() => setReading(c)}>{t(key)}</button> : null;
 
   const meetings = entryMeetings(entry);
   /** One meeting step: book it, book again, the booked meeting (date, Meet link), waiting for the outcome, or held. */
@@ -95,34 +105,57 @@ export function IntakeHomePage() {
     switch (key) {
       case "nda": {
         if (!nda) return <p className="text-sm text-muted-foreground">{t("intake.owner.nda.not_sent")}</p>;
-        if (ndaStatus(nda) === "signed") return <p className="text-sm">{t(nda.source === "own" ? "intake.owner.nda.own_accepted" : "intake.owner.nda.signed")}</p>;
-        if (ownNdaPending(nda))
+        if (ndaStatus(nda) === "signed")
           return (
-            <div className="rounded-[4px] border border-border bg-surface px-3 py-2 text-sm">
-              <p className="font-medium">{t("intake.owner.nda.waiting_review")}</p>
-              <p className="text-xs text-muted-foreground">{nda.own_file_name}</p>
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-4">
+                <p className="text-sm">{t("intake.owner.nda.signed")}</p>
+                {readFull(nda, "intake.owner.nda.view")}
+              </div>
+              {ownNdaCard}
             </div>
           );
         return (
           <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">{t("intake.owner.nda.body")}</p>
-            {nda.own_review_comment && <p className="text-sm text-status-warning-fg">{t("intake.owner.nda.own_rejected", { comment: nda.own_review_comment })}</p>}
-            <div className="flex flex-wrap items-center gap-4">
-              {ownerPending(nda) && <button className={primaryButtonCls} onClick={() => setSigning(nda)}>{t("intake.owner.nda.sign")}</button>}
-              <button className={linkCls} disabled={proposeOwn.isPending} onClick={() => fileInput.current?.click()}>{t("intake.owner.nda.own")}</button>
-            </div>
-            <input ref={fileInput} type="file" accept="application/pdf,.pdf" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => onOwnNda(e.target.files?.[0])} />
+            {nda.explainer ? (
+              <ContractExplainerCard explainer={nda.explainer}>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-sm font-medium">{t(smSigned(nda) ? "intake.owner.nda.sm_signed" : "intake.owner.nda.both_sign")}</p>
+                  {readFull(nda, "intake.owner.nda.read_full")}
+                </div>
+              </ContractExplainerCard>
+            ) : (
+              <p className="text-sm text-muted-foreground">{t("intake.owner.nda.body")}</p>
+            )}
+            {ownerPending(nda) && <button className={primaryButtonCls} onClick={() => setSigning(nda)}>{t("intake.owner.nda.sign")}</button>}
+            {ownNdaCard}
           </div>
         );
       }
       case "meeting":
-        // The MOU only exists after "Se hizo": with it the meeting reads as held even without its row.
-        return mou && !meetings.initial ? <p className="text-sm">{t("intake.owner.meeting.held_short")}</p> : meetingBlock(meetings.initial, "initial", mou ? meetings.initial?.starts_at : null);
+        return docsSent && !meetings.initial ? <p className="text-sm">{t("intake.owner.meeting.held_short")}</p> : meetingBlock(meetings.initial, "initial", docsSent ? meetings.initial?.starts_at : null);
       case "mou": {
+        // The MOU exists as soon as the owner signs the NDA.
         if (!mou) return <p className="text-sm text-muted-foreground">{t("intake.owner.mou.not_sent")}</p>;
-        if (!ownerPending(mou)) return <p className="text-sm">{t("intake.owner.mou.signed")}</p>;
+        if (!ownerPending(mou))
+          return (
+            <div className="flex flex-wrap items-center gap-4">
+              <p className="text-sm">{t("intake.owner.mou.signed")}</p>
+              {readFull(mou, "intake.owner.mou.view")}
+            </div>
+          );
         return (
           <div className="space-y-3">
+            {mou.explainer ? (
+              <ContractExplainerCard explainer={mou.explainer}>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-sm font-medium">{t("intake.owner.mou.when")}</p>
+                  {readFull(mou, "intake.owner.mou.read_full")}
+                </div>
+              </ContractExplainerCard>
+            ) : (
+              <p className="text-sm text-muted-foreground">{t("intake.owner.mou.when")}</p>
+            )}
             <p className="text-sm text-muted-foreground">{t("intake.owner.mou.body")}</p>
             <MouAcceptance mou={mou} onSign={() => setSigning(mou)} />
           </div>
@@ -136,6 +169,7 @@ export function IntakeHomePage() {
             </p>
           );
         if (s.approved_at) return <p className="text-sm">{t("intake.owner.docs.approved")}</p>;
+        if (!docsSent) return <p className="text-sm text-muted-foreground">{t("intake.owner.docs.after_meeting")}</p>;
         return (
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">
@@ -177,19 +211,20 @@ export function IntakeHomePage() {
     <Wrap>
       <ol className="mt-6 space-y-3">
         {steps.map((st, i) => (
-          <Step key={st.key} n={i + 1} state={st.state} title={t(`intake.owner.steps.${st.key}`)}>{bodyOf(st.key)}</Step>
+          <Step key={st.key} id={`intake-step-${st.key}`} n={i + 1} state={st.state} title={t(`intake.owner.steps.${st.key}`)}>{bodyOf(st.key)}</Step>
         ))}
       </ol>
       {signing && <DocuSealSigner contract={signing} party="owner" signerName={me?.full_name ?? ""} onClose={() => setSigning(null)} />}
+      {reading && <SignedContractDialog contract={reading} onClose={() => setReading(null)} />}
     </Wrap>
   );
 }
 
-function Step({ n, state, title, children }: { n: number; state: OwnerStepState; title: string; children: ReactNode }) {
+function Step({ id, n, state, title, children }: { id: string; n: number; state: OwnerStepState; title: string; children: ReactNode }) {
   const { t } = useTranslation();
   const active = state === "current";
   return (
-    <li className={cn("rounded-[4px] border bg-surface p-4", active ? "border-primary" : "border-border")}>
+    <li id={id} className={cn("scroll-mt-20 rounded-[4px] border bg-surface p-4", active ? "border-primary" : "border-border")}>
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         {state === "done" && <Check className="h-4 w-4 text-status-success-fg" />}
         <span>{t("intake.owner.step", { n })}</span>

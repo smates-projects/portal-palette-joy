@@ -4,7 +4,8 @@ import { toast } from "sonner";
 import { FileText, Upload } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useContracts, useCurrentUser, useDocuments, useRules, useUploadDocument } from "@/lib/api/hooks";
-import { entryRules, oaWaitingUntil, ownNdaPending } from "@/lib/leads/entry-flow";
+import { INTAKE_DOCUMENT_ACCEPT, entryRules, intakeDocumentHelp, oaWaitingUntil } from "@/lib/leads/entry-flow";
+import { DocumentHelp } from "@/components/pipeline/DocumentHelp";
 import type { Contract } from "@/lib/api/types";
 import { DocuSealSigner } from "@/components/docuseal/DocuSealSigner";
 import { SignedContractDialog } from "@/components/docuseal/SignedContractDialog";
@@ -41,9 +42,15 @@ export function OwnerDocumentsPage() {
   const received = documents.filter((d) => d.state !== "requested" && d.state !== "rejected");
   // Entry documents unlock once the owner signed the MOU (locked_until_mou on each one).
   const locked = requested.some((d) => d.area === "intake" && d.locked_until_mou);
-  const rules = entryRules(useRules().data);
-  /** The MOU is signed from "Tu ingreso" (the four points first); the Operating Agreement only after its waiting period. */
-  const signableHere = (c: Contract) => c.kind !== "mou" && !(c.kind === "tripartite" && oaWaitingUntil(c, rules.oa_waiting_days)) && !(c.kind === "nda" && ownNdaPending(c));
+  const rulesData = useRules().data;
+  const rules = entryRules(rulesData);
+  const helpText = rulesData?.intake_help_text?.trim() ?? "";
+  const hasIntake = documents.some((d) => d.area === "intake");
+  /**
+   * The MOU is signed from "Tu ingreso" (the four points first), and so is the owner's own NDA (after Strategic Mates
+   * signed it); the Operating Agreement only after its waiting period.
+   */
+  const signableHere = (c: Contract) => c.kind !== "mou" && c.kind !== "owner_nda" && !(c.kind === "tripartite" && oaWaitingUntil(c, rules.oa_waiting_days));
 
   const areaLabel = (area: BusinessDocument["area"]) => (area === "diagnosis" || area === "closing" || area === "intake" ? t(`owner_extra.documents.area_${area}`) : t(`areas.${area}`));
 
@@ -77,7 +84,12 @@ export function OwnerDocumentsPage() {
         <EmptyState title={t("owner_extra.documents.empty_title")} hint={t("owner_extra.documents.empty_hint")} />
       ) : (
         <div className="mt-6 space-y-4">
-          <input ref={fileInput} type="file" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => onFile(e.target.files?.[0])} />
+          {/* PDF, photos (PNG, JPG) and Word / Excel: what the API takes for entry documents. */}
+          <input ref={fileInput} type="file" accept={INTAKE_DOCUMENT_ACCEPT} className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => onFile(e.target.files?.[0])} />
+
+          {hasIntake && helpText && (
+            <p className="rounded-[4px] border border-border bg-surface px-4 py-3 text-sm">{helpText}</p>
+          )}
 
           <Panel title={t("owner_extra.documents.requested_title")} aside={t("owner_extra.documents.count", { count: requested.length })}>
             {locked && (
@@ -87,8 +99,10 @@ export function OwnerDocumentsPage() {
               <p className="border-t border-border px-4 py-3 text-sm text-muted-foreground">{t("owner_extra.documents.requested_empty")}</p>
             ) : (
               <ul className="divide-y divide-border border-t border-border">
-                {requested.map((d) => (
-                  <li key={d.id} className="flex items-center gap-3 px-4 py-3">
+                {requested.map((d) => {
+                  const help = intakeDocumentHelp(d, rulesData);
+                  return (
+                  <li key={d.id} className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-start">
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium">{d.name}</p>
                       <p className="text-xs text-muted-foreground">
@@ -97,13 +111,15 @@ export function OwnerDocumentsPage() {
                       {d.state === "rejected" && d.review_comment && (
                         <p className="mt-1 text-xs text-status-warning-fg">{t("intake.owner_docs.sm_comment", { comment: d.review_comment })}</p>
                       )}
+                      {help && <DocumentHelp help={help} className="mt-2" />}
                     </div>
                     <button className={secondaryButtonCls} disabled={upload.isPending || !!d.locked_until_mou} onClick={() => pick(d.id)}>
                       <Upload className="h-4 w-4" />
                       {uploadingId === d.id && upload.isPending ? t("owner_extra.documents.uploading") : d.state === "rejected" ? t("intake.owner_docs.upload_new") : t("owner_extra.documents.upload")}
                     </button>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             )}
           </Panel>
@@ -149,7 +165,9 @@ export function OwnerDocumentsPage() {
                               : ""}
                         </p>
                       </div>
-                      {c.signers.some((x) => x.party === "owner" && (x.status === "sent" || x.status === "opened")) && (
+                      {/* The owner's own NDA: his signature is optional and comes after Strategic Mates' one. */}
+                      {c.signers.some((x) => x.party === "owner" && (x.status === "sent" || x.status === "opened")) &&
+                        (c.kind !== "owner_nda" || c.signers.some((x) => x.party === "sm" && x.status === "signed")) && (
                         signableHere(c)
                           ? <button className={secondaryButtonCls} onClick={() => setSigning(c)}>{t("intake.owner_docs.sign")}</button>
                           : <Link to="/" className={secondaryButtonCls}>{t("intake.owner_docs.go_home")}</Link>

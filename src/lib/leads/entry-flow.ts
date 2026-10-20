@@ -7,6 +7,7 @@ import {
   MOU_ACKNOWLEDGMENT_POINTS,
   type BusinessDocument,
   type Contract,
+  type IntakeDocumentHelp,
   type IntakeSummary,
   type IsoDate,
   type LeadMeeting,
@@ -14,6 +15,7 @@ import {
   type MouAcknowledgmentPoint,
   type OpportunityVisibility,
   type OwnerEntry,
+  type OwnNdaSummary,
   type PlatformRules,
 } from "@/lib/api/types";
 import { meetingHeld } from "./entry";
@@ -144,18 +146,46 @@ export const bishopSees = (visibility: OpportunityVisibility, presentedToHim: bo
 
 // ---------- NDA as SM sees it ----------
 
-export type NdaStatus = "none" | "signed" | "pending" | "own_review";
+export type NdaStatus = "none" | "signed" | "pending";
 
-/** firmado / pendiente / NDA propio por revisar. */
+/** firmado / pendiente. */
 export function ndaStatus(c: Contract | null | undefined): NdaStatus {
   if (!c) return "none";
   if (c.signers.length > 0 && c.signers.every((s) => s.status === "signed")) return "signed";
-  if (c.own_file_id && c.source !== "own") return "own_review";
   return "pending";
 }
 
-/** The owner's own NDA waits for SM's review. */
-export const ownNdaPending = (c: Contract | null | undefined) => !!c?.own_file_id && c.source !== "own" && c.state !== "signed";
+// ---------- The owner's own NDA (kind owner_nda) ----------
+
+/** Longest text the API accepts for the owner's own NDA (body_too_long beyond it). */
+export const OWN_NDA_MAX_LENGTH = 20_000;
+
+/**
+ * Where the owner's own NDA stands. none: he did not write one; waiting_sm: sent, Strategic Mates has not signed;
+ * signed_by_sm: Strategic Mates signed (the owner may sign too); signed_by_both.
+ */
+export type OwnNdaView = "none" | "waiting_sm" | "signed_by_sm" | "signed_by_both";
+
+export function ownNdaView(own: Pick<OwnNdaSummary, "signed_by_sm" | "signed_by_owner"> | null | undefined): OwnNdaView {
+  if (!own) return "none";
+  if (!own.signed_by_sm) return "waiting_sm";
+  return own.signed_by_owner ? "signed_by_both" : "signed_by_sm";
+}
+
+/** The owner edits his text only while nobody signed it. */
+export const ownNdaEditable = (own: Pick<OwnNdaSummary, "signed_by_sm" | "signed_by_owner"> | null | undefined) =>
+  !!own && !own.signed_by_sm && !own.signed_by_owner;
+
+/** body_required / body_too_long, or null: the same check the API makes on POST and PATCH /own-nda. */
+export function ownNdaBodyError(body: string): "body_required" | "body_too_long" | null {
+  if (!body.trim()) return "body_required";
+  if (body.length > OWN_NDA_MAX_LENGTH) return "body_too_long";
+  return null;
+}
+
+/** Fills {{business_name}} and {{owner_name}} in the template (what GET /own-nda/template answers). */
+export const fillOwnNdaTemplate = (template: string, values: { business_name: string; owner_name: string }) =>
+  template.replace(/\{\{\s*business_name\s*\}\}/g, values.business_name).replace(/\{\{\s*owner_name\s*\}\}/g, values.owner_name);
 
 // ---------- Documents ----------
 
@@ -163,14 +193,45 @@ export const ownNdaPending = (c: Contract | null | undefined) => !!c?.own_file_i
 export const uploadable = (d: Pick<BusinessDocument, "state" | "locked_until_mou">) =>
   !d.locked_until_mou && (d.state === "requested" || d.state === "rejected");
 
+/**
+ * What the upload input takes for an entry document: the API's allowlist (PDF, PNG, JPG, Word, Excel). A photo from
+ * the phone counts: "sirve una captura o una foto legible".
+ */
+export const INTAKE_DOCUMENT_ACCEPT =
+  ".pdf,.png,.jpg,.jpeg,.docx,.xlsx,application/pdf,image/png,image/jpeg,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+/**
+ * The help of an entry document (what it is, "Sirve:", the tip), from the rule it was created from. Null when the
+ * rule has none (or the document is not an entry document). Empty lines of "Sirve:" are left out.
+ */
+export function intakeDocumentHelp(
+  d: Pick<BusinessDocument, "rule_id" | "area">,
+  rules: Pick<PlatformRules, "intake_documents"> | null | undefined,
+): IntakeDocumentHelp | null {
+  if (d.area !== "intake" || !d.rule_id) return null;
+  return cleanDocumentHelp(rules?.intake_documents.find((r) => r.id === d.rule_id)?.help);
+}
+
+/** The help as shown and saved: trimmed, empty "Sirve:" lines left out, null when nothing is written. */
+export function cleanDocumentHelp(help: IntakeDocumentHelp | null | undefined): IntakeDocumentHelp | null {
+  if (!help) return null;
+  const clean = { what: help.what.trim(), counts: help.counts.map((c) => c.trim()).filter(Boolean), tip: help.tip.trim() };
+  return clean.what || clean.counts.length > 0 || clean.tip ? clean : null;
+}
+
 // ---------- Owner "Tu ingreso" ----------
 
-export const OWNER_STEPS = ["nda", "meeting", "mou", "documents", "expansion", "operating_agreement"] as const;
+/**
+ * The order of "Tu ingreso": NDA → MOU → Tu reunión → Documentos, then (after the approval) the expansion meeting and
+ * the Operating Agreement. The MOU exists as soon as the owner signs the NDA, so he can sign it before or during the
+ * meeting; the meeting only sends the documents list.
+ */
+export const OWNER_STEPS = ["nda", "mou", "meeting", "documents", "expansion", "operating_agreement"] as const;
 export type OwnerStepKey = (typeof OWNER_STEPS)[number];
 export type OwnerStepState = "done" | "current" | "upcoming";
 
 export interface OwnerStepsInput {
-  summary: Pick<IntakeSummary, "approved_at"> & Partial<Pick<IntakeSummary, "entry">>;
+  summary: Pick<IntakeSummary, "approved_at"> & Partial<Pick<IntakeSummary, "entry" | "required_total">>;
   nda: Contract | null;
   mou: Contract | null;
   operatingAgreement: Contract | null;
@@ -190,8 +251,8 @@ export function ownerSteps(input: OwnerStepsInput): { key: OwnerStepKey; state: 
   const approved = !!input.summary.approved_at;
   const done: Record<OwnerStepKey, boolean> = {
     nda: ndaStatus(input.nda) === "signed",
-    // The MOU only exists after "Se hizo": its presence means the meeting was held.
-    meeting: meetings.initial?.outcome === "held" || !!input.mou,
+    // The documents list only goes out after "Se hizo": a list means the meeting was held (older rows have no outcome).
+    meeting: meetings.initial?.outcome === "held" || (input.summary.required_total ?? 0) > 0 || approved,
     mou: signedBy(input.mou, "owner"),
     documents: approved,
     expansion: !input.rules.require_expansion_meeting || !!entry?.expansion_meeting_held_at || meetings.expansion?.outcome === "held",

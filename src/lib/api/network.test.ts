@@ -247,7 +247,22 @@ describe("rules (SM Global)", () => {
   it("starts with the default values and everyone can read them", async () => {
     const rules = await (await asFranchisee()).rules.get();
     expect(rules).toMatchObject({ franchisability_goal: 85, required_task_codes: ["B1-01", "B2-03", "B3-01", "B3-07", "B6-01", "B6-06"], area_amber_days: 7, franchisability_amber_tolerance: 10, document_review_days: 15 });
-    expect(rules.intake_documents.filter((d) => d.required)).toHaveLength(7);
+    // Melany's list: 11 documents, 9 required, each with its help; the note and the own-NDA template come too.
+    expect(rules.intake_documents).toHaveLength(11);
+    expect(rules.intake_documents.filter((d) => d.required)).toHaveLength(9);
+    expect(rules.intake_documents.every((d) => d.help && d.help.what && d.help.counts.length > 0 && d.help.tip)).toBe(true);
+    expect(rules.intake_documents.find((d) => d.name.startsWith("Documento de constitución"))!.help!.counts)
+      .toEqual(["Articles of Organization o Incorporation", "Certificado de Sunbiz", "Captura de Sunbiz con tu empresa activa"]);
+    expect(rules.intake_documents.find((d) => d.name.startsWith("Ventas por cliente"))!.help!.counts).toEqual(["Reporte de tu sistema", "Planilla", "Foto de tu cuaderno de ventas"]);
+    expect(rules.intake_documents.find((d) => d.name.startsWith("Últimos tres clientes"))!.help!.counts).toEqual(["Cotización", "Factura o recibo", "Fotos del trabajo terminado"]);
+    expect(rules.intake_help_text).toBe("No hace falta un documento armado: sirve una captura o una foto legible.");
+    expect(rules.owner_nda_template).toContain("{{business_name}}");
+  });
+  it("the owner's NDA template cannot be emptied", async () => {
+    const api = await asGlobal();
+    await expect(api.rules.update({ owner_nda_template: "  " })).rejects.toThrow("body_required");
+    expect((await api.rules.update({ owner_nda_template: "Entre {{business_name}} y Strategic Mates.", intake_help_text: "Sirve una foto." })).owner_nda_template)
+      .toBe("Entre {{business_name}} y Strategic Mates.");
   });
   it("changes are logged, validated and reach franchisability", async () => {
     const api = await asGlobal();

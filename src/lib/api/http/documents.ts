@@ -14,7 +14,7 @@ type SignerStatus = "sent" | "opened" | "signed" | "declined";
 /** GET /contracts/{id}/signed-document: the sealed text, its fingerprint and the audit trail. */
 export interface SignedDocument {
   contract_id: Uuid;
-  kind: "nda" | "mou" | "tripartite" | "framework" | "other";
+  kind: "nda" | "mou" | "owner_nda" | "tripartite" | "framework" | "other";
   name: string;
   text: string;
   fingerprint: string | null;
@@ -138,23 +138,14 @@ export function createHttpDocumentsRepository(client: HttpClient): HttpDocuments
     acknowledge: (contractId, points) =>
       client.post<Contract>(`${contractPath(contractId)}/acknowledge`, { points }),
 
-    /** The owner's PDF is stored first (context contract), then POST /propose-own { file_id }. */
-    proposeOwnNda: async (contractId, file) => {
-      if (!isRealFile(file)) {
-        throw new ApiError({ code: "invalid_file", status: 422, detail: "Pick the PDF of your NDA." });
-      }
-      const fileId = await uploadFile(client, file, {
-        context: "contract",
-        name: file.name,
-        businessId: client.session().user?.business_id ?? null,
-      });
-      return client.post<Contract>(`${contractPath(contractId)}/propose-own`, { file_id: fileId });
-    },
+    /** GET /businesses/{id}/own-nda/template: the owner's own NDA text to start from, already filled in. */
+    getOwnNdaTemplate: (businessId) => client.get<{ body: string }>(`${businessPath(businessId)}/own-nda/template`),
 
-    acceptOwnNda: (contractId) => client.post<Contract>(`${contractPath(contractId)}/accept-own`),
+    /** POST /businesses/{id}/own-nda { body }: the owner's own NDA (kind owner_nda), for Strategic Mates to sign. */
+    createOwnNda: (businessId, body) => client.post<Contract>(`${businessPath(businessId)}/own-nda`, { body }),
 
-    rejectOwnNda: (contractId, comment) =>
-      client.post<Contract>(`${contractPath(contractId)}/reject-own`, { comment }),
+    /** PATCH /businesses/{id}/own-nda { body }: only while nobody signed it. */
+    updateOwnNda: (businessId, body) => client.patch<Contract>(`${businessPath(businessId)}/own-nda`, { body }),
 
     getSignedDocument: (contractId) =>
       client.get<SignedDocument>(`${contractPath(contractId)}/signed-document`),

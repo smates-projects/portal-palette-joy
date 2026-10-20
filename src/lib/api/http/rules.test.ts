@@ -55,6 +55,19 @@ describe("http rules", () => {
     expect(result.program_amount).toBeUndefined();
   });
 
+  it("get: the owner's NDA template, the documents note and the help of each document come through", async () => {
+    const help = { what: "Muestra que tu empresa existe.", counts: ["Certificado de Sunbiz"], tip: "Sirve una foto." };
+    const withHelp = apiRules({
+      owner_nda_template: "Entre {{business_name}} y Strategic Mates.",
+      intake_help_text: "No hace falta un documento armado.",
+      intake_documents: [{ ...apiRules().intake_documents[0], help }],
+    });
+    stubFetch(dataResponse(withHelp));
+    const result = await setup().rules.get();
+    expect(result).toMatchObject({ owner_nda_template: "Entre {{business_name}} y Strategic Mates.", intake_help_text: "No hace falta un documento armado." });
+    expect(result.intake_documents[0]?.help).toEqual(help);
+  });
+
   it("update: reads the rules for the ETag, then PATCH /rules with If-Match, the changes and the note", async () => {
     const { calls } = stubFetch(
       dataResponse(apiRules(), 200, { ETag: '"3"' }),

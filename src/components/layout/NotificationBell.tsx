@@ -31,7 +31,8 @@ const DOT: Record<NotificationKind, string> = {
   calendar_disconnected: "bg-status-warning-fg",
   brand_logo_rejected: "bg-status-danger-fg",
   meeting_outcome_pending: "bg-status-warning-fg",
-  own_nda_proposed: "bg-link",
+  owner_nda_received: "bg-link",
+  mou_ready: "bg-primary",
   opportunity_presented: "bg-gold",
   meeting_scheduled: "bg-primary",
   meeting_moved: "bg-link",
@@ -45,7 +46,6 @@ const DOT: Record<NotificationKind, string> = {
   contract_sent: "bg-primary",
   contract_signed: "bg-status-success-fg",
   review_overdue: "bg-status-danger-fg",
-  own_nda_rejected: "bg-status-warning-fg",
   signature_pending_review: "bg-status-warning-fg",
   opportunity_available: "bg-gold",
   program_started: "bg-status-success-fg",
@@ -86,6 +86,9 @@ export function NotificationBell() {
     if (MEETING_KINDS.has(n.kind) && n.meeting_id) void navigate({ to: "/tareas", search: { view: "calendar", meeting: n.meeting_id } });
     else if (PROFILE_KINDS.has(n.kind)) void navigate({ to: "/perfil" });
     else if (n.kind === "meeting_outcome_pending" && n.lead_id) void navigate({ to: "/embudo", search: { lead: n.lead_id, focus: "meeting" } });
+    // The owner's MOU is ready: "Tu ingreso" with the MOU step in view. The owner's own NDA reaches the consultant
+    // as a lead notification (the lead opens with its entry checklist, where he signs it).
+    else if (n.kind === "mou_ready") void navigate({ to: "/", search: { step: "mou" } });
     else if (n.lead_id) void navigate({ to: "/embudo", search: { lead: n.lead_id } });
     else if (n.kind === "opportunity_presented" || n.kind === "opportunity_available") void navigate({ to: "/oportunidades" });
     else if (n.kind === "brand_logo_rejected" && !n.task_id) void navigate({ to: "/negocios", search: { biz: n.business_id } });

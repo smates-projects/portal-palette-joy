@@ -488,9 +488,11 @@ export const NOTIFICATION_KINDS = [
   "calendar_disconnected",
   // Brand (API): to whoever uploaded the logo, the file failed verification and left the brand.
   "brand_logo_rejected",
-  // Revised entry. To the consultant: a meeting ended and nobody answered "¿Se hizo?"; the owner uploaded his own NDA.
+  // Revised entry. To the consultant: a meeting ended and nobody answered "¿Se hizo?"; the owner sent his own NDA to
+  // sign. To the owner: the MOU is ready (it exists once he signed the NDA).
   "meeting_outcome_pending",
-  "own_nda_proposed",
+  "owner_nda_received",
+  "mou_ready",
   // To a Bishop: SM presented him an approved business (opens his opportunities).
   "opportunity_presented",
   // Calendar v2 (every role). The first three open the calendar with the meeting focused; the last two, the profile.
@@ -501,7 +503,7 @@ export const NOTIFICATION_KINDS = [
   "calendar_reconnect_required",
   // Entry documents and contracts (API). To SM: a document arrived, a review is past its deadline, a signature of the
   // Operating Agreement needs review. To the owner: a document asked again, the documentation approved or unlocked,
-  // a contract to sign, his own NDA turned down. To the other parties: a contract signed.
+  // a contract to sign. To the other parties: a contract signed.
   "document_received",
   "document_requested",
   "documents_approved",
@@ -509,7 +511,6 @@ export const NOTIFICATION_KINDS = [
   "contract_sent",
   "contract_signed",
   "review_overdue",
-  "own_nda_rejected",
   "signature_pending_review",
   // Bishop and program (API): a business can be taken; the program started (day 1).
   "opportunity_available",
@@ -518,12 +519,14 @@ export const NOTIFICATION_KINDS = [
 /** Kinds that only the real API sends (the mock never creates them nor lists their preferences). */
 export const API_ONLY_NOTIFICATION_KINDS: readonly NotificationKind[] = [
   "document_received", "document_requested", "documents_approved", "documents_unlocked", "contract_sent", "contract_signed",
-  "review_overdue", "own_nda_rejected", "signature_pending_review", "opportunity_available", "program_started",
+  "review_overdue", "signature_pending_review", "opportunity_available", "program_started",
 ];
 /** Kinds about a lead of the Embudo. Only the SM team of the lead's office gets them. */
 export const LEAD_NOTIFICATION_KINDS: readonly NotificationKind[] = [
-  "bishop_accepted", "funds_reported", "lead_assessment", "meeting_booked", "meeting_outcome_pending", "own_nda_proposed",
+  "bishop_accepted", "funds_reported", "lead_assessment", "meeting_booked", "meeting_outcome_pending", "owner_nda_received",
 ];
+/** Kinds only a business owner gets (about his own entry). */
+export const OWNER_NOTIFICATION_KINDS: readonly NotificationKind[] = ["mou_ready"];
 /** Kinds only a Bishop gets. */
 export const BISHOP_NOTIFICATION_KINDS: readonly NotificationKind[] = ["opportunity_presented"];
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
@@ -816,6 +819,15 @@ export interface IntakeSummary {
   mou_signed_by_owner?: boolean | undefined;
   /** Meetings and booking link for the owner's "Tu ingreso" (the owner never reads the lead). */
   entry?: OwnerEntry | null | undefined;
+  /** The owner's own confidentiality agreement (kind owner_nda), or null when he did not write one. */
+  own_nda?: OwnNdaSummary | null | undefined;
+}
+
+export interface OwnNdaSummary {
+  id: Uuid;
+  state: import("./network-types").ContractState;
+  signed_by_sm: boolean;
+  signed_by_owner: boolean;
 }
 
 export type LeadEventKind =
@@ -827,9 +839,9 @@ export type LeadEventKind =
   | "created_manual" | "assessment_sent"
   // Automatic entry (actor null): summary email sent, meeting booked by the owner. meeting_note: the consultant's note after it.
   | "summary_sent" | "meeting_booked" | "meeting_note"
-  // Revised entry: outcome of a meeting, MOU sent, own NDA proposed / accepted / rejected, presented to Bishops,
-  // expansion meeting booked.
-  | "meeting_outcome" | "mou_sent" | "own_nda_proposed" | "own_nda_accepted" | "own_nda_rejected"
+  // Revised entry: outcome of a meeting, MOU sent, the owner's own NDA received, presented to Bishops, expansion
+  // meeting booked.
+  | "meeting_outcome" | "mou_sent" | "owner_nda_received"
   | "presented_to_bishops" | "expansion_booked";
 
 export interface LeadEvent {

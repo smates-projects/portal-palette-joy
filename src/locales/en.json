@@ -815,10 +815,8 @@
     "pref_brand_logo_rejected": "A logo you uploaded did not pass the check",
     "profile_ref": "Your profile",
     "kind_meeting_outcome_pending": "Did the meeting with {{business}} happen? Mark the outcome",
-    "kind_own_nda_proposed": "{{owner}} uploaded their own NDA to review",
     "kind_opportunity_presented": "Strategic Mates presented you a business in {{place}}",
     "pref_meeting_outcome_pending": "A meeting ended and its outcome is missing",
-    "pref_own_nda_proposed": "An owner uploads their own NDA",
     "pref_opportunity_presented": "Strategic Mates presents you a business",
     "opportunity_ref": "Opportunities",
     "kind_meeting_scheduled": "{{name}} scheduled a meeting with you for {{date}}",
@@ -847,14 +845,16 @@
     "pref_documents_unlocked": "Documents are unlocked",
     "kind_review_overdue": "The document review of {{business_name}} is past its deadline",
     "pref_review_overdue": "A document review is past its deadline",
-    "kind_own_nda_rejected": "Strategic Mates did not accept your own NDA. Read the comment",
-    "pref_own_nda_rejected": "An answer about your own NDA",
     "kind_signature_pending_review": "A signature of the {{contract_name}} of {{business_name}} needs review",
     "pref_signature_pending_review": "A signature needs review",
     "kind_opportunity_available": "A new business is available to invest in",
     "pref_opportunity_available": "A business is available",
     "kind_program_started": "The program of {{business_name}} started",
-    "pref_program_started": "A program starts"
+    "pref_program_started": "A program starts",
+    "kind_owner_nda_received": "{{owner}} sent you their own confidentiality agreement to sign",
+    "pref_owner_nda_received": "An owner sends their own confidentiality agreement",
+    "kind_mou_ready": "Your MOU is ready. Read it and sign it whenever you want",
+    "pref_mou_ready": "Your MOU is ready to sign"
   },
   "soon": {
     "manual": "Here you'll see your business's operations manual as the firms write it and you approve it.",
@@ -1295,13 +1295,11 @@
       "meeting_note": "{{actor}} added the meeting note",
       "meeting_outcome": "{{actor}} marked the meeting: {{outcome}}",
       "mou_sent": "The MOU went out and the business moved to Documents",
-      "own_nda_proposed": "{{owner}} uploaded their own NDA to review",
-      "own_nda_accepted": "{{actor}} accepted the owner's own NDA",
-      "own_nda_rejected": "{{actor}} asked to sign the mutual NDA",
       "presented_to_bishops": "{{actor}} presented the business to investors",
       "expansion_booked": "Automatic: expansion meeting booked by {{owner}}",
       "nda_signed": "The NDA was signed",
-      "mou_signed": "The MOU was signed"
+      "mou_signed": "The MOU was signed",
+      "owner_nda_received": "{{owner}} sent their own confidentiality agreement for Strategic Mates to sign"
     },
     "error_title": "We could not load the pipeline.",
     "retry": "Retry",
@@ -1549,7 +1547,6 @@
       "expansion_meeting_required": "The expansion meeting has to happen first.",
       "invalid_transition": "That cannot be done yet. Check the meeting time.",
       "acknowledgment_required": "Before signing, tick \"I understand\" on the four points of the MOU.",
-      "own_nda_pending": "Your NDA is being reviewed. We will let you know when Strategic Mates answers.",
       "waiting_period": "It cannot be signed yet. You can sign from {{date}}.",
       "meeting_id_missing": "We could not save the outcome: the meeting's identifier is missing. Reload the page and try again."
     }
@@ -2178,7 +2175,9 @@
         "oa_waiting_days": "Operating Agreement waiting days",
         "require_expansion_meeting": "Expansion meeting before the Operating Agreement",
         "nda_auto_signed_by_sm": "NDA and MOU signed by Strategic Mates",
-        "meeting_hours": "Meeting hours"
+        "meeting_hours": "Meeting hours",
+        "owner_nda_template": "Owner's own agreement text",
+        "intake_help_text": "Entry documents note"
       },
       "percent": "{{value}}%",
       "days_one": "{{count}} day",
@@ -2919,7 +2918,9 @@
       "close": "Close",
       "pdf_line": "This agreement protects the information {{a}} and {{b}} share during entry to Método 180.",
       "embed_title": "DocuSeal signing form: {{name}}",
-      "embed_hint": "Sign in the DocuSeal form. This window closes by itself when you finish."
+      "embed_hint": "Sign in the DocuSeal form. This window closes by itself when you finish.",
+      "document_title": "Document",
+      "not_signed_yet": "Nobody has signed it yet. Take your time to read it."
     },
     "owner": {
       "question": "What is left before you start?",
@@ -2931,7 +2932,7 @@
       "steps": {
         "nda": "Sign the NDA",
         "meeting": "Your meeting",
-        "mou": "MOU",
+        "mou": "Read and sign the MOU",
         "documents": "Documents",
         "expansion": "Expansion meeting",
         "operating_agreement": "Operating Agreement"
@@ -2940,13 +2941,11 @@
         "not_sent": "We send it when you book your meeting.",
         "body": "It is an agreement to protect your information and ours. Strategic Mates already signed it; your signature is missing.",
         "sign": "Sign the NDA",
-        "own": "I prefer to use my own NDA",
-        "waiting_review": "Waiting for Strategic Mates' review",
-        "own_rejected": "Strategic Mates asks you to sign the mutual NDA: {{comment}}",
         "signed": "You signed the NDA.",
-        "own_accepted": "Strategic Mates accepted your own NDA.",
-        "t_own_sent": "We received your NDA. We will let you know once we review it.",
-        "own_pending": "You already sent your NDA. Wait for Strategic Mates' review."
+        "sm_signed": "Strategic Mates already signed. Only your signature is missing.",
+        "both_sign": "We both sign it: you and Strategic Mates.",
+        "read_full": "Read the full NDA",
+        "view": "View document"
       },
       "meeting": {
         "book": "Book your meeting with your consultant.",
@@ -2963,7 +2962,7 @@
         "book": "We approved your documents. Book the expansion meeting: it is longer and the investor joins."
       },
       "mou": {
-        "not_sent": "We send it after your meeting.",
+        "not_sent": "It opens as soon as you sign the NDA.",
         "body": "The MOU explains how we will work together. Read each point and tick \"I understand\". Once you tick the four, you can sign.",
         "understood": "I understand",
         "ready": "You ticked the four points. You can sign now.",
@@ -2988,14 +2987,18 @@
             "title": "We do it together and you are left with no debt",
             "body": "We work with you for the 180 days of the program. If something does not turn out as expected, you owe nobody money for the program."
           }
-        }
+        },
+        "when": "You sign it in the meeting with your consultant, or before if you already read it.",
+        "read_full": "Read the full MOU",
+        "view": "View document"
       },
       "docs": {
         "locked": "Your documents open when you sign the MOU. That way you know from the start how we will work.",
         "missing_one": "{{count}} document is missing. If we ask for one again, it shows first with our comment.",
         "missing_other": "{{count}} documents are missing. If we ask for one again, it shows first with our comment.",
         "in_review": "We are reviewing your documents: day {{day}} of {{total}}.",
-        "approved": "We approved your documents."
+        "approved": "We approved your documents.",
+        "after_meeting": "After your meeting we ask for your documents. They show up here."
       },
       "oa": {
         "not_sent": "We send it after the expansion meeting.",
@@ -3003,6 +3006,29 @@
         "waiting": "Take a few days to read it calmly. You can sign from {{date}}.",
         "sign": "Sign the Operating Agreement",
         "signed": "You signed the Operating Agreement. We will let you know when the others sign."
+      },
+      "own_nda": {
+        "title": "Protect your information",
+        "body": "If you want, you can ask us to also sign your own confidentiality agreement. We recommend it.",
+        "write": "Write my agreement",
+        "hint": "You can change anything you want.",
+        "send": "Send for Strategic Mates to sign",
+        "save": "Save changes",
+        "edit": "Change the text",
+        "view": "View document",
+        "sign_too": "Sign it too",
+        "status_waiting_sm": "Sent, waiting for Strategic Mates to sign",
+        "status_signed_by_sm": "Signed by Strategic Mates",
+        "status_signed_by_both": "Signed by Strategic Mates and by you",
+        "t_sent": "We sent your agreement to Strategic Mates.",
+        "t_updated": "We saved the changes to your agreement.",
+        "loading": "Preparing your agreement.",
+        "retry": "We could not load the text. Tap here to try again.",
+        "errors": {
+          "body_required": "Write the text of your agreement.",
+          "body_too_long": "The text is too long. Make it a bit shorter.",
+          "own_nda_exists": "You already sent your agreement. You can change the text while nobody has signed it."
+        }
       }
     },
     "owner_docs": {
@@ -3029,27 +3055,36 @@
       "t_saved": "Entry documents saved.",
       "name_required": "Every document needs a name.",
       "count_one": "{{count}} document",
-      "count_other": "{{count}} documents"
+      "count_other": "{{count}} documents",
+      "help_title": "Help for the owner",
+      "help_what": "What it is",
+      "help_counts": "Counts as (one per line)",
+      "help_tip": "Tip",
+      "texts_title": "Entry texts",
+      "help_text": "Note at the top of the documents list",
+      "help_text_hint": "The owner and the consultant see it above the documents.",
+      "template": "Starting text of the owner's own agreement",
+      "template_hint": "The owner sees it after tapping \"Write my agreement\" and can change everything. {{business}} and {{owner}} are replaced by the business name and the owner's name.",
+      "texts_save": "Save texts",
+      "texts_saved": "Entry texts saved.",
+      "template_history": "text updated"
     },
     "locked_until_mou": "opens when they sign the MOU",
     "mou_points": "MOU points confirmed: {{n}} of {{m}}",
     "nda_status": {
       "signed": "NDA signed",
-      "pending": "NDA pending",
-      "own_review": "Own NDA to review"
+      "pending": "NDA pending"
     },
-    "own_nda": {
-      "review": "The owner uploaded their own NDA ({{file}}). Review it and decide.",
-      "accept": "Accept",
-      "reject": "Ask for the mutual one",
-      "accepted": "The owner's own NDA is used ({{file}}).",
-      "rejected_note": "We asked them to sign the mutual NDA: {{comment}}",
-      "t_accepted": "You accepted the owner's NDA.",
-      "t_rejected": "You asked the owner to sign the mutual NDA.",
-      "reject_title": "Ask for the mutual NDA",
-      "reject_body": "Tell the owner why it is better to sign the Strategic Mates mutual NDA. They will see it in their portal.",
-      "reject_label": "Comment for the owner",
-      "reject_confirm": "Ask for the mutual one"
+    "owner_nda": {
+      "title": "Owner's NDA",
+      "to_sign": "To sign",
+      "signed": "Signed",
+      "sign": "Sign",
+      "read": "Read",
+      "hint": "The owner wrote it. Read it and sign it as Strategic Mates."
+    },
+    "help": {
+      "counts": "Any of these works:"
     }
   },
   "funds": {

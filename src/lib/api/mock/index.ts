@@ -19,7 +19,7 @@ import { isActiveFirm, isActiveUser } from "@/lib/accounts/permissions";
 import type { AccountEvent, BrandEvent, BrandProposal, BusinessBrand, FirmEvent } from "../types";
 import { readyToStart, validDay1, programDayOn } from "@/lib/leads/funds";
 import { tripartiteState } from "@/lib/leads/opportunity";
-import { API_ONLY_NOTIFICATION_KINDS, BISHOP_NOTIFICATION_KINDS, LEAD_NOTIFICATION_KINDS, type FundPayment, type NotificationKind } from "../types";
+import { API_ONLY_NOTIFICATION_KINDS, BISHOP_NOTIFICATION_KINDS, LEAD_NOTIFICATION_KINDS, OWNER_NOTIFICATION_KINDS, type FundPayment, type NotificationKind } from "../types";
 import catalogJson from "@/data/catalogo_metodo180.json";
 import { DEFAULT_PLATFORM_RULES } from "../franchisability";
 import { AREA_BY_KEY, generateProgramTasks, type CatalogEntry } from "../program";
@@ -140,7 +140,8 @@ export function createMockApi(): MockApi {
     const role = db.users.find((u) => u.id === userId)?.role;
     return NOTIFICATION_KINDS.filter((k) =>
       !API_ONLY_NOTIFICATION_KINDS.includes(k) &&
-      (role === "sm_team" || !LEAD_NOTIFICATION_KINDS.includes(k)) && (role === "bishop" || !BISHOP_NOTIFICATION_KINDS.includes(k)));
+      (role === "sm_team" || !LEAD_NOTIFICATION_KINDS.includes(k)) && (role === "bishop" || !BISHOP_NOTIFICATION_KINDS.includes(k)) &&
+      (role === "business_owner" || !OWNER_NOTIFICATION_KINDS.includes(k)));
   };
   const prefsOf = (userId: string) => {
     if (!prefs.has(userId)) prefs.set(userId, kindsFor(userId).map((kind) => ({ kind, in_app: true, email: false })));
@@ -155,6 +156,13 @@ export function createMockApi(): MockApi {
     /** meeting_outcome_pending: the meeting to answer. */
     meeting_id?: string | undefined;
   }[] = [];
+  /** To the owner of a business in onboarding, about his own entry (mou_ready). */
+  const ownerNotifs: { id: string; user_id: string; kind: NotificationKind; business_id: string; contract_id: string | null; created_at: string; read: boolean }[] = [];
+  const notifyOwner = (businessId: string, kind: NotificationKind) => {
+    const owner = db.users.find((u) => u.role === "business_owner" && u.business_id === businessId);
+    const mou = db.contracts.find((c) => c.business_id === businessId && c.kind === "mou");
+    if (owner) ownerNotifs.push({ id: newId(), user_id: owner.id, kind, business_id: businessId, contract_id: mou?.id ?? null, created_at: nowIso(), read: false });
+  };
   /** To a Bishop: SM presented him a business (never its name: he sees it once he accepts). */
   const bishopNotifs: { id: string; user_id: string; kind: NotificationKind; lead_id: string; actor_user_id: string | null; created_at: string; read: boolean }[] = [];
   const notifyBishop = (l: Lead, bishopUserId: string) =>
@@ -268,13 +276,24 @@ export function createMockApi(): MockApi {
     l.stage_entered_at = nowIso();
     l.last_contact_at = nowIso();
   };
-  /** Reunión → Documentación: the MOU (four points to confirm) and the entry documents, locked until it is signed. */
+  /**
+   * "Enviar MOU" of a lead moved by hand, Reunión → Documentación: the MOU (four points to confirm) when the NDA
+   * signature did not create it yet, and the entry documents, locked until it is signed.
+   */
   const sendMouAndMove = (l: Lead) => {
     const r = intake.record(l.id);
     if (!r) throw new Error("invalid_state");
     intake.sendMou(r, l, { sentOn: todayIso() });
     setStage(l, "documents");
     pushLeadEvent({ lead_id: l.id, kind: "mou_sent", from: "meeting", to: "documents", body: null });
+  };
+  /** "Se hizo", Reunión → Documentación: only the documents list (locked until the owner signs the MOU). */
+  const sendDocumentsAndMove = (l: Lead) => {
+    const r = intake.record(l.id);
+    if (!r) throw new Error("invalid_state");
+    intake.sendDocuments(r, todayIso());
+    setStage(l, "documents");
+    pushLeadEvent({ lead_id: l.id, kind: "stage_changed", from: "meeting", to: "documents", body: null });
   };
   const opps = createOpportunities({
     db, intake, me, newId, delay, findLead, readableLeads, withBooking: (l) => withBooking(l), pushLeadEvent, notifyLead, notifyBishop,
@@ -386,6 +405,8 @@ export function createMockApi(): MockApi {
           intake.setSignerStatus(c, party, "signed");
           const signer = c.signers.find((x) => x.party === party);
           if (signer) signer.signature = signature ?? null;
+          // The owner signed the NDA: the MOU is ready right away (he can sign it before or during the meeting).
+          if (party === "owner" && intake.mouOnNdaSigned(c)) notifyOwner(c.business_id, "mou_ready");
           // Tripartite signed by the three: the Bishop funds open with today's program amount.
           if (c.kind === "tripartite" && c.state === "signed") {
             const l = db.leads.find((x) => x.business_id === c.business_id);
@@ -403,43 +424,33 @@ export function createMockApi(): MockApi {
           if (party !== "owner") throw new Error("owner_only");
           return delay(intake.acknowledge(c, points));
         },
-        proposeOwnNda: async (contractId, file) => {
-          const { c, party } = contractInScope(contractId);
-          if (party !== "owner") throw new Error("owner_only");
-          intake.proposeOwn(c, file.name);
-          const l = leadOfBusiness(c.business_id);
+        getOwnNdaTemplate: async (businessId) => {
+          ownBusiness(businessId);
+          return delay({ body: intake.ownNdaTemplate(businessId) });
+        },
+        createOwnNda: async (businessId, body) => {
+          ownBusiness(businessId);
+          const c = intake.createOwnNda(businessId, body);
+          const l = leadOfBusiness(businessId);
           if (l) {
-            pushLeadEvent({ lead_id: l.id, kind: "own_nda_proposed", from: null, to: null, body: c.own_file_name ?? null });
-            notifyConsultant(l, "own_nda_proposed", { actor_name: me().full_name });
+            pushLeadEvent({ lead_id: l.id, kind: "owner_nda_received", from: null, to: null, body: null });
+            notifyConsultant(l, "owner_nda_received", { actor_name: me().full_name });
           }
           return delay(c);
         },
-        acceptOwnNda: async (contractId) => {
-          const c = smContract(contractId);
-          intake.acceptOwn(c);
-          const l = leadOfBusiness(c.business_id);
-          if (l) pushLeadEvent({ lead_id: l.id, kind: "own_nda_accepted", from: null, to: null, body: null });
-          return delay(c);
-        },
-        rejectOwnNda: async (contractId, comment) => {
-          const c = smContract(contractId);
-          intake.rejectOwn(c, comment);
-          const l = leadOfBusiness(c.business_id);
-          if (l) pushLeadEvent({ lead_id: l.id, kind: "own_nda_rejected", from: null, to: null, body: comment.trim() });
-          return delay(c);
+        updateOwnNda: async (businessId, body) => {
+          ownBusiness(businessId);
+          return delay(intake.updateOwnNda(businessId, body));
         },
       },
     };
   };
   const leadOfBusiness = (businessId: string) => db.leads.find((l) => l.business_id === businessId);
-  /** An entry contract of the current SM team person's office (SM writes are SM team only). */
-  const smContract = (contractId: string) => {
+  /** The owner's own NDA is written by the owner of that business only. */
+  const ownBusiness = (businessId: string) => {
     const u = me();
-    const c = db.contracts.find((x) => x.id === contractId && x.area === "intake");
-    const b = c && db.businesses.find((x) => x.id === c.business_id);
-    if (!c || !b) throw new Error("not_found");
-    if (u.role !== "sm_team" || u.organization_id !== b.office_id) throw new Error("sm_only");
-    return c;
+    if (u.role !== "business_owner") throw new Error("owner_only");
+    if (u.business_id !== businessId) throw new Error("not_found");
   };
 
   const net = createNetworkRepositories({ db, me, newId, delay });
@@ -503,12 +514,20 @@ export function createMockApi(): MockApi {
               lead_place: `${l.contact.city}, ${l.contact.state}`, opportunity_id: l.id,
             }];
           });
+        // To the owner, about his own entry (the MOU is ready): no task, the business and the contract.
+        const aboutEntry: AppNotification[] = u.role !== "business_owner" ? [] : ownerNotifs
+          .filter((n) => n.user_id === u.id)
+          .map((n) => ({
+            id: n.id, user_id: n.user_id, kind: n.kind, task_id: "", task_code: "", task_name: "", business_id: n.business_id,
+            business_name: db.businesses.find((b) => b.id === n.business_id)?.name ?? "", actor_user_id: null, actor_name: null,
+            created_at: n.created_at, read_at: n.read ? n.created_at : null, change: null, contract_id: n.contract_id, contract_name: "MOU",
+          }));
         const enabled = new Set(prefsOf(u.id).filter((p) => p.in_app).map((p) => p.kind));
-        return delay([...stored, ...due, ...aboutLeads, ...presented, ...cal.notificationsFor(u.id)].filter((n) => enabled.has(n.kind)).sort((a, b) => b.created_at.localeCompare(a.created_at)));
+        return delay([...stored, ...due, ...aboutLeads, ...presented, ...aboutEntry, ...cal.notificationsFor(u.id)].filter((n) => enabled.has(n.kind)).sort((a, b) => b.created_at.localeCompare(a.created_at)));
       },
       markRead: async (id) => {
         const n = notifs.find((x) => x.id === id && x.user_id === currentUserId) ?? leadNotifs.find((x) => x.id === id && x.user_id === currentUserId)
-          ?? bishopNotifs.find((x) => x.id === id && x.user_id === currentUserId);
+          ?? bishopNotifs.find((x) => x.id === id && x.user_id === currentUserId) ?? ownerNotifs.find((x) => x.id === id && x.user_id === currentUserId);
         if (n) n.read = true;
         else if (!cal.markRead(currentUserId, id)) dueRead.add(`${currentUserId}|${id}`);
         return delay(undefined);
@@ -517,6 +536,7 @@ export function createMockApi(): MockApi {
         notifs.filter((n) => n.user_id === currentUserId).forEach((n) => (n.read = true));
         leadNotifs.filter((n) => n.user_id === currentUserId).forEach((n) => (n.read = true));
         bishopNotifs.filter((n) => n.user_id === currentUserId).forEach((n) => (n.read = true));
+        ownerNotifs.filter((n) => n.user_id === currentUserId).forEach((n) => (n.read = true));
         cal.markAllRead(currentUserId);
         const due = me().role !== "partner_firm" ? [] : dueNotifications(currentUserId, visibleTasks().map((t) => withComputed(t, db.tasks)), db.businesses);
         due.forEach((n) => dueRead.add(`${currentUserId}|${n.id}`));
@@ -752,9 +772,10 @@ export function createMockApi(): MockApi {
         const note = input.outcome === "held" ? input.note?.trim() || null : null;
         pushLeadEvent({ lead_id: l.id, kind: "meeting_outcome", from: null, to: null, body: note, outcome: input.outcome, meeting_kind: m.kind ?? "initial" });
         if (input.outcome === "held" && initial) {
-          // "Se hizo" sends the MOU (and the NDA first when the booking did not create it).
+          // "Se hizo" sends the documents list only (and the NDA first when the booking did not create it): the MOU
+          // already exists once the owner signed the NDA.
           if (!intake.record(l.id)) openNda(l, currentUserId);
-          sendMouAndMove(l);
+          sendDocumentsAndMove(l);
         }
         if (input.outcome === "held" && !initial) l.expansion_meeting_held_at = now;
         return delay(withBooking(l));

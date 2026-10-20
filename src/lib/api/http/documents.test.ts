@@ -286,34 +286,28 @@ describe("http documents", () => {
     await expect(asOwner().signContract(CONTRACT, { kind: "drawn", image_url: PNG_DATA_URL })).rejects.toThrow("acknowledgment_required");
   });
 
-  it("proposeOwnNda: uploads the PDF (context contract), then POST /propose-own { file_id }", async () => {
-    const nda = contractFixture({ kind: "nda", own_file_id: FILE_ID });
-    const { calls } = stubFetch(presigned(), emptyResponse(200), fileMetadata(), dataResponse(nda));
-    const file = new File(["%PDF-1.7 nda"], "mi-nda.pdf", { type: "application/pdf" });
-    expect(await asOwner().proposeOwnNda(CONTRACT, file)).toEqual(nda);
-    expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual([
-      "POST /files/presign",
-      `PUT ${UPLOAD_URL}`,
-      `POST /files/${FILE_ID}/complete`,
-      `POST /contracts/${CONTRACT}/propose-own`,
-    ]);
-    expect(calls[0]?.body).toMatchObject({ context: "contract", original_name: "mi-nda.pdf" });
-    expect(calls[3]?.body).toEqual({ file_id: FILE_ID });
+  it("getOwnNdaTemplate: GET /businesses/{id}/own-nda/template answers { body }", async () => {
+    const { calls } = stubFetch(dataResponse({ body: "Acuerdo de confidencialidad\n\nEntre Vossler y Strategic Mates." }));
+    expect(await asOwner().getOwnNdaTemplate(IDS.business)).toEqual({ body: "Acuerdo de confidencialidad\n\nEntre Vossler y Strategic Mates." });
+    expect(calls[0]).toMatchObject({ method: "GET", path: `/businesses/${IDS.business}/own-nda/template` });
   });
 
-  it("proposeOwnNda: a name without the file is invalid_file, without calling the API", async () => {
-    const { calls } = stubFetch();
-    await expect(asOwner().proposeOwnNda(CONTRACT, { name: "mi-nda.pdf" })).rejects.toThrow("invalid_file");
-    expect(calls).toHaveLength(0);
-  });
-
-  it("acceptOwnNda / rejectOwnNda: POST /accept-own and /reject-own { comment }", async () => {
-    const { calls } = stubFetch(dataResponse(contractFixture({ source: "own" })), dataResponse(contractFixture()));
+  it("createOwnNda / updateOwnNda: POST and PATCH /businesses/{id}/own-nda { body }, answering the owner_nda contract", async () => {
+    const own = contractFixture({ kind: "owner_nda", body: "Mi acuerdo", explainer: { title: "Tu acuerdo", paragraphs: [], bullets: [] } });
+    const { calls } = stubFetch(dataResponse(own, 201), dataResponse({ ...own, body: "Mi acuerdo, corregido" }));
     const documents = asOwner();
-    await documents.acceptOwnNda(CONTRACT);
-    await documents.rejectOwnNda(CONTRACT, "Firma el mutuo, por favor");
-    expect(calls[0]).toMatchObject({ method: "POST", path: `/contracts/${CONTRACT}/accept-own` });
-    expect(calls[1]).toMatchObject({ method: "POST", path: `/contracts/${CONTRACT}/reject-own`, body: { comment: "Firma el mutuo, por favor" } });
+    expect(await documents.createOwnNda(IDS.business, "Mi acuerdo")).toEqual(own);
+    expect((await documents.updateOwnNda(IDS.business, "Mi acuerdo, corregido")).body).toBe("Mi acuerdo, corregido");
+    expect(calls[0]).toMatchObject({ method: "POST", path: `/businesses/${IDS.business}/own-nda`, body: { body: "Mi acuerdo" } });
+    expect(calls[1]).toMatchObject({ method: "PATCH", path: `/businesses/${IDS.business}/own-nda`, body: { body: "Mi acuerdo, corregido" } });
+  });
+
+  it("createOwnNda: the API's own_nda_exists, body_required and body_too_long reach the screen as codes", async () => {
+    stubFetch(problemResponse(409, "own_nda_exists"), problemResponse(422, "body_required"), problemResponse(422, "body_too_long"));
+    const documents = asOwner();
+    await expect(documents.createOwnNda(IDS.business, "Otra vez")).rejects.toThrow("own_nda_exists");
+    await expect(documents.createOwnNda(IDS.business, " ")).rejects.toThrow("body_required");
+    await expect(documents.updateOwnNda(IDS.business, "x".repeat(30_000))).rejects.toThrow("body_too_long");
   });
 
   it("signContract: the Operating Agreement before its waiting period answers waiting_period with the date in detail", async () => {

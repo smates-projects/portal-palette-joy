@@ -1,15 +1,17 @@
-// Entry flow in the mock: the NDA at booking (Strategic Mates pre-signed), the MOU after "Se hizo" with the four
-// points the owner confirms, the due diligence documents (locked until the MOU is signed), the owner's own NDA, the
-// review clock and the approval. The real backend gets the DocuSeal events by webhook; here signing is simulated
-// through the same repository calls.
+// Entry flow in the mock: the NDA at booking (Strategic Mates pre-signed), the MOU as soon as the owner signs the NDA
+// (the four points he confirms), the due diligence documents after "Se hizo" (locked until the MOU is signed), the
+// owner's own NDA (he writes it, Strategic Mates signs it), the review clock and the approval. The real backend gets
+// the DocuSeal events by webhook; here signing is simulated through the same repository calls.
 import { todayIso } from "@/lib/clock";
 import { summarizeIntake, isDocsAdmin, canResend } from "@/lib/leads/onboarding";
-import { entryRules, oaWaitingUntil, ownNdaPending, signBlock, validAcknowledgment } from "@/lib/leads/entry-flow";
+import { entryRules, fillOwnNdaTemplate, oaWaitingUntil, ownNdaBodyError, signBlock, validAcknowledgment } from "@/lib/leads/entry-flow";
 import { typedSignatureDataUrl } from "@/lib/contracts/signature";
+import { DEFAULT_OWNER_NDA_TEMPLATE } from "../franchisability";
 import type {
   Business, BusinessDocument, Contract, IntakeSummary, Lead, MouAcknowledgmentPoint, Organization, OwnerEntry, Signer, SignerStatus, User, Uuid,
 } from "../types";
 import type { PlatformRules } from "../network-types";
+import { MOU_EXPLAINER, NDA_EXPLAINER, OWNER_NDA_EXPLAINER, mouBody, ndaBody } from "./contract-texts";
 
 export interface IntakeRecord {
   lead_id: Uuid;
@@ -74,7 +76,10 @@ export function createIntake(db: IntakeDb, newId: () => string) {
   const record = (leadId: Uuid) => db.intakes.find((i) => i.lead_id === leadId);
   const docsOf = (businessId: Uuid) => db.documents.filter((d) => d.business_id === businessId && d.area === "intake");
   const contractsOf = (businessId: Uuid) => db.contracts.filter((c) => c.business_id === businessId && c.area === "intake");
-  const contractOf = (businessId: Uuid, kind: "nda" | "mou") => contractsOf(businessId).find((c) => c.kind === kind);
+  const contractOf = (businessId: Uuid, kind: "nda" | "mou" | "owner_nda") => contractsOf(businessId).find((c) => c.kind === kind);
+  const businessName = (businessId: Uuid) => db.businesses.find((b) => b.id === businessId)?.name ?? "";
+  const ownerOf = (businessId: Uuid) => db.users.find((u) => u.role === "business_owner" && u.business_id === businessId);
+  const signedBy = (c: Contract | undefined, party: "owner" | "sm") => !!c?.signers.some((s) => s.party === party && s.status === "signed");
   const rules = () => entryRules(db.rules);
 
   /** What the owner's "Tu ingreso" needs from the lead: meetings and the consultant's booking link. */
@@ -95,14 +100,16 @@ export function createIntake(db: IntakeDb, newId: () => string) {
     const r = db.intakes.find((i) => i.business_id === businessId);
     if (!r) return null;
     const mou = contractOf(businessId, "mou");
+    const own = contractOf(businessId, "owner_nda");
     return {
       ...summarizeIntake({
         business_id: businessId, contracts: contractsOf(businessId), docs: docsOf(businessId),
         started_at: r.review_started_at, approved_at: r.approved_at, review_days: db.rules.document_review_days,
       }),
       mou_sent: !!mou,
-      mou_signed_by_owner: !!mou?.signers.some((s) => s.party === "owner" && s.status === "signed"),
+      mou_signed_by_owner: signedBy(mou, "owner"),
       entry: ownerEntry(db.leads.find((l) => l.id === r.lead_id)),
+      own_nda: own ? { id: own.id, state: own.state, signed_by_sm: signedBy(own, "sm"), signed_by_owner: signedBy(own, "owner") } : null,
     };
   };
   const summaryFor = (lead: Lead): IntakeSummary | null => (lead.business_id && record(lead.id) ? summaryForBusiness(lead.business_id) : null);
@@ -110,7 +117,9 @@ export function createIntake(db: IntakeDb, newId: () => string) {
   const makeContract = (kind: "nda" | "mou", businessId: Uuid, ownerName: string, ownerId: Uuid | null, sentOn: string, ownerSteps: SignerStatus[], smSteps: SignerStatus[] | "pre_signed"): Contract =>
     settle({
       id: newId(), business_id: businessId, area: "intake", kind, name: kind === "nda" ? "NDA mutuo" : "MOU",
-      state: "sent", sent_at: sentOn, signed_at: null, source: "sm", own_file_id: null, own_file_name: null, own_review_comment: null,
+      state: "sent", sent_at: sentOn, signed_at: null,
+      explainer: kind === "nda" ? NDA_EXPLAINER : MOU_EXPLAINER,
+      body: (kind === "nda" ? ndaBody : mouBody)(businessName(businessId), ownerName),
       signers: [
         { ...signer("owner", ownerName, ownerId, sentOn, ownerSteps), ...(kind === "mou" ? { acknowledgments: [] } : {}) },
         smSteps === "pre_signed" ? preSignedSm(sentOn) : signer("sm", "Strategic Mates", null, sentOn, smSteps),
@@ -152,16 +161,82 @@ export function createIntake(db: IntakeDb, newId: () => string) {
     return r;
   };
 
-  /** After "Se hizo" (or "Enviar MOU"): the MOU with its four points and the entry documents, locked until it is signed. */
-  const sendMou = (r: IntakeRecord, lead: Lead, opts: { sentOn: string; ownerSteps?: SignerStatus[]; smSteps?: SignerStatus[] }) => {
-    if (contractOf(r.business_id, "mou")) throw new Error("invalid_state");
-    const owner = db.users.find((u) => u.role === "business_owner" && u.business_id === r.business_id);
+  /**
+   * The MOU with its four points. It exists as soon as the owner signs the NDA, so he can read it and sign it during
+   * the meeting (or before). Answers the existing one when it is already there.
+   */
+  const createMou = (r: IntakeRecord, ownerName: string, opts: { sentOn: string; ownerSteps?: SignerStatus[]; smSteps?: SignerStatus[] }) => {
+    const existing = contractOf(r.business_id, "mou");
+    if (existing) return { mou: existing, created: false };
+    const owner = ownerOf(r.business_id);
     const smSteps = opts.smSteps ?? (rules().nda_auto_signed_by_sm ? "pre_signed" : []);
-    const mou = makeContract("mou", r.business_id, owner?.full_name ?? lead.contact.name, owner?.id ?? null, opts.sentOn, opts.ownerSteps ?? [], smSteps);
+    const mou = makeContract("mou", r.business_id, owner?.full_name ?? ownerName, owner?.id ?? null, opts.sentOn, opts.ownerSteps ?? [], smSteps);
     db.contracts.push(mou);
-    const signedByOwner = mou.signers.some((s) => s.party === "owner" && s.status === "signed");
-    db.documents.push(...makeDocs(r.business_id, opts.sentOn, !signedByOwner));
+    return { mou, created: true };
+  };
+
+  /** "Se hizo": the entry documents list, locked until the owner signs the MOU. Once per business. */
+  const sendDocuments = (r: IntakeRecord, sentOn: string) => {
+    if (docsOf(r.business_id).length > 0) return false;
+    db.documents.push(...makeDocs(r.business_id, sentOn, !signedBy(contractOf(r.business_id, "mou"), "owner")));
+    return true;
+  };
+
+  /**
+   * After "Se hizo" (or "Enviar MOU" for a lead moved by hand): the MOU if the NDA signature did not create it yet,
+   * and the documents list. invalid_state when both were already there.
+   */
+  const sendMou = (r: IntakeRecord, lead: Lead, opts: { sentOn: string; ownerSteps?: SignerStatus[]; smSteps?: SignerStatus[] }) => {
+    const { mou, created } = createMou(r, lead.contact.name, opts);
+    const sent = sendDocuments(r, opts.sentOn);
+    if (!created && !sent) throw new Error("invalid_state");
     return mou;
+  };
+
+  /** The owner signed the NDA: his MOU appears right away. Answers it only when it was just created. */
+  const mouOnNdaSigned = (c: Contract) => {
+    if (c.kind !== "nda" || !signedBy(c, "owner")) return null;
+    const r = db.intakes.find((i) => i.business_id === c.business_id);
+    if (!r) return null;
+    const { mou, created } = createMou(r, ownerOf(c.business_id)?.full_name ?? "", { sentOn: todayIso() });
+    return created ? mou : null;
+  };
+
+  // ---------- The owner's own NDA (kind owner_nda) ----------
+  const ownNdaTemplate = (businessId: Uuid) =>
+    fillOwnNdaTemplate(db.rules.owner_nda_template ?? DEFAULT_OWNER_NDA_TEMPLATE, {
+      business_name: businessName(businessId), owner_name: ownerOf(businessId)?.full_name ?? "",
+    });
+
+  const checkBody = (body: string) => {
+    const error = ownNdaBodyError(body);
+    if (error) throw new Error(error);
+  };
+
+  /** The owner sends his text: Strategic Mates signs it (any SM person of the office), the owner may sign too. */
+  const createOwnNda = (businessId: Uuid, body: string) => {
+    if (!db.intakes.some((i) => i.business_id === businessId)) throw new Error("invalid_state");
+    if (contractOf(businessId, "owner_nda")) throw new Error("own_nda_exists");
+    checkBody(body);
+    const owner = ownerOf(businessId);
+    const today = todayIso();
+    const c: Contract = {
+      id: newId(), business_id: businessId, area: "intake", kind: "owner_nda", name: "Acuerdo de confidencialidad del dueño",
+      state: "sent", sent_at: today, signed_at: null, explainer: OWNER_NDA_EXPLAINER, body: body.trim(),
+      signers: [signer("owner", owner?.full_name ?? "", owner?.id ?? null, today), signer("sm", "Strategic Mates", null, today)],
+    };
+    db.contracts.push(c);
+    return c;
+  };
+
+  /** Editing is allowed only while nobody signed it. */
+  const updateOwnNda = (businessId: Uuid, body: string) => {
+    const c = contractOf(businessId, "owner_nda");
+    if (!c) throw new Error("not_found");
+    if (c.signers.some((s) => s.status === "signed")) throw new Error("invalid_state");
+    checkBody(body);
+    c.body = body.trim();
+    return c;
   };
 
   const unlockDocuments = (businessId: Uuid) => {
@@ -214,13 +289,13 @@ export function createIntake(db: IntakeDb, newId: () => string) {
       const upload = (d: BusinessDocument, on: string) => Object.assign(d, { state: "received", received_at: on, file_name: `${d.name.split(" (")[0]}.pdf` });
       const accept = (d: BusinessDocument, on: string) => Object.assign(d, { state: "reviewed", reviewed_at: on, verified_fact: d.verified_hint ?? null });
       if (lead.business.name === "Castillo Instalaciones") {
-        // 5 of 7 uploaded, 3 accepted, 1 asked again (clock paused), 2 still missing.
+        // 5 of 9 required uploaded, 3 accepted, 1 asked again (clock paused), the rest still missing.
         docs.forEach((d, i) => {
           if (i <= 2) { upload(d, addDays(signedOn, 1)); accept(d, addDays(signedOn, 2)); }
           if (i === 3) upload(d, addDays(signedOn, 2));
           if (i === 6) {
             upload(d, addDays(signedOn, 1));
-            Object.assign(d, { state: "rejected", reviewed_at: addDays(signedOn, 2), review_comment: "La póliza venció en agosto. Sube la póliza renovada, por favor.", pauses: [{ from: addDays(signedOn, 2), to: null }] });
+            Object.assign(d, { state: "rejected", reviewed_at: addDays(signedOn, 2), review_comment: "Faltan julio y agosto. Sube los 12 meses, por favor.", pauses: [{ from: addDays(signedOn, 2), to: null }] });
           }
         });
       } else if (morales) {
@@ -253,6 +328,11 @@ export function createIntake(db: IntakeDb, newId: () => string) {
     seed,
     open,
     sendMou,
+    sendDocuments,
+    mouOnNdaSigned,
+    ownNdaTemplate,
+    createOwnNda,
+    updateOwnNda,
     record,
     summaryFor,
     summaryForBusiness,
@@ -306,37 +386,10 @@ export function createIntake(db: IntakeDb, newId: () => string) {
       s.acknowledgments = [...points];
       return c;
     },
-    /** Owner, NDA: proposes his own NDA instead of the mutual one; SM reviews it. */
-    proposeOwn: (c: Contract, fileName: string) => {
-      if (c.kind !== "nda" || c.state === "signed") throw new Error("invalid_state");
-      if (ownNdaPending(c)) throw new Error("own_nda_pending");
-      if (!fileName.trim()) throw new Error("file_required");
-      Object.assign(c, { own_file_id: newId(), own_file_name: fileName.trim(), own_review_comment: null });
-      return c;
-    },
-    /** SM accepts the owner's NDA: it replaces the mutual one and counts as signed by both. */
-    acceptOwn: (c: Contract) => {
-      if (!ownNdaPending(c)) throw new Error("invalid_state");
-      c.source = "own";
-      for (const s of c.signers)
-        if (s.status !== "signed") {
-          s.status = "signed";
-          s.signed_at = todayIso();
-          s.history = [...(s.history ?? []), { status: "signed", at: todayIso() }];
-        }
-      return settle(c);
-    },
-    /** "Pedir el mutuo": the owner's NDA goes back with a comment; the mutual NDA stays to sign. */
-    rejectOwn: (c: Contract, comment: string) => {
-      if (!comment.trim()) throw new Error("comment_required");
-      if (!ownNdaPending(c)) throw new Error("invalid_state");
-      Object.assign(c, { own_file_id: null, own_file_name: null, own_review_comment: comment.trim() });
-      return c;
-    },
     /**
      * DocuSeal simulated: the signer is the current user (owner of the business, or any SM of the office for "sm").
-     * The owner's MOU needs the four points; the Operating Agreement waits for its waiting period; the NDA cannot be
-     * signed while the owner's own one waits for review. Signing the MOU opens the documents.
+     * The owner's MOU needs the four points; the Operating Agreement waits for its waiting period. Signing the NDA
+     * creates the MOU (the caller tells the owner); signing the MOU opens the documents.
      */
     setSignerStatus: (c: Contract, party: "owner" | "sm" | "bishop", status: SignerStatus, reason?: string | null) => {
       const s = c.signers.find((x) => x.party === party);
@@ -346,7 +399,6 @@ export function createIntake(db: IntakeDb, newId: () => string) {
       if (status === "signed") {
         const block = signBlock(c, party);
         if (block) throw new Error(block);
-        if (c.kind === "nda" && ownNdaPending(c)) throw new Error("own_nda_pending");
         const until = oaWaitingUntil(c, rules().oa_waiting_days, todayIso());
         if (until) throw mockError("waiting_period", until);
       }

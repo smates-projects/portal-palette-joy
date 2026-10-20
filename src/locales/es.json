@@ -815,10 +815,8 @@
     "pref_brand_logo_rejected": "Un logo que subiste no pasó la revisión",
     "profile_ref": "Tu perfil",
     "kind_meeting_outcome_pending": "¿Se hizo la reunión con {{business}}? Marca el resultado",
-    "kind_own_nda_proposed": "{{owner}} subió su propio NDA para revisar",
     "kind_opportunity_presented": "Strategic Mates te presentó un negocio de {{place}}",
     "pref_meeting_outcome_pending": "Una reunión terminó y falta marcar el resultado",
-    "pref_own_nda_proposed": "Un dueño sube su propio NDA",
     "pref_opportunity_presented": "Strategic Mates te presenta un negocio",
     "opportunity_ref": "Oportunidades",
     "kind_meeting_scheduled": "{{name}} agendó una reunión contigo para el {{date}}",
@@ -847,14 +845,16 @@
     "pref_documents_unlocked": "Se habilitan los documentos",
     "kind_review_overdue": "La revisión de documentos de {{business_name}} pasó el plazo",
     "pref_review_overdue": "Una revisión de documentos pasa el plazo",
-    "kind_own_nda_rejected": "Strategic Mates no aceptó tu propio NDA. Revisa el comentario",
-    "pref_own_nda_rejected": "Responden sobre tu propio NDA",
     "kind_signature_pending_review": "Llegó una firma del {{contract_name}} de {{business_name}} para revisar",
     "pref_signature_pending_review": "Una firma necesita revisión",
     "kind_opportunity_available": "Hay un negocio nuevo disponible para invertir",
     "pref_opportunity_available": "Hay un negocio disponible",
     "kind_program_started": "Empezó el programa de {{business_name}}",
-    "pref_program_started": "Empieza un programa"
+    "pref_program_started": "Empieza un programa",
+    "kind_owner_nda_received": "{{owner}} te envió su propio acuerdo de confidencialidad para firmar",
+    "pref_owner_nda_received": "Un dueño envía su propio acuerdo de confidencialidad",
+    "kind_mou_ready": "Tu MOU ya está listo. Léelo y fírmalo cuando quieras",
+    "pref_mou_ready": "Tu MOU está listo para firmar"
   },
   "soon": {
     "manual": "Aquí verás el manual operativo de tu negocio a medida que las firmas lo escriban y tú lo apruebes.",
@@ -1295,13 +1295,11 @@
       "meeting_note": "{{actor}} cargó la nota de la reunión",
       "meeting_outcome": "{{actor}} marcó la reunión: {{outcome}}",
       "mou_sent": "Se envió el MOU y el negocio pasó a Documentación",
-      "own_nda_proposed": "{{owner}} subió su propio NDA para revisar",
-      "own_nda_accepted": "{{actor}} aceptó el NDA propio del dueño",
-      "own_nda_rejected": "{{actor}} pidió firmar el NDA mutuo",
       "presented_to_bishops": "{{actor}} presentó el negocio a inversores",
       "expansion_booked": "Automático: reunión de ampliación agendada por {{owner}}",
       "nda_signed": "Se firmó el NDA",
-      "mou_signed": "Se firmó el MOU"
+      "mou_signed": "Se firmó el MOU",
+      "owner_nda_received": "{{owner}} envió su propio acuerdo de confidencialidad para que lo firme Strategic Mates"
     },
     "error_title": "No pudimos cargar el embudo.",
     "retry": "Reintentar",
@@ -1549,7 +1547,6 @@
       "expansion_meeting_required": "Primero tiene que hacerse la reunión de ampliación.",
       "invalid_transition": "Todavía no se puede hacer eso. Revisa la hora de la reunión.",
       "acknowledgment_required": "Antes de firmar, marca \"Entendí\" en los cuatro puntos del MOU.",
-      "own_nda_pending": "Tu NDA está en revisión. Te avisamos cuando Strategic Mates responda.",
       "waiting_period": "Todavía no se puede firmar. Podrás hacerlo desde el {{date}}.",
       "meeting_id_missing": "No pudimos guardar el resultado: falta el identificador de la reunión. Recarga la página y vuelve a intentarlo."
     }
@@ -2178,7 +2175,9 @@
         "oa_waiting_days": "Días de espera del Operating Agreement",
         "require_expansion_meeting": "Reunión de ampliación antes del Operating Agreement",
         "nda_auto_signed_by_sm": "NDA y MOU firmados por Strategic Mates",
-        "meeting_hours": "Horario de reuniones"
+        "meeting_hours": "Horario de reuniones",
+        "owner_nda_template": "Texto del acuerdo propio del dueño",
+        "intake_help_text": "Nota de los documentos de ingreso"
       },
       "percent": "{{value}}%",
       "days_one": "{{count}} día",
@@ -2919,7 +2918,9 @@
       "close": "Cerrar",
       "pdf_line": "Este acuerdo protege la información que comparten {{a}} y {{b}} durante el ingreso al Método 180.",
       "embed_title": "Formulario de firma de DocuSeal: {{name}}",
-      "embed_hint": "Firma en el formulario de DocuSeal. Esta ventana se cierra sola cuando termines."
+      "embed_hint": "Firma en el formulario de DocuSeal. Esta ventana se cierra sola cuando termines.",
+      "document_title": "Documento",
+      "not_signed_yet": "Todavía nadie lo firmó. Léelo con calma."
     },
     "owner": {
       "question": "¿Qué te falta para empezar?",
@@ -2931,7 +2932,7 @@
       "steps": {
         "nda": "Firma el NDA",
         "meeting": "Tu reunión",
-        "mou": "MOU",
+        "mou": "Lee y firma el MOU",
         "documents": "Documentos",
         "expansion": "Reunión de ampliación",
         "operating_agreement": "Operating Agreement"
@@ -2940,13 +2941,11 @@
         "not_sent": "Te lo enviamos cuando reserves tu reunión.",
         "body": "Es un acuerdo para cuidar tu información y la nuestra. Strategic Mates ya lo firmó; falta tu firma.",
         "sign": "Firmar el NDA",
-        "own": "Prefiero usar mi propio NDA",
-        "waiting_review": "Esperando revisión de Strategic Mates",
-        "own_rejected": "Strategic Mates te pide firmar el NDA mutuo: {{comment}}",
         "signed": "Firmaste el NDA.",
-        "own_accepted": "Strategic Mates aceptó tu propio NDA.",
-        "t_own_sent": "Recibimos tu NDA. Te avisamos cuando lo revisemos.",
-        "own_pending": "Ya enviaste tu NDA. Espera la revisión de Strategic Mates."
+        "sm_signed": "Strategic Mates ya firmó. Falta tu firma.",
+        "both_sign": "Lo firmamos los dos: tú y Strategic Mates.",
+        "read_full": "Leer el NDA completo",
+        "view": "Ver documento"
       },
       "meeting": {
         "book": "Reserva tu reunión con tu consultor.",
@@ -2963,7 +2962,7 @@
         "book": "Ya aprobamos tus documentos. Reserva la reunión de ampliación: es más larga y participa el inversor."
       },
       "mou": {
-        "not_sent": "Te lo enviamos después de tu reunión.",
+        "not_sent": "Se abre apenas firmes el NDA.",
         "body": "El MOU explica cómo vamos a trabajar juntos. Lee cada punto y marca \"Entendí\". Cuando marques los cuatro, podrás firmar.",
         "understood": "Entendí",
         "ready": "Marcaste los cuatro puntos. Ya puedes firmar.",
@@ -2988,14 +2987,18 @@
             "title": "Lo hacemos juntos y no quedas con deudas",
             "body": "Trabajamos contigo durante los 180 días del programa. Si algo no sale como esperamos, no le debes dinero a nadie por el programa."
           }
-        }
+        },
+        "when": "Lo firmas en la reunión con tu consultor, o antes si ya lo leíste.",
+        "read_full": "Leer el MOU completo",
+        "view": "Ver documento"
       },
       "docs": {
         "locked": "Tus documentos se abren cuando firmes el MOU. Así sabes desde el principio cómo vamos a trabajar.",
         "missing_one": "Te falta {{count}} documento. Si te pedimos uno de nuevo, aparece primero con nuestro comentario.",
         "missing_other": "Te faltan {{count}} documentos. Si te pedimos uno de nuevo, aparece primero con nuestro comentario.",
         "in_review": "Estamos revisando tus documentos: día {{day}} de {{total}}.",
-        "approved": "Aprobamos tus documentos."
+        "approved": "Aprobamos tus documentos.",
+        "after_meeting": "Después de tu reunión te pedimos los documentos. Aparecen aquí."
       },
       "oa": {
         "not_sent": "Te lo enviamos después de la reunión de ampliación.",
@@ -3003,6 +3006,29 @@
         "waiting": "Tómate unos días para leerlo con calma. Podrás firmar desde el {{date}}.",
         "sign": "Firmar el Operating Agreement",
         "signed": "Firmaste el Operating Agreement. Te avisamos cuando firmen los demás."
+      },
+      "own_nda": {
+        "title": "Protege tu información",
+        "body": "Si quieres, puedes pedirnos que firmemos también tu propio acuerdo de confidencialidad. Te lo recomendamos.",
+        "write": "Escribir mi acuerdo",
+        "hint": "Puedes cambiar lo que quieras.",
+        "send": "Enviar para la firma de Strategic Mates",
+        "save": "Guardar cambios",
+        "edit": "Cambiar el texto",
+        "view": "Ver documento",
+        "sign_too": "Firmar yo también",
+        "status_waiting_sm": "Enviado, esperando la firma de Strategic Mates",
+        "status_signed_by_sm": "Firmado por Strategic Mates",
+        "status_signed_by_both": "Firmado por Strategic Mates y por ti",
+        "t_sent": "Enviamos tu acuerdo a Strategic Mates.",
+        "t_updated": "Guardamos los cambios de tu acuerdo.",
+        "loading": "Preparando tu acuerdo.",
+        "retry": "No pudimos cargar el texto. Toca aquí para probar de nuevo.",
+        "errors": {
+          "body_required": "Escribe el texto de tu acuerdo.",
+          "body_too_long": "El texto es muy largo. Acórtalo un poco.",
+          "own_nda_exists": "Ya enviaste tu acuerdo. Puedes cambiar el texto mientras nadie lo firme."
+        }
       }
     },
     "owner_docs": {
@@ -3029,27 +3055,36 @@
       "t_saved": "Documentos de ingreso guardados.",
       "name_required": "Cada documento necesita un nombre.",
       "count_one": "{{count}} documento",
-      "count_other": "{{count}} documentos"
+      "count_other": "{{count}} documentos",
+      "help_title": "Ayuda para el dueño",
+      "help_what": "Qué es",
+      "help_counts": "Sirve (uno por línea)",
+      "help_tip": "Consejo",
+      "texts_title": "Textos del ingreso",
+      "help_text": "Nota al principio de la lista de documentos",
+      "help_text_hint": "La ven el dueño y el consultor arriba de los documentos.",
+      "template": "Texto inicial del acuerdo propio del dueño",
+      "template_hint": "El dueño lo ve al tocar \"Escribir mi acuerdo\" y puede cambiar todo. {{business}} y {{owner}} se reemplazan por el nombre del negocio y el del dueño.",
+      "texts_save": "Guardar textos",
+      "texts_saved": "Guardaste los textos del ingreso.",
+      "template_history": "texto actualizado"
     },
     "locked_until_mou": "se abre cuando firme el MOU",
     "mou_points": "Puntos del MOU confirmados: {{n}} de {{m}}",
     "nda_status": {
       "signed": "NDA firmado",
-      "pending": "NDA pendiente",
-      "own_review": "NDA propio por revisar"
+      "pending": "NDA pendiente"
     },
-    "own_nda": {
-      "review": "El dueño subió su propio NDA ({{file}}). Revísalo y decide.",
-      "accept": "Aceptar",
-      "reject": "Pedir el mutuo",
-      "accepted": "Se usa el NDA propio del dueño ({{file}}).",
-      "rejected_note": "Le pedimos firmar el NDA mutuo: {{comment}}",
-      "t_accepted": "Aceptaste el NDA del dueño.",
-      "t_rejected": "Le pediste al dueño que firme el NDA mutuo.",
-      "reject_title": "Pedir el NDA mutuo",
-      "reject_body": "Cuéntale al dueño por qué es mejor firmar el NDA mutuo de Strategic Mates. Lo verá en su portal.",
-      "reject_label": "Comentario para el dueño",
-      "reject_confirm": "Pedir el mutuo"
+    "owner_nda": {
+      "title": "NDA del dueño",
+      "to_sign": "Por firmar",
+      "signed": "Firmado",
+      "sign": "Firmar",
+      "read": "Leer",
+      "hint": "Lo escribió el dueño. Léelo y fírmalo como Strategic Mates."
+    },
+    "help": {
+      "counts": "Sirve:"
     }
   },
   "funds": {

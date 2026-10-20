@@ -2,11 +2,12 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Check, Circle, FileText } from "lucide-react";
-import { useAcceptDocument, useAcceptOwnNda, useLeadIntake, useRejectOwnNda, useRequestDocument, useResendContract, useRules } from "@/lib/api/hooks";
+import { useAcceptDocument, useLeadIntake, useRequestDocument, useResendContract, useRules } from "@/lib/api/hooks";
 import { MOU_ACKNOWLEDGMENT_POINTS, type BusinessDocument, type Contract, type ReviewClock } from "@/lib/api/types";
 import { formatDate } from "@/lib/format";
 import { canResend } from "@/lib/leads/onboarding";
-import { entryRules, ndaStatus, oaWaitingUntil, type NdaStatus } from "@/lib/leads/entry-flow";
+import { entryRules, intakeDocumentHelp, ndaStatus, oaWaitingUntil, type NdaStatus } from "@/lib/leads/entry-flow";
+import { DocumentHelp } from "./DocumentHelp";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -22,7 +23,6 @@ const TONE: Record<ReviewClock["tone"], string> = {
 const NDA_TONE: Record<Exclude<NdaStatus, "none">, string> = {
   signed: "border-status-success-border bg-status-success-bg text-status-success-fg",
   pending: "border-status-neutral-border bg-status-neutral-bg text-status-neutral-fg",
-  own_review: "border-status-warning-border bg-status-warning-bg text-status-warning-fg",
 };
 const DOC_TONE: Record<BusinessDocument["state"], string> = {
   requested: "border-status-neutral-border bg-status-neutral-bg text-status-neutral-fg",
@@ -53,10 +53,9 @@ export function IntakeChecklist({ leadId, readOnly }: { leadId: string; readOnly
   const [requesting, setRequesting] = useState<BusinessDocument | null>(null);
   const [signing, setSigning] = useState<Contract | null>(null);
   const [viewing, setViewing] = useState<Contract | null>(null);
-  const [rejectingOwn, setRejectingOwn] = useState<Contract | null>(null);
-  const acceptOwn = useAcceptOwnNda();
-  const rejectOwn = useRejectOwnNda();
-  const rules = entryRules(useRules().data);
+  const rulesData = useRules().data;
+  const rules = entryRules(rulesData);
+  const helpText = rulesData?.intake_help_text?.trim() ?? "";
 
   if (q.isLoading) return <Skeleton className="h-40 rounded-md" />;
   if (q.isError) return <button onClick={() => void q.refetch()} className="text-sm text-link hover:underline">{t("pipeline.retry")}</button>;
@@ -67,24 +66,32 @@ export function IntakeChecklist({ leadId, readOnly }: { leadId: string; readOnly
     const done = c.signers.every((s) => s.status === "signed");
     const sm = c.signers.find((s) => s.party === "sm");
     const nda = c.kind === "nda" ? ndaStatus(c) : null;
+    // The owner's own NDA: what counts is Strategic Mates' signature (the owner's is optional).
+    const ownerNda = c.kind === "owner_nda";
+    const smSigned = sm?.status === "signed";
     const waitingUntil = oaWaitingUntil(c, rules.oa_waiting_days);
     const acks = c.kind === "mou" ? c.signers.find((s) => s.party === "owner")?.acknowledgments?.length ?? 0 : null;
     return (
       <li key={c.id} className="py-2.5">
         <div className="flex flex-wrap items-center gap-2">
-          {done ? <Check className="h-4 w-4 text-status-success-fg" /> : <Circle className="h-4 w-4 text-muted-foreground" />}
-          <span className="text-sm font-medium">{c.name}</span>
+          {done || (ownerNda && smSigned) ? <Check className="h-4 w-4 text-status-success-fg" /> : <Circle className="h-4 w-4 text-muted-foreground" />}
+          <span className="text-sm font-medium">{ownerNda ? t("intake.owner_nda.title") : c.name}</span>
           {nda && nda !== "none" && (
             <span className={cn("rounded-[4px] border px-1.5 py-0.5 text-[11px] font-medium", NDA_TONE[nda])}>{t(`intake.nda_status.${nda}`)}</span>
           )}
+          {ownerNda && (
+            <span className={cn("rounded-[4px] border px-1.5 py-0.5 text-[11px] font-medium", NDA_TONE[smSigned ? "signed" : "pending"])}>
+              {t(smSigned ? "intake.owner_nda.signed" : "intake.owner_nda.to_sign")}
+            </span>
+          )}
           <span className="ml-auto flex gap-2">
-            {c.signers.some((s) => s.signed_at) && (
-              <button onClick={() => setViewing(c)} className="text-xs text-link hover:underline">{t("intake.docuseal.view_signed")}</button>
+            {(c.signers.some((s) => s.signed_at) || (ownerNda && c.body)) && (
+              <button onClick={() => setViewing(c)} className="text-xs text-link hover:underline">{t(ownerNda && !smSigned ? "intake.owner_nda.read" : "intake.docuseal.view_signed")}</button>
             )}
-            {!readOnly && sm && sm.status !== "signed" && sm.status !== "declined" && nda !== "own_review" && !waitingUntil && (
-              <button onClick={() => setSigning(c)} className="text-xs text-link hover:underline">{t("intake.sign_as_sm")}</button>
+            {!readOnly && sm && sm.status !== "signed" && sm.status !== "declined" && !waitingUntil && (
+              <button onClick={() => setSigning(c)} className="text-xs text-link hover:underline">{t(ownerNda ? "intake.owner_nda.sign" : "intake.sign_as_sm")}</button>
             )}
-            {!readOnly && canResend(c) && (
+            {!readOnly && !ownerNda && canResend(c) && (
               <button
                 onClick={() => resend.mutate({ id: leadId, contractId: c.id }, { onSuccess: () => toast.success(t("intake.t_resent", { name: c.name })), onError: () => toast.error(t("pipeline.t_error")) })}
                 className="text-xs text-link hover:underline"
@@ -107,26 +114,8 @@ export function IntakeChecklist({ leadId, readOnly }: { leadId: string; readOnly
           })}
           {acks !== null && <li>{t("intake.mou_points", { n: acks, m: MOU_ACKNOWLEDGMENT_POINTS.length })}</li>}
           {waitingUntil && <li className="text-status-warning-fg">{t("entry.oa.waiting_sm", { date: formatDate(waitingUntil, lng) })}</li>}
-          {c.source === "own" && <li>{t("intake.own_nda.accepted", { file: c.own_file_name ?? "" })}</li>}
-          {nda === "pending" && c.own_review_comment && <li>{t("intake.own_nda.rejected_note", { comment: c.own_review_comment })}</li>}
+          {ownerNda && !smSigned && <li>{t("intake.owner_nda.hint")}</li>}
         </ul>
-        {nda === "own_review" && (
-          <div className="ml-6 mt-2 rounded-[4px] border border-status-warning-border bg-surface px-3 py-2 text-xs">
-            <p>{t("intake.own_nda.review", { file: c.own_file_name ?? "" })}</p>
-            {!readOnly && (
-              <div className="mt-1.5 flex gap-3">
-                <button
-                  disabled={acceptOwn.isPending}
-                  onClick={() => acceptOwn.mutate(c.id, { onSuccess: () => toast.success(t("intake.own_nda.t_accepted")), onError: () => toast.error(t("pipeline.t_error")) })}
-                  className="font-medium text-link hover:underline disabled:opacity-50"
-                >
-                  {t("intake.own_nda.accept")}
-                </button>
-                <button onClick={() => setRejectingOwn(c)} className="text-muted-foreground hover:text-foreground hover:underline">{t("intake.own_nda.reject")}</button>
-              </div>
-            )}
-          </div>
-        )}
       </li>
     );
   };
@@ -148,8 +137,12 @@ export function IntakeChecklist({ leadId, readOnly }: { leadId: string; readOnly
 
       <div id="intake-docs" className="rounded-md border border-border">
         <p className="border-b border-border px-4 py-2 text-xs font-medium text-muted-foreground">{t("intake.docs_title")}</p>
+        {/* The same note the owner reads at the top of his list. */}
+        {helpText && documents.length > 0 && <p className="mx-4 mt-2.5 rounded-[4px] border border-border px-3 py-2 text-xs">{helpText}</p>}
         <ul className="divide-y divide-border">
-          {documents.map((d) => (
+          {documents.map((d) => {
+            const help = intakeDocumentHelp(d, rulesData);
+            return (
             <li key={d.id} className="px-4 py-2.5 text-sm">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="min-w-0 flex-1 font-medium">{d.name}</span>
@@ -165,6 +158,7 @@ export function IntakeChecklist({ leadId, readOnly }: { leadId: string; readOnly
               </p>
               {d.state === "reviewed" && d.verified_fact && <p className="mt-0.5 text-xs text-status-success-fg">{t("intake.verified", { fact: d.verified_fact })}</p>}
               {d.state === "rejected" && d.review_comment && <p className="mt-0.5 text-xs text-status-warning-fg">{t("intake.asked_again", { comment: d.review_comment })}</p>}
+              {help && <DocumentHelp help={help} className="mt-1.5" />}
               {!readOnly && (d.state === "received" || d.state === "reviewed") && (
                 <div className="mt-1.5 flex gap-3">
                   {d.state === "received" && <button onClick={() => setAccepting(d)} className="text-xs font-medium text-link hover:underline">{t("intake.accept")}</button>}
@@ -172,7 +166,8 @@ export function IntakeChecklist({ leadId, readOnly }: { leadId: string; readOnly
                 </div>
               )}
             </li>
-          ))}
+            );
+          })}
         </ul>
       </div>
 
@@ -180,16 +175,6 @@ export function IntakeChecklist({ leadId, readOnly }: { leadId: string; readOnly
       {requesting && <RequestDialog leadId={leadId} doc={requesting} onClose={() => setRequesting(null)} />}
       {signing && <DocuSealSigner contract={signing} party="sm" signerName="Strategic Mates" onClose={() => setSigning(null)} />}
       {viewing && <SignedContractDialog contract={viewing} onClose={() => setViewing(null)} />}
-      {rejectingOwn && (
-        <TextDialog
-          title={t("intake.own_nda.reject_title")} body={t("intake.own_nda.reject_body")} label={t("intake.own_nda.reject_label")}
-          confirm={t("intake.own_nda.reject_confirm")} required={t("intake.comment_required")} pending={rejectOwn.isPending} onClose={() => setRejectingOwn(null)}
-          onConfirm={(comment) => rejectOwn.mutate({ contractId: rejectingOwn.id, comment }, {
-            onSuccess: () => { setRejectingOwn(null); toast.success(t("intake.own_nda.t_rejected")); },
-            onError: () => toast.error(t("pipeline.t_error")),
-          })}
-        />
-      )}
     </section>
   );
 }

@@ -49,7 +49,7 @@ describe("Aprobar documentación", () => {
 });
 
 describe("entry flow in the mock", () => {
-  it("'Se hizo' on Rivera's meeting sends the MOU: Documentación, the 7 documents locked until the MOU is signed", async () => {
+  it("'Se hizo' on Rivera's meeting sends the documents: Documentación, the 11 documents locked until the MOU is signed", async () => {
     const api = createMockApi();
     await api.session.setViewAs(seed.U_NICOLAS);
     const rivera = (await api.leads.list()).find((l) => l.business.name === "Rivera Roofing & Remodel")!;
@@ -61,8 +61,10 @@ describe("entry flow in the mock", () => {
     const moved = await api.leads.setMeetingOutcome(rivera.id, rivera.meeting!.id!, { outcome: "held", note: "Quiere empezar en enero" });
     expect(moved.stage).toBe("documents");
     const intake = (await api.leads.getIntake(rivera.id))!;
-    expect(intake.contracts.map((c) => c.kind)).toEqual(["nda", "mou"]);
-    expect(intake.documents).toHaveLength(7);
+    // The MOU comes with the owner's NDA signature, not with the meeting.
+    expect(intake.contracts.map((c) => c.kind)).toEqual(["nda"]);
+    expect(intake.documents).toHaveLength(11);
+    expect(intake.summary.required_total).toBe(9);
     expect(intake.documents.every((d) => d.locked_until_mou)).toBe(true);
     expect(intake.summary.clock.status).toBe("waiting_upload");
     // Program screens do not list a business that is still entering.
@@ -74,9 +76,10 @@ describe("entry flow in the mock", () => {
     const rivera = (await api.leads.list()).find((l) => l.business.name === "Rivera Roofing & Remodel")!;
     await api.leads.setMeetingOutcome(rivera.id, rivera.meeting!.id!, { outcome: "held" });
     const { documents, contracts } = (await api.leads.getIntake(rivera.id))!;
-    const mou = contracts.find((c) => c.kind === "mou")!;
     const owner = (await api.users.list()).find((u) => u.email === rivera.contact.email)!;
     await api.session.setViewAs(owner.id);
+    await api.documents.signContract(contracts.find((c) => c.kind === "nda")!.id);
+    const mou = (await api.documents.listContracts()).find((c) => c.kind === "mou")!;
     await expect(api.documents.uploadDocument(documents[0]!.id, { name: "banco.pdf" })).rejects.toThrow("mou_required");
     await expect(api.documents.signContract(mou.id)).rejects.toThrow("acknowledgment_required");
     await expect(api.documents.acknowledge(mou.id, ["business_stays_yours"])).rejects.toThrow("invalid_points");
@@ -84,17 +87,17 @@ describe("entry flow in the mock", () => {
     await api.documents.signContract(mou.id);
     expect((await api.documents.uploadDocument(documents[0]!.id, { name: "banco.pdf" })).state).toBe("received");
   });
-  it("sample data: Castillo paused with 5 of 7 uploaded and 3 accepted; Navarro at day 17 of 15", async () => {
+  it("sample data: Castillo paused with 5 of 9 uploaded and 3 accepted; Navarro at day 17 of 15", async () => {
     const api = createMockApi();
     await api.session.setViewAs(seed.U_NICOLAS);
     const leads = await api.leads.list();
     const sazon = leads.find((l) => l.business.name === "Castillo Instalaciones")!.intake!;
-    expect(sazon).toMatchObject({ uploaded: 5, accepted: 3, required_total: 7 });
+    expect(sazon).toMatchObject({ uploaded: 5, accepted: 3, required_total: 9 });
     expect(sazon.clock.status).toBe("paused");
     const glow = leads.find((l) => l.business.name === "Navarro Cercas y Portones")!.intake!;
     expect(glow.clock).toMatchObject({ day: 17, total: 15, tone: "red" });
   });
-  it("sample data: Yesenia Morales signed the NDA, the MOU waits for her and her 7 documents stay locked", async () => {
+  it("sample data: Yesenia Morales signed the NDA, the MOU waits for her and her 11 documents stay locked", async () => {
     const api = createMockApi();
     const owner = (await api.session.getViewAsOptions()).find((o) => o.business?.name === "Morales Pisos y Cerámica")!;
     expect(owner.user).toMatchObject({ full_name: "Yesenia Morales", role: "business_owner" });
@@ -109,7 +112,7 @@ describe("entry flow in the mock", () => {
     expect(mou.signers.find((s) => s.party === "owner")!.status).toBe("opened");
     await api.session.setViewAs(seed.U_NICOLAS);
     const intake = (await api.leads.list()).find((l) => l.business.name === "Morales Pisos y Cerámica")!.intake!;
-    expect(intake).toMatchObject({ uploaded: 0, accepted: 0, required_total: 7, mou_sent: true, mou_signed_by_owner: false });
+    expect(intake).toMatchObject({ uploaded: 0, accepted: 0, required_total: 9, mou_sent: true, mou_signed_by_owner: false });
     expect(intake.clock).toMatchObject({ day: 0, status: "waiting_upload", tone: "ok" });
     const docs = (await api.leads.getIntake((await api.leads.list()).find((l) => l.business.name === "Morales Pisos y Cerámica")!.id))!.documents;
     expect(docs.every((d) => d.state === "requested" && d.locked_until_mou)).toBe(true);

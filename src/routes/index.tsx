@@ -9,10 +9,14 @@ import { IntakeHomePage } from "@/components/owner/intake/IntakeHomePage";
 import { FranchisorHomePage } from "@/components/owner/franchisor/FranchisorHomePage";
 import { useBusinesses, useCurrentUser } from "@/lib/api/hooks";
 import { tStatic } from "@/lib/i18n";
+import { OWNER_STEPS, type OwnerStepKey } from "@/lib/leads/entry-flow";
 
 export const Route = createFileRoute("/")({
-  validateSearch: (raw: Record<string, unknown>): { task?: string } =>
-    typeof raw["task"] === "string" && raw["task"] ? { task: raw["task"] } : {},
+  // task: a task to open; step: a step of "Tu ingreso" to bring into view (the mou_ready notification).
+  validateSearch: (raw: Record<string, unknown>): { task?: string; step?: OwnerStepKey } => ({
+    ...(typeof raw["task"] === "string" && raw["task"] ? { task: raw["task"] } : {}),
+    ...(typeof raw["step"] === "string" && (OWNER_STEPS as readonly string[]).includes(raw["step"]) ? { step: raw["step"] as OwnerStepKey } : {}),
+  }),
   head: () => ({
     meta: [
       { title: `${tStatic("pages.home.title")} · SM Platform` },
@@ -27,7 +31,7 @@ export const Route = createFileRoute("/")({
 });
 
 function HomeRoute() {
-  const { task } = Route.useSearch();
+  const { task, step } = Route.useSearch();
   const me = useCurrentUser();
   const businesses = useBusinesses();
   const role = me.data?.role;
@@ -38,7 +42,7 @@ function HomeRoute() {
     // The owner of a franchisor business gets the franchisor home; wait for the business to know which one.
     if (businesses.isLoading) return null;
     const own = businesses.data?.find((b) => b.id === me.data?.business_id);
-    if (own?.status === "onboarding") return <IntakeHomePage />;
+    if (own?.status === "onboarding") return <IntakeHomePage focusStep={step} />;
     return own?.status === "franchisor" ? <FranchisorHomePage /> : <OwnerHomePage taskId={task} />;
   }
   if (role === "sm_team") return <SmHomePage taskId={task} />;

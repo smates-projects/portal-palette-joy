@@ -58,11 +58,11 @@ export function DocuSealSigner(props: { contract: Contract; party: "owner" | "sm
     onClose();
   }, [embedSrc, polledStatus, refresh, t, contractName, onClose]);
 
-  /** The API's reasons a signature waits: the four MOU points, the Operating Agreement's waiting period, an own NDA in review. */
+  /** The API's reasons a signature waits: the four MOU points, the Operating Agreement's waiting period. */
   const fail = (e?: unknown) => {
     const code = e instanceof Error ? ((e as Error & { code?: string }).code ?? e.message) : "";
     const detail = e instanceof Error ? (e as Error & { detail?: string | null }).detail ?? "" : "";
-    if (code === "acknowledgment_required" || code === "own_nda_pending") toast.error(t(`entry.errors.${code}`));
+    if (code === "acknowledgment_required") toast.error(t(`entry.errors.${code}`));
     else if (code === "waiting_period") toast.error(t("entry.errors.waiting_period", { date: /^\d{4}-\d{2}-\d{2}/.test(detail) ? formatDate(detail, i18n.language) : detail }));
     else toast.error(t("intake.docuseal.t_error"));
   };

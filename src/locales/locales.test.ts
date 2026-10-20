@@ -39,6 +39,17 @@ describe("locales", () => {
     expect(missing(en)).toEqual([]);
   });
 
+  it("the MOU ready and the owner's own NDA have their texts; the own-NDA review kinds are gone", () => {
+    for (const locale of [es, en] as { notifications: Record<string, unknown> }[]) {
+      expect(locale.notifications["kind_mou_ready"]).toEqual(expect.any(String));
+      expect(locale.notifications["pref_mou_ready"]).toEqual(expect.any(String));
+      expect(locale.notifications["kind_owner_nda_received"]).toContain("{{owner}}");
+      expect(locale.notifications["pref_owner_nda_received"]).toEqual(expect.any(String));
+      expect(Object.keys(locale.notifications).filter((k) => k.includes("own_nda_"))).toEqual([]);
+    }
+    expect(NOTIFICATION_KINDS).toEqual(expect.arrayContaining(["mou_ready", "owner_nda_received"]));
+  });
+
   it("the signed contract names the contract and the business from the payload", () => {
     expect(es.notifications.kind_contract_signed).toContain("{{contract_name}}");
     expect(es.notifications.kind_contract_signed).toContain("{{business_name}}");

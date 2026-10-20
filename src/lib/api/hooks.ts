@@ -414,11 +414,12 @@ export const useSendMou = () => useIntakeMutation((id: string) => api.leads.send
 export const usePresentToBishops = () => useIntakeMutation((v: { id: string; bishopUserIds: string[] }) => api.leads.presentToBishops(v.id, v.bishopUserIds));
 /** Owner, MOU: the four points confirmed with "Entendí". */
 export const useAcknowledgeMou = () => useIntakeMutation((v: { contractId: string; points: import("./types").MouAcknowledgmentPoint[] }) => api.documents.acknowledge(v.contractId, v.points));
-/** Owner: "Prefiero usar mi propio NDA" (PDF). */
-export const useProposeOwnNda = () => useIntakeMutation((v: { contractId: string; file: DocumentUpload }) => api.documents.proposeOwnNda(v.contractId, v.file));
-/** SM: Aceptar the owner's NDA / Pedir el mutuo (with a comment). */
-export const useAcceptOwnNda = () => useIntakeMutation((contractId: string) => api.documents.acceptOwnNda(contractId));
-export const useRejectOwnNda = () => useIntakeMutation((v: { contractId: string; comment: string }) => api.documents.rejectOwnNda(v.contractId, v.comment));
+/** Owner: the text "Escribir mi acuerdo" starts from, read only when the editor opens. */
+export const useOwnNdaTemplate = (businessId: string | null | undefined, enabled: boolean) =>
+  useQuery({ queryKey: ["documents", "own-nda-template", businessId], queryFn: () => api.documents.getOwnNdaTemplate(businessId!), enabled: enabled && !!businessId, staleTime: Infinity });
+/** Owner: "Enviar para la firma de Strategic Mates", and the edits while nobody signed it. */
+export const useCreateOwnNda = () => useIntakeMutation((v: { businessId: string; body: string }) => api.documents.createOwnNda(v.businessId, v.body));
+export const useUpdateOwnNda = () => useIntakeMutation((v: { businessId: string; body: string }) => api.documents.updateOwnNda(v.businessId, v.body));
 export const useAcceptDocument = () => useIntakeMutation((v: { id: string; documentId: string; fact: string }) => api.leads.acceptDocument(v.id, v.documentId, v.fact));
 export const useRequestDocument = () => useIntakeMutation((v: { id: string; documentId: string; comment: string }) => api.leads.requestDocument(v.id, v.documentId, v.comment));
 export const useResendContract = () => useIntakeMutation((v: { id: string; contractId: string }) => api.leads.resendContract(v.id, v.contractId));

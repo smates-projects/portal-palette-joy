@@ -1,19 +1,23 @@
 import { useTranslation } from "react-i18next";
 import { Printer, ShieldCheck } from "lucide-react";
 import type { Contract, Signer } from "@/lib/api/types";
-import { documentFingerprint } from "@/lib/contracts/signature";
+import { contractSections, documentFingerprint } from "@/lib/contracts/signature";
 import { formatDate } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PrimaryButton, SecondaryButton } from "@/components/tasks/detail/dialogs";
 
 /**
- * The sealed document as DocuSeal returns it: the text, one signature block per party (image, name, date) and the
- * audit trail (every event with its date, plus the document fingerprint). Read-only; "Descargar PDF" prints it.
- * In production this shows the real PDF and certificate stored by DocuSeal.
+ * The contract as a document: its full text (contract.body) or, for older answers, a sample; one signature block per
+ * party (image, name, date, or "Pendiente de firma") and the audit trail (every event with its date, plus the document
+ * fingerprint). Read-only, also before anyone signs ("Leer el MOU completo"); "Descargar PDF" prints it. In production
+ * this shows the real PDF and certificate stored by DocuSeal.
  */
 export function SignedContractDialog({ contract, onClose }: { contract: Contract; onClose: () => void }) {
   const { t, i18n } = useTranslation();
   const lng = i18n.language;
+  const anySigned = contract.signers.some((s) => s.signed_at);
+  const sections = contract.body ? contractSections(contract.body) : null;
   const parties = contract.signers.map((s) => s.name).join(", ");
   const fingerprint = documentFingerprint(contract.id);
   const partyLabel = (s: Signer) => (s.party ? t(`intake.party.${s.party}`) : s.role);
@@ -26,12 +30,12 @@ export function SignedContractDialog({ contract, onClose }: { contract: Contract
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[92vh] w-[calc(100vw-1.5rem)] overflow-y-auto bg-surface p-4 sm:max-w-2xl sm:p-6">
         <DialogHeader>
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("intake.docuseal.signed_title")}</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t(anySigned ? "intake.docuseal.signed_title" : "intake.docuseal.document_title")}</p>
           <DialogTitle>{contract.name}</DialogTitle>
           <DialogDescription>
             {contract.state === "signed" && contract.signed_at
               ? t("intake.docuseal.signed_all_on", { date: formatDate(contract.signed_at, lng) })
-              : t("intake.docuseal.signed_partial")}
+              : anySigned ? t("intake.docuseal.signed_partial") : t("intake.docuseal.not_signed_yet")}
           </DialogDescription>
         </DialogHeader>
 
@@ -39,11 +43,23 @@ export function SignedContractDialog({ contract, onClose }: { contract: Contract
         <div id="signed-document" className="rounded-md border border-border bg-muted/50 p-2 sm:p-4 print:border-0 print:bg-transparent print:p-0">
           <div className="mx-auto max-w-xl rounded-md border border-border bg-surface px-5 py-6 text-[13px] leading-relaxed text-muted-foreground sm:px-10 sm:py-10 print:max-w-none print:border-0 print:shadow-none">
             <p className="text-center text-lg font-semibold tracking-tight text-foreground">{contract.name}</p>
-            <p className="mt-1 text-center text-[11px] uppercase tracking-wide">{t("intake.docuseal.sample")}</p>
+            {!sections && <p className="mt-1 text-center text-[11px] uppercase tracking-wide">{t("intake.docuseal.sample")}</p>}
             <div className="mx-auto mt-4 h-px w-16 bg-border" />
-            <p className="mt-5 text-foreground">{t("intake.docuseal.pdf_parties", { parties })}</p>
-            <p className="mt-2">{t("intake.docuseal.pdf_body")}</p>
-            <div className="mt-4 space-y-1.5">{[0, 1, 2, 3, 4].map((i) => <div key={i} className="h-1.5 rounded bg-muted" style={{ width: `${92 - i * 11}%` }} />)}</div>
+            {sections ? (
+              // The full text, section by section (the dialog scrolls).
+              <div className="mt-5 space-y-4 text-foreground">
+                {sections.map((s, i) => (
+                  <section key={i} className="break-inside-avoid">
+                    {s.heading && <h3 className="text-sm font-semibold">{s.heading}</h3>}
+                    <p className={cn("whitespace-pre-line", s.heading && "mt-1")}>{s.text}</p>
+                  </section>
+                ))}
+              </div>
+            ) : (<>
+              <p className="mt-5 text-foreground">{t("intake.docuseal.pdf_parties", { parties })}</p>
+              <p className="mt-2">{t("intake.docuseal.pdf_body")}</p>
+              <div className="mt-4 space-y-1.5">{[0, 1, 2, 3, 4].map((i) => <div key={i} className="h-1.5 rounded bg-muted" style={{ width: `${92 - i * 11}%` }} />)}</div>
+            </>)}
 
             <p className="mt-6 text-[11px] font-medium uppercase tracking-wide text-foreground">{t("intake.docuseal.signatures")}</p>
             <div className="mt-3 grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2 print:grid-cols-2">

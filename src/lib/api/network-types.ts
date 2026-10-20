@@ -172,6 +172,21 @@ export interface PlatformRules {
   nda_auto_signed_by_sm?: boolean | undefined;
   /** Calendar v2: window where meetings can be scheduled. Absent = 09:00-18:00 America/New_York (lib/calendar). */
   meeting_hours?: MeetingHours | undefined;
+  /**
+   * Text the owner's own NDA starts from ("Escribir mi acuerdo"). {{business_name}} and {{owner_name}} are filled in
+   * by GET /businesses/{id}/own-nda/template. Absent = the API's default.
+   */
+  owner_nda_template?: string | undefined;
+  /** General note at the top of the entry documents list ("No hace falta un documento armado..."). */
+  intake_help_text?: string | undefined;
+}
+
+/** Help of one entry document: what it is, what counts as that document, and a tip. */
+export interface IntakeDocumentHelp {
+  what: string;
+  /** "Sirve:" list, one line each. */
+  counts: string[];
+  tip: string;
 }
 
 /** "HH:MM" start and end of the day, in an IANA time zone. */
@@ -190,6 +205,8 @@ export interface IntakeDocRule {
   /** Example of the verified fact the Bishop sees once SM accepts it. */
   verified_hint: string;
   archived: boolean;
+  /** Shown to the owner and the consultant next to the document. Absent = no help yet. */
+  help?: IntakeDocumentHelp | null | undefined;
 }
 
 export interface RulesChange {
@@ -485,20 +502,30 @@ export interface Contract {
   id: Uuid;
   business_id: Uuid;
   area: AreaCode | "diagnosis" | "closing" | "intake";
-  /** Entry contracts. tripartite is the Operating Agreement (owner, SM and Bishop). */
-  kind?: "nda" | "mou" | "tripartite" | "framework" | undefined;
+  /**
+   * Entry contracts. nda is Strategic Mates' NDA (SM pre-signed); owner_nda is the owner's own confidentiality
+   * agreement, written in the portal and signed by Strategic Mates (optional); tripartite is the Operating Agreement
+   * (owner, SM and Bishop).
+   */
+  kind?: ContractKind | undefined;
   name: string;
   state: ContractState;
   sent_at: IsoDate | null;
   signed_at: IsoDate | null;
   signers: Signer[];
-  /** NDA: SM's mutual NDA, or the owner's own once SM accepted it. Absent = sm. */
-  source?: "sm" | "own" | undefined;
-  /** NDA: the owner's own NDA. With source "sm" it waits for SM's review ("Esperando revisión de Strategic Mates"). */
-  own_file_id?: Uuid | null | undefined;
-  own_file_name?: string | null | undefined;
-  /** NDA: why SM asked for the mutual NDA instead of the owner's own. */
-  own_review_comment?: string | null | undefined;
+  /** What the contract means in plain words, shown above the signer. Absent on older answers. */
+  explainer?: ContractExplainer | null | undefined;
+  /** Full text of the contract (NDA, owner_nda, MOU): the document dialog shows it. Absent = no text yet. */
+  body?: string | null | undefined;
+}
+
+export type ContractKind = "nda" | "mou" | "owner_nda" | "tripartite" | "framework";
+
+/** The plain-words window above a contract: a title, a few paragraphs and the key points. */
+export interface ContractExplainer {
+  title: string;
+  paragraphs: string[];
+  bullets: string[];
 }
 
 export interface FinancialChange {

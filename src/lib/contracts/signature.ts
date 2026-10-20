@@ -8,6 +8,19 @@ export function typedSignatureDataUrl(name: string): string {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
+/**
+ * The sections of a contract's full text (Contract.body), for the document dialog. Blocks are separated by a blank
+ * line; a block whose first line reads "1. Qué protege" becomes a section with that heading. The first block is the
+ * title of the text (the dialog already shows the contract's name), so it is left out.
+ */
+export function contractSections(body: string): { heading: string | null; text: string }[] {
+  const blocks = body.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
+  return blocks.slice(1).map((block) => {
+    const [first = "", ...rest] = block.split("\n");
+    return /^\d+\.\s/.test(first) && rest.length > 0 ? { heading: first, text: rest.join("\n") } : { heading: null, text: block };
+  });
+}
+
 /** Stable fake SHA-256 of a document, so the demo shows the same fingerprint every time. */
 export function documentFingerprint(seed: string): string {
   let h1 = 0x811c9dc5;

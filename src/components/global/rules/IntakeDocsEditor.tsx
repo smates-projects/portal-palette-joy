@@ -2,14 +2,20 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useUpdateRules } from "@/lib/api/hooks";
-import type { IntakeDocRule, PlatformRules } from "@/lib/api/network-types";
+import type { IntakeDocRule, IntakeDocumentHelp, PlatformRules } from "@/lib/api/network-types";
+import { OWN_NDA_MAX_LENGTH, cleanDocumentHelp, ownNdaBodyError } from "@/lib/leads/entry-flow";
 import { cn } from "@/lib/utils";
 import { PrimaryButton } from "@/components/tasks/detail/dialogs";
 
 const inputCls = "h-9 w-full rounded-md border border-input bg-surface px-3 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30";
+const areaCls = "w-full resize-y rounded-md border border-input bg-surface px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30";
 const newId = () => (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : String(Date.now()));
+const EMPTY_HELP: IntakeDocumentHelp = { what: "", counts: [], tip: "" };
 
-/** SM Global: entry documents every owner uploads (add, edit, required, archive). Applies to the next entries. */
+/**
+ * SM Global: entry documents every owner uploads (add, edit, required, archive) and the help next to each one (what
+ * it is, "Sirve:" one per line, a tip). Applies to the next entries.
+ */
 export function IntakeDocsEditor({ rules }: { rules: PlatformRules }) {
   const { t } = useTranslation();
   const update = useUpdateRules();
@@ -18,11 +24,12 @@ export function IntakeDocsEditor({ rules }: { rules: PlatformRules }) {
   const dirty = JSON.stringify(docs) !== JSON.stringify(rules.intake_documents);
   const invalid = docs.some((d) => !d.name.trim());
   const set = (id: string, patch: Partial<IntakeDocRule>) => setDocs((all) => all.map((d) => (d.id === id ? { ...d, ...patch } : d)));
+  const setHelp = (d: IntakeDocRule, patch: Partial<IntakeDocumentHelp>) => set(d.id, { help: { ...EMPTY_HELP, ...d.help, ...patch } });
   const save = () => {
     setTried(true);
     if (invalid || !dirty) return;
     const prev = rules.intake_documents;
-    update.mutate({ patch: { intake_documents: docs.map((d) => ({ ...d, name: d.name.trim() })) } }, {
+    update.mutate({ patch: { intake_documents: docs.map((d) => ({ ...d, name: d.name.trim(), help: cleanDocumentHelp(d.help) })) } }, {
       onSuccess: () => toast.success(t("intake.rules.t_saved"), { action: { label: t("global.undo"), onClick: () => update.mutate({ patch: { intake_documents: prev } }) } }),
       onError: () => toast.error(t("global.t_error")),
     });
@@ -51,6 +58,22 @@ export function IntakeDocsEditor({ rules }: { rules: PlatformRules }) {
             </div>
             <input value={d.verified_hint} onChange={(e) => set(d.id, { verified_hint: e.target.value })} disabled={d.archived}
               placeholder={t("intake.rules.hint")} aria-label={t("intake.rules.hint")} className={cn(inputCls, "h-8 text-xs")} />
+            {/* What the owner and the consultant read next to the document. */}
+            <fieldset className="space-y-2 rounded-[4px] border border-border p-3" disabled={d.archived}>
+              <legend className="px-1 text-xs font-medium">{t("intake.rules.help_title")}</legend>
+              <label className="block space-y-1 text-xs">
+                <span className="text-muted-foreground">{t("intake.rules.help_what")}</span>
+                <input value={d.help?.what ?? ""} onChange={(e) => setHelp(d, { what: e.target.value })} className={cn(inputCls, "h-8 text-xs")} />
+              </label>
+              <label className="block space-y-1 text-xs">
+                <span className="text-muted-foreground">{t("intake.rules.help_counts")}</span>
+                <textarea rows={3} value={(d.help?.counts ?? []).join("\n")} onChange={(e) => setHelp(d, { counts: e.target.value.split("\n") })} className={cn(areaCls, "text-xs")} />
+              </label>
+              <label className="block space-y-1 text-xs">
+                <span className="text-muted-foreground">{t("intake.rules.help_tip")}</span>
+                <input value={d.help?.tip ?? ""} onChange={(e) => setHelp(d, { tip: e.target.value })} className={cn(inputCls, "h-8 text-xs")} />
+              </label>
+            </fieldset>
           </li>
         ))}
       </ul>
@@ -59,6 +82,51 @@ export function IntakeDocsEditor({ rules }: { rules: PlatformRules }) {
         <button onClick={() => setDocs((all) => [...all, { id: newId(), name: t("intake.rules.new_name"), required: true, only_if_llc: false, verified_hint: "", archived: false }])}
           className="text-sm text-link hover:underline">{t("intake.rules.add")}</button>
         <PrimaryButton onClick={save} disabled={!dirty || update.isPending}>{t("intake.rules.save")}</PrimaryButton>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * SM Global: the note at the top of the entry documents list (intake_help_text) and the text the owner's own NDA
+ * starts from (owner_nda_template, with {{business_name}} and {{owner_name}}). Applies from now on.
+ */
+export function IntakeTextsEditor({ rules }: { rules: PlatformRules }) {
+  const { t } = useTranslation();
+  const update = useUpdateRules();
+  const initial = { help: rules.intake_help_text ?? "", template: rules.owner_nda_template ?? "" };
+  const [help, setHelpText] = useState(initial.help);
+  const [template, setTemplate] = useState(initial.template);
+  const [tried, setTried] = useState(false);
+  const templateError = ownNdaBodyError(template);
+  const dirty = help !== initial.help || template !== initial.template;
+  const save = () => {
+    setTried(true);
+    if (templateError || !dirty) return;
+    const patch = { intake_help_text: help.trim(), owner_nda_template: template.trim() };
+    const prev = { intake_help_text: rules.intake_help_text, owner_nda_template: rules.owner_nda_template };
+    update.mutate({ patch }, {
+      onSuccess: () => toast.success(t("intake.rules.texts_saved"), { action: { label: t("global.undo"), onClick: () => update.mutate({ patch: prev }) } }),
+      onError: () => toast.error(t("global.t_error")),
+    });
+  };
+  return (
+    <section className="mt-4 rounded-md border border-border bg-surface p-4">
+      <h2 className="text-sm font-semibold">{t("intake.rules.texts_title")}</h2>
+      <label className="mt-3 block space-y-1">
+        <span className="text-sm font-medium">{t("intake.rules.help_text")}</span>
+        <span className="block text-xs text-muted-foreground">{t("intake.rules.help_text_hint")}</span>
+        <textarea rows={2} value={help} onChange={(e) => setHelpText(e.target.value)} className={areaCls} />
+      </label>
+      <label className="mt-4 block space-y-1">
+        <span className="text-sm font-medium">{t("intake.rules.template")}</span>
+        <span className="block text-xs text-muted-foreground">{t("intake.rules.template_hint", { business: "{{business_name}}", owner: "{{owner_name}}" })}</span>
+        <textarea rows={14} value={template} maxLength={OWN_NDA_MAX_LENGTH} onChange={(e) => setTemplate(e.target.value)}
+          aria-invalid={tried && !!templateError} className={cn(areaCls, tried && templateError && "border-status-danger-fg")} />
+      </label>
+      {tried && templateError && <p role="alert" className="mt-1 text-xs text-status-danger-fg">{t(`intake.owner.own_nda.errors.${templateError}`)}</p>}
+      <div className="mt-3 flex justify-end">
+        <PrimaryButton onClick={save} disabled={!dirty || update.isPending}>{t("intake.rules.texts_save")}</PrimaryButton>
       </div>
     </section>
   );

@@ -591,14 +591,18 @@ export interface DocumentsRepository {
   /** Owner, MOU: the four points confirmed with "Entendí" (POST /contracts/{id}/acknowledge). All four, or invalid_points. */
   acknowledge(contractId: Uuid, points: MouAcknowledgmentPoint[]): Promise<Contract>;
   /**
-   * Owner, NDA: "Prefiero usar mi propio NDA". Uploads the PDF (the HTTP adapter sends the File first) and proposes it
-   * (POST /contracts/{id}/propose-own { file_id }); SM is told. own_nda_pending while one waits for review.
+   * Owner: the text his own confidentiality agreement starts from (GET /businesses/{id}/own-nda/template), with the
+   * business and the owner already filled in. SM Global edits the template in Reglas (owner_nda_template).
    */
-  proposeOwnNda(contractId: Uuid, file: DocumentUpload): Promise<Contract>;
-  /** SM: accepts the owner's NDA (source becomes "own" and it counts as signed). */
-  acceptOwnNda(contractId: Uuid): Promise<Contract>;
-  /** SM: "Pedir el mutuo", with a comment for the owner; the mutual NDA stays to sign. */
-  rejectOwnNda(contractId: Uuid, comment: string): Promise<Contract>;
+  getOwnNdaTemplate(businessId: Uuid): Promise<{ body: string }>;
+  /**
+   * Owner: "Enviar para la firma de Strategic Mates" (POST /businesses/{id}/own-nda { body }). Creates the contract of
+   * kind owner_nda; the consultant is told and signs it through the usual signer. own_nda_exists when there is one;
+   * body_required / body_too_long for the text.
+   */
+  createOwnNda(businessId: Uuid, body: string): Promise<Contract>;
+  /** Owner: changes the text while nobody signed it (PATCH /businesses/{id}/own-nda { body }). */
+  updateOwnNda(businessId: Uuid, body: string): Promise<Contract>;
 }
 
 export interface FinancialsRepository {
