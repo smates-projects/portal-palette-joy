@@ -28,6 +28,12 @@ import { DEFAULT_ASSESSMENT_AREA_MAP } from "@/lib/leads/prevalidation";
 import { createEntry } from "./entry";
 import { createSession, type MockSessionControls } from "./session";
 import { createCalendar } from "./calendar";
+import { createContractRules } from "./contract-rules";
+import { seedAdvisors, seedSigningPeople, seedTechosBinding } from "./seed-entry-contracts";
+import { smSignBlock } from "@/lib/leads/contract-rules";
+import { closeBlock, splitError } from "@/lib/leads/validation";
+import { isDocsAdmin } from "@/lib/leads/onboarding";
+import { ENTRY_PARTY_NOTIFICATION_KINDS, type Contract, type EntryContractRule, type EntryContractRuleChange } from "../types";
 
 export { DEMO_PASSWORD } from "./session";
 import type { AreaCode, Business, BusinessEvent, CatalogAdminItem, Lead, LeadEvent, LeadWithComputed } from "../types";
@@ -118,7 +124,15 @@ export function createMockApi(): MockApi {
     firmEvents: [] as FirmEvent[],
     brands: structuredClone(seed.brands) as BusinessBrand[],
     brandEvents: structuredClone(seed.brandEvents) as BrandEvent[],
+    // Entry contracts as rules (./contract-rules): what SM Global configures and its history.
+    contractRules: [] as EntryContractRule[],
+    contractRulesHistory: [] as EntryContractRuleChange[],
   };
+  seedSigningPeople(db.users);
+  seedAdvisors(db.leads, db.users);
+  // The rules exist before any contract: the NDA and the MOU take their texts from them.
+  const crules = createContractRules({ db, me: () => me(), newId, delay, notifyParties: (l, kind, c, extra) => notifyParties(l, kind, c, extra) });
+  crules.seed();
   const intake = createIntake(db, newId);
   intake.seed();
   const intakeOf = (l: Lead) => {
@@ -132,6 +146,7 @@ export function createMockApi(): MockApi {
     const ev = db.events.filter((e) => e.task_id === t.id && e.kind === "approved").map((e) => e.created_at).sort().at(-1);
     t.accepted_at = ev ?? t.updated_at;
   }
+  let seeding = true;
   const notifs = structuredClone(seed.notifications);
   const dueRead = new Set<string>(); // "userId|notificationId"
   const prefs = new Map<string, NotificationPreference[]>();
@@ -140,6 +155,7 @@ export function createMockApi(): MockApi {
     const role = db.users.find((u) => u.id === userId)?.role;
     return NOTIFICATION_KINDS.filter((k) =>
       !API_ONLY_NOTIFICATION_KINDS.includes(k) &&
+      (!ENTRY_PARTY_NOTIFICATION_KINDS.includes(k) || ["sm_team", "sm_global", "business_owner", "bishop"].includes(role ?? "")) &&
       (role === "sm_team" || !LEAD_NOTIFICATION_KINDS.includes(k)) && (role === "bishop" || !BISHOP_NOTIFICATION_KINDS.includes(k)) &&
       (role === "business_owner" || !OWNER_NOTIFICATION_KINDS.includes(k)));
   };
@@ -167,6 +183,20 @@ export function createMockApi(): MockApi {
   const bishopNotifs: { id: string; user_id: string; kind: NotificationKind; lead_id: string; actor_user_id: string | null; created_at: string; read: boolean }[] = [];
   const notifyBishop = (l: Lead, bishopUserId: string) =>
     bishopNotifs.push({ id: newId(), user_id: bishopUserId, kind: "opportunity_presented", lead_id: l.id, actor_user_id: currentUserId, created_at: nowIso(), read: false });
+  /**
+   * The parties of one business entering (binding_ready, validation_closed): its owner, the Bishop who took it, the SM
+   * team of the office and anyone else named (Corporate's signer of the binding agreement). Never the one who acted.
+   */
+  const partyNotifs: { id: string; user_id: string; kind: NotificationKind; lead_id: string; contract_id: string | null; contract_name: string | null; actor_user_id: string | null; created_at: string; read: boolean }[] = [];
+  const notifyParties = (l: Lead, kind: NotificationKind, c: Contract | null, extra: string[] = []) => {
+    const owner = db.users.find((u) => u.role === "business_owner" && u.business_id === l.business_id);
+    const team = db.users.filter((u) => u.role === "sm_team" && u.organization_id === l.office_id).map((u) => u.id);
+    // Sample data is created quietly: the bells start as the seed says.
+    if (seeding) return;
+    const actor = auth.isAuthenticated() ? currentUserId : null;
+    for (const userId of new Set([owner?.id, l.bishop_user_id, ...team, ...extra].filter((x): x is string => !!x && x !== actor)))
+      partyNotifs.push({ id: newId(), user_id: userId, kind, lead_id: l.id, contract_id: c?.id ?? null, contract_name: c?.name ?? null, actor_user_id: actor, created_at: nowIso(), read: false });
+  };
   /** Every SM person of the lead's office hears about it (the review and the funds are team work). */
   const notifyLead = (l: Lead, kind: NotificationKind) => {
     for (const u of db.users.filter((x) => x.role === "sm_team" && x.organization_id === l.office_id && x.id !== currentUserId))
@@ -315,6 +345,8 @@ export function createMockApi(): MockApi {
   };
   const entry = createEntry({ db, me, newId, delay, findLead, visibleLeads, withBooking: (l) => withBooking(l), findTask, computed, notifyConsultant, openNda: (l) => openNda(l, null) });
   entry.seed(seed.ORG_SM);
+  seedTechosBinding(db, crules.sweep);
+  seeding = false;
 
   /**
    * accepted → in_program: business from onboarding to in_program with day 1 = day1, and its tasks from the live
@@ -392,16 +424,27 @@ export function createMockApi(): MockApi {
           if (!b) return delay(null);
           const allowed = u.role === "sm_global" || (u.role === "sm_team" && u.organization_id === b.office_id) || (u.role === "business_owner" && u.business_id === b.id);
           if (!allowed) throw new Error("forbidden");
+          crules.sweep();
           return delay(intake.summaryForBusiness(b.id));
+        },
+        listContracts: async (businessId) => {
+          crules.sweep();
+          return net.documents.listContracts(businessId);
         },
         openContract: async (contractId) => {
           const { c, party } = contractInScope(contractId);
           const s = c.signers.find((x) => x.party === party);
-          if (s && s.status === "sent") intake.setSignerStatus(c, party, "opened");
+          // Only the one who can sign it marks it opened (another SM person only reads it).
+          if (s && s.status === "sent" && (party !== "sm" || !smSignBlock(s, me()))) intake.setSignerStatus(c, party, "opened");
           return delay(c);
         },
         signContract: async (contractId, signature) => {
           const { c, party } = contractInScope(contractId);
+          // Contracts created by a rule: Corporate's CEO signs the binding agreement, the SM Square holder the OA.
+          if (party === "sm") {
+            const block = smSignBlock(c.signers.find((x) => x.party === "sm"), me());
+            if (block) throw new Error(block);
+          }
           intake.setSignerStatus(c, party, "signed");
           const signer = c.signers.find((x) => x.party === party);
           if (signer) signer.signature = signature ?? null;
@@ -412,6 +455,8 @@ export function createMockApi(): MockApi {
             const l = db.leads.find((x) => x.business_id === c.business_id);
             if (l) fundsMod.recordOf(l);
           }
+          // A contract signed by all may be the trigger of the next one (the binding agreement opens the OA).
+          if (c.state === "signed") crules.sweep();
           return delay(c);
         },
         declineContract: async (contractId, reason) => {
@@ -473,6 +518,7 @@ export function createMockApi(): MockApi {
     notifications: {
       list: () => {
         entry.promptOutcomes();
+        crules.sweep();
         const u = me();
         const visible = visibleTasks();
         const tasksById = new Map(db.tasks.map((t) => [t.id, t]));
@@ -522,12 +568,28 @@ export function createMockApi(): MockApi {
             business_name: db.businesses.find((b) => b.id === n.business_id)?.name ?? "", actor_user_id: null, actor_name: null,
             created_at: n.created_at, read_at: n.read ? n.created_at : null, change: null, contract_id: n.contract_id, contract_name: "MOU",
           }));
+        // Binding agreement ready, validation closed: SM opens the lead, the owner "Tu ingreso", the Bishop his opportunity.
+        const aboutParties: AppNotification[] = partyNotifs
+          .filter((n) => n.user_id === u.id)
+          .flatMap((n) => {
+            const l = db.leads.find((x) => x.id === n.lead_id);
+            if (!l) return [];
+            const sm = u.role === "sm_team" || u.role === "sm_global";
+            return [{
+              id: n.id, user_id: n.user_id, kind: n.kind, task_id: "", task_code: "", task_name: "", business_id: l.business_id ?? "",
+              // The Bishop sees the name once he took it (he did: he is a party).
+              business_name: l.business.name, actor_user_id: n.actor_user_id, actor_name: name(n.actor_user_id), created_at: n.created_at,
+              read_at: n.read ? n.created_at : null, change: null, contract_id: n.contract_id, contract_name: n.contract_name,
+              ...(sm ? { lead_id: l.id } : {}), ...(u.role === "bishop" ? { opportunity_id: l.id } : {}),
+            }];
+          });
         const enabled = new Set(prefsOf(u.id).filter((p) => p.in_app).map((p) => p.kind));
-        return delay([...stored, ...due, ...aboutLeads, ...presented, ...aboutEntry, ...cal.notificationsFor(u.id)].filter((n) => enabled.has(n.kind)).sort((a, b) => b.created_at.localeCompare(a.created_at)));
+        return delay([...stored, ...due, ...aboutLeads, ...presented, ...aboutEntry, ...aboutParties, ...cal.notificationsFor(u.id)].filter((n) => enabled.has(n.kind)).sort((a, b) => b.created_at.localeCompare(a.created_at)));
       },
       markRead: async (id) => {
         const n = notifs.find((x) => x.id === id && x.user_id === currentUserId) ?? leadNotifs.find((x) => x.id === id && x.user_id === currentUserId)
-          ?? bishopNotifs.find((x) => x.id === id && x.user_id === currentUserId) ?? ownerNotifs.find((x) => x.id === id && x.user_id === currentUserId);
+          ?? bishopNotifs.find((x) => x.id === id && x.user_id === currentUserId) ?? ownerNotifs.find((x) => x.id === id && x.user_id === currentUserId)
+          ?? partyNotifs.find((x) => x.id === id && x.user_id === currentUserId);
         if (n) n.read = true;
         else if (!cal.markRead(currentUserId, id)) dueRead.add(`${currentUserId}|${id}`);
         return delay(undefined);
@@ -537,6 +599,7 @@ export function createMockApi(): MockApi {
         leadNotifs.filter((n) => n.user_id === currentUserId).forEach((n) => (n.read = true));
         bishopNotifs.filter((n) => n.user_id === currentUserId).forEach((n) => (n.read = true));
         ownerNotifs.filter((n) => n.user_id === currentUserId).forEach((n) => (n.read = true));
+        partyNotifs.filter((n) => n.user_id === currentUserId).forEach((n) => (n.read = true));
         cal.markAllRead(currentUserId);
         const due = me().role !== "partner_firm" ? [] : dueNotifications(currentUserId, visibleTasks().map((t) => withComputed(t, db.tasks)), db.businesses);
         due.forEach((n) => dueRead.add(`${currentUserId}|${n.id}`));
@@ -662,7 +725,17 @@ export function createMockApi(): MockApi {
         const u = me();
         return delay(u.google_calendar_email ? seed.calendarEvents.filter((e) => e.user_id === u.id) : []);
       },
+      /** SM Global (Corporate) decides who may sign for SM Square; only SM people. */
+      setSigningEntities: async (userId, input) => {
+        if (me().role !== "sm_global") throw new Error("forbidden");
+        const target = db.users.find((u) => u.id === userId);
+        if (!target) throw new Error("not_found");
+        if (target.role !== "sm_team" && target.role !== "sm_global") throw new Error("invalid_user");
+        target.can_sign_sm_square = input.can_sign_sm_square;
+        return delay({ ...target });
+      },
     },
+    contractRules: crules.repository,
     ...withIntakeDocuments(net),
     // After the spread: replaces net.rules.
     rules,
@@ -687,6 +760,14 @@ export function createMockApi(): MockApi {
     bishop: {
       ...net.bishop,
       ...opps.bishop,
+      // The rule engine runs before every Bishop read, and his acceptance creates the binding agreement.
+      listOpportunities: async () => { crules.sweep(); return opps.bishop.listOpportunities(); },
+      getOpportunity: async (id) => { crules.sweep(); return opps.bishop.getOpportunity(id); },
+      acceptOpportunity: async (id) => {
+        const o = await opps.bishop.acceptOpportunity(id);
+        crules.sweep();
+        return o;
+      },
       // Calendar v2: the consultant of each funded business, so the Bishop can schedule with him.
       getPortfolio: async () => {
         const p = await net.bishop.getPortfolio();
@@ -698,6 +779,7 @@ export function createMockApi(): MockApi {
         return { ...p, investments: p.investments.map((i) => ({ ...i, consultant: consultantOf(i.business_id) })) };
       },
       listAgreements: async () => {
+        crules.sweep();
         const base = await net.bishop.listAgreements();
         return [...opps.signableAgreements(me()), ...base];
       },
@@ -708,10 +790,12 @@ export function createMockApi(): MockApi {
       ...entry.leads,
       list: async (opts) => {
         entry.promptOutcomes();
+        crules.sweep();
         return delay(readableLeads().filter((l) => !opts?.office_id || l.office_id === opts.office_id).map(withBooking));
       },
       get: async (id) => {
         entry.promptOutcomes();
+        crules.sweep();
         const l = readableLeads().find((x) => x.id === id);
         if (!l) return delay(null);
         return delay({ lead: withBooking(l), events: db.leadEvents.filter((e) => e.lead_id === id).sort((a, b) => a.created_at.localeCompare(b.created_at)) });
@@ -781,6 +865,7 @@ export function createMockApi(): MockApi {
         return delay(withBooking(l));
       },
       getIntake: async (id) => {
+        crules.sweep();
         const l = readableLeads().find((x) => x.id === id);
         const summary = l ? intake.summaryFor(l) : null;
         if (!l || !summary || !l.business_id) return delay(null);
@@ -828,6 +913,54 @@ export function createMockApi(): MockApi {
         if (l.stage !== "accepted") throw new Error("invalid_transition");
         if (!/^\d{4}-\d{2}-\d{2}$/.test(day1) || day1 > todayIso()) throw new Error("invalid_date");
         return delay(launchProgram(l, day1, "contract_signed"));
+      },
+      /** Draft of the definitive percentages: accepted leads, SM team of the office, until it is closed. */
+      saveValidation: async (id, input) => {
+        const l = findLead(id);
+        if (l.stage !== "accepted" || l.validation?.status === "closed") throw new Error("invalid_state");
+        if (splitError(input)) throw new Error("invalid_split");
+        if (input.investment_amount !== null && (!Number.isFinite(input.investment_amount) || input.investment_amount < 0)) throw new Error("invalid_amount");
+        const holder = input.sm_square_holder_user_id ? db.users.find((u) => u.id === input.sm_square_holder_user_id) : null;
+        if (input.sm_square_holder_user_id && (!holder || !holder.can_sign_sm_square)) throw new Error("sm_square_signer_required");
+        l.validation = {
+          status: "open", equity_owner: input.equity_owner, equity_bishop: input.equity_bishop, equity_sm: input.equity_sm,
+          investment_amount: input.investment_amount, notes: input.notes?.trim() || null, sm_square_center: input.sm_square_center?.trim() || null,
+          sm_square_holder_user_id: input.sm_square_holder_user_id, closed_at: null, closed_by: null,
+        };
+        pushLeadEvent({ lead_id: id, kind: "validation_saved", from: null, to: null, body: null });
+        return delay(withBooking(l));
+      },
+      /** Admin of the office (or an SM Global admin): fixes the percentages; the Operating Agreement can be created. */
+      closeValidation: async (id) => {
+        const u = me();
+        const l = u.role === "sm_global" ? db.leads.find((x) => x.id === id) : findLead(id);
+        if (!l) throw new Error("not_found");
+        if (!isDocsAdmin(u, l.office_id)) throw new Error("admin_only");
+        if (l.stage !== "accepted" || !l.validation || l.validation.status === "closed") throw new Error("invalid_state");
+        const block = closeBlock({ ...l.validation, sm_square_center: l.validation.sm_square_center ?? null, sm_square_holder_user_id: l.validation.sm_square_holder_user_id ?? null });
+        if (block) throw new Error(block === "invalid_split" ? "invalid_split" : "validation_incomplete");
+        const holder = db.users.find((x) => x.id === l.validation!.sm_square_holder_user_id);
+        if (!holder?.can_sign_sm_square) throw new Error("sm_square_signer_required");
+        Object.assign(l.validation, { status: "closed", closed_at: nowIso(), closed_by: u.id });
+        pushLeadEvent({ lead_id: id, kind: "validation_closed", from: null, to: null, body: `${l.validation.equity_owner} / ${l.validation.equity_bishop} / ${l.validation.equity_sm}` });
+        notifyParties(l, "validation_closed", null);
+        crules.sweep();
+        return delay(withBooking(l));
+      },
+      /**
+       * With the configurable contracts the Operating Agreement is created by its rule (binding agreement signed and
+       * validation closed): "Enviar" only answers it, or validation_open. Older businesses keep the manual send.
+       */
+      sendTripartite: async (id) => {
+        const l = findLead(id);
+        if (l.business_id && opps.bindingOf(l)) {
+          if (l.validation?.status !== "closed") throw new Error("validation_open");
+          crules.sweep();
+          const oa = opps.tripartiteOf(l);
+          if (!oa) throw new Error("invalid_state");
+          return delay(oa);
+        }
+        return opps.leads.sendTripartite(id);
       },
       rejectDocuments: async (id, reason) => {
         if (!reason.trim()) throw new Error("reason_required");

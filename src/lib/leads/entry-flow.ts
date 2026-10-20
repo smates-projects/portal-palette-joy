@@ -123,8 +123,9 @@ export const oaSignableFrom = (sentAt: IsoDate, waitingDays: number): IsoDate =>
  * The date the Operating Agreement can be signed from while the waiting period runs ("Podrás firmar desde el ..."),
  * or null when it can be signed today (or the contract is not an Operating Agreement or was not sent).
  */
-export function oaWaitingUntil(c: Pick<Contract, "kind" | "sent_at">, waitingDays: number, today: string = todayIso()): IsoDate | null {
-  if (c.kind !== "tripartite" || !c.sent_at) return null;
+export function oaWaitingUntil(c: Pick<Contract, "kind" | "sent_at"> & Partial<Pick<Contract, "rule_code">>, waitingDays: number, today: string = todayIso()): IsoDate | null {
+  // An Operating Agreement created by its rule has a deadline to sign (sign_by) instead of a waiting period.
+  if (c.kind !== "tripartite" || !c.sent_at || c.rule_code) return null;
   const from = oaSignableFrom(c.sent_at, waitingDays);
   return from > today ? from : null;
 }
@@ -226,7 +227,7 @@ export function cleanDocumentHelp(help: IntakeDocumentHelp | null | undefined): 
  * the Operating Agreement. The MOU exists as soon as the owner signs the NDA, so he can sign it before or during the
  * meeting. The documents open when the MOU is signed, independent of the meeting.
  */
-export const OWNER_STEPS = ["nda", "mou", "meeting", "documents", "expansion", "operating_agreement"] as const;
+export const OWNER_STEPS = ["nda", "mou", "meeting", "documents", "expansion", "binding", "operating_agreement"] as const;
 export type OwnerStepKey = (typeof OWNER_STEPS)[number];
 export type OwnerStepState = "done" | "current" | "upcoming";
 
@@ -235,6 +236,11 @@ export interface OwnerStepsInput {
   nda: Contract | null;
   mou: Contract | null;
   operatingAgreement: Contract | null;
+  /**
+   * The Acuerdo de Vinculación, signed in the linking meeting. Leave it out (undefined) where the entry has no binding
+   * rule: the step is not shown then. null = the rule exists and the contract does not yet.
+   */
+  binding?: Contract | null | undefined;
   rules: EntryRules;
 }
 
@@ -257,9 +263,11 @@ export function ownerSteps(input: OwnerStepsInput): { key: OwnerStepKey; state: 
     mou: signedBy(input.mou, "owner"),
     documents: approved,
     expansion: !input.rules.require_expansion_meeting || !!entry?.expansion_meeting_held_at || meetings.expansion?.outcome === "held",
+    binding: signedBy(input.binding ?? null, "owner"),
     operating_agreement: signedBy(input.operatingAgreement, "owner"),
   };
-  const keys = OWNER_STEPS.filter((k) => approved || (k !== "expansion" && k !== "operating_agreement"));
+  const afterApproval: OwnerStepKey[] = ["expansion", "binding", "operating_agreement"];
+  const keys = OWNER_STEPS.filter((k) => (k !== "binding" || input.binding !== undefined) && (approved || !afterApproval.includes(k)));
   const current = keys.find((k) => !done[k]);
   return keys.map((key) => ({ key, state: done[key] ? "done" : key === current ? "current" : "upcoming" }));
 }

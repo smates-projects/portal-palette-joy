@@ -71,6 +71,17 @@ export function ProvisionalTag() {
   return <Tag tone="warning">{t("bishop.provisional")}</Tag>;
 }
 
+/** Marks a split number Strategic Mates already fixed in the validation. */
+export function DefinitiveTag() {
+  const { t } = useTranslation();
+  return <Tag tone="success">{t("bishop.definitive")}</Tag>;
+}
+
+/** Provisional or definitive, as the opportunity says (split_final). */
+export function SplitTag({ final }: { final: boolean | undefined }) {
+  return final ? <DefinitiveTag /> : <ProvisionalTag />;
+}
+
 /** Thin gold bar for a percentage (progress, compliance). */
 export function ProgressBar({ value, label }: { value: number; label: string }) {
   const pct = Math.max(0, Math.min(100, value));

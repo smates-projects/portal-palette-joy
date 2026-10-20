@@ -98,7 +98,7 @@ describe("the MOU at the NDA signature", () => {
     expect(after.stage).toBe("documents");
     const intake = (await api.leads.getIntake(lead.id))!;
     expect(intake.contracts.filter((c) => c.kind === "mou")).toHaveLength(1);
-    expect(intake.documents).toHaveLength(11);
+    expect(intake.documents).toHaveLength(14);
     // Signed before the meeting: the documents open right away.
     expect(intake.documents.every((d) => !d.locked_until_mou)).toBe(true);
   });
@@ -159,18 +159,17 @@ describe("the owner's own NDA", () => {
 });
 
 describe("Bishops: presented and the visibility rule", () => {
-  it("Techos Delgado: presented to Jefferson and Laura, taken by Jefferson, expansion held, Operating Agreement waiting", async () => {
+  it("Techos Delgado: taken by Jefferson, binding agreement signed by the three, Operating Agreement to sign by Oct 18", async () => {
     const api = await as(seed.U_CAMILA);
     const techos = await leadNamed(api, "Techos Delgado");
-    expect(techos).toMatchObject({ stage: "accepted", bishop_user_id: net.U_JEFFERSON, tripartite: "pending", funds: null });
+    expect(techos).toMatchObject({ stage: "accepted", bishop_user_id: net.U_JEFFERSON, tripartite: "pending", funds: null, validation: { status: "closed", equity_owner: 60 } });
     expect(techos.expansion_meeting_held_at).toBeTruthy();
     const inv = (await api.leads.getInvestors(techos.id))!;
     expect(inv.presented!.map((p) => p.name).sort()).toEqual(["Jefferson Paula", "Laura Ortega"]);
-    expect(inv.tripartite).toMatchObject({ name: "Operating Agreement", sent_at: "2026-10-11" });
-    await api.session.setViewAs(net.U_JEFFERSON);
-    await expect(api.documents.signContract(inv.tripartite!.id)).rejects.toMatchObject({ message: "waiting_period", detail: "2026-10-18" });
-    await api.session.setViewAs(seed.U_MARYLIN);
-    await api.rules.update({ oa_waiting_days: 3 });
+    // Created by its rule the day the binding agreement was signed by the three, with seven days to sign.
+    expect(inv.tripartite).toMatchObject({ name: "Operating Agreement", sent_at: "2026-10-11", sign_by: "2026-10-18", rule_code: "operating_agreement" });
+    expect(inv.tripartite!.signers.find((s) => s.party === "sm")).toMatchObject({ sm_entity: "sm_square", name: "Camila Soto" });
+    // No waiting period any more: Jefferson signs today.
     await api.session.setViewAs(net.U_JEFFERSON);
     expect((await api.documents.signContract(inv.tripartite!.id)).signers.find((s) => s.party === "bishop")!.status).toBe("signed");
   });
@@ -199,22 +198,18 @@ describe("Bishops: presented and the visibility rule", () => {
     expect((await api.bishop.listOpportunities()).some((o) => o.id === brisa.id)).toBe(false);
   });
 
-  it("the Operating Agreement goes out only after the expansion meeting", async () => {
+  it("with the binding agreement the Operating Agreement is not sent by hand: it waits for the validation", async () => {
     const api = await as(seed.U_CAMILA);
     const brisa = await leadNamed(api, "Brisa Clean Services");
     await api.session.setViewAs(net.U_LAURA);
     await api.bishop.acceptOpportunity(brisa.id);
     await api.session.setViewAs(seed.U_CAMILA);
-    await expect(api.leads.sendTripartite(brisa.id)).rejects.toThrow("expansion_meeting_required");
+    await expect(api.leads.sendTripartite(brisa.id)).rejects.toThrow("validation_open");
+    // The linking meeting is still booked after the approval: the binding agreement is signed there.
     const booked = await api.leads.simulateBooking(brisa.id);
     expect(booked.expansion_meeting).toMatchObject({ kind: "expansion", outcome: null });
     // In the future: held is not possible yet; the API's rule, the mock's too.
     await expect(api.leads.setMeetingOutcome(brisa.id, booked.expansion_meeting!.id!, { outcome: "held" })).rejects.toThrow("invalid_transition");
-    // Rule off: it can go out right away.
-    await api.session.setViewAs(seed.U_MARYLIN);
-    await api.rules.update({ require_expansion_meeting: false });
-    await api.session.setViewAs(seed.U_CAMILA);
-    expect((await api.leads.sendTripartite(brisa.id)).name).toBe("Operating Agreement");
   });
 });
 

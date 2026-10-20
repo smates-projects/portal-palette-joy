@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { NotificationPreferences } from "@/components/profile/NotificationPreferences";
 import { BookingUrlSection } from "@/components/profile/BookingUrlSection";
+import { AdvisorLinkSection } from "@/components/profile/AdvisorLinkSection";
 import { TwoFactorSection } from "@/components/profile/TwoFactorSection";
 import { Mail, MapPin, Phone, UserPlus } from "lucide-react";
 import { useCurrentUser, useOrganizations, useUsersWithInactive } from "@/lib/api/hooks";
@@ -113,6 +114,7 @@ export function ProfilePage({ calendarStatus, onDismissCalendarStatus }: { calen
           <GoogleCalendarCard me={me} returnStatus={calendarStatus} onDismissReturn={onDismissCalendarStatus} />
 
           <TwoFactorSection me={me} />
+          <AdvisorLinkSection />
           <BookingUrlSection />
           <NotificationPreferences />
         </div>

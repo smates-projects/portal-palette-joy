@@ -24,5 +24,5 @@ function PipelineRoute() {
   const search = Route.useSearch();
   const role = useCurrentUser().data?.role;
   // SM Global sees the funnel of the whole network; an office sees its own leads.
-  return role === "sm_global" ? <GlobalFunnelPage /> : <PipelinePage search={search} />;
+  return role === "sm_global" ? <GlobalFunnelPage key={search.lead ?? "none"} initialLeadId={search.lead} /> : <PipelinePage search={search} />;
 }

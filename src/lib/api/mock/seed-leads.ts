@@ -230,7 +230,8 @@ const specs: LeadSpec[] = [
   },
   {
     // Accepted: SM presented it to Jefferson and Laura and Jefferson took it. Expansion meeting held on Oct 8; the
-    // Operating Agreement went out 3 days ago and the waiting period is still running (see the opportunities seed).
+    // Acuerdo de Vinculación was signed by the three on Oct 11 and the Operating Agreement is to sign by Oct 18 (see
+    // seed-entry-contracts).
     path: [["submitted", "2026-08-10"], ["meeting", "2026-08-13"], ["documents", "2026-08-19"], ["accepted", "2026-09-01"]],
     contacted: true,
     notes: [["2026-10-08", "Reunión de ampliación hecha con Rosa y Jefferson. Sale el Operating Agreement."]],

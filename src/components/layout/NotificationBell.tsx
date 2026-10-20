@@ -49,6 +49,8 @@ const DOT: Record<NotificationKind, string> = {
   signature_pending_review: "bg-status-warning-fg",
   opportunity_available: "bg-gold",
   program_started: "bg-status-success-fg",
+  binding_ready: "bg-gold",
+  validation_closed: "bg-status-success-fg",
 };
 
 /** Calendar v2: these open the calendar with the meeting in focus. */
@@ -89,6 +91,12 @@ export function NotificationBell() {
     // The owner's MOU is ready: "Tu ingreso" with the MOU step in view. The owner's own NDA reaches the consultant
     // as a lead notification (the lead opens with its entry checklist, where he signs it).
     else if (n.kind === "mou_ready") void navigate({ to: "/", search: { step: "mou" } });
+    // Binding agreement ready, validation closed: SM opens the lead (below), the Bishop his opportunity, the owner the
+    // step of "Tu ingreso" that changed.
+    else if ((n.kind === "binding_ready" || n.kind === "validation_closed") && n.opportunity_id)
+      void navigate({ to: "/oportunidades/$opportunityId", params: { opportunityId: n.opportunity_id } });
+    else if ((n.kind === "binding_ready" || n.kind === "validation_closed") && !n.lead_id)
+      void navigate({ to: "/", search: { step: n.kind === "binding_ready" ? "binding" : "operating_agreement" } });
     else if (n.lead_id) void navigate({ to: "/embudo", search: { lead: n.lead_id } });
     else if (n.kind === "opportunity_presented" || n.kind === "opportunity_available") void navigate({ to: "/oportunidades" });
     else if (n.kind === "brand_logo_rejected" && !n.task_id) void navigate({ to: "/negocios", search: { biz: n.business_id } });

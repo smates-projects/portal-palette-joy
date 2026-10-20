@@ -1,7 +1,7 @@
 // Types for the SM network (Global, offices), franchisors, franchises, Bishop and owner data.
 // Same conventions as types.ts: snake_case, UUID string ids, ISO dates.
 import type { AreaCode, BusinessStatus, IsoDate, IsoDateTime, Lead, LeadBand, LeadIndustry, LeadResult, LeadStage, OfficeStatus, Organization, ReviewClock, User, Uuid } from "./types";
-import type { AssessmentAreaMap, MouAcknowledgmentPoint, OpportunityVisibility } from "./entry-types";
+import type { AssessmentAreaMap, MouAcknowledgmentPoint, OpportunityVisibility, SmEntities, SmEntity } from "./entry-types";
 
 /** Month as YYYY-MM. */
 export type IsoMonth = string;
@@ -177,8 +177,10 @@ export interface PlatformRules {
    * by GET /businesses/{id}/own-nda/template. Absent = the API's default.
    */
   owner_nda_template?: string | undefined;
-  /** General note at the top of the entry documents list ("No hace falta un documento armado..."). */
+  /** General note at the top of the entry documents list (the "Indicaciones para preparar la entrega"). */
   intake_help_text?: string | undefined;
+  /** Names of the Strategic Mates companies that sign (Corporate and SM Square). Absent = DEFAULT_SM_ENTITIES. */
+  sm_entities?: SmEntities | undefined;
 }
 
 /** Help of one entry document: what it is, what counts as that document, and a tip. */
@@ -496,6 +498,8 @@ export interface Signer {
   signature?: ContractSignature | null | undefined;
   /** MOU, owner: the points he confirmed with "Entendí" (all four are needed before signing). */
   acknowledgments?: MouAcknowledgmentPoint[] | null | undefined;
+  /** SM signer of a contract created by a rule: the Strategic Mates company it signs for. */
+  sm_entity?: SmEntity | null | undefined;
 }
 
 export interface Contract {
@@ -517,9 +521,14 @@ export interface Contract {
   explainer?: ContractExplainer | null | undefined;
   /** Full text of the contract (NDA, owner_nda, MOU): the document dialog shows it. Absent = no text yet. */
   body?: string | null | undefined;
+  /** The entry contract rule that created it (EntryContractRule.code); absent on contracts older than the rules. */
+  rule_code?: string | null | undefined;
+  /** Last day to sign it (rules with deadline_days); absent = no deadline or not known. */
+  sign_by?: IsoDate | null | undefined;
 }
 
-export type ContractKind = "nda" | "mou" | "owner_nda" | "tripartite" | "framework";
+/** binding: the Acuerdo de Vinculación y Formalización (owner, Bishop and Strategic Mates). other: any other rule. */
+export type ContractKind = "nda" | "mou" | "owner_nda" | "binding" | "tripartite" | "framework" | "other";
 
 /** The plain-words window above a contract: a title, a few paragraphs and the key points. */
 export interface ContractExplainer {
@@ -681,6 +690,11 @@ export interface BishopOpportunity {
   decided_at: IsoDateTime | null;
   /** When SM presented this business to this Bishop ("Strategic Mates te presentó este negocio"); null otherwise. */
   presented_at?: IsoDateTime | null | undefined;
+  /**
+   * True once SM closed the validation: share_year1_pct and share_stable_pct are then the definitive participation of
+   * the Bishop in the franchisor (the same number), not the provisional split.
+   */
+  split_final?: boolean | undefined;
 }
 
 export interface OpportunityVerifiedItem {
@@ -702,6 +716,8 @@ export interface OpportunityDetail extends BishopOpportunity {
   files: { id: Uuid; name: string; file_name: string }[];
   /** Tripartite contract once SM sent it. */
   tripartite: Contract | null;
+  /** The Acuerdo de Vinculación once it exists (only for the Bishop who took the business). */
+  binding?: Contract | null | undefined;
 }
 
 /** What SM sees about the Bishops on one lead. */
@@ -721,7 +737,7 @@ export type AgreementState = "draft" | "sent" | "signed";
 export interface BishopAgreement {
   id: Uuid;
   /** framework: agreement with SM (confidentiality, non-circumvention). tripartite: program contract. */
-  kind?: "framework" | "tripartite" | "participation" | "nda" | undefined;
+  kind?: "framework" | "binding" | "tripartite" | "participation" | "nda" | undefined;
   /** Signable through DocuSeal (framework and tripartite). */
   contract?: Contract | undefined;
   bishop_user_id: Uuid;

@@ -7,6 +7,8 @@ import type { Contract, LeadMeeting } from "@/lib/api/types";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { entryRules, ndaStatus, oaWaitingUntil, ownerMeetingView, ownerSteps, type OwnerStepKey, type OwnerStepState } from "@/lib/leads/entry-flow";
 import { entryMeetings } from "@/lib/leads/meetings";
+import { contractDeadline } from "@/lib/leads/contract-rules";
+import { isSplitFinal } from "@/lib/leads/validation";
 import { cn } from "@/lib/utils";
 import { DocuSealSigner } from "@/components/docuseal/DocuSealSigner";
 import { SignedContractDialog } from "@/components/docuseal/SignedContractDialog";
@@ -52,11 +54,23 @@ export function IntakeHomePage({ focusStep }: { focusStep?: OwnerStepKey | undef
   const nda = contracts.find((c) => c.kind === "nda") ?? null;
   const mou = contracts.find((c) => c.kind === "mou") ?? null;
   const oa = contracts.find((c) => c.kind === "tripartite") ?? null;
+  // The Acuerdo de Vinculación: with the rules, every business entering has the step (null until a Bishop accepts).
+  const binding = contracts.find((c) => c.kind === "binding") ?? null;
+  const usesBinding = !!binding || !oa;
   const ownNda = contracts.find((c) => c.kind === "owner_nda") ?? null;
   const docs = (docsQ.data ?? []).filter((d) => d.area === "intake");
   const missing = docs.filter((d) => d.state === "requested" || d.state === "rejected").length;
   const entry = s.entry ?? null;
-  const steps = ownerSteps({ summary: s, nda, mou, operatingAgreement: oa, rules });
+  const steps = ownerSteps({ summary: s, nda, mou, operatingAgreement: oa, rules, ...(usesBinding ? { binding } : {}) });
+  const validation = entry?.validation ?? null;
+  /** "Tú conservas el 60 %...": the definitive split once Strategic Mates closed the validation. */
+  const splitBlock = isSplitFinal(validation) && validation ? (
+    <div className="rounded-[4px] border border-border border-l-2 border-l-gold bg-surface px-4 py-3">
+      <p className="text-sm font-semibold">{t("entry_contracts.owner.split_title")}</p>
+      <p className="mt-1 text-sm">{t("entry_contracts.owner.split_body", { owner: validation.equity_owner, bishop: validation.equity_bishop, sm: validation.equity_sm })}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{t("entry_contracts.owner.split_note")}</p>
+    </div>
+  ) : null;
   const ownerPending = (c: Contract | null) => !!c?.signers.some((x) => x.party === "owner" && (x.status === "sent" || x.status === "opened"));
   const smSigned = (c: Contract | null) => !!c?.signers.some((x) => x.party === "sm" && x.status === "signed");
   // The API creates the documents at the NDA signature: they say nothing about the meeting (only its outcome does).
@@ -192,13 +206,46 @@ export function IntakeHomePage({ focusStep }: { focusStep?: OwnerStepKey | undef
       }
       case "expansion":
         return meetingBlock(meetings.expansion, "expansion", entry?.expansion_meeting_held_at ?? null);
-      case "operating_agreement": {
-        if (!oa) return <p className="text-sm text-muted-foreground">{t("intake.owner.oa.not_sent")}</p>;
-        if (!ownerPending(oa)) return <p className="text-sm">{t("intake.owner.oa.signed")}</p>;
-        const until = oaWaitingUntil(oa, rules.oa_waiting_days);
+      case "binding": {
+        if (!binding) return <p className="text-sm text-muted-foreground">{t("entry_contracts.owner.binding_not_yet")}</p>;
+        if (!ownerPending(binding))
+          return (
+            <div className="flex flex-wrap items-center gap-4">
+              <p className="text-sm">{t("entry_contracts.owner.binding_signed")}</p>
+              {readFull(binding, "entry_contracts.owner.binding_view")}
+            </div>
+          );
         return (
           <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">{t("intake.owner.oa.body")}</p>
+            {binding.explainer && (
+              <ContractExplainerCard explainer={binding.explainer}>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-sm font-medium">{t("entry_contracts.owner.binding_when")}</p>
+                  {readFull(binding, "entry_contracts.owner.binding_read")}
+                </div>
+              </ContractExplainerCard>
+            )}
+            <button className={primaryButtonCls} onClick={() => setSigning(binding)}>{t("entry_contracts.owner.binding_sign")}</button>
+          </div>
+        );
+      }
+      case "operating_agreement": {
+        if (!oa)
+          return (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">{t(usesBinding ? "entry_contracts.owner.oa_waiting" : "intake.owner.oa.not_sent")}</p>
+              {splitBlock}
+            </div>
+          );
+        if (!ownerPending(oa)) return <div className="space-y-3"><p className="text-sm">{t("intake.owner.oa.signed")}</p>{splitBlock}</div>;
+        const until = oaWaitingUntil(oa, rules.oa_waiting_days);
+        const deadline = contractDeadline(oa);
+        return (
+          <div className="space-y-3">
+            {oa.explainer ? <ContractExplainerCard explainer={oa.explainer}>{readFull(oa, "entry_contracts.owner.oa_read")}</ContractExplainerCard> : <p className="text-sm text-muted-foreground">{t("intake.owner.oa.body")}</p>}
+            {splitBlock}
+            {deadline.state === "open" && <p className="text-sm font-medium">{t("entry_contracts.owner.oa_deadline", { date: formatDate(deadline.sign_by, lng) })}</p>}
+            {deadline.state === "overdue" && <p className="rounded-[4px] border border-status-danger-border bg-status-danger-bg px-3 py-2 text-sm text-status-danger-fg">{t("entry_contracts.owner.oa_overdue", { date: formatDate(deadline.sign_by, lng) })}</p>}
             {until
               ? <p className="rounded-[4px] border border-border bg-muted px-3 py-2 text-sm">{t("intake.owner.oa.waiting", { date: formatDate(until, lng) })}</p>
               : <button className={primaryButtonCls} onClick={() => setSigning(oa)}>{t("intake.owner.oa.sign")}</button>}

@@ -91,7 +91,7 @@ export function OwnerDocumentsPage() {
           <input ref={fileInput} type="file" accept={INTAKE_DOCUMENT_ACCEPT} className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => onFile(e.target.files?.[0])} />
 
           {hasIntake && helpText && (
-            <p className="rounded-[4px] border border-border bg-surface px-4 py-3 text-sm">{helpText}</p>
+            <p className="whitespace-pre-line rounded-[4px] border border-border bg-surface px-4 py-3 text-sm">{helpText}</p>
           )}
 
           <Panel title={t("owner_extra.documents.requested_title")} aside={t("owner_extra.documents.count", { count: requested.length })}>

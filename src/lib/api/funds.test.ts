@@ -14,8 +14,9 @@ const leadNamed = async (api: Awaited<ReturnType<typeof as>>, name: string) => (
 const receipt = { file_name: "comprobante.pdf", size_kb: 120 };
 
 /**
- * Techos Delgado's Operating Agreement is in its waiting period in the sample data. To exercise the funds, SM Global
- * drops the waiting days, the three sign today (Oct 14) and SM records USD 100,000 of 150,000. Ends as Camila.
+ * Techos Delgado's Operating Agreement waits for the three signatures in the sample data (Camila signs for SM Square,
+ * as the holder of its validation). The three sign today (Oct 14) and SM records USD 100,000 of 150,000. Ends as
+ * Camila. The waiting days SM Global drops only apply to older Operating Agreements: kept to show it does no harm.
  */
 async function fundTechos(api: Awaited<ReturnType<typeof as>>) {
   await api.session.setViewAs(seed.U_MARYLIN);

@@ -7,7 +7,8 @@ import { PROFIT_SPLIT } from "@/config/economics";
 import { useAcceptOpportunity, useBishopAgreements, useBishopOpportunity, useClearOpportunityDecision, useCurrentUser, usePassOpportunity } from "@/lib/api/hooks";
 import { acceptBlock } from "@/lib/leads/opportunity";
 import { formatDate, formatUsd } from "@/lib/format";
-import { EmptyBlock, ErrorBlock, LoadingBlocks, Metric, Panel, primaryButton, ProvisionalTag, secondaryButton, Screen, Tag } from "@/components/bishop/ui";
+import { EmptyBlock, ErrorBlock, LoadingBlocks, Metric, Panel, primaryButton, ProvisionalTag, secondaryButton, Screen, SplitTag, Tag } from "@/components/bishop/ui";
+import type { Contract } from "@/lib/api/types";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
@@ -27,7 +28,7 @@ export function OpportunityDetailPage({ opportunityId }: { opportunityId: string
   const clear = useClearOpportunityDecision();
   const title = useOpportunityTitle();
   const [confirming, setConfirming] = useState(false);
-  const [signing, setSigning] = useState(false);
+  const [signing, setSigning] = useState<Contract | null>(null);
 
   const back = (
     <Link to="/oportunidades" className="mt-3 inline-flex items-center gap-1 text-sm text-link hover:underline">
@@ -53,8 +54,10 @@ export function OpportunityDetailPage({ opportunityId }: { opportunityId: string
   const name = title(o);
   const totalForYou = o.projection.reduce((sum, p) => sum + p.bishop, 0);
   const fail = () => toast.error(t("bishop.error_action"));
-  const mySigner = o.tripartite?.signers.find((s) => s.party === "bishop");
-  const canSign = !!mySigner && (mySigner.status === "sent" || mySigner.status === "opened");
+  // The Acuerdo de Vinculación comes first, then the Operating Agreement: the first one still waiting for him.
+  const pendingForMe = (c: Contract | null | undefined) => !!c?.signers.some((s) => s.party === "bishop" && (s.status === "sent" || s.status === "opened"));
+  const toSign = [o.binding ?? null, o.tripartite].find(pendingForMe) ?? null;
+  const contractsShown = [o.binding ?? null, o.tripartite].filter((c): c is Contract => !!c);
 
   const doAccept = () =>
     accept.mutate(o.id, {
@@ -112,7 +115,11 @@ export function OpportunityDetailPage({ opportunityId }: { opportunityId: string
         ) : (
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm">{t(`bishop.opportunity_detail.next_${o.phase}`)}</p>
-            {canSign && <button onClick={() => setSigning(true)} className={primaryButton}>{t("bishop.opportunity_detail.sign_tripartite")}</button>}
+            {toSign && (
+              <button onClick={() => setSigning(toSign)} className={primaryButton}>
+                {t(toSign.kind === "binding" ? "bishop.opportunity_detail.sign_binding" : "bishop.opportunity_detail.sign_tripartite")}
+              </button>
+            )}
             {o.phase === "funds_pending" && <Link to="/acuerdos" className={primaryButton}>{t("funds.bishop.go_to_funds")}</Link>}
           </div>
         )}
@@ -121,8 +128,15 @@ export function OpportunityDetailPage({ opportunityId }: { opportunityId: string
       <div className="mt-4 space-y-4">
         <section className="grid overflow-hidden rounded-md border border-border bg-surface md:grid-cols-4">
           <Metric label={t("bishop.opportunity_detail.investment")} value={money(o.investment)} sub={t("bishop.opportunity_detail.investment_sub")} />
-          <Metric label={t("bishop.opportunity_detail.share_year1")} badge={<ProvisionalTag />} value={`${o.share_year1_pct}%`} sub={t("bishop.opportunity_detail.share_year1_sub")} />
-          <Metric label={t("bishop.opportunity_detail.share_stable")} badge={<ProvisionalTag />} value={`${o.share_stable_pct}%`} sub={t("bishop.opportunity_detail.share_stable_sub")} />
+          {o.split_final ? (
+            // Definitive: his participation in the franchisor, fixed in the validation (one number, not two years).
+            <Metric label={t("bishop.opportunity_detail.share_final")} badge={<SplitTag final />} value={`${o.share_stable_pct}%`} sub={t("bishop.opportunity_detail.share_final_sub")} />
+          ) : (
+            <>
+              <Metric label={t("bishop.opportunity_detail.share_year1")} badge={<ProvisionalTag />} value={`${o.share_year1_pct}%`} sub={t("bishop.opportunity_detail.share_year1_sub")} />
+              <Metric label={t("bishop.opportunity_detail.share_stable")} badge={<ProvisionalTag />} value={`${o.share_stable_pct}%`} sub={t("bishop.opportunity_detail.share_stable_sub")} />
+            </>
+          )}
           <Metric label={t("bishop.opportunity_detail.score")} value={o.score} sub={t(`pipeline.bands.${o.band}`)} />
         </section>
 
@@ -255,10 +269,11 @@ export function OpportunityDetailPage({ opportunityId }: { opportunityId: string
                 <p className="px-4 py-2 text-xs text-muted-foreground">{t("bishop.opportunity_detail.files_note")}</p>
               </Panel>
             )}
-            {o.tripartite && (
-              <Panel title={o.tripartite.name}>
+            {contractsShown.map((c) => (
+              <Panel key={c.id} title={c.name} action={c.sign_by && c.state !== "signed" ? <span className="text-xs text-muted-foreground">{t("entry_contracts.checklist.sign_by", { date: formatDate(c.sign_by, lng) })}</span> : undefined}>
+                {c.kind === "binding" && c.explainer && <p className="px-4 pb-2 text-xs text-muted-foreground">{c.explainer.paragraphs[0]}</p>}
                 <ul className="divide-y divide-border border-t border-border">
-                  {o.tripartite.signers.map((s) => (
+                  {c.signers.map((s) => (
                     <li key={s.name + s.party} className="flex items-center justify-between gap-2 px-4 py-2 text-sm">
                       <span>{s.name}</span>
                       <Tag tone={s.status === "signed" ? "success" : s.status === "declined" ? "danger" : "neutral"}>
@@ -268,7 +283,7 @@ export function OpportunityDetailPage({ opportunityId }: { opportunityId: string
                   ))}
                 </ul>
               </Panel>
-            )}
+            ))}
           </div>
         </div>
       </div>
@@ -285,7 +300,7 @@ export function OpportunityDetailPage({ opportunityId }: { opportunityId: string
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      {signing && o.tripartite && <DocuSealSigner contract={o.tripartite} party="bishop" signerName={me?.full_name ?? ""} onClose={() => setSigning(false)} />}
+      {signing && <DocuSealSigner contract={signing} party="bishop" signerName={me?.full_name ?? ""} onClose={() => setSigning(null)} />}
     </Screen>
   );
 }

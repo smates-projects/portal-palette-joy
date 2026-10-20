@@ -21,10 +21,11 @@ describe("contract sections (the document dialog)", () => {
     ]);
   });
 
-  it("the sample MOU reads as eight numbered sections after its parties", () => {
+  it("Strategic Mates' MOU reads as its ten clauses (PRIMERA to DÉCIMA), the business filled in", () => {
     const sections = contractSections(mouBody("Vossler", "Carla Méndez"));
-    expect(sections[0]).toEqual({ heading: null, text: "Entre Strategic Mates y Vossler, representado por Carla Méndez." });
-    expect(sections.filter((s) => s.heading)).toHaveLength(8);
+    expect(sections[0]?.heading).toBe("PRIMERA: COMPARECIENTES.-");
+    expect(sections[0]?.text).toContain("Vossler, domiciliada en");
+    expect(sections.filter((s) => s.heading)).toHaveLength(10);
   });
 });
 

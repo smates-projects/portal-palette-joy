@@ -102,6 +102,11 @@ import type {
   PortalMeeting,
   RescheduleMeetingInput,
   ScheduleMeetingInput,
+  EntryContractRule,
+  EntryContractRuleChange,
+  EntryContractRuleInput,
+  SigningEntitiesInput,
+  ValidationInput,
 } from "./types";
 
 import type { RecoveryCodes, SignInResult, TwoFactorSetup, TwoFactorVerifyInput } from "./auth-types";
@@ -259,6 +264,11 @@ export interface UsersRepository {
   listCalendarEvents(): Promise<ExternalCalendarEvent[]>;
   /** SM team: set or clear the current user's booking link. */
   setBookingUrl(url: string | null): Promise<User>;
+  /**
+   * SM Global only: whether an SM person may sign for SM Square (PATCH /users/{id}/signing-entities). invalid_user for
+   * anyone who is not SM.
+   */
+  setSigningEntities(userId: Uuid, input: SigningEntitiesInput): Promise<User>;
 }
 
 export interface LeadIntake {
@@ -359,6 +369,19 @@ export interface LeadsRepository {
    */
   simulateAssessment(): Promise<LeadWithComputed>;
   simulateBooking(id: Uuid): Promise<LeadWithComputed>;
+  /**
+   * PUT /leads/{id}/validation: the definitive percentages (a draft may leave fields empty). SM team of the office,
+   * accepted leads only (invalid_state). invalid_split when a percentage leaves its range (50-75, 15-40, SM Square 10)
+   * or the three do not add up to 100; sm_square_signer_required when the holder cannot sign for SM Square.
+   * invalid_state once closed.
+   */
+  saveValidation(id: Uuid, input: ValidationInput): Promise<LeadWithComputed>;
+  /**
+   * POST /leads/{id}/validation/close: admin of the office or SM Global admin (admin_only). Needs the three percentages,
+   * the SM Square center and its holder (invalid_split, validation_incomplete). Tells the owner, the Bishop and SM
+   * (validation_closed) and lets the Operating Agreement be created.
+   */
+  closeValidation(id: Uuid): Promise<LeadWithComputed>;
 }
 
 /** Which office gets a new lead. Everyone in SM reads it; only SM Global changes it. */
@@ -511,6 +534,26 @@ export interface RulesRepository {
   update(patch: Partial<PlatformRules>, note?: string | null): Promise<PlatformRules>;
   /** Newest first. SM Global only. */
   listHistory(): Promise<RulesChange[]>;
+}
+
+/**
+ * Entry contracts as rules (GET /entry-contract-rules). Every SM person reads them; only SM Global (Corporate) writes.
+ * A rule says which contract a business entering gets, when (trigger, delay_days), how long it has to be signed
+ * (deadline_days), who signs and for which SM company, and what waits for it. Codes: rule_in_use (another rule waits
+ * for this one), precondition_failed (stale version), name_required, invalid_trigger, signers_required,
+ * sm_entity_required, invalid_days, code_taken.
+ */
+export interface ContractRulesRepository {
+  /** Every rule, archived ones included (active false), in position order. */
+  list(): Promise<EntryContractRule[]>;
+  add(input: EntryContractRuleInput): Promise<EntryContractRule>;
+  /** PATCH /entry-contract-rules/{code} with If-Match: the version the editor started from. */
+  update(code: string, patch: Partial<EntryContractRuleInput>, version: number, note?: string | null): Promise<EntryContractRule>;
+  /** Contracts already created stay; new businesses no longer get it. */
+  archive(code: string, reason?: string | null): Promise<EntryContractRule>;
+  restore(code: string): Promise<EntryContractRule>;
+  /** Newest first. SM Global only. */
+  listHistory(): Promise<EntryContractRuleChange[]>;
 }
 
 /** Official Método 180 catalog. Everyone reads active entries; only SM Global edits. Edits apply to new programs only. */
@@ -723,6 +766,7 @@ export interface FranchiseeRepository {
 export interface ApiClient {
   network: NetworkRepository;
   rules: RulesRepository;
+  contractRules: ContractRulesRepository;
   catalog: CatalogRepository;
   franchises: FranchisesRepository;
   manual: ManualRepository;

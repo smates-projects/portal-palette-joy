@@ -19,7 +19,9 @@ export function contractSections(body: string): { heading: string | null; text: 
     const [first = "", ...rest] = block.split("\n");
     // "1. Objeto. …\n2. Información …" is a numbered list of clauses (siblings), not a heading with its text.
     const list = rest.some((line) => /^\d+\.\s/.test(line.trim()));
-    return /^\d+\.\s/.test(first) && rest.length > 0 && !list ? { heading: first, text: rest.join("\n") } : { heading: null, text: block };
+    // Strategic Mates' documents title each clause "PRIMERA: LAS PARTES Y FINALIDAD.-".
+    const clause = /^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ ]*:\s.*\.-$/.test(first.trim());
+    return (clause || (/^\d+\.\s/.test(first) && !list)) && rest.length > 0 ? { heading: first, text: rest.join("\n") } : { heading: null, text: block };
   });
 }
 

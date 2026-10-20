@@ -16,11 +16,12 @@ const ALL = "__all";
  * Embudo of the whole network, read only. It looks like the office funnel (same board and table) but SM Global
  * never moves, discards or writes on a lead: each office does. Optional filter by office.
  */
-export function GlobalFunnelPage() {
+export function GlobalFunnelPage({ initialLeadId }: { initialLeadId?: string | undefined } = {}) {
   const { t } = useTranslation();
   const [officeId, setOfficeId] = useState<string>(ALL);
   const [view, setView] = useState<"board" | "table">("board");
-  const [leadId, setLeadId] = useState<string | undefined>(undefined);
+  // Opened from the bell (?lead=): that lead comes up at once (Corporate signs the binding agreement there).
+  const [leadId, setLeadId] = useState<string | undefined>(initialLeadId);
   const leadsQ = useLeads(officeId === ALL ? undefined : officeId);
   const officesQ = useOffices();
   const usersQ = useUsers();

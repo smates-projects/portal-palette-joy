@@ -247,15 +247,13 @@ describe("rules (SM Global)", () => {
   it("starts with the default values and everyone can read them", async () => {
     const rules = await (await asFranchisee()).rules.get();
     expect(rules).toMatchObject({ franchisability_goal: 85, required_task_codes: ["B1-01", "B2-03", "B3-01", "B3-07", "B6-01", "B6-06"], area_amber_days: 7, franchisability_amber_tolerance: 10, document_review_days: 15 });
-    // Melany's list: 11 documents, 9 required, each with its help; the note and the own-NDA template come too.
-    expect(rules.intake_documents).toHaveLength(11);
-    expect(rules.intake_documents.filter((d) => d.required)).toHaveLength(9);
-    expect(rules.intake_documents.every((d) => d.help && d.help.what && d.help.counts.length > 0 && d.help.tip)).toBe(true);
-    expect(rules.intake_documents.find((d) => d.name.startsWith("Documento de constitución"))!.help!.counts)
-      .toEqual(["Articles of Organization o Incorporation", "Certificado de Sunbiz", "Captura de Sunbiz con tu empresa activa"]);
-    expect(rules.intake_documents.find((d) => d.name.startsWith("Ventas por cliente"))!.help!.counts).toEqual(["Reporte de tu sistema", "Planilla", "Foto de tu cuaderno de ventas"]);
-    expect(rules.intake_documents.find((d) => d.name.startsWith("Últimos tres clientes"))!.help!.counts).toEqual(["Cotización", "Factura o recibo", "Fotos del trabajo terminado"]);
-    expect(rules.intake_help_text).toBe("No hace falta un documento armado: sirve una captura o una foto legible.");
+    // Strategic Mates' list: 13 documents of the first stage plus the optional additional documentation.
+    expect(rules.intake_documents).toHaveLength(14);
+    expect(rules.intake_documents.filter((d) => d.required)).toHaveLength(13);
+    expect(rules.intake_documents.every((d) => d.help && d.help.what)).toBe(true);
+    expect(rules.intake_documents.find((d) => d.name === "Cuentas bancarias")!.help!.what).toContain("últimos seis meses");
+    expect(rules.intake_documents.find((d) => d.name === "Documentación adicional según la actividad")).toMatchObject({ required: false });
+    expect(rules.intake_help_text).toContain("No envíe contraseñas ni credenciales de acceso.");
     expect(rules.owner_nda_template).toContain("{{business_name}}");
   });
   it("the owner's NDA template cannot be emptied", async () => {
@@ -463,8 +461,10 @@ describe("Business Bishop", () => {
   it("agreements: framework first, tripartite to sign, equity agreement signed, Vossler in draft", async () => {
     const agreements = await (await asBishop()).bishop.listAgreements();
     expect(agreements[0]?.kind).toBe("framework");
-    // Part 3: the Vossler and Enyermy tripartite contracts are signed too; Techos Delgado's Operating Agreement waits.
-    expect(agreements.map((a) => `${a.state}`).sort()).toEqual(["draft", "sent", "sent", "signed", "signed", "signed", "signed"]);
+    // Part 3: the Vossler and Enyermy tripartite contracts are signed too; Techos Delgado's binding agreement is signed
+    // and its Operating Agreement waits for the signatures.
+    expect(agreements.map((a) => `${a.state}`).sort()).toEqual(["draft", "sent", "sent", "signed", "signed", "signed", "signed", "signed"]);
+    expect(agreements.find((a) => a.kind === "binding")).toMatchObject({ state: "signed", name: "Acuerdo de Vinculación y Formalización: Techos Delgado" });
     expect(agreements.find((a) => a.business_id === seed.BIZ_BIMBO)?.signed_at).toBe("2025-11-14");
   });
 });

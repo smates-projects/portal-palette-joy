@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Mail, MapPin, Phone, X } from "lucide-react";
 import {
-  useAddLeadNote, useApproveDocuments, useBusinessFunds, useConfirmProgramStart, useCurrentUser, useLeadDetail, useRecordFundPayment,
+  useAddLeadNote, useApproveDocuments, useBusinessFunds, useConfirmProgramStart, useCurrentUser, useLeadDetail, useLeadIntake, useRecordFundPayment,
   useRejectDocuments, useRemoveFundPayment, useRules, useSendTripartite, useSetMeetingOutcome, useUsers,
 } from "@/lib/api/hooks";
 import { entryRules, oaSendBlock } from "@/lib/leads/entry-flow";
@@ -18,7 +18,8 @@ import { InvestorsSection } from "./InvestorsSection";
 import { isDocsAdmin } from "@/lib/leads/onboarding";
 import { IntakeChecklist, RejectDocsDialog } from "./IntakeChecklist";
 import type { LeadEvent, LeadWithComputed } from "@/lib/api/types";
-import { formatDate, formatDateTime } from "@/lib/format";
+import { firstName, formatDate, formatDateTime } from "@/lib/format";
+import { ValidationCard } from "./ValidationCard";
 import { primaryActionFor } from "@/lib/leads/pipeline";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PrimaryButton } from "@/components/tasks/detail/dialogs";
@@ -65,6 +66,8 @@ export function LeadDetail(props: {
   const businessIdForFunds = q.data?.lead.funds ? q.data.lead.business_id ?? undefined : undefined;
   const fundsQ = useBusinessFunds(businessIdForFunds);
   const userName = (id: string | null) => (id ? usersQ.data?.find((u) => u.id === id)?.full_name ?? "" : "");
+  // The entry contracts (cached with the checklist): with an Acuerdo de Vinculación the OA is created by its rule.
+  const intakeQ = useLeadIntake(q.data?.lead.intake ? props.leadId : undefined);
 
   if (q.isLoading)
     return <div className="space-y-4 p-6"><Skeleton className="h-8 w-2/3" /><Skeleton className="h-24" /><Skeleton className="h-48" /></div>;
@@ -91,6 +94,8 @@ export function LeadDetail(props: {
     action === "approve_docs" && !admin ? t("intake.admin_only") :
     action === "approve_docs" && approval && !approval.ok
       ? t(approval.reason === "contracts" ? "intake.missing_contracts" : "intake.missing_docs", { list: approval.missing.join(", ") })
+      : action === "send_tripartite" && intakeQ.data?.contracts.some((c) => c.kind === "binding")
+        ? t(lead.validation?.status === "closed" ? "entry_contracts.lead.oa_after_binding" : "entry_contracts.lead.oa_needs_validation")
       : action === "send_tripartite" && oaSendBlock(lead, rules) === "expansion_meeting_required"
         ? t("entry.oa.needs_expansion")
         : action === "meeting_outcome" ? ""
@@ -199,6 +204,10 @@ export function LeadDetail(props: {
               {lead.contact.name}
  · {t(`pipeline.hispanic.${lead.contact.hispanic_owner}`)}
             </p>
+            {/* The SM advisor whose assessment link the owner used. */}
+            {lead.completed_by_advisor && (
+              <p className="mt-1 text-xs text-muted-foreground">{t("entry_contracts.lead.completed_by", { name: firstName(lead.completed_by_advisor.name) })}</p>
+            )}
           </div>
           <button onClick={props.onClose} aria-label={t("pipeline.detail.close")} className="rounded-md p-1 text-muted-foreground hover:bg-muted">
             <X className="h-4 w-4" />
@@ -252,7 +261,11 @@ export function LeadDetail(props: {
         {lead.source !== "manual" && <EntryTimeline lead={lead} />}
         <MeetingCard lead={lead} consultantName={consultant?.full_name ?? ""} readOnly={!!props.readOnly} focused={props.focus === "meeting"} pending={outcome.isPending} onOutcome={onOutcome} />
         {/* 1b. Entry checklist (from NDA + MOU on) */}
-        {lead.intake && <IntakeChecklist leadId={lead.id} readOnly={!!props.readOnly} />}
+        {lead.intake && <IntakeChecklist leadId={lead.id} readOnly={!!props.readOnly} validation={lead.validation} />}
+        {/* After the documents: the definitive percentages, in parallel with the presentation to the Bishops. */}
+        {(lead.stage === "accepted" || (lead.stage === "in_program" && lead.validation)) && (
+          <ValidationCard key={`${lead.id}-${lead.validation?.status ?? "none"}`} lead={lead} readOnly={!!props.readOnly || lead.stage !== "accepted"} canClose={admin} />
+        )}
         {/* Who SM presented it to and who took it; still a record once the program started (read only there). */}
         {(lead.stage === "documents" || lead.stage === "accepted" || lead.stage === "in_program") && lead.intake && (
           <InvestorsSection leadId={lead.id} businessName={lead.business.name} readOnly={!!props.readOnly} canPresent={lead.stage === "accepted"} />

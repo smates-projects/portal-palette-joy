@@ -2,8 +2,10 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Check, Circle, FileText } from "lucide-react";
-import { useAcceptDocument, useLeadIntake, useRequestDocument, useResendContract, useRules } from "@/lib/api/hooks";
-import { MOU_ACKNOWLEDGMENT_POINTS, type BusinessDocument, type Contract, type ReviewClock } from "@/lib/api/types";
+import { useAcceptDocument, useContractRules, useCurrentUser, useLeadIntake, useRequestDocument, useResendContract, useRules } from "@/lib/api/hooks";
+import { MOU_ACKNOWLEDGMENT_POINTS, type BusinessDocument, type Contract, type EntryContractRule, type LeadValidation, type ReviewClock, type Signer } from "@/lib/api/types";
+import { checklistByRule, contractDeadline, factsFromContracts, ruleSchedule, smEntitiesOf, smSignBlock } from "@/lib/leads/contract-rules";
+import { whenText } from "@/components/global/rules/contract-rules-text";
 import { formatDate } from "@/lib/format";
 import { canResend } from "@/lib/leads/onboarding";
 import { entryRules, intakeDocumentHelp, ndaStatus, oaWaitingUntil, type NdaStatus } from "@/lib/leads/entry-flow";
@@ -44,7 +46,12 @@ export function ClockLabel({ clock }: { clock: ReviewClock }) {
  * Entry checklist of a lead: NDA, MOU, documents uploaded and accepted, and each document with Aceptar / Pedir otro.
  * Review is Strategic Mates team work: any SM person of the office acts. SM Global reads it (`readOnly`).
  */
-export function IntakeChecklist({ leadId, readOnly }: { leadId: string; readOnly: boolean }) {
+/**
+ * With the entry contract rules, the contracts come in the rules' order: each one with its state, or "todavía no se
+ * creó" with when it will be (and its deadline when known). `validation` tells when a contract that waits for it can
+ * be created.
+ */
+export function IntakeChecklist({ leadId, readOnly, validation }: { leadId: string; readOnly: boolean; validation?: LeadValidation | null | undefined }) {
   const { t, i18n } = useTranslation();
   const lng = i18n.language;
   const q = useLeadIntake(leadId);
@@ -55,12 +62,53 @@ export function IntakeChecklist({ leadId, readOnly }: { leadId: string; readOnly
   const [viewing, setViewing] = useState<Contract | null>(null);
   const rulesData = useRules().data;
   const rules = entryRules(rulesData);
+  const me = useCurrentUser().data;
+  const contractRulesQ = useContractRules(me?.role === "sm_team" || me?.role === "sm_global");
+  const entities = smEntitiesOf(rulesData);
   const helpText = rulesData?.intake_help_text?.trim() ?? "";
 
   if (q.isLoading) return <Skeleton className="h-40 rounded-md" />;
   if (q.isError) return <button onClick={() => void q.refetch()} className="text-sm text-link hover:underline">{t("pipeline.retry")}</button>;
   if (!q.data) return null;
   const { summary, contracts, documents } = q.data;
+
+  const contractRules = contractRulesQ.data ?? [];
+  const { rows, others } = checklistByRule(contractRules, contracts);
+  const facts = factsFromContracts(contractRules, contracts, validation?.status === "closed" ? validation.closed_at : null);
+
+  /** "Firma Camila Soto por SM Square" / "Firma cualquier persona de la oficina por Corporate". */
+  const smLine = (s: Signer) => {
+    const entity = s.sm_entity ? entities[s.sm_entity].name : null;
+    if (!entity) return t("intake.party.sm");
+    return s.user_id ? t("entry_contracts.checklist.sm_line", { person: s.name, entity }) : t("entry_contracts.checklist.sm_line_any", { entity });
+  };
+  /** Why the current SM person cannot sign this SM part, or null. */
+  const signReason = (s: Signer) => {
+    const block = smSignBlock(s, me);
+    if (!block) return null;
+    const entity = s.sm_entity ? entities[s.sm_entity].name : "Strategic Mates";
+    if (block === "sm_square_signer_required" && !me?.can_sign_sm_square) return t("entry_contracts.checklist.cannot_sm_square", { entity });
+    return t("entry_contracts.checklist.cannot_person", { name: s.name, entity });
+  };
+
+  /** A rule whose contract does not exist yet: when it will be created, and its deadline once that is known. */
+  const pendingRow = (rule: EntryContractRule) => {
+    const s = ruleSchedule(rule, facts);
+    return (
+      <li key={`rule-${rule.code}`} className="py-2.5">
+        <div className="flex flex-wrap items-center gap-2">
+          <Circle className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium">{rule.name}</span>
+          <span className="rounded-[4px] border border-status-neutral-border bg-status-neutral-bg px-1.5 py-0.5 text-[11px] font-medium text-status-neutral-fg">{t("entry_contracts.checklist.not_created")}</span>
+        </div>
+        <ul className="mt-1 space-y-0.5 pl-6 text-xs text-muted-foreground">
+          <li>{whenText(t, rule, contractRules)}</li>
+          {s.waiting_validation && <li>{t("entry_contracts.checklist.waiting_validation")}</li>}
+          {s.sign_by && <li>{t("entry_contracts.checklist.sign_by", { date: formatDate(s.sign_by, lng) })}</li>}
+        </ul>
+      </li>
+    );
+  };
 
   const contractRow = (c: Contract) => {
     const done = c.signers.every((s) => s.status === "signed");
@@ -71,6 +119,11 @@ export function IntakeChecklist({ leadId, readOnly }: { leadId: string; readOnly
     const smSigned = sm?.status === "signed";
     const waitingUntil = oaWaitingUntil(c, rules.oa_waiting_days);
     const acks = c.kind === "mou" ? c.signers.find((s) => s.party === "owner")?.acknowledgments?.length ?? 0 : null;
+    const deadline = contractDeadline(c);
+    const smPending = !!sm && sm.status !== "signed" && sm.status !== "declined" && !waitingUntil;
+    // Corporate's CEO signs the binding agreement even from SM Global's read-only view.
+    const mySmPart = !!sm?.user_id && sm.user_id === me?.id;
+    const reason = sm && smPending ? signReason(sm) : null;
     return (
       <li key={c.id} className="py-2.5">
         <div className="flex flex-wrap items-center gap-2">
@@ -88,8 +141,10 @@ export function IntakeChecklist({ leadId, readOnly }: { leadId: string; readOnly
             {(c.signers.some((s) => s.signed_at) || (ownerNda && c.body)) && (
               <button onClick={() => setViewing(c)} className="text-xs text-link hover:underline">{t(ownerNda && !smSigned ? "intake.owner_nda.read" : "intake.docuseal.view_signed")}</button>
             )}
-            {!readOnly && sm && sm.status !== "signed" && sm.status !== "declined" && !waitingUntil && (
-              <button onClick={() => setSigning(c)} className="text-xs text-link hover:underline">{t(ownerNda ? "intake.owner_nda.sign" : "intake.sign_as_sm")}</button>
+            {smPending && (!readOnly || mySmPart) && (
+              <button onClick={() => setSigning(c)} disabled={!!reason} title={reason ?? undefined} className="text-xs text-link hover:underline disabled:cursor-not-allowed disabled:text-muted-foreground disabled:no-underline">
+                {sm?.sm_entity ? t("entry_contracts.checklist.sign_for", { entity: entities[sm.sm_entity].name }) : t(ownerNda ? "intake.owner_nda.sign" : "intake.sign_as_sm")}
+              </button>
             )}
             {!readOnly && !ownerNda && canResend(c) && (
               <button
@@ -106,7 +161,7 @@ export function IntakeChecklist({ leadId, readOnly }: { leadId: string; readOnly
             const last = s.history?.at(-1);
             return (
               <li key={s.party ?? s.name}>
-                {t(`intake.party.${s.party ?? "owner"}`)}: <span className={cn(s.status === "signed" && "text-status-success-fg", s.status === "declined" && "text-status-danger-fg")}>{t(`intake.signer_status.${s.status ?? "sent"}`)}</span>
+                {s.party === "sm" ? smLine(s) : t(`intake.party.${s.party ?? "owner"}`)}: <span className={cn(s.status === "signed" && "text-status-success-fg", s.status === "declined" && "text-status-danger-fg")}>{t(`intake.signer_status.${s.status ?? "sent"}`)}</span>
                 {last && ` · ${formatDate(last.at, lng)}`}
                 {s.decline_reason && ` · ${t("intake.declined_reason", { reason: s.decline_reason })}`}
               </li>
@@ -114,6 +169,9 @@ export function IntakeChecklist({ leadId, readOnly }: { leadId: string; readOnly
           })}
           {acks !== null && <li>{t("intake.mou_points", { n: acks, m: MOU_ACKNOWLEDGMENT_POINTS.length })}</li>}
           {waitingUntil && <li className="text-status-warning-fg">{t("entry.oa.waiting_sm", { date: formatDate(waitingUntil, lng) })}</li>}
+          {deadline.state === "open" && <li>{t("entry_contracts.checklist.sign_by", { date: formatDate(deadline.sign_by, lng) })}</li>}
+          {deadline.state === "overdue" && <li className="text-status-danger-fg">{t("entry_contracts.checklist.overdue", { date: formatDate(deadline.sign_by, lng) })}</li>}
+          {reason && !readOnly && <li>{reason}</li>}
           {ownerNda && !smSigned && <li>{t("intake.owner_nda.hint")}</li>}
         </ul>
       </li>
@@ -128,7 +186,12 @@ export function IntakeChecklist({ leadId, readOnly }: { leadId: string; readOnly
       </div>
       <div className="rounded-md border border-border px-4">
         <ul className="divide-y divide-border">
-          {contracts.map(contractRow)}
+          {contractRules.length > 0 ? (
+            <>
+              {rows.map((r) => (r.contract ? contractRow(r.contract) : pendingRow(r.rule)))}
+              {others.map(contractRow)}
+            </>
+          ) : contracts.map(contractRow)}
           <CountRow label={t("intake.uploaded")} n={summary.uploaded} m={summary.required_total} />
           <CountRow label={t("intake.accepted")} n={summary.accepted} m={summary.required_total} />
         </ul>
@@ -138,7 +201,7 @@ export function IntakeChecklist({ leadId, readOnly }: { leadId: string; readOnly
       <div id="intake-docs" className="rounded-md border border-border">
         <p className="border-b border-border px-4 py-2 text-xs font-medium text-muted-foreground">{t("intake.docs_title")}</p>
         {/* The same note the owner reads at the top of his list. */}
-        {helpText && documents.length > 0 && <p className="mx-4 mt-2.5 rounded-[4px] border border-border px-3 py-2 text-xs">{helpText}</p>}
+        {helpText && documents.length > 0 && <p className="mx-4 mt-2.5 whitespace-pre-line rounded-[4px] border border-border px-3 py-2 text-xs">{helpText}</p>}
         <ul className="divide-y divide-border">
           {documents.map((d) => {
             const help = intakeDocumentHelp(d, rulesData);

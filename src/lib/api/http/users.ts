@@ -82,6 +82,10 @@ export function createHttpUsersRepository(client: HttpClient): UsersRepository {
     /** GET /me/calendar-events: the upcoming events of the connected calendar; empty when not connected. */
     listCalendarEvents: () => client.get<ExternalCalendarEvent[]>("/me/calendar-events"),
 
+    /** PATCH /users/{id}/signing-entities (SM Global): may this SM person sign for SM Square. */
+    setSigningEntities: (userId, input) =>
+      client.patch<User>(`${userPath(userId)}/signing-entities`, { can_sign_sm_square: input.can_sign_sm_square }),
+
     setBookingUrl: async (url) => {
       const user = await client.patch<User>("/me/booking-url", { booking_url: url });
       client.updateSessionUser(user);

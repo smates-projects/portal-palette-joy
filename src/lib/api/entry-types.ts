@@ -66,6 +66,8 @@ export interface OwnerEntry {
   expansion_meeting_held_at: IsoDateTime | null;
   booking_url: string | null;
   consultant_name?: string | null | undefined;
+  /** The definitive split once SM closed the validation (null or open before). */
+  validation?: OwnerValidation | null | undefined;
 }
 
 /** One meeting as the entering owner reads it (intake.summary.entry.meetings[]). */
@@ -104,6 +106,110 @@ export type PreValidationInput =
 
 /** Assessment block → program areas whose tasks get "A validar" when the block is strong. SM Global edits it. */
 export type AssessmentAreaMap = Record<AssessmentBlock, AreaCode[]>;
+
+// ---------- Entry contracts as rules (SM Global edits which contracts exist and when, like program tasks) ----------
+
+/** The kind of contract a rule creates. binding is the Acuerdo de Vinculación; tripartite the Operating Agreement. */
+export const ENTRY_CONTRACT_KINDS = ["nda", "mou", "binding", "tripartite", "framework", "other"] as const;
+export type EntryContractKind = (typeof ENTRY_CONTRACT_KINDS)[number];
+
+/** The Strategic Mates company that signs for SM: Corporate (Strategic Mates LLC) or the SM Square center. */
+export const SM_ENTITIES = ["corporate", "sm_square"] as const;
+export type SmEntity = (typeof SM_ENTITIES)[number];
+
+export type ContractParty = "owner" | "bishop" | "sm";
+
+/** One signer of a rule. sm_entity only for party "sm"; auto_sign = goes out already signed by that party. */
+export interface EntryContractSigner {
+  party: ContractParty;
+  sm_entity?: SmEntity | undefined;
+  auto_sign?: boolean | undefined;
+}
+
+/** Events that create a contract. contract_signed:<code> waits for the contract of another rule, signed by all. */
+export const CONTRACT_TRIGGER_EVENTS = [
+  "meeting_booked", "nda_signed", "meeting_held", "documents_approved", "bishop_accepted", "validation_closed",
+] as const;
+export type ContractTriggerEvent = (typeof CONTRACT_TRIGGER_EVENTS)[number];
+export type ContractTrigger = ContractTriggerEvent | `contract_signed:${string}`;
+
+/**
+ * GET /entry-contract-rules. The contract is created `delay_days` after its trigger and is signed within
+ * `deadline_days` from then (0 = no deadline). `blocks` lists what waits for it fully signed: "documents",
+ * "program_start", or another rule's code. `version` travels back as If-Match on PATCH.
+ */
+export interface EntryContractRule {
+  code: string;
+  name: string;
+  kind: EntryContractKind;
+  /** Full text with placeholders ({{business_name}}...), see CONTRACT_TEMPLATE_PLACEHOLDERS. */
+  template: string;
+  explainer: { title: string; paragraphs: string[]; bullets: string[] };
+  signers: EntryContractSigner[];
+  trigger: ContractTrigger;
+  delay_days: number;
+  deadline_days: number;
+  blocks: string[];
+  required: boolean;
+  position: number;
+  active: boolean;
+  version: number;
+}
+
+/** POST /entry-contract-rules (the code may be given; otherwise the API derives it from the name). */
+export type EntryContractRuleInput = Omit<EntryContractRule, "code" | "active" | "version"> & { code?: string | undefined };
+
+export interface EntryContractRuleChange {
+  id: Uuid;
+  code: string;
+  kind: "added" | "edited" | "archived" | "restored";
+  actor_user_id: Uuid;
+  created_at: IsoDateTime;
+  changes: { field: string; from: unknown; to: unknown }[];
+  note: string | null;
+}
+
+/** Names of the two Strategic Mates companies that sign (PlatformRules.sm_entities). */
+export interface SmEntities {
+  corporate: { name: string };
+  sm_square: { name: string };
+}
+
+// ---------- Validation: the definitive percentages, after the documents ----------
+
+export type ValidationStatus = "open" | "closed";
+
+/**
+ * Lead.validation. Small business 50-75 %, Bishop 15-40 %, SM Square 10 % fixed, summing 100 (invalid_split).
+ * The SM Square center and its holder (an SM person who can sign for SM Square) are required to close it: the
+ * holder signs the Operating Agreement.
+ */
+export interface LeadValidation {
+  status: ValidationStatus;
+  equity_owner: number | null;
+  equity_bishop: number | null;
+  equity_sm: number | null;
+  investment_amount: number | null;
+  notes: string | null;
+  sm_square_center?: string | null | undefined;
+  sm_square_holder_user_id?: Uuid | null | undefined;
+  closed_at: IsoDateTime | null;
+  closed_by: Uuid | null;
+}
+
+/** PUT /leads/{id}/validation. */
+export interface ValidationInput {
+  equity_owner: number | null;
+  equity_bishop: number | null;
+  equity_sm: number | null;
+  investment_amount: number | null;
+  notes: string | null;
+  sm_square_center: string | null;
+  sm_square_holder_user_id: Uuid | null;
+}
+
+/** What the owner reads of the validation in "Tu ingreso" (OwnerEntry.validation). */
+export type OwnerValidation = Pick<LeadValidation, "status" | "equity_owner" | "equity_bishop" | "equity_sm" | "closed_at">;
 
 // ---------- Zone routing ----------
 

@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { UserPlus } from "lucide-react";
-import { useBusinesses, useCurrentUser, useOrganizations, useUsersWithInactive } from "@/lib/api/hooks";
+import { toast } from "sonner";
+import { useBusinesses, useCurrentUser, useOrganizations, useRules, useSetSigningEntities, useUsersWithInactive } from "@/lib/api/hooks";
+import { smEntitiesOf } from "@/lib/leads/contract-rules";
 import type { User, UserRole, UserStatus } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -79,6 +81,7 @@ export function PeoplePage() {
                   <UserStatusBadge status={r.status} />
                 </div>
                 <div className="text-xs text-muted-foreground">{t(`roles.${r.user.role}`)}{r.user.title ? ` · ${r.user.title}` : ""} · {r.place || "—"} · {r.office || (r.user.role === "sm_global" ? t("roles.sm_global") : "—")}</div>
+                <SmSquareToggle user={r.user} />
                 <PersonActions user={r.user} orgs={orgs} onDeactivate={setDeactivating} onHistory={setHistory} />
               </li>
             ))}
@@ -102,7 +105,10 @@ export function PeoplePage() {
                       <span className="flex items-center gap-2 font-medium">{r.user.full_name}{r.user.is_admin && <AdminTag />}{r.user.id === me.id && <span className="text-xs font-normal text-muted-foreground">{t("profile.you")}</span>}</span>
                       <span className="block text-xs text-muted-foreground">{r.user.email}</span>
                     </td>
-                    <td className="px-3 py-3">{t(`roles.${r.user.role}`)}{r.user.title ? <span className="block text-xs text-muted-foreground">{r.user.title}</span> : null}</td>
+                    <td className="px-3 py-3">
+                      {t(`roles.${r.user.role}`)}{r.user.title ? <span className="block text-xs text-muted-foreground">{r.user.title}</span> : null}
+                      <SmSquareToggle user={r.user} />
+                    </td>
                     <td className="px-3 py-3">{r.place || "—"}</td>
                     <td className="px-3 py-3">{r.office || (r.user.role === "sm_global" ? t("roles.sm_global") : "—")}</td>
                     <td className="px-3 py-3"><UserStatusBadge status={r.status} /></td>
@@ -120,6 +126,28 @@ export function PeoplePage() {
       <DeactivatePersonDialog user={deactivating} onClose={() => setDeactivating(null)} />
       <AccountHistorySheet user={history} onClose={() => setHistory(null)} />
     </div>
+  );
+}
+
+/** SM people only: "Puede firmar por SM Square" (the SM Square holder of a validation must have it). */
+function SmSquareToggle({ user }: { user: User }) {
+  const { t } = useTranslation();
+  const set = useSetSigningEntities();
+  const entity = smEntitiesOf(useRules().data).sm_square.name;
+  if (user.role !== "sm_team" && user.role !== "sm_global") return null;
+  const on = !!user.can_sign_sm_square;
+  const change = (value: boolean) =>
+    set.mutate({ userId: user.id, can_sign_sm_square: value }, {
+      onSuccess: () => toast.success(t(value ? "entry_contracts.people.t_on" : "entry_contracts.people.t_off", { name: user.full_name, entity }), {
+        action: { label: t("global.undo"), onClick: () => set.mutate({ userId: user.id, can_sign_sm_square: !value }) },
+      }),
+      onError: () => toast.error(t("global.t_error")),
+    });
+  return (
+    <label className="mt-1 flex w-fit cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+      <input type="checkbox" checked={on} disabled={set.isPending} onChange={(e) => change(e.target.checked)} className="h-3.5 w-3.5 accent-primary" />
+      {t("entry_contracts.people.can_sign", { entity })}
+    </label>
   );
 }
 

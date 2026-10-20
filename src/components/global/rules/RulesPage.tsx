@@ -6,6 +6,8 @@ import type { IntakeDocRule, MeetingHours, PlatformRules } from "@/lib/api/netwo
 import { IntakeDocsEditor, IntakeTextsEditor } from "./IntakeDocsEditor";
 import { MeetingHoursRules, zoneKey } from "./MeetingHoursRules";
 import { AssessmentMapEditor, EntryFlowRules, ZonesSection } from "./EntryRules";
+import { ContractRulesSection, SmEntitiesSection } from "./ContractRulesSection";
+import type { SmEntities } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 import { formatUsd } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -63,6 +65,8 @@ export function RulesPage() {
       ? t("intake.rules.template_history")
       : field === "intake_help_text"
       ? String(value)
+      : field === "sm_entities"
+      ? t("entry_contracts.entities.value", { corporate: (value as SmEntities).corporate.name, sm_square: (value as SmEntities).sm_square.name })
       : field === "program_amount"
       ? formatUsd(Number(value), i18n.language)
       : field === "intake_documents"
@@ -93,6 +97,9 @@ export function RulesPage() {
       <RulesEditor key={JSON.stringify(rulesQ.data)} rules={rulesQ.data} catalog={catalogQ.data ?? []} />
       <IntakeDocsEditor key={`docs-${JSON.stringify(rulesQ.data.intake_documents)}`} rules={rulesQ.data} />
       <IntakeTextsEditor key={`texts-${rulesQ.data.intake_help_text ?? ""}-${rulesQ.data.owner_nda_template ?? ""}`} rules={rulesQ.data} />
+      {/* Configurable entry contracts: the companies Strategic Mates signs with, then the contracts themselves. */}
+      <SmEntitiesSection key={`entities-${JSON.stringify(rulesQ.data.sm_entities ?? null)}`} rules={rulesQ.data} />
+      <ContractRulesSection />
       <EntryFlowRules key={`flow-${rulesQ.data.opportunity_visibility}-${rulesQ.data.oa_waiting_days}-${rulesQ.data.require_expansion_meeting}-${rulesQ.data.nda_auto_signed_by_sm}`} rules={rulesQ.data} />
       <MeetingHoursRules key={`hours-${JSON.stringify(rulesQ.data.meeting_hours ?? null)}`} rules={rulesQ.data} />
       <ZonesSection />

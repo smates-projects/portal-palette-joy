@@ -863,7 +863,11 @@
     "kind_owner_nda_received": "{{owner}} te envió su propio acuerdo de confidencialidad para firmar",
     "pref_owner_nda_received": "Un dueño envía su propio acuerdo de confidencialidad",
     "kind_mou_ready": "Tu MOU ya está listo. Léelo y fírmalo cuando quieras",
-    "pref_mou_ready": "Tu MOU está listo para firmar"
+    "pref_mou_ready": "Tu MOU está listo para firmar",
+    "kind_binding_ready": "El Acuerdo de Vinculación de {{business_name}} está listo para firmar",
+    "pref_binding_ready": "Acuerdo de Vinculación listo para firmar",
+    "kind_validation_closed": "Strategic Mates cerró la validación de {{business_name}}: ya están los porcentajes definitivos",
+    "pref_validation_closed": "Validación cerrada con los porcentajes definitivos"
   },
   "soon": {
     "manual": "Aquí verás el manual operativo de tu negocio a medida que las firmas lo escriban y tú lo apruebes.",
@@ -1308,7 +1312,10 @@
       "expansion_booked": "Automático: reunión de ampliación agendada por {{owner}}",
       "nda_signed": "Se firmó el NDA",
       "mou_signed": "Se firmó el MOU",
-      "owner_nda_received": "{{owner}} envió su propio acuerdo de confidencialidad para que lo firme Strategic Mates"
+      "owner_nda_received": "{{owner}} envió su propio acuerdo de confidencialidad para que lo firme Strategic Mates",
+      "contract_created": "Se creó un contrato del ingreso",
+      "validation_saved": "{{actor}} guardó la validación",
+      "validation_closed": "{{actor}} cerró la validación con los porcentajes definitivos"
     },
     "error_title": "No pudimos cargar el embudo.",
     "retry": "Reintentar",
@@ -1513,7 +1520,7 @@
         "visibility_all": "Todos los negocios aprobados",
         "visibility_all_hint": "Cada inversor con el acuerdo marco firmado ve todos los negocios. El primero que acepta se lo queda.",
         "waiting_days": "Días de espera para firmar el Operating Agreement",
-        "waiting_days_hint": "Se cuentan desde el día en que se envía. Nadie puede firmar antes.",
+        "waiting_days_hint": "Solo para los Operating Agreement que salieron antes de los contratos del ingreso. Los nuevos tienen un plazo para firmar, que se configura en Contratos del ingreso.",
         "waiting_days_error": "Escribe un número de días entre 0 y 60.",
         "require_expansion_meeting": "Pedir la reunión de ampliación antes del Operating Agreement",
         "require_expansion_meeting_hint": "El equipo no puede enviar el Operating Agreement hasta que la reunión de ampliación se haga.",
@@ -2186,7 +2193,8 @@
         "nda_auto_signed_by_sm": "NDA y MOU firmados por Strategic Mates",
         "meeting_hours": "Horario de reuniones",
         "owner_nda_template": "Texto del acuerdo propio del dueño",
-        "intake_help_text": "Nota de los documentos de ingreso"
+        "intake_help_text": "Nota de los documentos de ingreso",
+        "sm_entities": "Entidades de Strategic Mates"
       },
       "percent": "{{value}}%",
       "days_one": "{{count}} día",
@@ -2541,7 +2549,8 @@
       "empty_filter": "No hay oportunidades en esta fase.",
       "col_phase": "Fase",
       "col_score": "Puntaje",
-      "presented_by_sm": "Strategic Mates te presentó este negocio el {{date}}"
+      "presented_by_sm": "Strategic Mates te presentó este negocio el {{date}}",
+      "share_final": "{{pct}} % definitivo"
     },
     "opportunity_detail": {
       "question": "¿Me conviene este negocio?",
@@ -2632,7 +2641,10 @@
       "confirm_body": "Te comprometes a financiar el programa por {{amount}}. Dejamos de mostrar este negocio a los demás inversores y avisamos a Strategic Mates.",
       "confirm_action": "Sí, aceptar",
       "t_accepted": "Aceptaste la oportunidad. Avisamos a Strategic Mates.",
-      "t_taken": "Otro inversor la aceptó antes."
+      "t_taken": "Otro inversor la aceptó antes.",
+      "sign_binding": "Firmar el Acuerdo de Vinculación",
+      "share_final": "Tu participación",
+      "share_final_sub": "En la empresa franquiciadora, fijada por Strategic Mates en la validación"
     },
     "agreements": {
       "question": "¿Qué acuerdos tengo?",
@@ -2671,7 +2683,8 @@
       "gate_title": "Firma tu acuerdo marco para ver oportunidades",
       "gate_body": "Es tu acuerdo con Strategic Mates de confidencialidad y no circunvención. Lo firmas una sola vez y después ves todas las oportunidades.",
       "sign": "Firmar acuerdo marco"
-    }
+    },
+    "definitive": "Definitivo"
   },
   "franchisee": {
     "for_role": "Franquiciado",
@@ -2944,8 +2957,9 @@
         "meeting": "Tu reunión",
         "mou": "Lee y firma el MOU",
         "documents": "Documentos",
-        "expansion": "Reunión de ampliación",
-        "operating_agreement": "Operating Agreement"
+        "expansion": "Reunión de vinculación",
+        "operating_agreement": "Operating Agreement",
+        "binding": "Acuerdo de Vinculación"
       },
       "nda": {
         "not_sent": "Te lo enviamos cuando reserves tu reunión.",
@@ -3560,5 +3574,238 @@
       }
     },
     "see_in_calendar": "Ver en el calendario"
+  },
+  "entry_contracts": {
+    "rules": {
+      "title": "Contratos del ingreso",
+      "hint": "Qué contratos firma cada negocio que entra, cuándo se crean y quién firma por Strategic Mates. Los cambios valen para los contratos que se creen desde ahora.",
+      "add": "Agregar contrato",
+      "col_name": "Contrato",
+      "col_when": "Cuándo se crea",
+      "col_signers": "Quién firma",
+      "col_blocks": "Qué espera a que se firme",
+      "col_state": "Estado",
+      "active": "Activo",
+      "archived": "Archivado",
+      "required": "Obligatorio",
+      "optional": "Opcional",
+      "edit": "Editar",
+      "archive": "Archivar",
+      "restore": "Restaurar",
+      "show_archived": "Ver archivados ({{count}})",
+      "hide_archived": "Ocultar archivados",
+      "t_added": "Contrato agregado: {{name}}",
+      "t_saved": "Cambios guardados en {{name}}",
+      "t_archived": "{{name}} archivado: los negocios nuevos ya no lo reciben",
+      "t_restored": "{{name}} activo de nuevo"
+    },
+    "when": {
+      "meeting_booked": "Cuando el dueño agenda",
+      "nda_signed": "Cuando firma el NDA",
+      "meeting_held": "Cuando se hace la primera reunión",
+      "documents_approved": "Cuando se aprueba la documentación",
+      "bishop_accepted": "Cuando el inversor acepta",
+      "validation_closed": "Cuando se cierra la validación",
+      "contract_signed": "Cuando se firma el {{name}}",
+      "delay_one": ", al día siguiente",
+      "delay_other": ", a los {{count}} días",
+      "with_validation": ", con la validación cerrada",
+      "deadline_one": "Se firma dentro de 1 día",
+      "deadline_other": "Se firma dentro de {{count}} días"
+    },
+    "signers": {
+      "owner": "Dueño",
+      "bishop": "Inversor",
+      "sm_party": "Strategic Mates",
+      "sm": "Strategic Mates por {{entity}}",
+      "sm_auto": "Strategic Mates por {{entity}} (firmado al enviarlo)"
+    },
+    "blocks": {
+      "documents": "Los documentos del ingreso",
+      "program_start": "El inicio del programa",
+      "none": "Nada"
+    },
+    "kinds": {
+      "nda": "NDA",
+      "mou": "MOU",
+      "binding": "Acuerdo de Vinculación",
+      "tripartite": "Operating Agreement",
+      "framework": "Acuerdo marco",
+      "other": "Otro contrato"
+    },
+    "editor": {
+      "title_add": "Agregar contrato del ingreso",
+      "title_edit": "Editar {{name}}",
+      "body": "Lo que cambies vale para los contratos que se creen desde ahora. Los que ya existen no cambian.",
+      "name": "Nombre",
+      "kind": "Tipo",
+      "template": "Texto del contrato",
+      "template_hint": "Toca un dato para agregarlo donde está el cursor. Se completa con los datos de cada negocio.",
+      "explainer": "Explicación para quien firma",
+      "explainer_title": "Título",
+      "paragraphs": "Qué es",
+      "bullets": "Puntos clave",
+      "one_per_line": "Uno por línea.",
+      "signers": "Quién firma",
+      "entity": "Firma por",
+      "auto_sign": "Sale firmado por Strategic Mates",
+      "trigger": "Cuándo se crea",
+      "delay": "Días de espera",
+      "delay_hint": "0 = el mismo día.",
+      "deadline": "Días para firmar",
+      "deadline_hint": "0 = sin plazo.",
+      "blocks": "Qué espera a que se firme",
+      "required": "Obligatorio",
+      "required_hint": "Sin este contrato firmado, el negocio no sigue.",
+      "position": "Orden",
+      "note": "Nota para el historial",
+      "note_hint": "Opcional. Por qué cambia.",
+      "create": "Agregar contrato"
+    },
+    "placeholders": {
+      "business_name": "Negocio",
+      "owner_name": "Dueño",
+      "owner_email": "Correo del dueño",
+      "business_activity": "Actividad",
+      "bishop_name": "Inversor",
+      "bishop_email": "Correo del inversor",
+      "sm_corporate_name": "Corporate",
+      "sm_square_name": "SM Square",
+      "sm_square_center": "Centro SM Square",
+      "sm_square_holder_name": "Titular de SM Square",
+      "equity_owner": "% dueño",
+      "equity_bishop": "% inversor",
+      "equity_sm": "% SM Square",
+      "investment_amount": "Inversión",
+      "mou_date": "Fecha del MOU",
+      "date": "Fecha"
+    },
+    "errors": {
+      "name_required": "Escribe el nombre del contrato.",
+      "invalid_trigger": "Elige cuándo se crea: no puede esperar a sí mismo ni a un contrato que no existe.",
+      "signers_required": "Marca al menos a una persona que firma.",
+      "sm_entity_required": "Elige por qué entidad firma Strategic Mates.",
+      "invalid_days": "Los días van de 0 a 365, sin decimales.",
+      "rule_in_use": "Otro contrato espera a que este se firme. Cambia ese primero.",
+      "precondition_failed": "Alguien cambió este contrato recién. Recarga la página y vuelve a intentar.",
+      "code_taken": "Ya hay un contrato con ese nombre."
+    },
+    "archive": {
+      "title": "Archivar {{name}}",
+      "body": "Los contratos que ya se crearon siguen como están. Los negocios nuevos dejan de recibirlo.",
+      "reason": "Motivo (opcional)",
+      "confirm": "Archivar"
+    },
+    "history": {
+      "title": "Historial de los contratos del ingreso",
+      "empty": "Todavía nadie cambió los contratos del ingreso.",
+      "added": "{{name}}: agregado",
+      "edited": "{{name}}: editado",
+      "archived": "{{name}}: archivado",
+      "restored": "{{name}}: activo de nuevo",
+      "change": "{{field}}: {{from}} → {{to}}",
+      "text_changed": "texto cambiado"
+    },
+    "fields": {
+      "name": "Nombre",
+      "kind": "Tipo",
+      "template": "Texto",
+      "explainer": "Explicación",
+      "signers": "Quién firma",
+      "trigger": "Cuándo se crea",
+      "delay_days": "Días de espera",
+      "deadline_days": "Días para firmar",
+      "blocks": "Qué espera",
+      "required": "Obligatorio",
+      "position": "Orden"
+    },
+    "entities": {
+      "title": "Entidades de Strategic Mates",
+      "hint": "Los nombres con los que firma Strategic Mates. Corporate firma el NDA, el MOU y el Acuerdo de Vinculación; SM Square firma el Operating Agreement, por medio del titular que se elige en cada validación.",
+      "corporate": "Corporate",
+      "sm_square": "SM Square",
+      "required": "Escribe un nombre.",
+      "save": "Guardar nombres",
+      "t_saved": "Nombres guardados",
+      "value": "{{corporate}} y {{sm_square}}"
+    },
+    "people": {
+      "can_sign": "Puede firmar por {{entity}}",
+      "t_on": "{{name}} ahora puede firmar por {{entity}}",
+      "t_off": "{{name}} ya no firma por {{entity}}"
+    },
+    "checklist": {
+      "not_created": "Todavía no se creó",
+      "waiting_validation": "Espera que se cierre la validación.",
+      "sign_by": "Firma antes del {{date}}",
+      "overdue": "El plazo venció el {{date}} y falta firmar.",
+      "sm_line": "Firma {{person}} por {{entity}}",
+      "sm_line_any": "Firma cualquier persona de la oficina por {{entity}}",
+      "sign_for": "Firmar por {{entity}}",
+      "cannot_sm_square": "No estás habilitado para firmar por {{entity}}. Strategic Mates Corporate lo habilita en Personas.",
+      "cannot_person": "Lo firma {{name}} por {{entity}}."
+    },
+    "lead": {
+      "completed_by": "Assessment completado con {{name}}",
+      "oa_needs_validation": "El Operating Agreement se crea solo cuando los tres firmen el Acuerdo de Vinculación y la validación esté cerrada.",
+      "oa_after_binding": "El Operating Agreement se crea solo cuando los tres firmen el Acuerdo de Vinculación."
+    },
+    "validation": {
+      "title": "Validación",
+      "hint": "Los porcentajes definitivos de la empresa nueva que va a vender las franquicias. Dueño del 50 % al 75 %, inversor del 15 % al 40 % y SM Square 10 % fijo. Suman 100 %.",
+      "owner": "% dueño",
+      "bishop": "% inversor",
+      "sm": "% Strategic Mates",
+      "sm_fixed": "SM Square tiene 10 % fijo.",
+      "sum": "Suman {{sum}} %.",
+      "investment": "Inversión en USD",
+      "center": "Centro SM Square",
+      "center_placeholder": "SM Square Miami",
+      "holder": "Titular de SM Square",
+      "holder_placeholder": "Elige quién firma por SM Square",
+      "holder_hint": "Firma el Operating Agreement por SM Square.",
+      "holder_none": "Nadie de la oficina puede firmar por SM Square. Strategic Mates Corporate lo habilita en Personas.",
+      "notes": "Notas",
+      "save": "Guardar",
+      "close": "Cerrar validación",
+      "close_admin": "Solo el administrador de la oficina cierra la validación.",
+      "closed": "Validación cerrada por {{name}} el {{date}}.",
+      "err_range": "Tiene que estar entre {{min}} % y {{max}} %.",
+      "err_required": "Falta este porcentaje.",
+      "err_sum": "Los tres porcentajes suman {{sum}} %: tienen que sumar 100 %.",
+      "err_amount": "Escribe un monto en USD, sin decimales.",
+      "err_center": "Escribe el centro SM Square.",
+      "err_holder": "Elige el titular de SM Square.",
+      "err_complete": "Completa los tres porcentajes antes de cerrar.",
+      "err_invalid_split": "Los porcentajes no cumplen los rangos o no suman 100 %.",
+      "err_sm_square_signer_required": "Esa persona no puede firmar por SM Square.",
+      "err_admin_only": "Solo el administrador de la oficina cierra la validación.",
+      "err_validation_incomplete": "Faltan el centro SM Square o su titular.",
+      "t_saved": "Validación guardada",
+      "t_closed": "Validación cerrada: {{name}} ya tiene sus porcentajes definitivos"
+    },
+    "owner": {
+      "binding_not_yet": "Lo preparamos cuando un inversor acepte tu negocio. Lo firman tú, el inversor y Strategic Mates en la reunión de vinculación.",
+      "binding_when": "Lo firman tú, el inversor y Strategic Mates en la reunión de vinculación.",
+      "binding_read": "Leer el acuerdo completo",
+      "binding_view": "Ver el acuerdo",
+      "binding_sign": "Firmar el Acuerdo de Vinculación",
+      "binding_signed": "Firmaste el Acuerdo de Vinculación. Te avisamos cuando firmen los demás.",
+      "oa_waiting": "Lo preparamos cuando los tres firmen el Acuerdo de Vinculación y Strategic Mates cierre la validación. Desde ahí tienen 7 días para firmarlo.",
+      "oa_read": "Leer el Operating Agreement completo",
+      "oa_deadline": "Firma antes del {{date}}.",
+      "oa_overdue": "El plazo para firmar venció el {{date}}. Habla con tu consultor.",
+      "split_title": "Tus porcentajes definitivos",
+      "split_body": "Tú conservas el {{owner}} % de la empresa nueva que va a vender las franquicias. El inversor tiene el {{bishop}} % y SM Square el {{sm}} %.",
+      "split_note": "Tu negocio original sigue siendo solo tuyo."
+    },
+    "advisor": {
+      "title": "Tu link de assessment",
+      "body": "Compártelo con los dueños que contactas. Los negocios que hagan el assessment con este link quedan a tu nombre.",
+      "copy": "Copiar link",
+      "t_copied": "Link copiado",
+      "t_copy_failed": "No se pudo copiar. Selecciona el link y cópialo a mano.",
+      "none": "Todavía no tienes un link. Pídeselo a Strategic Mates Corporate."
+    }
   }
 }

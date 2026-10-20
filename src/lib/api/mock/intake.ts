@@ -11,6 +11,8 @@ import type {
   Business, BusinessDocument, Contract, IntakeSummary, Lead, MouAcknowledgmentPoint, Organization, OwnerEntry, Signer, SignerStatus, User, Uuid,
 } from "../types";
 import type { PlatformRules } from "../network-types";
+import type { EntryContractRule } from "../entry-types";
+import { fillContractTemplate } from "@/lib/leads/contract-rules";
 import { MOU_EXPLAINER, NDA_EXPLAINER, OWNER_NDA_EXPLAINER, mouBody, ndaBody } from "./contract-texts";
 
 export interface IntakeRecord {
@@ -31,6 +33,8 @@ export interface IntakeDb {
   contracts: Contract[];
   rules: PlatformRules;
   intakes: IntakeRecord[];
+  /** Entry contract rules (./contract-rules): the NDA and the MOU take their name, window and text from them. */
+  contractRules?: EntryContractRule[] | undefined;
 }
 
 /** A mock error with the API's detail (waiting_period carries the date the signature opens). */
@@ -91,6 +95,9 @@ export function createIntake(db: IntakeDb, newId: () => string) {
       meeting: lead.meeting,
       expansion_meeting: lead.expansion_meeting ?? null,
       expansion_meeting_held_at: lead.expansion_meeting_held_at ?? null,
+      validation: lead.validation
+        ? { status: lead.validation.status, equity_owner: lead.validation.equity_owner, equity_bishop: lead.validation.equity_bishop, equity_sm: lead.validation.equity_sm, closed_at: lead.validation.closed_at }
+        : null,
       booking_url: consultant?.booking_url || office?.default_booking_url || null,
       consultant_name: consultant?.full_name ?? null,
     };
@@ -114,17 +121,28 @@ export function createIntake(db: IntakeDb, newId: () => string) {
   };
   const summaryFor = (lead: Lead): IntakeSummary | null => (lead.business_id && record(lead.id) ? summaryForBusiness(lead.business_id) : null);
 
-  const makeContract = (kind: "nda" | "mou", businessId: Uuid, ownerName: string, ownerId: Uuid | null, sentOn: string, ownerSteps: SignerStatus[], smSteps: SignerStatus[] | "pre_signed"): Contract =>
-    settle({
-      id: newId(), business_id: businessId, area: "intake", kind, name: kind === "nda" ? "NDA mutuo" : "MOU",
+  /** The active rule of the NDA or the MOU (Corporate may have changed its name, window or text). */
+  const ruleOf = (kind: "nda" | "mou") => db.contractRules?.find((r) => r.kind === kind && r.active);
+
+  const makeContract = (kind: "nda" | "mou", businessId: Uuid, ownerName: string, ownerId: Uuid | null, sentOn: string, ownerSteps: SignerStatus[], smSteps: SignerStatus[] | "pre_signed"): Contract => {
+    const rule = ruleOf(kind);
+    const lead = db.leads.find((l) => l.business_id === businessId);
+    const values = {
+      business_name: businessName(businessId), owner_name: ownerName, date: sentOn,
+      owner_email: db.users.find((u) => u.id === ownerId)?.email ?? lead?.contact.email, business_activity: lead?.business.activity,
+    };
+    return settle({
+      id: newId(), business_id: businessId, area: "intake", kind, name: rule?.name ?? (kind === "nda" ? "NDA mutuo" : "MOU"),
+      ...(rule ? { rule_code: rule.code } : {}),
       state: "sent", sent_at: sentOn, signed_at: null,
-      explainer: kind === "nda" ? NDA_EXPLAINER : MOU_EXPLAINER,
-      body: (kind === "nda" ? ndaBody : mouBody)(businessName(businessId), ownerName),
+      explainer: rule ? structuredClone(rule.explainer) : kind === "nda" ? NDA_EXPLAINER : MOU_EXPLAINER,
+      body: rule ? fillContractTemplate(rule.template, values) : (kind === "nda" ? ndaBody : mouBody)(values.business_name, ownerName, values),
       signers: [
         { ...signer("owner", ownerName, ownerId, sentOn, ownerSteps), ...(kind === "mou" ? { acknowledgments: [] } : {}) },
-        smSteps === "pre_signed" ? preSignedSm(sentOn) : signer("sm", "Strategic Mates", null, sentOn, smSteps),
+        { ...(smSteps === "pre_signed" ? preSignedSm(sentOn) : signer("sm", "Strategic Mates", null, sentOn, smSteps)), sm_entity: "corporate" as const },
       ],
     });
+  };
 
   const makeDocs = (businessId: Uuid, requestedOn: string, locked: boolean): BusinessDocument[] =>
     db.rules.intake_documents.filter((r) => !r.archived).map((r) => ({

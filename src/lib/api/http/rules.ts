@@ -41,6 +41,8 @@ const toRules = (rules: PlatformRulesResponse): PlatformRules => ({
   // inside intake_documents).
   ...(rules.owner_nda_template !== undefined ? { owner_nda_template: rules.owner_nda_template } : {}),
   ...(rules.intake_help_text !== undefined ? { intake_help_text: rules.intake_help_text } : {}),
+  // Configurable entry contracts: the names of Corporate and SM Square (absent = lib/leads/contract-rules defaults).
+  ...(rules.sm_entities !== undefined ? { sm_entities: rules.sm_entities } : {}),
 });
 
 export function createHttpRulesRepository(client: HttpClient): RulesRepository {

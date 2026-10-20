@@ -137,6 +137,15 @@ export interface User {
    * meetings). Absent in older rows: read from google_calendar_email (lib/calendar/scheduling isCalendarConnected).
    */
   calendar_connected?: boolean | undefined;
+  /** SM people: may sign for SM Square (SM Global grants it in Personas). Absent = no. */
+  can_sign_sm_square?: boolean | undefined;
+  /** SM people: their key in the assessment link (strategicmates.com/assessment?asesor=<slug>). */
+  advisor_slug?: string | null | undefined;
+}
+
+/** PATCH /users/{id}/signing-entities. */
+export interface SigningEntitiesInput {
+  can_sign_sm_square: boolean;
 }
 
 /** Who to invite. The organization and business depend on the role: SM people have an organization, owners a business. */
@@ -520,7 +529,13 @@ export const NOTIFICATION_KINDS = [
   // Bishop and program (API): a business can be taken; the program started (day 1).
   "opportunity_available",
   "program_started",
+  // Configurable entry contracts. To the owner, the Bishop and SM: the Acuerdo de Vinculación is ready to sign; SM
+  // closed the validation with the definitive percentages.
+  "binding_ready",
+  "validation_closed",
 ] as const;
+/** Kinds about one business entering that its three parties get (owner, Bishop, SM team and Corporate). */
+export const ENTRY_PARTY_NOTIFICATION_KINDS: readonly NotificationKind[] = ["binding_ready", "validation_closed"];
 /** Kinds that only the real API sends (the mock never creates them nor lists their preferences). */
 export const API_ONLY_NOTIFICATION_KINDS: readonly NotificationKind[] = [
   "document_received", "document_requested", "documents_approved", "documents_unlocked", "contract_sent", "contract_signed",
@@ -773,6 +788,10 @@ export interface Lead {
   expansion_meeting?: LeadMeeting | null | undefined;
   /** When the expansion meeting was answered as held: the Operating Agreement can go out from then. */
   expansion_meeting_held_at?: IsoDateTime | null | undefined;
+  /** The definitive percentages SM validates after the documents; null until SM starts it. */
+  validation?: LeadValidation | null | undefined;
+  /** The SM advisor whose assessment link the owner used (?asesor=<slug>); null when it came without one. */
+  completed_by_advisor?: { id: Uuid; name: string } | null | undefined;
 }
 
 /** Tripartite contract (Bishop + SM + owner) of an accepted lead. */
@@ -847,7 +866,9 @@ export type LeadEventKind =
   // Revised entry: outcome of a meeting, MOU sent, the owner's own NDA received, presented to Bishops, expansion
   // meeting booked.
   | "meeting_outcome" | "mou_sent" | "owner_nda_received"
-  | "presented_to_bishops" | "expansion_booked";
+  | "presented_to_bishops" | "expansion_booked"
+  // Configurable entry contracts: a rule created a contract; the validation saved or closed.
+  | "contract_created" | "validation_saved" | "validation_closed";
 
 export interface LeadEvent {
   id: Uuid;
@@ -869,6 +890,6 @@ export interface LeadEvent {
 export * from "./network-types";
 import type { FundsStatus } from "./network-types";
 export * from "./entry-types";
-import type { ApprovalSource, LeadMeeting, MeetingKind, MeetingOutcome, OwnerEntry, PreValidation } from "./entry-types";
+import type { ApprovalSource, LeadMeeting, LeadValidation, MeetingKind, MeetingOutcome, OwnerEntry, PreValidation } from "./entry-types";
 export * from "./auth-types";
 

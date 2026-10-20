@@ -863,7 +863,11 @@
     "kind_owner_nda_received": "{{owner}} sent you their own confidentiality agreement to sign",
     "pref_owner_nda_received": "An owner sends their own confidentiality agreement",
     "kind_mou_ready": "Your MOU is ready. Read it and sign it whenever you want",
-    "pref_mou_ready": "Your MOU is ready to sign"
+    "pref_mou_ready": "Your MOU is ready to sign",
+    "kind_binding_ready": "The binding agreement of {{business_name}} is ready to sign",
+    "pref_binding_ready": "Binding agreement ready to sign",
+    "kind_validation_closed": "Strategic Mates closed the validation of {{business_name}}: the final percentages are set",
+    "pref_validation_closed": "Validation closed with the final percentages"
   },
   "soon": {
     "manual": "Here you'll see your business's operations manual as the firms write it and you approve it.",
@@ -1308,7 +1312,10 @@
       "expansion_booked": "Automatic: expansion meeting booked by {{owner}}",
       "nda_signed": "The NDA was signed",
       "mou_signed": "The MOU was signed",
-      "owner_nda_received": "{{owner}} sent their own confidentiality agreement for Strategic Mates to sign"
+      "owner_nda_received": "{{owner}} sent their own confidentiality agreement for Strategic Mates to sign",
+      "contract_created": "An entry contract was created",
+      "validation_saved": "{{actor}} saved the validation",
+      "validation_closed": "{{actor}} closed the validation with the final percentages"
     },
     "error_title": "We could not load the pipeline.",
     "retry": "Retry",
@@ -1513,7 +1520,7 @@
         "visibility_all": "Every approved business",
         "visibility_all_hint": "Every investor with the framework agreement signed sees every business. The first one to accept takes it.",
         "waiting_days": "Waiting days to sign the Operating Agreement",
-        "waiting_days_hint": "Counted from the day it is sent. Nobody can sign before.",
+        "waiting_days_hint": "Only for Operating Agreements sent before the entry contracts. New ones have a deadline to sign, set in Entry contracts.",
         "waiting_days_error": "Type a number of days between 0 and 60.",
         "require_expansion_meeting": "Require the expansion meeting before the Operating Agreement",
         "require_expansion_meeting_hint": "The team cannot send the Operating Agreement until the expansion meeting happened.",
@@ -2186,7 +2193,8 @@
         "nda_auto_signed_by_sm": "NDA and MOU signed by Strategic Mates",
         "meeting_hours": "Meeting hours",
         "owner_nda_template": "Owner's own agreement text",
-        "intake_help_text": "Entry documents note"
+        "intake_help_text": "Entry documents note",
+        "sm_entities": "Strategic Mates entities"
       },
       "percent": "{{value}}%",
       "days_one": "{{count}} day",
@@ -2541,7 +2549,8 @@
       "empty_filter": "No opportunities in this phase.",
       "col_phase": "Phase",
       "col_score": "Score",
-      "presented_by_sm": "Strategic Mates presented this business to you on {{date}}"
+      "presented_by_sm": "Strategic Mates presented this business to you on {{date}}",
+      "share_final": "{{pct}} % final"
     },
     "opportunity_detail": {
       "question": "Is this business right for me?",
@@ -2632,7 +2641,10 @@
       "confirm_body": "You commit to fund the program for {{amount}}. We stop showing this business to other investors and tell Strategic Mates.",
       "confirm_action": "Yes, accept",
       "t_accepted": "You accepted the opportunity. We told Strategic Mates.",
-      "t_taken": "Another investor accepted it first."
+      "t_taken": "Another investor accepted it first.",
+      "sign_binding": "Sign the binding agreement",
+      "share_final": "Your share",
+      "share_final_sub": "In the franchisor company, set by Strategic Mates in the validation"
     },
     "agreements": {
       "question": "Which agreements do I have?",
@@ -2671,7 +2683,8 @@
       "gate_title": "Sign your framework agreement to see opportunities",
       "gate_body": "It is your confidentiality and non-circumvention agreement with Strategic Mates. You sign it once and then see every opportunity.",
       "sign": "Sign framework agreement"
-    }
+    },
+    "definitive": "Final"
   },
   "franchisee": {
     "for_role": "Franchisee",
@@ -2944,8 +2957,9 @@
         "meeting": "Your meeting",
         "mou": "Read and sign the MOU",
         "documents": "Documents",
-        "expansion": "Expansion meeting",
-        "operating_agreement": "Operating Agreement"
+        "expansion": "Linking meeting",
+        "operating_agreement": "Operating Agreement",
+        "binding": "Binding agreement"
       },
       "nda": {
         "not_sent": "We send it when you book your meeting.",
@@ -3560,5 +3574,238 @@
       }
     },
     "see_in_calendar": "See it in the calendar"
+  },
+  "entry_contracts": {
+    "rules": {
+      "title": "Entry contracts",
+      "hint": "Which contracts every business entering signs, when each one is created and who signs for Strategic Mates. Changes apply to contracts created from now on.",
+      "add": "Add contract",
+      "col_name": "Contract",
+      "col_when": "When it is created",
+      "col_signers": "Who signs",
+      "col_blocks": "What waits for it",
+      "col_state": "Status",
+      "active": "Active",
+      "archived": "Archived",
+      "required": "Required",
+      "optional": "Optional",
+      "edit": "Edit",
+      "archive": "Archive",
+      "restore": "Restore",
+      "show_archived": "Show archived ({{count}})",
+      "hide_archived": "Hide archived",
+      "t_added": "Contract added: {{name}}",
+      "t_saved": "Changes saved in {{name}}",
+      "t_archived": "{{name}} archived: new businesses no longer get it",
+      "t_restored": "{{name}} active again"
+    },
+    "when": {
+      "meeting_booked": "When the owner books",
+      "nda_signed": "When the NDA is signed",
+      "meeting_held": "When the first meeting is held",
+      "documents_approved": "When the documents are approved",
+      "bishop_accepted": "When the investor accepts",
+      "validation_closed": "When the validation is closed",
+      "contract_signed": "When the {{name}} is signed",
+      "delay_one": ", the next day",
+      "delay_other": ", {{count}} days later",
+      "with_validation": ", with the validation closed",
+      "deadline_one": "Signed within 1 day",
+      "deadline_other": "Signed within {{count}} days"
+    },
+    "signers": {
+      "owner": "Owner",
+      "bishop": "Investor",
+      "sm_party": "Strategic Mates",
+      "sm": "Strategic Mates for {{entity}}",
+      "sm_auto": "Strategic Mates for {{entity}} (signed when sent)"
+    },
+    "blocks": {
+      "documents": "The entry documents",
+      "program_start": "The program start",
+      "none": "Nothing"
+    },
+    "kinds": {
+      "nda": "NDA",
+      "mou": "MOU",
+      "binding": "Binding agreement",
+      "tripartite": "Operating Agreement",
+      "framework": "Framework agreement",
+      "other": "Other contract"
+    },
+    "editor": {
+      "title_add": "Add entry contract",
+      "title_edit": "Edit {{name}}",
+      "body": "Changes apply to contracts created from now on. Existing ones do not change.",
+      "name": "Name",
+      "kind": "Type",
+      "template": "Contract text",
+      "template_hint": "Tap a field to insert it at the cursor. It is filled with each business's data.",
+      "explainer": "Explanation for the signer",
+      "explainer_title": "Title",
+      "paragraphs": "What it is",
+      "bullets": "Key points",
+      "one_per_line": "One per line.",
+      "signers": "Who signs",
+      "entity": "Signs for",
+      "auto_sign": "Goes out signed by Strategic Mates",
+      "trigger": "When it is created",
+      "delay": "Days to wait",
+      "delay_hint": "0 = the same day.",
+      "deadline": "Days to sign",
+      "deadline_hint": "0 = no deadline.",
+      "blocks": "What waits for it signed",
+      "required": "Required",
+      "required_hint": "Without this contract signed, the business does not go on.",
+      "position": "Order",
+      "note": "Note for the history",
+      "note_hint": "Optional. Why it changes.",
+      "create": "Add contract"
+    },
+    "placeholders": {
+      "business_name": "Business",
+      "owner_name": "Owner",
+      "owner_email": "Owner's email",
+      "business_activity": "Activity",
+      "bishop_name": "Investor",
+      "bishop_email": "Investor's email",
+      "sm_corporate_name": "Corporate",
+      "sm_square_name": "SM Square",
+      "sm_square_center": "SM Square center",
+      "sm_square_holder_name": "SM Square holder",
+      "equity_owner": "Owner %",
+      "equity_bishop": "Investor %",
+      "equity_sm": "SM Square %",
+      "investment_amount": "Investment",
+      "mou_date": "MOU date",
+      "date": "Date"
+    },
+    "errors": {
+      "name_required": "Write the contract's name.",
+      "invalid_trigger": "Pick when it is created: it cannot wait for itself or for a contract that does not exist.",
+      "signers_required": "Tick at least one signer.",
+      "sm_entity_required": "Pick which entity Strategic Mates signs for.",
+      "invalid_days": "Days go from 0 to 365, whole numbers.",
+      "rule_in_use": "Another contract waits for this one to be signed. Change that one first.",
+      "precondition_failed": "Someone just changed this contract. Reload the page and try again.",
+      "code_taken": "There is already a contract with that name."
+    },
+    "archive": {
+      "title": "Archive {{name}}",
+      "body": "Contracts already created stay as they are. New businesses stop getting it.",
+      "reason": "Reason (optional)",
+      "confirm": "Archive"
+    },
+    "history": {
+      "title": "Entry contracts history",
+      "empty": "Nobody changed the entry contracts yet.",
+      "added": "{{name}}: added",
+      "edited": "{{name}}: edited",
+      "archived": "{{name}}: archived",
+      "restored": "{{name}}: active again",
+      "change": "{{field}}: {{from}} → {{to}}",
+      "text_changed": "text changed"
+    },
+    "fields": {
+      "name": "Name",
+      "kind": "Type",
+      "template": "Text",
+      "explainer": "Explanation",
+      "signers": "Who signs",
+      "trigger": "When it is created",
+      "delay_days": "Days to wait",
+      "deadline_days": "Days to sign",
+      "blocks": "What waits",
+      "required": "Required",
+      "position": "Order"
+    },
+    "entities": {
+      "title": "Strategic Mates entities",
+      "hint": "The names Strategic Mates signs with. Corporate signs the NDA, the MOU and the binding agreement; SM Square signs the Operating Agreement, through the holder picked in each validation.",
+      "corporate": "Corporate",
+      "sm_square": "SM Square",
+      "required": "Write a name.",
+      "save": "Save names",
+      "t_saved": "Names saved",
+      "value": "{{corporate}} and {{sm_square}}"
+    },
+    "people": {
+      "can_sign": "Can sign for {{entity}}",
+      "t_on": "{{name}} can now sign for {{entity}}",
+      "t_off": "{{name}} no longer signs for {{entity}}"
+    },
+    "checklist": {
+      "not_created": "Not created yet",
+      "waiting_validation": "Waits for the validation to close.",
+      "sign_by": "Sign by {{date}}",
+      "overdue": "The deadline passed on {{date}} and signatures are missing.",
+      "sm_line": "{{person}} signs for {{entity}}",
+      "sm_line_any": "Anyone of the office signs for {{entity}}",
+      "sign_for": "Sign for {{entity}}",
+      "cannot_sm_square": "You are not allowed to sign for {{entity}}. Strategic Mates Corporate grants it in People.",
+      "cannot_person": "{{name}} signs it for {{entity}}."
+    },
+    "lead": {
+      "completed_by": "Assessment completed with {{name}}",
+      "oa_needs_validation": "The Operating Agreement is created by itself once the three sign the binding agreement and the validation is closed.",
+      "oa_after_binding": "The Operating Agreement is created by itself once the three sign the binding agreement."
+    },
+    "validation": {
+      "title": "Validation",
+      "hint": "The final percentages of the new company that will sell the franchises. Owner 50 % to 75 %, investor 15 % to 40 % and SM Square a fixed 10 %. They add up to 100 %.",
+      "owner": "Owner %",
+      "bishop": "Investor %",
+      "sm": "Strategic Mates %",
+      "sm_fixed": "SM Square has a fixed 10 %.",
+      "sum": "They add up to {{sum}} %.",
+      "investment": "Investment in USD",
+      "center": "SM Square center",
+      "center_placeholder": "SM Square Miami",
+      "holder": "SM Square holder",
+      "holder_placeholder": "Pick who signs for SM Square",
+      "holder_hint": "Signs the Operating Agreement for SM Square.",
+      "holder_none": "Nobody in the office can sign for SM Square. Strategic Mates Corporate grants it in People.",
+      "notes": "Notes",
+      "save": "Save",
+      "close": "Close validation",
+      "close_admin": "Only the office admin closes the validation.",
+      "closed": "Validation closed by {{name}} on {{date}}.",
+      "err_range": "It has to be between {{min}} % and {{max}} %.",
+      "err_required": "This percentage is missing.",
+      "err_sum": "The three percentages add up to {{sum}} %: they have to add up to 100 %.",
+      "err_amount": "Write an amount in USD, without decimals.",
+      "err_center": "Write the SM Square center.",
+      "err_holder": "Pick the SM Square holder.",
+      "err_complete": "Fill in the three percentages before closing.",
+      "err_invalid_split": "The percentages break the ranges or do not add up to 100 %.",
+      "err_sm_square_signer_required": "That person cannot sign for SM Square.",
+      "err_admin_only": "Only the office admin closes the validation.",
+      "err_validation_incomplete": "The SM Square center or its holder is missing.",
+      "t_saved": "Validation saved",
+      "t_closed": "Validation closed: {{name}} has its final percentages"
+    },
+    "owner": {
+      "binding_not_yet": "We prepare it when an investor accepts your business. You, the investor and Strategic Mates sign it in the linking meeting.",
+      "binding_when": "You, the investor and Strategic Mates sign it in the linking meeting.",
+      "binding_read": "Read the full agreement",
+      "binding_view": "See the agreement",
+      "binding_sign": "Sign the binding agreement",
+      "binding_signed": "You signed the binding agreement. We will let you know when the others sign.",
+      "oa_waiting": "We prepare it when the three sign the binding agreement and Strategic Mates closes the validation. From then you have 7 days to sign it.",
+      "oa_read": "Read the full Operating Agreement",
+      "oa_deadline": "Sign by {{date}}.",
+      "oa_overdue": "The deadline to sign passed on {{date}}. Talk to your consultant.",
+      "split_title": "Your final percentages",
+      "split_body": "You keep {{owner}} % of the new company that will sell the franchises. The investor has {{bishop}} % and SM Square {{sm}} %.",
+      "split_note": "Your original business stays only yours."
+    },
+    "advisor": {
+      "title": "Your assessment link",
+      "body": "Share it with the owners you contact. Businesses that take the assessment through this link are assigned to you.",
+      "copy": "Copy link",
+      "t_copied": "Link copied",
+      "t_copy_failed": "It could not be copied. Select the link and copy it by hand.",
+      "none": "You have no link yet. Ask Strategic Mates Corporate for one."
+    }
   }
 }

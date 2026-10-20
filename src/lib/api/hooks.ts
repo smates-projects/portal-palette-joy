@@ -554,6 +554,30 @@ export const useRules = () => useQuery({ queryKey: ["rules"], queryFn: api.rules
 export const useRulesHistory = () => useQuery({ queryKey: ["rules", "history"], queryFn: api.rules.listHistory });
 export const useUpdateRules = () =>
   useNetworkMutation((v: { patch: Partial<PlatformRules>; note?: string | null }) => api.rules.update(v.patch, v.note ?? null), ["rules", "tasks", "businesses", "network"]);
+// ---------- Entry contracts as rules ----------
+/** EntryContractRule[] in position order, archived ones included (active false). SM people. */
+export const useContractRules = (enabled = true) => useQuery({ queryKey: ["contract-rules"], queryFn: () => api.contractRules.list(), enabled });
+export const useContractRulesHistory = () => useQuery({ queryKey: ["contract-rules", "history"], queryFn: () => api.contractRules.listHistory() });
+/** A rule change may create contracts at once (the engine runs): leads, documents and the Bishop refresh too. */
+const CONTRACT_RULE_ROOTS = ["contract-rules", "leads", "documents", "bishop"];
+export const useAddContractRule = () =>
+  useNetworkMutation((input: import("./types").EntryContractRuleInput) => api.contractRules.add(input), CONTRACT_RULE_ROOTS);
+export const useUpdateContractRule = () =>
+  useNetworkMutation(
+    (v: { code: string; patch: Partial<import("./types").EntryContractRuleInput>; version: number; note?: string | null }) =>
+      api.contractRules.update(v.code, v.patch, v.version, v.note ?? null),
+    CONTRACT_RULE_ROOTS,
+  );
+export const useArchiveContractRule = () => useNetworkMutation((v: { code: string; reason?: string | null }) => api.contractRules.archive(v.code, v.reason ?? null), CONTRACT_RULE_ROOTS);
+export const useRestoreContractRule = () => useNetworkMutation((code: string) => api.contractRules.restore(code), CONTRACT_RULE_ROOTS);
+/** SM Global: "Puede firmar por SM Square" in Personas. */
+export const useSetSigningEntities = () =>
+  useNetworkMutation((v: { userId: string; can_sign_sm_square: boolean }) => api.users.setSigningEntities(v.userId, { can_sign_sm_square: v.can_sign_sm_square }), ["users", "session"]);
+/** Validation of an accepted lead: save the draft, close it (admin). Closing may create the Operating Agreement. */
+export const useSaveValidation = () =>
+  useNetworkMutation((v: { id: string; input: import("./types").ValidationInput }) => api.leads.saveValidation(v.id, v.input), ["leads"]);
+export const useCloseValidation = () => useNetworkMutation((id: string) => api.leads.closeValidation(id), ["leads", "documents", "bishop", "notifications"]);
+
 /** CatalogAdminItem[] with archived entries (SM Global). */
 export const useCatalogAdmin = () => useQuery({ queryKey: ["catalog", "admin"], queryFn: () => api.catalog.list({ include_archived: true }) });
 /** CatalogChange[]: history of catalog edits, newest first; one code or all (SM Global). */

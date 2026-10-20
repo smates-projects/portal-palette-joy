@@ -5,12 +5,6 @@ import { todayIso, nowIso } from "@/lib/clock";
 import { projectYears } from "@/lib/bishop/split";
 import { opportunityPhase, tripartiteState, acceptBlock } from "@/lib/leads/opportunity";
 import { bishopSees, entryRules, oaSendBlock } from "@/lib/leads/entry-flow";
-
-const addDaysIso = (date: string, n: number) => {
-  const x = new Date(`${date}T12:00:00Z`);
-  x.setUTCDate(x.getUTCDate() + n);
-  return x.toISOString().slice(0, 10);
-};
 import type {
   BishopAgreement, BishopOpportunity, Contract, Lead, LeadEvent, LeadInvestors, LeadWithComputed,
   OpportunityDecision, OpportunityDetail, RevenueRange, Signer, User, Uuid,
@@ -78,6 +72,9 @@ export function createOpportunities(d: Deps) {
 
   const tripartiteOf = (l: Lead): Contract | null =>
     (l.business_id && db.contracts.find((c) => c.business_id === l.business_id && c.kind === "tripartite")) || null;
+  /** The Acuerdo de Vinculación, created by its rule when the Bishop accepts (./contract-rules). */
+  const bindingOf = (l: Lead): Contract | null =>
+    (l.business_id && db.contracts.find((c) => c.business_id === l.business_id && c.kind === "binding")) || null;
 
   const phaseFor = (l: Lead, viewer: Uuid) => {
     const s = intake.summaryFor(l);
@@ -104,11 +101,15 @@ export function createOpportunities(d: Deps) {
     const phase = phaseFor(l, u.id)!;
     const mine = l.bishop_user_id === u.id;
     const v = viewOf(l.id, u.id);
+    const final = l.validation?.status === "closed" && typeof l.validation.equity_bishop === "number";
     return {
       id: l.id, lead_id: l.id, phase, industry: l.business.industry, city: l.contact.city, state: l.contact.state,
       business_name: mine ? l.business.name : null, owner_name: mine ? l.contact.name : null,
       investment: d.agreedAmount(l) ?? db.rules.program_amount ?? 0,
-      share_year1_pct: Math.round(PROFIT_SPLIT.bishop_year1 * 100), share_stable_pct: Math.round(PROFIT_SPLIT.bishop_stabilized * 100),
+      // Once SM closed the validation the Bishop sees his definitive participation in the franchisor instead.
+      ...(final
+        ? { share_year1_pct: l.validation!.equity_bishop!, share_stable_pct: l.validation!.equity_bishop!, split_final: true }
+        : { share_year1_pct: Math.round(PROFIT_SPLIT.bishop_year1 * 100), share_stable_pct: Math.round(PROFIT_SPLIT.bishop_stabilized * 100), split_final: false }),
       score: l.result?.score ?? 0, band: l.result?.band ?? "track",
       review: phase === "in_review" ? intake.summaryFor(l)?.clock ?? null : null,
       decision: v?.decision ?? "none", decided_at: v?.decided_at ?? null,
@@ -141,6 +142,7 @@ export function createOpportunities(d: Deps) {
         ? docs.filter((x) => x.rule_id && BISHOP_FILE_RULES.includes(x.rule_id) && x.state === "reviewed" && x.file_name).map((x) => ({ id: x.id, name: x.name, file_name: x.file_name! }))
         : [],
       tripartite: mine ? tripartiteOf(l) : null,
+      binding: mine ? bindingOf(l) : null,
     };
   };
 
@@ -218,11 +220,13 @@ export function createOpportunities(d: Deps) {
       id: fw.id, kind: "framework", contract: fw, bishop_user_id: u.id, business_id: null, name: fw.name, counterparties: "Strategic Mates",
       state: fw.state === "signed" ? "signed" : "sent", signed_at: fw.signed_at, has_file: true, file_name: `${fw.name}.pdf`,
     });
-    for (const c of db.contracts.filter((x) => x.kind === "tripartite" && x.signers.some((s) => s.party === "bishop" && s.user_id === u.id))) {
+    // The Acuerdo de Vinculación comes before the Operating Agreement of the same business.
+    const mine = db.contracts.filter((x) => (x.kind === "binding" || x.kind === "tripartite") && x.signers.some((s) => s.party === "bishop" && s.user_id === u.id));
+    for (const c of [...mine.filter((x) => x.kind === "binding"), ...mine.filter((x) => x.kind === "tripartite")]) {
       const owner = c.signers.find((s) => s.party === "owner")?.name ?? "";
       const lead = db.leads.find((l) => l.business_id === c.business_id);
       out.push({
-        id: c.id, kind: "tripartite", contract: c, bishop_user_id: u.id, business_id: c.business_id,
+        id: c.id, kind: c.kind === "binding" ? "binding" : "tripartite", contract: c, bishop_user_id: u.id, business_id: c.business_id,
         name: lead ? `${c.name}: ${lead.business.name}` : c.name, counterparties: `${owner}, Strategic Mates`,
         state: c.state === "signed" ? "signed" : "sent", signed_at: c.signed_at, has_file: true, file_name: `${c.name}.pdf`,
       });
@@ -273,6 +277,10 @@ export function createOpportunities(d: Deps) {
       const c = tripartiteOf(l);
       if (c?.state === "signed") throw new Error("tripartite_signed");
       if (c) db.contracts.splice(db.contracts.indexOf(c), 1);
+      // An unsigned Acuerdo de Vinculación goes with the Bishop; a signed one keeps the business tied (binding_signed).
+      const b = bindingOf(l);
+      if (b?.state === "signed") throw new Error("binding_signed");
+      if (b) db.contracts.splice(db.contracts.indexOf(b), 1);
       const prev = db.users.find((u) => u.id === l.bishop_user_id)?.full_name ?? "";
       l.bishop_user_id = null;
       l.bishop_accepted_at = null;
@@ -314,8 +322,8 @@ export function createOpportunities(d: Deps) {
       c.state = "opened";
       db.contracts.push(c);
     }
-    // Techos Delgado: presented to Jefferson and Laura, both opened it, Jefferson took it; the expansion meeting was held
-    // and the Operating Agreement went out 3 days ago, so nobody can sign it until the waiting period ends.
+    // Techos Delgado: presented to Jefferson and Laura, both opened it, Jefferson took it; the expansion meeting was held.
+    // Its Acuerdo de Vinculación, the validation and the Operating Agreement come from ./contract-rules (seedTechos).
     const techos = db.leads.find((l) => l.business.name === "Techos Delgado");
     if (techos?.business_id) {
       db.presentations.push(
@@ -326,13 +334,8 @@ export function createOpportunities(d: Deps) {
         { lead_id: techos.id, bishop_user_id: ids.jefferson, viewed_at: "2026-09-02T18:00:00Z", decision: "none", decided_at: null },
         { lead_id: techos.id, bishop_user_id: ids.laura, viewed_at: "2026-09-03T10:00:00Z", decision: "none", decided_at: null },
       );
-      const c = makeTripartite(techos);
-      c.id = "9d000000-0000-4000-8000-000000000002";
-      const sentOn = addDaysIso(todayIso(), -3);
-      c.sent_at = sentOn;
-      for (const s of c.signers) s.history = [{ status: "sent", at: sentOn }];
-      db.contracts.push(c);
     }
+
   };
 
   /** Sample data: a tripartite contract the three already signed (programs funded before today). */
@@ -352,5 +355,5 @@ export function createOpportunities(d: Deps) {
     db.contracts.push(c);
   };
 
-  return { bishop, leads, seed, seedSignedTripartite, signableAgreements, tripartiteOf, frameworkOf, candidates };
+  return { bishop, leads, seed, seedSignedTripartite, signableAgreements, tripartiteOf, bindingOf, frameworkOf, candidates };
 }

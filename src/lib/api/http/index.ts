@@ -12,6 +12,7 @@ import { createHttpBusinessProfileRepository } from "./business-profile";
 import { createHttpBusinessesRepository } from "./businesses";
 import { createHttpCalendarRepository } from "./calendar";
 import { createHttpCatalogRepository } from "./catalog";
+import { createHttpContractRulesRepository } from "./contract-rules";
 import { createHttpDistributionRepository } from "./distribution";
 import { createHttpDocumentsRepository } from "./documents";
 import { createHttpFinancialsRepository } from "./financials";
@@ -48,6 +49,7 @@ export const HTTP_REPOSITORIES = {
   funds: "FUNDS",
   distribution: "DISTRIBUTION",
   rules: "RULES",
+  contractRules: "CONTRACT_RULES",
   catalog: "CATALOG",
   tasks: "TASKS",
   brand: "BRAND",
@@ -97,6 +99,7 @@ export function createHttpRepositories(client: HttpClient): HttpRepositories {
     funds: createHttpFundsRepository(client),
     distribution: createHttpDistributionRepository(client),
     rules: createHttpRulesRepository(client),
+    contractRules: createHttpContractRulesRepository(client),
     catalog: createHttpCatalogRepository(client),
     tasks: createHttpTasksRepository(client),
     brand: createHttpBrandRepository(client),

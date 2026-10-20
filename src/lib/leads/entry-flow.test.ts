@@ -50,6 +50,9 @@ describe("Operating Agreement waiting period", () => {
     expect(oaWaitingUntil(contract("mou", []), 7, "2026-10-12")).toBeNull();
     expect(oaWaitingUntil(contract("tripartite", [], { sent_at: null }), 7, "2026-10-12")).toBeNull();
   });
+  it("an Operating Agreement created by its rule has a deadline instead of a waiting period", () => {
+    expect(oaWaitingUntil(contract("tripartite", [], { rule_code: "operating_agreement" }), 7, "2026-10-12")).toBeNull();
+  });
   it("cannot go out without a Bishop, nor before the expansion meeting when the rule asks for it", () => {
     expect(oaSendBlock({ bishop_user_id: null }, ENTRY_RULE_DEFAULTS)).toBe("no_bishop");
     expect(oaSendBlock({ bishop_user_id: "j" }, ENTRY_RULE_DEFAULTS)).toBe("expansion_meeting_required");
@@ -97,8 +100,20 @@ describe("NDA status and owner steps", () => {
     expect(ndaStatus(contract("nda", [signer("owner", "opened"), signer("sm", "signed")]))).toBe("pending");
     expect(ndaStatus(null)).toBe("none");
   });
-  it("the order is NDA, MOU, Tu reunión, Documentos; then the expansion meeting and the Operating Agreement", () => {
-    expect(OWNER_STEPS).toEqual(["nda", "mou", "meeting", "documents", "expansion", "operating_agreement"]);
+  it("the order is NDA, MOU, Tu reunión, Documentos; then the linking meeting, the binding agreement and the Operating Agreement", () => {
+    expect(OWNER_STEPS).toEqual(["nda", "mou", "meeting", "documents", "expansion", "binding", "operating_agreement"]);
+  });
+  it("with the binding rule, the Acuerdo de Vinculación comes between the linking meeting and the Operating Agreement", () => {
+    const nda = contract("nda", [signer("owner", "signed"), signer("sm", "signed")]);
+    const mou = contract("mou", [signer("owner", "signed"), signer("sm", "signed")]);
+    const entry = { meeting: null, expansion_meeting: null, expansion_meeting_held_at: "2026-10-08T16:00:00Z", booking_url: null, consultant_name: null };
+    const summary = { approved_at: "2026-10-01T15:00:00Z", entry };
+    const pending = ownerSteps({ summary, nda, mou, binding: contract("binding", [signer("owner", "sent")]), operatingAgreement: null, rules: ENTRY_RULE_DEFAULTS });
+    expect(pending.map((s) => `${s.key}:${s.state}`).slice(4)).toEqual(["expansion:done", "binding:current", "operating_agreement:upcoming"]);
+    const signed = ownerSteps({ summary, nda, mou, binding: contract("binding", [signer("owner", "signed")]), operatingAgreement: null, rules: ENTRY_RULE_DEFAULTS });
+    expect(signed.map((s) => `${s.key}:${s.state}`).slice(4)).toEqual(["expansion:done", "binding:done", "operating_agreement:current"]);
+    // Not there yet (null): the step shows as upcoming. Before the approval it does not show at all.
+    expect(ownerSteps({ summary: { approved_at: null }, nda, mou, binding: null, operatingAgreement: null, rules: ENTRY_RULE_DEFAULTS }).map((s) => s.key)).not.toContain("binding");
   });
   it("four steps before the approval, six after; the first not done is the current one", () => {
     const nda = contract("nda", [signer("owner", "signed"), signer("sm", "signed")]);

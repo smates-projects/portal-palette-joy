@@ -77,7 +77,7 @@ export function OpportunitiesPage() {
                   <dl className="grid grid-cols-3 gap-2 text-xs">
                     <div><dt className="text-muted-foreground">{t("bishop.opportunities.col_score")}</dt><dd className="font-display text-sm tabular-nums">{o.score}</dd></div>
                     <div><dt className="text-muted-foreground">{t("bishop.opportunities.col_investment")}</dt><dd className="text-sm tabular-nums">{formatUsd(o.investment, lng)}</dd></div>
-                    <div><dt className="text-muted-foreground">{t("bishop.opportunities.col_share")}</dt><dd className="text-sm tabular-nums">{t("bishop.opportunities.share_values", { year1: o.share_year1_pct, stable: o.share_stable_pct })}</dd></div>
+                    <div><dt className="text-muted-foreground">{t("bishop.opportunities.col_share")}</dt><dd className="text-sm tabular-nums">{o.split_final ? t("bishop.opportunities.share_final", { pct: o.share_stable_pct }) : t("bishop.opportunities.share_values", { year1: o.share_year1_pct, stable: o.share_stable_pct })}</dd></div>
                   </dl>
                 </li>
               ))}
@@ -110,7 +110,7 @@ export function OpportunitiesPage() {
                       </td>
                       <td className="px-4 py-3 text-right font-display tabular-nums">{o.score}</td>
                       <td className="px-4 py-3 text-right tabular-nums">{formatUsd(o.investment, lng)}</td>
-                      <td className="px-4 py-3 text-right tabular-nums">{t("bishop.opportunities.share_values", { year1: o.share_year1_pct, stable: o.share_stable_pct })}</td>
+                      <td className="px-4 py-3 text-right tabular-nums">{o.split_final ? t("bishop.opportunities.share_final", { pct: o.share_stable_pct }) : t("bishop.opportunities.share_values", { year1: o.share_year1_pct, stable: o.share_stable_pct })}</td>
                       <td className="px-4 py-3"><DecisionTag decision={o.decision} /></td>
                     </tr>
                   ))}

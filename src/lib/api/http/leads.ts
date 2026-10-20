@@ -303,5 +303,25 @@ export function createHttpLeadsRepository(client: HttpClient): HttpLeadsReposito
 
     listUnmatchedCalendarEvents: () =>
       client.get<UnmatchedCalendarEvent[]>("/unmatched-calendar-events"),
+
+    /** PUT /validation: the draft of the definitive percentages. It answers the lead, with its new ETag. */
+    saveValidation: (id, input) => {
+      const resource = leadPath(id);
+      return client.request<LeadWithComputed>("PUT", `${resource}/validation`, {
+        resource,
+        body: {
+          equity_owner: input.equity_owner,
+          equity_bishop: input.equity_bishop,
+          equity_sm: input.equity_sm,
+          investment_amount: input.investment_amount,
+          notes: input.notes?.trim() ? input.notes.trim() : null,
+          sm_square_center: input.sm_square_center?.trim() ? input.sm_square_center.trim() : null,
+          sm_square_holder_user_id: input.sm_square_holder_user_id,
+        },
+      });
+    },
+
+    /** POST /validation/close (admin): the percentages become definitive. It answers the lead. */
+    closeValidation: (id) => leadWrite(id, "validation/close"),
   };
 }
