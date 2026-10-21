@@ -3,6 +3,7 @@ import type {
   InvitationPreview,
   LoginInput,
   ResetPasswordInput,
+  SetPasswordInput,
   BishopFunds,
   Distribution,
   DistributionLineInput,
@@ -163,6 +164,12 @@ export interface SessionRepository {
   forgotPassword(email: string): Promise<void>;
   /** Sets a new password. Does not start a session: the person signs in again. token_* | weak_password. */
   resetPassword(input: ResetPasswordInput): Promise<void>;
+  /**
+   * Signed in: creates the password of an account that entered through email links, or changes the current one
+   * (current_password required then). POST /me/password, 204. current_password_required | invalid_credentials |
+   * weak_password. Afterwards GET /me answers has_password true and password_setup_required false.
+   */
+  setPassword(input: SetPasswordInput): Promise<void>;
 }
 
 export interface OrganizationsRepository {

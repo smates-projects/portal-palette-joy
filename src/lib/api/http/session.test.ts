@@ -257,6 +257,58 @@ describe("http session: sign-in", () => {
   });
 });
 
+describe("http session: POST /me/password (create or change the password)", () => {
+  it("creating posts only the new password and resolves on 204", async () => {
+    const { calls } = stubFetch(emptyResponse(204));
+    await expect(
+      setup().session.setPassword({ password: "una-clave-larga-2026" }),
+    ).resolves.toBeUndefined();
+    expect(calls[0]).toMatchObject({
+      method: "POST",
+      path: "/me/password",
+      body: { password: "una-clave-larga-2026" },
+    });
+    expect("current_password" in (calls[0]?.body as Record<string, unknown>)).toBe(false);
+  });
+
+  it("changing posts the current password along with the new one", async () => {
+    const { calls } = stubFetch(emptyResponse(204));
+    await setup().session.setPassword({
+      password: "otra-clave-larga-2026",
+      current_password: "Demo1234!",
+    });
+    expect(calls[0]).toMatchObject({
+      method: "POST",
+      path: "/me/password",
+      body: { password: "otra-clave-larga-2026", current_password: "Demo1234!" },
+    });
+  });
+
+  it("an empty current password is not sent (the API decides whether it is required)", async () => {
+    const { calls } = stubFetch(emptyResponse(204));
+    await setup().session.setPassword({ password: "una-clave-larga-2026", current_password: "" });
+    expect(calls[0]?.body).toEqual({ password: "una-clave-larga-2026" });
+  });
+
+  it("keeps the API's codes: current_password_required (422), invalid_credentials (401), weak_password (422)", async () => {
+    stubFetch(
+      problemResponse(422, "current_password_required"),
+      problemResponse(401, "invalid_credentials"),
+      problemResponse(422, "weak_password"),
+    );
+    const { session } = setup();
+    await expect(session.setPassword({ password: "una-clave-larga-2026" })).rejects.toThrow(
+      "current_password_required",
+    );
+    await expect(
+      session.setPassword({ password: "una-clave-larga-2026", current_password: "mal" }),
+    ).rejects.toThrow("invalid_credentials");
+    await expect(
+      session.setPassword({ password: "corta", current_password: "Demo1234!" }),
+    ).rejects.toThrow("weak_password");
+  });
+});
+
 describe("http session: two-factor (TOTP) and entry link", () => {
   const signedOut = async (...replies: Response[]) => {
     const recorded = stubFetch(problemResponse(401, "unauthenticated"), ...replies);

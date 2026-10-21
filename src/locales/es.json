@@ -729,6 +729,23 @@
     "my_team_title": "Mi equipo",
     "my_team_hint": "Invita a las personas de tu firma y desactiva a las que ya no trabajan contigo.",
     "my_team_empty": "Todavía no hay más personas en tu firma. Invita a la primera.",
+    "password": {
+      "title": "Contraseña",
+      "state_on": "Creada",
+      "state_off": "Sin crear",
+      "on": "Entras con tu correo y tu contraseña. Aquí puedes cambiarla.",
+      "off": "Todavía no tienes contraseña: entras con los enlaces de tu correo. Crea una para entrar la próxima vez con tu correo y tu contraseña.",
+      "create": "Crear contraseña",
+      "change": "Cambiar contraseña",
+      "cancel": "Cancelar",
+      "create_title": "Crear contraseña",
+      "create_body": "Escríbela dos veces. El enlace de tu correo sigue funcionando.",
+      "change_title": "Cambiar contraseña",
+      "change_body": "Escribe tu contraseña actual y después la nueva, dos veces.",
+      "pending": "Guardando…",
+      "t_created": "Creaste tu contraseña. La próxima vez entra con tu correo y tu contraseña.",
+      "t_changed": "Cambiaste tu contraseña."
+    },
     "two_factor": {
       "title": "Verificación en dos pasos",
       "state_on": "Activada",
@@ -3274,10 +3291,12 @@
       "password": "Contraseña",
       "new_password": "Contraseña nueva",
       "confirm_password": "Repite la contraseña",
+      "current_password": "Contraseña actual",
       "name": "Tu nombre y apellido"
     },
     "validation": {
       "email_required": "Escribe tu correo.",
+      "current_password_required": "Escribe tu contraseña actual.",
       "email_invalid": "Revisa el correo. Debe verse así: nombre@empresa.com.",
       "password_required": "Escribe tu contraseña.",
       "name_required": "Escribe tu nombre.",
@@ -3294,6 +3313,11 @@
     "errors": {
       "invalid_credentials": "El correo o la contraseña no coinciden",
       "invalid_credentials_help": "Revisa que estén bien escritos. Si no recuerdas tu contraseña, puedes cambiarla o entrar con un enlace por correo.",
+      "no_password_yet": "Si todavía no creaste tu contraseña, entra con el enlace.",
+      "send_magic_link": "Enviarme un enlace por correo",
+      "create_from_portal": "Cuando entres con el enlace, puedes crear tu contraseña desde el portal, en Mi perfil.",
+      "current_password_wrong": "La contraseña actual no es correcta",
+      "current_password_wrong_help": "Escríbela de nuevo. Si no la recuerdas, cierra sesión y usa \"¿Olvidaste tu contraseña?\".",
       "account_inactive": "Tu cuenta está desactivada",
       "account_inactive_help": "Habla con tu consultor de Strategic Mates para activarla de nuevo.",
       "generic": "No pudimos completar este paso",
@@ -3368,6 +3392,16 @@
       "done_title": "Revisa tu correo",
       "done_body": "Si <email>{{email}}</email> tiene una cuenta, te mandamos instrucciones. El enlace vence en 1 hora.",
       "other_email": "Usar otro correo"
+    },
+    "password_setup": {
+      "kicker": "Tu cuenta",
+      "title": "Ya eres parte de Strategic Mates",
+      "body": "Crea tu contraseña para entrar la próxima vez.",
+      "link_note": "El enlace de tu correo sigue funcionando.",
+      "submit": "Crear contraseña",
+      "pending": "Creando…",
+      "later": "Más tarde",
+      "done": "Listo, ya tienes contraseña. La próxima vez entras con tu correo y tu contraseña."
     },
     "reset": {
       "title": "Crea una contraseña nueva",

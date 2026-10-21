@@ -210,6 +210,14 @@ export function useLogout() {
 export const useRequestMagicLink = () => useMutation({ mutationFn: (email: string) => api.session.requestMagicLink(email) });
 export const useForgotPassword = () => useMutation({ mutationFn: (email: string) => api.session.forgotPassword(email) });
 export const useResetPassword = () => useMutation({ mutationFn: (v: import("./types").ResetPasswordInput) => api.session.resetPassword(v) });
+/** Creates or changes the signed-in person's password; the profile refreshes (has_password, password_setup_required). */
+export function useSetPassword() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: import("./types").SetPasswordInput) => api.session.setPassword(v),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.me }),
+  });
+}
 
 /** Reads the invitation (who, which business, which role). A bad token is an answer, not something to retry. */
 export const useExchangeInvitation = (token: string) =>

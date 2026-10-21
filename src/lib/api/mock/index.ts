@@ -358,10 +358,13 @@ export function createMockApi(): MockApi {
       // Leads accepted before the entry flow existed have no business yet.
       const ownerId = newId();
       b = { id: newId(), name: l.business.name, industry: l.business.activity, city: l.contact.city, state: l.contact.state, owner_user_id: ownerId, status: "onboarding", program_start_date: day1, program_day: 0, office_id: l.office_id, consultant_id: l.consultant_user_id };
-      db.users.push({ id: ownerId, full_name: l.contact.name, email: l.contact.email, role: "business_owner", organization_id: null, business_id: b.id, title: null, google_calendar_email: null, booking_url: null });
+      db.users.push({ id: ownerId, full_name: l.contact.name, email: l.contact.email, role: "business_owner", organization_id: null, business_id: b.id, title: null, google_calendar_email: null, booking_url: null, has_password: false, password_setup_required: false });
       db.businesses.push(b);
     }
     Object.assign(b, { status: "in_program", program_start_date: day1, program_day: programDayOn(day1) });
+    // The program started: an owner who still enters by email links is asked to create a password.
+    const owner = db.users.find((u) => u.id === b!.owner_user_id);
+    if (owner && owner.has_password === false) owner.password_setup_required = true;
     const created = generateProgramTasks(db.catalog.filter((c) => !c.archived), {
       business_id: b.id, industry: l.business.industry, start_date: day1, supervisor_user_id: l.consultant_user_id,
       firmFor: firmFor(l.office_id, l.consultant_user_id), newId, now: nowIso(),

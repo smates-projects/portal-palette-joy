@@ -278,5 +278,14 @@ export function createHttpSessionRepository(client: HttpClient): SessionReposito
         password: input.password,
       });
     },
+
+    /** POST /me/password { password, current_password? } → 204. current_password only travels when given. */
+    setPassword: async (input) => {
+      const current = input.current_password;
+      await client.post<void>("/me/password", {
+        password: input.password,
+        ...(current !== undefined && current !== "" ? { current_password: current } : {}),
+      });
+    },
   };
 }

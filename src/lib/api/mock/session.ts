@@ -196,6 +196,19 @@ export function createSession(
   const passwords = new Map<Uuid, string>();
 
   const userByEmail = (email: string) => db.users.find((u) => sameEmail(u.email, email));
+  // Every seeded account has a password unless the seed says otherwise (an owner who enters through email links
+  // and must create one, see seed.ts). Accounts created later (owners at booking, invited people) say it themselves.
+  for (const user of db.users) {
+    if (user.has_password === undefined) user.has_password = true;
+    if (user.password_setup_required === undefined) user.password_setup_required = false;
+  }
+  /** The password a login must match, or null when the account has none (invited, or enters by email links). */
+  const expectedPassword = (user: User): string | null => {
+    const set = passwords.get(user.id);
+    if (set) return set;
+    if (user.status === "invited" || user.has_password === false) return null;
+    return DEMO_PASSWORD;
+  };
   const startSession = (user: User) => {
     ctx.setUserId(user.id);
     authenticated = true;
@@ -291,6 +304,12 @@ export function createSession(
   const checkPassword = (password: string) => {
     if (password.length < MIN_PASSWORD_LENGTH) throw new Error("weak_password");
   };
+  /** Keeps the password and what GET /me says about it (the dialog stops asking). */
+  const savePassword = (user: User, password: string) => {
+    passwords.set(user.id, password);
+    user.has_password = true;
+    user.password_setup_required = false;
+  };
   const logAccepted = (user: User) =>
     db.accountEvents.push({
       id: ctx.newId(),
@@ -311,10 +330,9 @@ export function createSession(
     isAuthenticated: () => authenticated,
     login: async ({ email, password }) => {
       const user = userByEmail(email);
-      // Invited people have no password yet: same answer as a wrong one, so nobody learns who has an account.
-      const expected = user
-        ? (passwords.get(user.id) ?? (user.status === "invited" ? null : DEMO_PASSWORD))
-        : null;
+      // Invited people and owners who enter by email links have no password yet: same answer as a wrong one, so
+      // nobody learns who has an account (the API keeps it generic on purpose).
+      const expected = user ? expectedPassword(user) : null;
       if (!user || expected === null || password !== expected)
         throw new Error("invalid_credentials");
       if (!isActiveUser(user)) throw new Error("account_inactive");
@@ -416,7 +434,7 @@ export function createSession(
         user.activated_at = nowIso();
         logAccepted(user);
       }
-      passwords.set(user.id, input.password);
+      savePassword(user, input.password);
       t.used_at = nowIso();
       return afterAuthentication(user);
     },
@@ -424,8 +442,20 @@ export function createSession(
     resetPassword: async (input) => {
       const { t, user } = usableToken(input.token, "reset");
       checkPassword(input.password);
-      passwords.set(user.id, input.password);
+      savePassword(user, input.password);
       t.used_at = nowIso();
+      return delay(undefined);
+    },
+    setPassword: async (input) => {
+      const user = setupUser(null);
+      if (user.has_password !== false) {
+        // Changing: the current one must come along and match.
+        const current = input.current_password?.trim() ?? "";
+        if (!current) throw new Error("current_password_required");
+        if (current !== expectedPassword(user)) throw new Error("invalid_credentials");
+      }
+      checkPassword(input.password);
+      savePassword(user, input.password);
       return delay(undefined);
     },
   };

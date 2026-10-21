@@ -164,6 +164,8 @@ export function createIntake(db: IntakeDb, newId: () => string) {
       db.users.push({
         id: ownerId, full_name: lead.contact.name, email: lead.contact.email, role: "business_owner", organization_id: null,
         business_id: businessId, title: null, google_calendar_email: null, booking_url: null,
+        // The owner enters through the entry link; the password is asked once the program starts.
+        has_password: false, password_setup_required: false,
       });
     if (!db.businesses.some((b) => b.id === businessId))
       db.businesses.push({

@@ -141,6 +141,16 @@ export interface User {
   can_sign_sm_square?: boolean | undefined;
   /** SM people: their key in the assessment link (strategicmates.com/assessment?asesor=<slug>). */
   advisor_slug?: string | null | undefined;
+  /**
+   * The account has a password. Owners (and Bishops) enter through email links while they sign; absent in older
+   * rows, read as true.
+   */
+  has_password?: boolean | undefined;
+  /**
+   * GET /me: the program started and the account still has no password, so the portal asks for one (PasswordSetup
+   * dialog). Absent = no.
+   */
+  password_setup_required?: boolean | undefined;
 }
 
 /** PATCH /users/{id}/signing-entities. */
@@ -631,6 +641,9 @@ export const AUTH_ERROR_CODES = [
   "weak_password",
   "terms_required",
   "name_required",
+  // POST /me/password of an account that already has one, sent without current_password. (The login of an account
+  // without password answers the generic invalid_credentials on purpose: the login screen offers the magic link.)
+  "current_password_required",
 ] as const;
 export type AuthErrorCode = (typeof AUTH_ERROR_CODES)[number];
 
@@ -663,6 +676,12 @@ export interface AcceptInvitationInput {
 export interface ResetPasswordInput {
   token: string;
   password: string;
+}
+
+/** POST /me/password: creates the password (no current one) or changes it (current_password required). */
+export interface SetPasswordInput {
+  password: string;
+  current_password?: string | undefined;
 }
 
 /** Franchisability part of the platform rules. Set only by SM Global, same for every program (like the catalog). Required list may be empty. */

@@ -41,6 +41,75 @@ const marilynChallenge = async (api: ReturnType<typeof createMockApi>) => {
   return result.challenge_id;
 };
 
+describe("session: password after the email links (has_password, password_setup_required, setPassword)", () => {
+  const ENYERMY = "enyermy@enyermycleanpro.com";
+
+  it("every seeded account has a password, except the owner whose program just started", async () => {
+    const api = createMockApi();
+    const lucia = await api.session.getCurrentUser();
+    expect(lucia.has_password).toBe(true);
+    expect(lucia.password_setup_required).toBe(false);
+    const enyermy = await api.session.setViewAs(seed.U_ENYERMY);
+    expect(enyermy.has_password).toBe(false);
+    expect(enyermy.password_setup_required).toBe(true);
+    const carla = await api.session.setViewAs(seed.U_CARLA);
+    expect(carla.has_password).toBe(true);
+    expect(carla.password_setup_required).toBe(false);
+  });
+
+  it("the login of an account without password answers the generic invalid_credentials (anti-enumeration)", async () => {
+    const api = await signedOut();
+    await expect(api.session.login({ email: ENYERMY, password: DEMO_PASSWORD })).rejects.toThrow(
+      "invalid_credentials",
+    );
+  });
+
+  it("creating the password needs no current one, updates /me and makes the login work", async () => {
+    const api = createMockApi();
+    await api.session.setViewAs(seed.U_ENYERMY);
+    await expect(api.session.setPassword({ password: STRONG })).resolves.toBeUndefined();
+    const me = await api.session.getCurrentUser();
+    expect(me.has_password).toBe(true);
+    expect(me.password_setup_required).toBe(false);
+    await api.session.logout();
+    expect(asUser(await api.session.login({ email: ENYERMY, password: STRONG })).id).toBe(
+      seed.U_ENYERMY,
+    );
+  });
+
+  it("creating refuses a short password (weak_password) and leaves the account as it was", async () => {
+    const api = createMockApi();
+    await api.session.setViewAs(seed.U_ENYERMY);
+    await expect(api.session.setPassword({ password: "corta" })).rejects.toThrow("weak_password");
+    expect((await api.session.getCurrentUser()).has_password).toBe(false);
+  });
+
+  it("changing needs the current password and it must match", async () => {
+    const api = createMockApi();
+    await expect(api.session.setPassword({ password: STRONG })).rejects.toThrow(
+      "current_password_required",
+    );
+    await expect(
+      api.session.setPassword({ password: STRONG, current_password: "no-es-la-actual" }),
+    ).rejects.toThrow("invalid_credentials");
+    await expect(
+      api.session.setPassword({ password: STRONG, current_password: DEMO_PASSWORD }),
+    ).resolves.toBeUndefined();
+    await api.session.logout();
+    await expect(
+      api.session.login({ email: "lucia@estudioperez.legal", password: DEMO_PASSWORD }),
+    ).rejects.toThrow("invalid_credentials");
+    expect(
+      asUser(await api.session.login({ email: "lucia@estudioperez.legal", password: STRONG })).id,
+    ).toBe(seed.U_LUCIA);
+  });
+
+  it("signed out, setPassword answers unauthenticated", async () => {
+    const api = await signedOut();
+    await expect(api.session.setPassword({ password: STRONG })).rejects.toThrow("unauthenticated");
+  });
+});
+
 describe("session: starts signed in, logout and login", () => {
   it("the mock starts signed in as the seeded user and Ver como keeps working", async () => {
     const api = createMockApi();

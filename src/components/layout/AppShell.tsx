@@ -9,6 +9,7 @@ import { BrandLogo } from "@/components/brand/BrandLogo";
 import { isNavActive, navFor } from "./nav";
 import { firmName } from "@/components/office/shared";
 import { NotificationBell } from "./NotificationBell";
+import { PasswordSetupDialog } from "@/components/auth/PasswordSetupDialog";
 import { cn } from "@/lib/utils";
 import { brandStyle } from "@/lib/brand/style";
 import type { BusinessBrand } from "@/lib/api/types";
@@ -447,6 +448,8 @@ function Shell({ children }: { children: ReactNode }) {
           <TopBar onMenu={() => setMenuOpen(true)} />
           <main className="min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]">{children}</main>
         </div>
+        {/* "Crea tu contraseña": over everything while GET /me says password_setup_required. */}
+        <PasswordSetupDialog />
       </div>
     </TooltipProvider>
   );

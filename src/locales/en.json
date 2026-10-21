@@ -729,6 +729,23 @@
     "my_team_title": "My team",
     "my_team_hint": "Invite the people of your firm and deactivate those who no longer work with you.",
     "my_team_empty": "There is nobody else in your firm yet. Invite the first person.",
+    "password": {
+      "title": "Password",
+      "state_on": "Created",
+      "state_off": "Not created",
+      "on": "You sign in with your email and your password. You can change it here.",
+      "off": "You do not have a password yet: you sign in with the links in your email. Create one to sign in next time with your email and your password.",
+      "create": "Create password",
+      "change": "Change password",
+      "cancel": "Cancel",
+      "create_title": "Create password",
+      "create_body": "Type it twice. The link in your email keeps working.",
+      "change_title": "Change password",
+      "change_body": "Type your current password and then the new one, twice.",
+      "pending": "Saving…",
+      "t_created": "You created your password. Next time sign in with your email and your password.",
+      "t_changed": "You changed your password."
+    },
     "two_factor": {
       "title": "Two-step verification",
       "state_on": "On",
@@ -3274,10 +3291,12 @@
       "password": "Password",
       "new_password": "New password",
       "confirm_password": "Repeat the password",
+      "current_password": "Current password",
       "name": "Your first and last name"
     },
     "validation": {
       "email_required": "Type your email.",
+      "current_password_required": "Type your current password.",
       "email_invalid": "Check the email. It should look like this: name@company.com.",
       "password_required": "Type your password.",
       "name_required": "Type your name.",
@@ -3294,6 +3313,11 @@
     "errors": {
       "invalid_credentials": "The email or the password do not match",
       "invalid_credentials_help": "Check that they are spelled right. If you do not remember your password, you can change it or sign in with a link by email.",
+      "no_password_yet": "If you have not created your password yet, sign in with the link.",
+      "send_magic_link": "Send me a link by email",
+      "create_from_portal": "Once you are in with the link, you can create your password from the portal, in My profile.",
+      "current_password_wrong": "The current password is not right",
+      "current_password_wrong_help": "Type it again. If you do not remember it, sign out and use \"Forgot your password?\".",
       "account_inactive": "Your account is deactivated",
       "account_inactive_help": "Talk to your Strategic Mates consultant to turn it back on.",
       "generic": "We could not finish this step",
@@ -3368,6 +3392,16 @@
       "done_title": "Check your email",
       "done_body": "If <email>{{email}}</email> has an account, we sent you instructions. The link expires in 1 hour.",
       "other_email": "Use another email"
+    },
+    "password_setup": {
+      "kicker": "Your account",
+      "title": "You are now part of Strategic Mates",
+      "body": "Create your password to sign in next time.",
+      "link_note": "The link in your email keeps working.",
+      "submit": "Create password",
+      "pending": "Creating…",
+      "later": "Later",
+      "done": "Done, you now have a password. Next time sign in with your email and your password."
     },
     "reset": {
       "title": "Create a new password",

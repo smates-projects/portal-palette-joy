@@ -136,7 +136,19 @@ export function LoginPage({
         )}
         {serverError === "invalid_credentials" && (
           <FormAlert tone="error" title={t("auth.errors.invalid_credentials")}>
-            {t("auth.errors.invalid_credentials_help")}
+            <p>{t("auth.errors.invalid_credentials_help")}</p>
+            {/* An account that still has no password (enters by email links) gets the same answer on purpose, so
+                the way in is offered right here: the magic link with the email already typed. */}
+            <p className="mt-2 text-foreground">{t("auth.errors.no_password_yet")}</p>
+            <button
+              type="button"
+              onClick={submitMagic}
+              disabled={pending}
+              className="mt-2 h-9 rounded-[4px] border border-border bg-surface px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+            >
+              {t("auth.errors.send_magic_link")}
+            </button>
+            <p className="mt-2 text-xs">{t("auth.errors.create_from_portal")}</p>
           </FormAlert>
         )}
         {serverError === "account_inactive" && (
