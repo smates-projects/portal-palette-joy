@@ -449,7 +449,8 @@ describe("Business Bishop", () => {
     const { investments, totals } = await (await asBishop()).bishop.getPortfolio();
     expect(totals).toEqual({ invested: 150000, recovered: 41800, recovered_pct: 28 });
     const bimbo = investments[0]!;
-    expect(bimbo).toMatchObject({ business_name: "Bimbo Remodelaciones", current_share_pct: 50, franchises: 2, estimated_payback_month: "2028-09" });
+    // Bimbo entered before the validations existed: the split is still the provisional one.
+    expect(bimbo).toMatchObject({ business_name: "Bimbo Remodelaciones", current_share_pct: 50, split_final: false, franchises: 2, estimated_payback_month: "2028-09" });
     expect(bimbo.recovery.at(-1)).toMatchObject({ month: "2027-04", projected: 76000, actual: null });
     expect(bimbo.recovery.find((p) => p.month === "2026-10")).toMatchObject({ projected: 40000, actual: 41800 });
   });

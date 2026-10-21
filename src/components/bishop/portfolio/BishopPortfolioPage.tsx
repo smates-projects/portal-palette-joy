@@ -8,7 +8,7 @@ import { BishopFundsSection } from "@/components/bishop/funds/BishopFundsSection
 import type { BishopInvestment, BishopOpportunity } from "@/lib/api/types";
 import { formatDate, formatNumber, formatUsd } from "@/lib/format";
 import { DecisionTag, PhaseTag, useOpportunityTitle } from "@/components/bishop/opportunities/parts";
-import { EmptyBlock, ErrorBlock, LoadingBlocks, Metric, Panel, ProgressBar, ProvisionalTag, Screen } from "@/components/bishop/ui";
+import { EmptyBlock, ErrorBlock, LoadingBlocks, Metric, Panel, ProgressBar, Screen, SplitTag } from "@/components/bishop/ui";
 import { buildRecoveryRows, formatMonth, recoveryGap, sortByDecision } from "./recovery";
 
 const MAX_OPPORTUNITIES = 5;
@@ -58,6 +58,8 @@ export function BishopPortfolioPage() {
   const rows = buildRecoveryRows(investments);
   const gap = recoveryGap(rows);
   const shares = [...new Set(investments.map((i) => i.current_share_pct))].sort((a, b) => b - a);
+  // "Definitivo" only when every business he funds has its validated percentage; "Provisional" otherwise.
+  const allFinal = investments.every((i) => !!i.split_final);
   const payback = latestPayback(investments);
   const money = (n: number) => formatUsd(n, lng);
   const compact = (n: number) => formatNumber(n, lng, { style: "currency", currency: "USD", notation: "compact", maximumFractionDigits: 1 });
@@ -75,9 +77,9 @@ export function BishopPortfolioPage() {
           />
           <Metric
             label={t("bishop.portfolio.share")}
-            badge={<ProvisionalTag />}
+            badge={<SplitTag final={allFinal} />}
             value={shares.map((s) => `${s}%`).join(" / ")}
-            sub={t("bishop.portfolio.share_sub")}
+            sub={t(allFinal ? "bishop.portfolio.share_sub_final" : "bishop.portfolio.share_sub")}
           />
           <Metric
             label={t("bishop.portfolio.payback")}
@@ -176,7 +178,10 @@ export function BishopPortfolioPage() {
                       <p className="tabular-nums">{money(i.recovered)} <span className="text-xs text-muted-foreground">({i.recovered_pct}%)</span></p>
                       <div className="mt-1"><ProgressBar value={i.recovered_pct} label={t("bishop.portfolio.recovered")} /></div>
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums">{i.current_share_pct}%</td>
+                    <td className="px-4 py-3 text-right tabular-nums">
+                      {i.current_share_pct}%
+                      <span className="mt-1 block text-[11px] font-normal text-muted-foreground">{t(i.split_final ? "bishop.definitive" : "bishop.provisional")}</span>
+                    </td>
                     <td className="px-4 py-3 text-right tabular-nums">{i.franchises}</td>
                     <td className="px-4 py-3">{i.estimated_payback_month ? formatMonth(i.estimated_payback_month, lng) : t("bishop.portfolio.payback_none")}</td>
                   </tr>

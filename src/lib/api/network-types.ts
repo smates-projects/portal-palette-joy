@@ -636,8 +636,12 @@ export interface BishopInvestment {
   /** Returned so far (last actual point of the series). */
   recovered: number;
   recovered_pct: number;
-  /** Share of the franchisor result the Bishop receives today (see PROFIT_SPLIT, provisional). */
+  /**
+   * Share of the franchisor result the Bishop receives today. Provisional (PROFIT_SPLIT) until SM closed the
+   * validation of that business: then it is the validated percentage and split_final is true.
+   */
   current_share_pct: number;
+  split_final?: boolean | undefined;
   /** Month when the trailing 6-month pace recovers the whole investment; null if not recovering. */
   estimated_payback_month: IsoMonth | null;
   franchises: number;

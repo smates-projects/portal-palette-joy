@@ -44,6 +44,8 @@ const toOpportunity = (opportunity: BishopOpportunity): BishopOpportunity => ({
   decided_at: opportunity.decided_at,
   // "Strategic Mates te presentó este negocio": absent until the API sends it.
   ...(opportunity.presented_at !== undefined ? { presented_at: opportunity.presented_at } : {}),
+  // The validated split ("Definitivo") once SM closed the validation.
+  ...(opportunity.split_final !== undefined ? { split_final: opportunity.split_final } : {}),
 });
 
 const toDetail = (detail: OpportunityDetail): OpportunityDetail => ({
@@ -56,6 +58,7 @@ const toDetail = (detail: OpportunityDetail): OpportunityDetail => ({
   projection: detail.projection,
   files: detail.files,
   tripartite: detail.tripartite,
+  ...(detail.binding !== undefined ? { binding: detail.binding } : {}),
 });
 
 const toInvestment = (investment: BishopInvestmentResponse): BishopInvestment => ({
@@ -68,6 +71,8 @@ const toInvestment = (investment: BishopInvestmentResponse): BishopInvestment =>
   recovered: investment.recovered,
   recovered_pct: investment.recovered_pct,
   current_share_pct: investment.current_share_pct,
+  // "Definitivo" once SM closed the validation; absent until the API sends it (read as provisional).
+  ...(investment.split_final !== undefined ? { split_final: investment.split_final } : {}),
   estimated_payback_month: investment.estimated_payback_month,
   franchises: investment.franchises,
   recovery: investment.recovery,

@@ -851,10 +851,14 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
         .map((i): BishopInvestment => {
           const series = db.recovery[i.id] ?? [];
           const recovered = series.filter((p) => p.actual !== null).at(-1)?.actual ?? 0;
+          // The validated percentage once SM closed the validation of that business; the provisional split before.
+          const validation = db.leads.find((l) => l.business_id === i.business_id)?.validation;
+          const final = validation?.status === "closed" && validation.equity_bishop !== null;
           return {
             id: i.id, bishop_user_id: i.bishop_user_id, business_id: i.business_id, business_name: businessOf(i.business_id)?.name ?? "",
             invested: i.invested, invested_at: i.invested_at, recovered, recovered_pct: pct(recovered, i.invested),
-            current_share_pct: bishopShareAt(i.invested_at, todayIso()),
+            current_share_pct: final ? validation.equity_bishop! : bishopShareAt(i.invested_at, todayIso()),
+            split_final: final,
             estimated_payback_month: estimatePaybackMonth(series, i.invested),
             franchises: db.franchises.filter((f) => f.franchisor_business_id === i.business_id).length,
             recovery: series,

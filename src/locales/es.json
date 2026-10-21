@@ -2604,6 +2604,7 @@
       "recovered_sub": "{{pct}}% de lo invertido",
       "share": "Tu participación hoy",
       "share_sub": "Baja cuando el negocio se estabiliza",
+      "share_sub_final": "Fijada por Strategic Mates en la validación de cada negocio",
       "payback": "Recuperación estimada",
       "payback_sub": "Si sigue el ritmo de los últimos 6 meses",
       "payback_none": "Sin estimar",

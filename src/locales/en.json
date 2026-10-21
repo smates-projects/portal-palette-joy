@@ -2604,6 +2604,7 @@
       "recovered_sub": "{{pct}}% of what you invested",
       "share": "Your share today",
       "share_sub": "It goes down once the business stabilizes",
+      "share_sub_final": "Set by Strategic Mates in the validation of each business",
       "payback": "Estimated payback",
       "payback_sub": "If the pace of the last 6 months continues",
       "payback_none": "Not estimated",
