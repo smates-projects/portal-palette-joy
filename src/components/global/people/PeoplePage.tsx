@@ -24,6 +24,7 @@ export function PeoplePage() {
   const usersQ = useUsersWithInactive();
   const orgsQ = useOrganizations();
   const bizQ = useBusinesses();
+  const smSquare = smEntitiesOf(useRules().data).sm_square.name;
   const [office, setOffice] = useState<string | undefined>();
   const [role, setRole] = useState<UserRole | undefined>();
   const [status, setStatus] = useState<UserStatus | undefined>();
@@ -90,7 +91,7 @@ export function PeoplePage() {
             ))}
           </ul>
           <div className="hidden overflow-x-auto rounded-md border border-border bg-surface md:block">
-            <table className="w-full min-w-[860px] text-sm">
+            <table className="w-full min-w-[960px] text-sm">
               <thead className="border-b border-border bg-muted text-xs text-muted-foreground">
                 <tr>
                   <th className="px-4 py-2 text-left font-medium">{t("accounts.col_person")}</th>
@@ -98,6 +99,7 @@ export function PeoplePage() {
                   <th className="px-3 py-2 text-left font-medium">{t("accounts.col_place")}</th>
                   <th className="px-3 py-2 text-left font-medium">{t("accounts.col_office")}</th>
                   <th className="px-3 py-2 text-left font-medium">{t("accounts.col_status")}</th>
+                  <th className="px-3 py-2 text-center font-medium">{t("entry_contracts.people.can_sign", { entity: smSquare })}</th>
                   <th className="px-3 py-2 text-right font-medium">{t("accounts.col_actions")}</th>
                 </tr>
               </thead>
@@ -110,12 +112,12 @@ export function PeoplePage() {
                     </td>
                     <td className="px-3 py-3">
                       {t(`roles.${r.user.role}`)}{r.user.title ? <span className="block text-xs text-muted-foreground">{r.user.title}</span> : null}
-                      <SmSquareToggle user={r.user} />
                       <FrameworkState user={r.user} />
                     </td>
                     <td className="px-3 py-3">{r.place || "—"}</td>
                     <td className="px-3 py-3">{r.office || (r.user.role === "sm_global" ? t("roles.sm_global") : "—")}</td>
                     <td className="px-3 py-3"><UserStatusBadge status={r.status} /></td>
+                    <td className="px-3 py-3 text-center"><SmSquareToggle user={r.user} bare /></td>
                     <td className="px-3 py-3"><PersonActions user={r.user} orgs={orgs} onDeactivate={setDeactivating} onHistory={setHistory} /></td>
                   </tr>
                 ))}
@@ -149,8 +151,12 @@ function FrameworkState({ user }: { user: User }) {
   );
 }
 
-/** SM people only: "Puede firmar por SM Square" (the SM Square holder of a validation must have it). */
-function SmSquareToggle({ user }: { user: User }) {
+/**
+ * SM people only: "Puede firmar por SM Square" (the SM Square holder of a validation must have it). In the table the
+ * column header carries the label once and each row has only its checkbox (named for screen readers); the phone list
+ * keeps the label next to it.
+ */
+function SmSquareToggle({ user, bare = false }: { user: User; bare?: boolean }) {
   const { t } = useTranslation();
   const set = useSetSigningEntities();
   const entity = smEntitiesOf(useRules().data).sm_square.name;
@@ -163,6 +169,17 @@ function SmSquareToggle({ user }: { user: User }) {
       }),
       onError: () => toast.error(t("global.t_error")),
     });
+  if (bare)
+    return (
+      <input
+        type="checkbox"
+        checked={on}
+        disabled={set.isPending}
+        onChange={(e) => change(e.target.checked)}
+        aria-label={t("entry_contracts.people.can_sign_person", { entity, name: user.full_name })}
+        className="h-4 w-4 cursor-pointer accent-primary"
+      />
+    );
   return (
     <label className="mt-1 flex w-fit cursor-pointer items-center gap-2 text-xs text-muted-foreground">
       <input type="checkbox" checked={on} disabled={set.isPending} onChange={(e) => change(e.target.checked)} className="h-3.5 w-3.5 accent-primary" />

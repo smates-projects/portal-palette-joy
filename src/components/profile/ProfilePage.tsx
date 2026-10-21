@@ -39,7 +39,8 @@ export function ProfilePage({ calendarStatus, onDismissCalendarStatus }: { calen
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-8">
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("tasks.for_role")}</p>
+      {/* "Vista para firma aliada" only where it is true: the other roles read their role in the card below. */}
+      {meQ.data?.role === "partner_firm" && <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("tasks.for_role")}</p>}
       <h1 className="mt-1 text-2xl font-semibold tracking-tight">{t("profile.heading")}</h1>
 
       {meQ.isError || orgsQ.isError ? (
@@ -61,10 +62,13 @@ export function ProfilePage({ calendarStatus, onDismissCalendarStatus }: { calen
               <span className="rounded-[4px] border border-border px-1.5 py-0.5 text-[11px] text-muted-foreground">{t(`roles.${me.role}`)}</span>
             </div>
             <dl className="grid gap-4 px-5 py-4 text-sm sm:grid-cols-2">
-              <div className="sm:col-span-2">
-                <dt className="text-xs text-muted-foreground">{t("profile.specialty")}</dt>
-                <dd className="mt-0.5">{org?.specialty ?? t("profile.no_specialty")}</dd>
-              </div>
+              {/* Specialty belongs to partner firms; SM Global, SM offices and the rest have none to ask for. */}
+              {org?.kind === "partner_firm" && (
+                <div className="sm:col-span-2">
+                  <dt className="text-xs text-muted-foreground">{t("profile.specialty")}</dt>
+                  <dd className="mt-0.5">{org.specialty ?? t("profile.no_specialty")}</dd>
+                </div>
+              )}
               {org?.city && <Row icon={<MapPin className="h-3.5 w-3.5" />} label={t("profile.city")} value={org.city} />}
               {org?.email && <Row icon={<Mail className="h-3.5 w-3.5" />} label={t("profile.email")} value={org.email} />}
               {org?.phone && <Row icon={<Phone className="h-3.5 w-3.5" />} label={t("profile.phone")} value={org.phone} />}

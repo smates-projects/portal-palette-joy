@@ -3883,6 +3883,7 @@
     },
     "people": {
       "can_sign": "Can sign for {{entity}}",
+      "can_sign_person": "{{name}} can sign for {{entity}}",
       "t_on": "{{name}} can now sign for {{entity}}",
       "t_off": "{{name}} no longer signs for {{entity}}"
     },
