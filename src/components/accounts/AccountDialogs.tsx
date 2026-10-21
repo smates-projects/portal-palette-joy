@@ -126,6 +126,8 @@ export function InvitePersonDialog(props: { open: boolean; onOpenChange: (o: boo
           ) : (
             <p className="text-xs text-muted-foreground">{t(adminForced ? "accounts.invite.admin_forced_on" : "accounts.invite.admin_forced_off")}</p>
           )}
+          {/* A Bishop gets his framework agreement with the invitation; Corporate countersigns it from Acuerdos. */}
+          {effectiveRole === "bishop" && <p className="rounded-[4px] border border-border bg-muted px-3 py-2 text-xs">{t("accounts.invite.bishop_framework")}</p>}
           {error && <p role="alert" className="text-xs text-status-danger-fg">{error}</p>}
         </div>
         <DialogFooter>

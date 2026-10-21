@@ -144,5 +144,8 @@ export function createHttpDocumentsRepository(client: HttpClient): HttpDocuments
 
     getSignedDocument: (contractId) =>
       client.get<SignedDocument>(`${contractPath(contractId)}/signed-document`),
+
+    /** GET /contracts?kind=framework: the Bishops' framework agreements (SM Global). */
+    listFrameworkAgreements: () => client.get<Contract[]>("/contracts", { query: { kind: "framework" } }),
   };
 }

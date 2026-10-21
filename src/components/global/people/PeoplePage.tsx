@@ -2,9 +2,11 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { UserPlus } from "lucide-react";
 import { toast } from "sonner";
-import { useBusinesses, useCurrentUser, useOrganizations, useRules, useSetSigningEntities, useUsersWithInactive } from "@/lib/api/hooks";
+import { Link } from "@tanstack/react-router";
+import { useBusinesses, useCurrentUser, useFrameworkAgreements, useOrganizations, useRules, useSetSigningEntities, useUsersWithInactive } from "@/lib/api/hooks";
 import { smEntitiesOf } from "@/lib/leads/contract-rules";
-import type { User, UserRole, UserStatus } from "@/lib/api/types";
+import { pendingPartyNames } from "@/lib/contracts/parties";
+import type { Contract, User, UserRole, UserStatus } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EmptyBox, ErrorBox, GlobalHeader, ListSkeleton } from "../shared";
@@ -82,6 +84,7 @@ export function PeoplePage() {
                 </div>
                 <div className="text-xs text-muted-foreground">{t(`roles.${r.user.role}`)}{r.user.title ? ` · ${r.user.title}` : ""} · {r.place || "—"} · {r.office || (r.user.role === "sm_global" ? t("roles.sm_global") : "—")}</div>
                 <SmSquareToggle user={r.user} />
+                <FrameworkState user={r.user} />
                 <PersonActions user={r.user} orgs={orgs} onDeactivate={setDeactivating} onHistory={setHistory} />
               </li>
             ))}
@@ -108,6 +111,7 @@ export function PeoplePage() {
                     <td className="px-3 py-3">
                       {t(`roles.${r.user.role}`)}{r.user.title ? <span className="block text-xs text-muted-foreground">{r.user.title}</span> : null}
                       <SmSquareToggle user={r.user} />
+                      <FrameworkState user={r.user} />
                     </td>
                     <td className="px-3 py-3">{r.place || "—"}</td>
                     <td className="px-3 py-3">{r.office || (r.user.role === "sm_global" ? t("roles.sm_global") : "—")}</td>
@@ -126,6 +130,22 @@ export function PeoplePage() {
       <DeactivatePersonDialog user={deactivating} onClose={() => setDeactivating(null)} />
       <AccountHistorySheet user={history} onClose={() => setHistory(null)} />
     </div>
+  );
+}
+
+/** Bishops only: the state of their framework agreement (created with the invitation), with the way to Acuerdos. */
+function FrameworkState({ user }: { user: User }) {
+  const { t } = useTranslation();
+  const q = useFrameworkAgreements(user.role === "bishop");
+  if (user.role !== "bishop") return null;
+  const c: Contract | undefined = q.data?.find((x) => x.signers.some((s) => s.party === "bishop" && s.user_id === user.id));
+  const pending = c ? pendingPartyNames(c) : [];
+  const text = !c ? t("accounts.framework.none") : c.state === "signed" || pending.length === 0 ? t("accounts.framework.signed") : t("accounts.framework.pending", { parties: pending.join(", ") });
+  return (
+    <p className="mt-1 text-xs text-muted-foreground">
+      {text}
+      {c && c.state !== "signed" && c.can_sign && <> · <Link to="/acuerdos" className="text-link hover:underline">{t("accounts.framework.go_sign")}</Link></>}
+    </p>
   );
 }
 

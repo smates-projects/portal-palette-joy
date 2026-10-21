@@ -162,7 +162,14 @@
       "err_name": "Enter the name.",
       "err_email": "Enter a valid email, for example name@company.com.",
       "err_place": "Pick where the person goes.",
-      "t_sent": "We sent the invitation to {{name}} ({{email}})."
+      "t_sent": "We sent the invitation to {{name}} ({{email}}).",
+      "bishop_framework": "Their framework agreement with Strategic Mates is created. They sign it from their portal and Strategic Mates signs it from Agreements. Until then no business can be presented to them."
+    },
+    "framework": {
+      "none": "No framework agreement",
+      "signed": "Framework agreement signed by both parties",
+      "pending": "Framework agreement, waiting for {{parties}}",
+      "go_sign": "Sign in Agreements"
     },
     "deactivate": {
       "title": "Deactivate {{name}}",
@@ -1424,7 +1431,8 @@
       "present_confirm": "Present",
       "t_presented_one": "You presented {{name}} to {{count}} investor.",
       "t_presented_other": "You presented {{name}} to {{count}} investors.",
-      "no_framework": "Framework agreement missing",
+      "no_framework": "Framework agreement not signed yet",
+      "framework_explainer": "A Bishop shows here once his framework agreement is signed by him and by Strategic Mates. The agreement is created with the invitation and Strategic Mates signs it from Agreements.",
       "load_error": "We could not show the investors of this business."
     },
     "t_tripartite_sent": "We sent the tripartite contract for {{name}}.",
@@ -2179,6 +2187,17 @@
         "error_timeout": "The verification is taking longer than usual. Try again in a moment.",
         "error_upload": "We could not upload the file. Check your connection and try again."
       }
+    },
+    "agreements": {
+      "question": "Which framework agreements are still to sign?",
+      "hint": "Each Bishop's framework agreement is created with the invitation. Sign here as Strategic Mates so businesses can be presented to them.",
+      "empty_title": "No framework agreements yet",
+      "empty_body": "They appear when you invite a Bishop from People.",
+      "sent_on": "Created on {{date}}",
+      "bishop_part": "{{name}} (Bishop)",
+      "corporate": "Strategic Mates Corporate",
+      "state_signed": "Signed by both parties",
+      "state_pending": "Waiting for {{parties}}"
     },
     "funnel": {
       "question": "How many businesses enter the network?",

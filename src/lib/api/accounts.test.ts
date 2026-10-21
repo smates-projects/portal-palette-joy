@@ -18,6 +18,26 @@ const firmInput = (over: Partial<CreateFirmInput> = {}): CreateFirmInput => ({
   first_person: { full_name: "Pat Contacto", email: `pat-${Math.random().toString(16).slice(2)}@nuevaagencia.com`, title: "Directora" }, ...over,
 });
 
+describe("a Bishop's framework agreement", () => {
+  it("is created with the invitation; SM Global lists it with can_sign and countersigns it from Acuerdos", async () => {
+    const api = await as(seed.U_MARYLIN);
+    const bishop = await api.users.invite(invite({ role: "bishop", organization_id: null, business_id: null }));
+    const mine = (await api.documents.listFrameworkAgreements()).find((c) => c.signers.some((s) => s.party === "bishop" && s.user_id === bishop.id))!;
+    expect(mine).toMatchObject({ kind: "framework", state: "sent", can_sign: true, my_signature: "pending" });
+    expect(mine.pending_parties).toEqual([bishop.full_name, "Marilyn Boraei"]);
+    // Idempotent repair call answers the same agreement.
+    expect((await api.users.createFrameworkAgreement(bishop.id)).id).toBe(mine.id);
+    const signed = await api.documents.signContract(mine.id, { kind: "typed", image_url: "data:image/png;base64,x" });
+    expect(signed.signers.find((s) => s.party === "sm")).toMatchObject({ status: "signed", name: "Marilyn Boraei" });
+    // Diego's seeded one waits for both; Jefferson's is signed by both.
+    const all = await api.documents.listFrameworkAgreements();
+    expect(all.find((c) => c.signers.some((s) => s.user_id === net.U_DIEGO))).toMatchObject({ state: "sent", can_sign: true });
+    expect(all.find((c) => c.signers.some((s) => s.user_id === net.U_JEFFERSON))).toMatchObject({ state: "signed", can_sign: false, pending_parties: [] });
+    const office = await as(seed.U_ANDREA);
+    await expect(office.documents.listFrameworkAgreements()).rejects.toThrow("forbidden");
+  });
+});
+
 describe("accounts: who creates whom (mock enforces it)", () => {
   it("the office admin invites SM people of its office as Invitada; acceptance makes them Activa; never deleted", async () => {
     const api = await as(seed.U_ANDREA);

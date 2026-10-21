@@ -290,6 +290,12 @@ export interface UsersRepository {
    * anyone who is not SM.
    */
   setSigningEntities(userId: Uuid, input: SigningEntitiesInput): Promise<User>;
+  /**
+   * SM Global: POST /users/{id}/framework-agreement, the Bishop's framework agreement (201 created, 200 when it
+   * already existed: idempotent). The invitation of a Bishop creates it by itself; this is the repair for older ones.
+   * invalid_user for anyone who is not a Bishop.
+   */
+  createFrameworkAgreement(userId: Uuid): Promise<Contract>;
 }
 
 export interface LeadIntake {
@@ -687,6 +693,11 @@ export interface DocumentsRepository {
   declineContract(contractId: Uuid, reason: string): Promise<Contract>;
   /** Owner, MOU: the four points confirmed with "Entendí" (POST /contracts/{id}/acknowledge). All four, or invalid_points. */
   acknowledge(contractId: Uuid, points: MouAcknowledgmentPoint[]): Promise<Contract>;
+  /**
+   * SM Global: every Bishop's framework agreement (GET /contracts?kind=framework), with can_sign for the one reading.
+   * Created by itself when a Bishop is invited; Corporate countersigns it from Acuerdos. forbidden for anyone else.
+   */
+  listFrameworkAgreements(): Promise<Contract[]>;
 }
 
 export interface FinancialsRepository {

@@ -31,11 +31,20 @@ describe("Bishop opportunities", () => {
     const [o] = await (await as(net.U_LAURA)).bishop.listOpportunities();
     expect(o?.investment).toBe(150000);
   });
-  it("a Bishop without the framework agreement sees none until he signs it", async () => {
+  it("a Bishop without the framework agreement sees none until he and Strategic Mates sign it", async () => {
     const api = await as(net.U_DIEGO);
     expect(await api.bishop.listOpportunities()).toEqual([]);
     const fw = (await api.bishop.listAgreements()).find((a) => a.kind === "framework")!;
+    expect(fw).toMatchObject({ my_signature: "pending" });
     await api.documents.signContract(fw.contract!.id);
+    // Signed by him only: "Firmado por ti, falta Marilyn Boraei", still nothing to see.
+    expect((await api.bishop.listAgreements()).find((a) => a.kind === "framework")).toMatchObject({ my_signature: "signed", pending_parties: ["Marilyn Boraei"] });
+    expect(await api.bishop.listOpportunities()).toEqual([]);
+    // Corporate countersigns from Acuerdos.
+    await api.session.setViewAs(seed.U_MARYLIN);
+    await api.documents.signContract(fw.contract!.id, { kind: "typed", image_url: "data:image/png;base64,x" });
+    await api.session.setViewAs(net.U_DIEGO);
+    expect((await api.bishop.listAgreements()).find((a) => a.kind === "framework")).toMatchObject({ state: "signed", pending_parties: [] });
     expect((await api.bishop.listOpportunities()).length).toBeGreaterThan(0);
   });
   it("cannot be accepted while documents are in review", async () => {

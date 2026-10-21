@@ -4,10 +4,10 @@ import { bishopNav, franchiseeNav, franchisorNav, navFor, ownerNav, smGlobalNav,
 const keys = (items: { key: string }[]) => items.map((i) => i.key);
 
 describe("menu per role", () => {
-  it("SM Global: Inicio, Estructura, Oficinas, Embudo, Catálogo, Reglas, Personas", () => {
+  it("SM Global: Inicio, Estructura, Oficinas, Embudo, Catálogo, Reglas, Personas, Acuerdos", () => {
     expect(navFor("sm_global")).toBe(smGlobalNav);
-    expect(keys(smGlobalNav)).toEqual(["home", "structure", "offices", "global_pipeline", "global_catalog", "rules", "people"]);
-    expect(smGlobalNav.map((i) => i.to)).toEqual(["/", "/estructura", "/oficinas", "/embudo", "/catalogo", "/reglas", "/personas"]);
+    expect(keys(smGlobalNav)).toEqual(["home", "structure", "offices", "global_pipeline", "global_catalog", "rules", "people", "agreements"]);
+    expect(smGlobalNav.map((i) => i.to)).toEqual(["/", "/estructura", "/oficinas", "/embudo", "/catalogo", "/reglas", "/personas", "/acuerdos"]);
   });
   it("owner of a franchisor: Inicio, Mi franquiciadora, Mis franquicias, Mis números, Documentos, Mi negocio", () => {
     expect(navFor("business_owner", { franchisor: true })).toBe(franchisorNav);

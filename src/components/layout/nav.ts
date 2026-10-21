@@ -98,6 +98,8 @@ export const smGlobalNav: NavItem[] = [
   { to: "/catalogo", key: "global_catalog", icon: Library },
   { to: "/reglas", key: "rules", icon: SlidersHorizontal },
   { to: "/personas", key: "people", icon: Users },
+  // The Bishops' framework agreements: Corporate countersigns them here.
+  { to: "/acuerdos", key: "agreements", icon: FileSignature },
 ];
 
 // Menu for a business owner whose business is a franchisor (finished the program).

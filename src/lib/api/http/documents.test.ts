@@ -130,6 +130,13 @@ describe("http documents", () => {
     expect(calls[4]?.body).toEqual({ file_id: FILE_ID });
   });
 
+  it("listFrameworkAgreements: GET /contracts?kind=framework", async () => {
+    const framework = contractFixture({ kind: "framework", business_id: null });
+    const { calls } = stubFetch(dataResponse([framework]));
+    expect(await asOwner().listFrameworkAgreements()).toEqual([framework]);
+    expect(calls[0]).toMatchObject({ method: "GET", path: "/contracts?kind=framework" });
+  });
+
   it("markNotApplicable: POST /documents/{id}/not-applicable with the trimmed reason", async () => {
     const marked = documentFixture({ state: "not_applicable", not_applicable_reason: "No tengo empleados" });
     const { calls } = stubFetch(dataResponse(marked));

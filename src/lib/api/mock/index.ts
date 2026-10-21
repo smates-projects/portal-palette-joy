@@ -446,6 +446,12 @@ export function createMockApi(): MockApi {
           if (!fileName.trim()) throw new Error("file_required");
           return delay(intake.upload(d.business_id, d, fileName.trim()));
         },
+        /** SM Global: every Bishop's framework agreement, with can_sign for Corporate's countersignature. */
+        listFrameworkAgreements: async () => {
+          const u = me();
+          if (u.role !== "sm_global") throw new Error("forbidden");
+          return delay(db.frameworkContracts.map((c) => withSigningView(c, u)));
+        },
         markNotApplicable: async (documentId, reason) => {
           const u = me();
           const d = db.documents.find((x) => x.id === documentId);
@@ -506,6 +512,25 @@ export function createMockApi(): MockApi {
         },
       },
     };
+  };
+
+  /** The Bishop's framework agreement, created when missing: the Bishop signs from Acuerdos, Corporate's CEO countersigns. */
+  const frameworkFor = (bishop: User): Contract => {
+    const existing = db.frameworkContracts.find((c) => c.signers.some((s) => s.party === "bishop" && s.user_id === bishop.id));
+    if (existing) return existing;
+    const on = todayIso();
+    const ceo = db.users.find((u) => u.role === "sm_global" && u.is_admin) ?? db.users.find((u) => u.role === "sm_global");
+    const created: Contract = {
+      id: newId(), business_id: "", area: "intake", kind: "framework",
+      name: "Acuerdo marco con Strategic Mates (confidencialidad y no circunvención)",
+      state: "sent", sent_at: on, signed_at: null,
+      signers: [
+        { name: bishop.full_name, role: "bishop", party: "bishop", user_id: bishop.id, status: "sent", signed_at: null, decline_reason: null, history: [{ status: "sent", at: on }], signature: null },
+        { name: ceo?.full_name ?? "Strategic Mates", role: "sm", party: "sm", user_id: ceo?.id ?? null, status: "sent", signed_at: null, decline_reason: null, history: [{ status: "sent", at: on }], signature: null, sm_entity: "corporate" },
+      ],
+    };
+    db.frameworkContracts.push(created);
+    return created;
   };
 
   const net = createNetworkRepositories({ db, me, newId, delay });
@@ -748,6 +773,19 @@ export function createMockApi(): MockApi {
     users: {
       // Nobody sees people of another office; a Bishop only sees himself. Scope and writes live in ./accounts.
       ...accounts.users,
+      /** Inviting a Bishop creates his framework agreement at once (the Bishop and Corporate's CEO still to sign). */
+      invite: async (input) => {
+        const user = await accounts.users.invite(input);
+        if (user.role === "bishop") frameworkFor(user);
+        return user;
+      },
+      createFrameworkAgreement: async (userId) => {
+        if (me().role !== "sm_global") throw new Error("forbidden");
+        const target = db.users.find((u) => u.id === userId);
+        if (!target) throw new Error("not_found");
+        if (target.role !== "bishop") throw new Error("invalid_user");
+        return delay(withSigningView(frameworkFor(target), me()));
+      },
       setGoogleCalendar: async (email) => {
         const u = me();
         cal.setConnected(u, email);

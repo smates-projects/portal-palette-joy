@@ -172,6 +172,8 @@ function PresentDialog({ leadId, businessName, investors, onClose }: { leadId: s
             })}
           </ul>
         )}
+        {/* Why a Bishop may be missing or greyed: his framework agreement is not signed by both parties yet. */}
+        <p className="text-xs text-muted-foreground">{t("pipeline.investors.framework_explainer")}</p>
         <DialogFooter>
           <SecondaryButton onClick={onClose}>{t("pipeline.cancel")}</SecondaryButton>
           <PrimaryButton disabled={picked.length === 0 || present.isPending} onClick={submit}>{t("pipeline.investors.present_confirm")}</PrimaryButton>

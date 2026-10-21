@@ -162,7 +162,14 @@
       "err_name": "Escribe el nombre.",
       "err_email": "Escribe un correo válido, por ejemplo nombre@empresa.com.",
       "err_place": "Elige dónde va la persona.",
-      "t_sent": "Enviamos la invitación a {{name}} ({{email}})."
+      "t_sent": "Enviamos la invitación a {{name}} ({{email}}).",
+      "bishop_framework": "Se crea su acuerdo marco con Strategic Mates. Él lo firma desde su portal y Strategic Mates lo firma desde Acuerdos. Hasta entonces no se le pueden presentar negocios."
+    },
+    "framework": {
+      "none": "Sin acuerdo marco",
+      "signed": "Acuerdo marco firmado por ambas partes",
+      "pending": "Acuerdo marco, falta {{parties}}",
+      "go_sign": "Firmar en Acuerdos"
     },
     "deactivate": {
       "title": "Desactivar a {{name}}",
@@ -1424,7 +1431,8 @@
       "present_confirm": "Presentar",
       "t_presented_one": "Presentaste {{name}} a {{count}} inversor.",
       "t_presented_other": "Presentaste {{name}} a {{count}} inversores.",
-      "no_framework": "Falta el acuerdo marco",
+      "no_framework": "Falta firmar el acuerdo marco",
+      "framework_explainer": "Un Bishop aparece aquí cuando su acuerdo marco está firmado por él y por Strategic Mates. El acuerdo se crea al invitarlo y Strategic Mates lo firma desde Acuerdos.",
       "load_error": "No pudimos mostrar los inversores de este negocio."
     },
     "t_tripartite_sent": "Enviamos el contrato tripartito de {{name}}.",
@@ -2179,6 +2187,17 @@
         "error_timeout": "La verificación está tardando más de lo normal. Vuelve a intentar en un momento.",
         "error_upload": "No pudimos subir el archivo. Revisa tu conexión e intenta de nuevo."
       }
+    },
+    "agreements": {
+      "question": "¿Qué acuerdos marco faltan firmar?",
+      "hint": "El acuerdo marco de cada Bishop se crea al invitarlo. Firma aquí como Strategic Mates para que se le puedan presentar negocios.",
+      "empty_title": "Todavía no hay acuerdos marco",
+      "empty_body": "Aparecen cuando invitas a un Bishop desde Personas.",
+      "sent_on": "Creado el {{date}}",
+      "bishop_part": "{{name}} (Bishop)",
+      "corporate": "Strategic Mates Corporate",
+      "state_signed": "Firmado por ambas partes",
+      "state_pending": "Falta {{parties}}"
     },
     "funnel": {
       "question": "¿Cuántos negocios entran a la red?",

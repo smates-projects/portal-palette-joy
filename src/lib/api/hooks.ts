@@ -643,6 +643,9 @@ export const useContracts = (businessId?: string) =>
   useQuery({ queryKey: ["documents", "contracts", businessId ?? "all"], queryFn: () => api.documents.listContracts(businessId) });
 export const useUploadDocument = () =>
   useNetworkMutation((v: { documentId: string; file: DocumentUpload }) => api.documents.uploadDocument(v.documentId, v.file), ["documents", "leads"]);
+/** SM Global: the Bishops' framework agreements, to countersign from Acuerdos and to show their state in Personas. */
+export const useFrameworkAgreements = (enabled = true) =>
+  useQuery({ queryKey: ["documents", "framework"], queryFn: api.documents.listFrameworkAgreements, enabled });
 /** Owner, "No aplica": the document waits for SM with the reason. */
 export const useMarkNotApplicable = () =>
   useNetworkMutation((v: { documentId: string; reason: string }) => api.documents.markNotApplicable(v.documentId, v.reason), ["documents", "leads"]);

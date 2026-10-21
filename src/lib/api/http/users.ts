@@ -1,6 +1,6 @@
 // UsersRepository over the real API (identity module: users.controller.ts).
 import type { CalendarConsent, UsersRepository } from "../repositories";
-import type { AccountEvent, AccountEventKind, ExternalCalendarEvent, User } from "../types";
+import type { AccountEvent, AccountEventKind, Contract, ExternalCalendarEvent, User } from "../types";
 import type { HttpClient } from "./client";
 
 /** The API writes more kinds (invitation_resent, impersonation_*, password_changed, totp_enabled); the front knows these. */
@@ -30,6 +30,10 @@ export function createHttpUsersRepository(client: HttpClient): UsersRepository {
       client.get<User[]>("/users", {
         query: { include_inactive: opts?.include_inactive ? "true" : undefined },
       }),
+
+    /** POST /users/{id}/framework-agreement: 201 or 200 (already there), the contract either way. */
+    createFrameworkAgreement: (userId) =>
+      client.post<Contract>(`${userPath(userId)}/framework-agreement`, undefined, { idempotent: true }),
 
     invite: (input) =>
       client.post<User>(

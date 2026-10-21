@@ -36,6 +36,7 @@ import {
   BIZ_PRIME,
   BIZ_VOSSLER,
   ORG_GLOBAL,
+  U_MARYLIN,
   U_ANA_VOSSLER,
   U_CARLA,
   U_DANIEL,
@@ -475,8 +476,11 @@ const framework = (n: number, user: string, name: string, signedOn: string | nul
     { name, role: "bishop", party: "bishop", user_id: user, status: signedOn ? "signed" : "sent", signed_at: signedOn, decline_reason: null,
       history: signedOn ? [{ status: "sent", at: "2025-10-28" }, { status: "signed", at: signedOn }] : [{ status: "sent", at: "2026-10-12" }],
       signature: signedOn ? { kind: "typed", image_url: typedSignatureDataUrl(name) } : null },
-    { name: "Strategic Mates", role: "sm", party: "sm", user_id: null, status: "signed", signed_at: "2025-10-28", decline_reason: null, history: [{ status: "signed", at: "2025-10-28" }],
-      signature: { kind: "typed", image_url: typedSignatureDataUrl("Marilyn Boraei") } },
+    // Corporate countersigns through its CEO: "Firmado por Marilyn Boraei en nombre de Strategic Mates Corporate". Diego's
+    // is still waiting for her (and for him).
+    { name: "Marilyn Boraei", role: "sm", party: "sm", user_id: U_MARYLIN, status: signedOn ? "signed" : "sent", signed_at: signedOn ? "2025-10-28" : null, decline_reason: null,
+      history: signedOn ? [{ status: "signed", at: "2025-10-28" }] : [{ status: "sent", at: "2026-10-12" }], sm_entity: "corporate",
+      signature: signedOn ? { kind: "typed", image_url: typedSignatureDataUrl("Marilyn Boraei") } : null },
   ],
 });
 export const frameworkContracts: Contract[] = [
