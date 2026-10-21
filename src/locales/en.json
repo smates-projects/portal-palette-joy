@@ -2058,6 +2058,9 @@
         "body": "The office starts in opening. It goes live when it meets its opening checklist.",
         "city": "City",
         "city_hint": "Example, Tampa, FL",
+        "name": "Office name",
+        "name_hint": "How everyone will see it. Example, SM Tampa",
+        "error_name_required": "Enter the office name.",
         "manager_name": "Manager",
         "manager_email": "Manager email",
         "manager_email_hint": "We create their SM team account.",
@@ -2123,7 +2126,7 @@
       "checklist_title": "Opening checklist",
       "checklist_progress": "{{done}} of {{total}} done",
       "checklist": {
-        "manager_access": "The manager already has access",
+        "manager_access": "The manager already has access (accepted the invitation)",
         "booking_link": "The booking link is set",
         "partner_firms": "There is a partner firm in each of the six areas",
         "first_lead": "The office received its first lead",

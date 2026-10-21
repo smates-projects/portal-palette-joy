@@ -38,6 +38,7 @@ export function createHttpNetworkRepository(client: HttpClient): NetworkReposito
       client.post<OfficeSummary>(
         "/offices",
         {
+          name: input.name,
           city: input.city,
           manager_name: input.manager_name,
           manager_email: input.manager_email,

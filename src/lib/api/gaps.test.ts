@@ -22,7 +22,7 @@ async function as(userId: string) {
 const asGlobal = () => as(seed.U_MARYLIN);
 const asOscar = () => as(net.U_OSCAR);
 
-const newOffice = { city: "Jacksonville, FL", manager_name: "Sofía Marín", manager_email: "sofia@strategicmates.com", planned_opening_date: "2027-01-11" };
+const newOffice = { name: "SM Jacksonville", city: "Jacksonville, FL", manager_name: "Sofía Marín", manager_email: "sofia@strategicmates.com", planned_opening_date: "2027-01-11" };
 
 describe("manual sections", () => {
   it("every catalog code of every section exists in the catalog and belongs to one section only", () => {
@@ -137,7 +137,10 @@ describe("offices: create, pause and activate (SM Global)", () => {
     const detail = (await api.network.getOffice(created.office.id))!;
     expect(detail.team.map((u) => u.full_name)).toEqual(["Sofía Marín"]);
     expect(detail.checklist!.complete).toBe(false);
-    expect(Object.fromEntries(detail.checklist!.items.map((i) => [i.key, i.done]))).toEqual({ manager_access: true, booking_link: false, partner_firms: false, first_lead: false });
+    // The manager was only invited: "ya tiene acceso" waits for the accepted invitation.
+    expect(Object.fromEntries(detail.checklist!.items.map((i) => [i.key, i.done]))).toEqual({ manager_access: false, booking_link: false, partner_firms: false, first_lead: false });
+    await api.users.simulateAcceptance(created.manager!.id);
+    expect((await api.network.getOffice(created.office.id))!.checklist!.items.find((i) => i.key === "manager_access")!.done).toBe(true);
     // B1 Estrategia is covered by the office's own SM team, so a new office misses only B2 to B6.
     expect(detail.checklist!.items.find((i) => i.key === "partner_firms")!.missing_areas).toEqual(["B2", "B3", "B4", "B5", "B6"]);
     expect((await api.network.listOffices()).map((o) => o.office.name)).toContain("SM Jacksonville");
@@ -146,13 +149,14 @@ describe("offices: create, pause and activate (SM Global)", () => {
 
   it("validates the data like the server will", async () => {
     const api = await asGlobal();
+    await expect(api.network.createOffice({ ...newOffice, name: " " })).rejects.toThrow("name_required");
     await expect(api.network.createOffice({ ...newOffice, city: "  " })).rejects.toThrow("city_required");
     await expect(api.network.createOffice({ ...newOffice, manager_name: " " })).rejects.toThrow("manager_required");
     await expect(api.network.createOffice({ ...newOffice, manager_email: "sofia@" })).rejects.toThrow("invalid_email");
     await expect(api.network.createOffice({ ...newOffice, manager_email: "valentina@strategicmates.com" })).rejects.toThrow("email_taken");
     await expect(api.network.createOffice({ ...newOffice, planned_opening_date: "2026-10-13" })).rejects.toThrow("invalid_date");
     await expect(api.network.createOffice({ ...newOffice, planned_opening_date: "mañana" })).rejects.toThrow("invalid_date");
-    await expect(api.network.createOffice({ ...newOffice, city: "Orlando, FL" })).rejects.toThrow("office_exists");
+    await expect(api.network.createOffice({ ...newOffice, name: "SM Orlando", city: "Orlando, FL" })).rejects.toThrow("office_exists");
     await api.network.createOffice(newOffice);
     await expect(api.network.createOffice({ ...newOffice, manager_email: "otra@strategicmates.com" })).rejects.toThrow("office_exists");
   });

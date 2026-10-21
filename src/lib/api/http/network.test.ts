@@ -73,6 +73,7 @@ describe("http network: reads", () => {
 
 describe("http network: offices", () => {
   const input = {
+    name: "SM Tampa",
     city: "Tampa",
     manager_name: "Paula Ríos",
     manager_email: "paula@strategicmates.com",

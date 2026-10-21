@@ -36,7 +36,9 @@ export interface OfficeSummary {
 
 /** What SM Global gives to open an office. The manager gets an SM team account. */
 export interface CreateOfficeInput {
-  /** "Tampa, FL". The office is named "SM Tampa". */
+  /** "SM Tampa": the name of the office, apart from its city. */
+  name: string;
+  /** "Tampa, FL". */
   city: string;
   manager_name: string;
   manager_email: string;

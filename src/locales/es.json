@@ -2058,6 +2058,9 @@
         "body": "La oficina empieza en apertura. Se activa cuando cumple su lista de apertura.",
         "city": "Ciudad",
         "city_hint": "Ejemplo, Tampa, FL",
+        "name": "Nombre de la oficina",
+        "name_hint": "Cómo la verá todo el mundo. Ejemplo, SM Tampa",
+        "error_name_required": "Escribe el nombre de la oficina.",
         "manager_name": "Responsable",
         "manager_email": "Correo del responsable",
         "manager_email_hint": "Le creamos su cuenta del equipo SM.",
@@ -2123,7 +2126,7 @@
       "checklist_title": "Lista de apertura",
       "checklist_progress": "{{done}} de {{total}} listos",
       "checklist": {
-        "manager_access": "El responsable ya tiene acceso",
+        "manager_access": "El responsable ya tiene acceso (aceptó la invitación)",
         "booking_link": "El link de reservas está cargado",
         "partner_firms": "Hay una firma aliada en cada una de las seis áreas",
         "first_lead": "La oficina recibió su primer lead",

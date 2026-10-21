@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import type { CreateOfficeInput } from "@/lib/api/network-types";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PrimaryButton, SecondaryButton } from "@/components/tasks/detail/dialogs";
-import { emptyNewOfficeForm, toCreateOfficeInput, validateNewOffice, type NewOfficeErrors, type NewOfficeForm } from "./form";
+import { emptyNewOfficeForm, suggestedOfficeName, toCreateOfficeInput, validateNewOffice, type NewOfficeErrors, type NewOfficeForm } from "./form";
 
 const inputCls =
   "h-9 w-full rounded-md border border-input bg-surface px-3 text-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30";
@@ -26,8 +26,11 @@ export function NewOfficeDialog(props: { pending: boolean; onClose: () => void; 
   const { t } = useTranslation();
   const [form, setForm] = useState<NewOfficeForm>(emptyNewOfficeForm());
   const [tried, setTried] = useState(false);
+  // The name follows the city ("SM Tampa") until the person types one of their own.
+  const [nameTouched, setNameTouched] = useState(false);
   const errors: NewOfficeErrors = tried ? validateNewOffice(form) : {};
-  const set = (key: keyof NewOfficeForm, value: string) => setForm((f) => ({ ...f, [key]: value }));
+  const set = (key: keyof NewOfficeForm, value: string) =>
+    setForm((f) => ({ ...f, [key]: value, ...(key === "city" && !nameTouched ? { name: suggestedOfficeName(value) } : {}) }));
   const err = (key: keyof NewOfficeForm) => (errors[key] ? t(`global.offices.new_form.error_${errors[key]}`) : undefined);
   const submit = () => {
     setTried(true);
@@ -44,6 +47,9 @@ export function NewOfficeDialog(props: { pending: boolean; onClose: () => void; 
         <div className="space-y-4">
           <Field label={t("global.offices.new_form.city")} hint={t("global.offices.new_form.city_hint")} error={err("city")}>
             <input autoFocus value={form.city} onChange={(e) => set("city", e.target.value)} className={cn(inputCls, errors.city && "border-status-danger-fg")} />
+          </Field>
+          <Field label={t("global.offices.new_form.name")} hint={t("global.offices.new_form.name_hint")} error={err("name")}>
+            <input value={form.name} onChange={(e) => { setNameTouched(true); set("name", e.target.value); }} className={cn(inputCls, errors.name && "border-status-danger-fg")} />
           </Field>
           <Field label={t("global.offices.new_form.manager_name")} error={err("manager_name")}>
             <input value={form.manager_name} onChange={(e) => set("manager_name", e.target.value)} className={cn(inputCls, errors.manager_name && "border-status-danger-fg")} />

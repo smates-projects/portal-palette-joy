@@ -422,7 +422,8 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       globalOnly();
       const global = db.orgs.find((o) => o.kind === "sm_global");
       const city = input.city.trim();
-      const name = `SM ${city.split(",")[0]!.trim()}`;
+      const name = input.name.trim();
+      if (!name) throw new Error("name_required");
       if (!city) throw new Error("city_required");
       if (db.orgs.some((o) => o.kind === "sm" && o.name.toLowerCase() === name.toLowerCase())) throw new Error("office_exists");
       if (!input.manager_name.trim()) throw new Error("manager_required");
