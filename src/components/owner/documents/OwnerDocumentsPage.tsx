@@ -6,6 +6,7 @@ import { Link } from "@tanstack/react-router";
 import { useContracts, useCurrentUser, useDocuments, useMarkNotApplicable, useRules, useUploadDocument } from "@/lib/api/hooks";
 import { TextDialog } from "@/components/pipeline/IntakeChecklist";
 import { INTAKE_DOCUMENT_ACCEPT, entryRules, intakeDocumentHelp, oaWaitingUntil } from "@/lib/leads/entry-flow";
+import { smEntitiesOf } from "@/lib/leads/contract-rules";
 import { DocumentHelp } from "@/components/pipeline/DocumentHelp";
 import { ReviewNoteAlert } from "@/components/pipeline/ReviewNoteAlert";
 import type { Contract } from "@/lib/api/types";
@@ -49,6 +50,7 @@ export function OwnerDocumentsPage() {
   const locked = requested.some((d) => d.area === "intake" && d.locked_until_mou);
   const rulesData = useRules().data;
   const rules = entryRules(rulesData);
+  const entities = smEntitiesOf(rulesData);
   const helpText = rulesData?.intake_help_text?.trim() ?? "";
   const hasIntake = documents.some((d) => d.area === "intake");
   /** The MOU is signed from "Tu ingreso" (the four points first); the Operating Agreement only after its waiting period. */
@@ -189,7 +191,8 @@ export function OwnerDocumentsPage() {
                       <ul className="mt-2 space-y-0.5 text-xs text-muted-foreground">
                         {c.signers.map((s) => (
                           <li key={`${s.name}-${s.role}`}>
-                            {s.name} ({s.party ? t(`intake.party.${s.party}`) : s.role}),{" "}
+                            {/* The SM part reads "Firmado por Marilyn Boraei en nombre de Strategic Mates Corporate". */}
+                            {s.party === "sm" && s.signed_at && s.user_id ? t("intake.signed_on_behalf_by", { name: s.name, entity: entities[s.sm_entity ?? "corporate"].name }) : `${s.name} (${s.party ? t(`intake.party.${s.party}`) : s.role})`},{" "}
                             <span className={s.signed_at ? "text-status-success-fg" : undefined}>
                               {s.signed_at ? t("owner_extra.documents.signer_signed", { date: formatDate(s.signed_at, lng) }) : t("owner_extra.documents.signer_pending")}
                             </span>

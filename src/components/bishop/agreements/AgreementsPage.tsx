@@ -5,13 +5,26 @@ import { useState } from "react";
 import { useBishopAgreements, useCurrentUser } from "@/lib/api/hooks";
 import { DocuSealSigner } from "@/components/docuseal/DocuSealSigner";
 import { SignedContractDialog } from "@/components/docuseal/SignedContractDialog";
-import type { AgreementState, Contract } from "@/lib/api/types";
+import type { AgreementState, BishopAgreement, Contract } from "@/lib/api/types";
+import { signingStatus } from "@/lib/contracts/parties";
 import { formatDate } from "@/lib/format";
 import { EmptyBlock, ErrorBlock, LoadingBlocks, Panel, primaryButton, Screen, secondaryButton, Tag, type Tone } from "@/components/bishop/ui";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { BishopFundsSection } from "@/components/bishop/funds/BishopFundsSection";
 
 const STATE_TONE: Record<AgreementState, Tone> = { draft: "neutral", sent: "warning", signed: "success" };
+
+/**
+ * The state as the Bishop reads it: once he signed, "Firmado por ti, falta Strategic Mates Corporate" (the pending
+ * parties the API names) until everyone signed ("Firmado por todos"); before, the plain state.
+ */
+function AgreementStatus({ agreement: a }: { agreement: BishopAgreement }) {
+  const { t } = useTranslation();
+  const status = a.contract ? signingStatus({ ...a.contract, ...(a.my_signature ? { my_signature: a.my_signature } : {}), ...(a.pending_parties ? { pending_parties: a.pending_parties } : {}) }, "bishop") : null;
+  if (status?.all || a.state === "signed") return <Tag tone="success">{t("bishop.agreements.signed_by_all")}</Tag>;
+  if (status?.mine) return <Tag tone="warning">{t("bishop.agreements.signed_by_you_pending", { parties: status.pending.join(", ") })}</Tag>;
+  return <Tag tone={STATE_TONE[a.state]}>{t(`bishop.agreements.state_${a.state}`)}</Tag>;
+}
 
 /** Agreements of the Bishop (equity agreement, NDA) with their signature status. */
 export function AgreementsPage() {
@@ -62,7 +75,7 @@ export function AgreementsPage() {
                     <tr key={a.id}>
                       <td className="px-4 py-3 font-medium">{a.name}</td>
                       <td className="px-4 py-3 text-muted-foreground">{a.counterparties}</td>
-                      <td className="whitespace-nowrap px-4 py-3"><Tag tone={STATE_TONE[a.state]}>{t(`bishop.agreements.state_${a.state}`)}</Tag></td>
+                      <td className="px-4 py-3"><AgreementStatus agreement={a} /></td>
                       <td className="px-4 py-3 tabular-nums">
                         {a.signed_at ? t("bishop.agreements.signed_on", { date: formatDate(a.signed_at, lng) }) : t("bishop.agreements.not_signed")}
                       </td>

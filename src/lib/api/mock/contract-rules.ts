@@ -108,13 +108,14 @@ export function createContractRules(d: Deps) {
       const bishop = db.users.find((u) => u.id === l.bishop_user_id);
       return bishop ? base(bishop.full_name, bishop.id) : null;
     }
+    // Corporate signs through its CEO, also when the rule pre-signs ("Firmado por Marilyn Boraei en nombre de ...").
     const person = s.sm_entity === "sm_square"
       ? db.users.find((u) => u.id === l.validation?.sm_square_holder_user_id)
-      : s.auto_sign ? undefined : corporateSigner();
+      : corporateSigner();
     if (s.sm_entity === "sm_square" && !person) return null;
     const signer = base(person?.full_name ?? "Strategic Mates", person?.id ?? null);
     if (s.auto_sign) {
-      Object.assign(signer, { status: "signed", signed_at: on, history: [{ status: "sent", at: on }, { status: "signed", at: on }], signature: { kind: "typed", image_url: typedSignatureDataUrl("Strategic Mates") } });
+      Object.assign(signer, { status: "signed", signed_at: on, history: [{ status: "sent", at: on }, { status: "signed", at: on }], signature: { kind: "typed", image_url: typedSignatureDataUrl(signer.name) } });
     }
     return signer;
   };

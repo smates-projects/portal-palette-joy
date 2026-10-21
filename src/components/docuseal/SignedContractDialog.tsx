@@ -2,6 +2,8 @@ import { useTranslation } from "react-i18next";
 import { Printer, ShieldCheck } from "lucide-react";
 import type { Contract, Signer } from "@/lib/api/types";
 import { documentFingerprint } from "@/lib/contracts/signature";
+import { smEntitiesOf } from "@/lib/leads/contract-rules";
+import { useRules } from "@/lib/api/hooks";
 import { formatDate } from "@/lib/format";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PrimaryButton, SecondaryButton } from "@/components/tasks/detail/dialogs";
@@ -19,7 +21,10 @@ export function SignedContractDialog({ contract, onClose }: { contract: Contract
   const anySigned = contract.signers.some((s) => s.signed_at);
   const parties = contract.signers.map((s) => s.name).join(", ");
   const fingerprint = documentFingerprint(contract.id);
+  const entities = smEntitiesOf(useRules().data);
   const partyLabel = (s: Signer) => (s.party ? t(`intake.party.${s.party}`) : s.role);
+  // The SM part is signed by a person on behalf of the company (the CEO for Corporate).
+  const onBehalf = (s: Signer) => (s.party === "sm" && s.signed_at && s.user_id ? t("intake.signed_on_behalf_by", { name: s.name, entity: entities[s.sm_entity ?? "corporate"].name }) : null);
   // Older contracts only keep signed_at: show that as the one audit event.
   const events = contract.signers
     .flatMap((s) => (s.history?.length ? s.history : s.signed_at ? [{ status: "signed" as const, at: s.signed_at }] : []).map((h) => ({ ...h, signer: s.name })))
@@ -66,6 +71,7 @@ export function SignedContractDialog({ contract, onClose }: { contract: Contract
                   )}
                   <p className="mt-1.5 text-sm font-medium text-foreground">{s.name}</p>
                   <p className="text-xs">{partyLabel(s)}{s.signed_at ? ` · ${t("intake.docuseal.signed_on", { date: formatDate(s.signed_at, lng) })}` : ""}</p>
+                  {onBehalf(s) && <p className="text-xs">{onBehalf(s)}</p>}
                 </div>
               ))}
             </div>

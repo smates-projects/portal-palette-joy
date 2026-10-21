@@ -5,6 +5,7 @@ import { todayIso, nowIso } from "@/lib/clock";
 import { projectYears } from "@/lib/bishop/split";
 import { opportunityPhase, tripartiteState, acceptBlock } from "@/lib/leads/opportunity";
 import { bishopSees, entryRules, oaSendBlock } from "@/lib/leads/entry-flow";
+import { signingStatus } from "@/lib/contracts/parties";
 import type {
   BishopAgreement, BishopOpportunity, Contract, Lead, LeadEvent, LeadInvestors, LeadWithComputed,
   OpportunityDecision, OpportunityDetail, RevenueRange, Signer, User, Uuid,
@@ -216,9 +217,13 @@ export function createOpportunities(d: Deps) {
   const signableAgreements = (u: User): BishopAgreement[] => {
     const out: BishopAgreement[] = [];
     const fw = frameworkOf(u.id);
+    const view = (c: Contract) => {
+      const status = signingStatus(c, "bishop");
+      return { my_signature: status.mine ? ("signed" as const) : ("pending" as const), pending_parties: status.pending };
+    };
     if (fw) out.push({
       id: fw.id, kind: "framework", contract: fw, bishop_user_id: u.id, business_id: null, name: fw.name, counterparties: "Strategic Mates",
-      state: fw.state === "signed" ? "signed" : "sent", signed_at: fw.signed_at, has_file: true, file_name: `${fw.name}.pdf`,
+      state: fw.state === "signed" ? "signed" : "sent", signed_at: fw.signed_at, has_file: true, file_name: `${fw.name}.pdf`, ...view(fw),
     });
     // The Acuerdo de Vinculación comes before the Operating Agreement of the same business.
     const mine = db.contracts.filter((x) => (x.kind === "binding" || x.kind === "tripartite") && x.signers.some((s) => s.party === "bishop" && s.user_id === u.id));
@@ -228,7 +233,7 @@ export function createOpportunities(d: Deps) {
       out.push({
         id: c.id, kind: c.kind === "binding" ? "binding" : "tripartite", contract: c, bishop_user_id: u.id, business_id: c.business_id,
         name: lead ? `${c.name}: ${lead.business.name}` : c.name, counterparties: `${owner}, Strategic Mates`,
-        state: c.state === "signed" ? "signed" : "sent", signed_at: c.signed_at, has_file: true, file_name: `${c.name}.pdf`,
+        state: c.state === "signed" ? "signed" : "sent", signed_at: c.signed_at, has_file: true, file_name: `${c.name}.pdf`, ...view(c),
       });
     }
     return out;

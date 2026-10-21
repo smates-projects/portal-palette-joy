@@ -590,6 +590,9 @@ export interface AppNotification {
   /** Contract notifications (contract_sent, contract_signed): the contract and its name ("NDA", "Operating Agreement"). */
   contract_id?: Uuid | null;
   contract_name?: string | null;
+  /** The API renders the text itself (Spanish); shown as is when present, the locale texts are the fallback and the English. */
+  title?: string | null | undefined;
+  body?: string | null | undefined;
 }
 
 export interface NotificationPreference {
@@ -818,8 +821,8 @@ export type TripartiteState = "none" | "pending" | "signed";
 export interface LeadWithComputed extends Lead {
   /** Consultant's booking link, or the office default. Null when neither is set: "Agendar reunión" cannot open a link. */
   booking_url: string | null;
-  /** Where booking_url came from; null when there is none. */
-  booking_url_source?: "consultant" | "office" | null | undefined;
+  /** Where booking_url came from: the consultant's own, the office default, the platform's; "none" or null without one. */
+  booking_url_source?: "consultant" | "office" | "platform" | "none" | null | undefined;
   /** Entry checklist once NDA and MOU were sent (null before). Computed by the data layer. */
   intake: IntakeSummary | null;
   tripartite: TripartiteState;

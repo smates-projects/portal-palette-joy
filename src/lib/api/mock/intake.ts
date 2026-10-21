@@ -57,11 +57,14 @@ const signer = (party: "owner" | "sm", name: string, user_id: Uuid | null, sentO
   };
 };
 
-/** Strategic Mates already signed on the day it went out, with the office signature (typed sample in the mock). */
-const preSignedSm = (sentOn: string): Signer => ({
-  name: "Strategic Mates", role: "sm", party: "sm", user_id: null, status: "signed",
+/**
+ * Strategic Mates already signed on the day it went out, with the office signature: the signer is the CEO
+ * (Corporate's admin), "Firmado por Marilyn Boraei en nombre de Strategic Mates Corporate".
+ */
+const preSignedSm = (sentOn: string, ceo: Pick<User, "id" | "full_name"> | undefined): Signer => ({
+  name: ceo?.full_name ?? "Strategic Mates", role: "sm", party: "sm", user_id: ceo?.id ?? null, status: "signed",
   history: [{ status: "sent", at: sentOn }, { status: "signed", at: sentOn }],
-  signed_at: sentOn, decline_reason: null, signature: { kind: "typed", image_url: typedSignatureDataUrl("Strategic Mates") },
+  signed_at: sentOn, decline_reason: null, signature: { kind: "typed", image_url: typedSignatureDataUrl(ceo?.full_name ?? "Strategic Mates") },
 });
 
 export const contractState = (c: Contract): Contract["state"] =>
@@ -84,6 +87,8 @@ export function createIntake(db: IntakeDb, newId: () => string) {
   const ownerOf = (businessId: Uuid) => db.users.find((u) => u.role === "business_owner" && u.business_id === businessId);
   const signedBy = (c: Contract | undefined, party: "owner" | "sm") => !!c?.signers.some((s) => s.party === party && s.status === "signed");
   const rules = () => entryRules(db.rules);
+  /** Corporate's CEO: the person who signs for Strategic Mates Corporate. */
+  const ceo = () => db.users.find((u) => u.role === "sm_global" && u.is_admin) ?? db.users.find((u) => u.role === "sm_global");
 
   /** What the owner's "Tu ingreso" needs from the lead: meetings and the consultant's booking link. */
   const ownerEntry = (lead: Lead | undefined): OwnerEntry | null => {
@@ -136,7 +141,7 @@ export function createIntake(db: IntakeDb, newId: () => string) {
       body: rule ? fillContractTemplate(rule.template, values) : (kind === "nda" ? ndaBody : mouBody)(values.business_name, ownerName, values),
       signers: [
         { ...signer("owner", ownerName, ownerId, sentOn, ownerSteps), ...(kind === "mou" ? { acknowledgments: [] } : {}) },
-        { ...(smSteps === "pre_signed" ? preSignedSm(sentOn) : signer("sm", "Strategic Mates", null, sentOn, smSteps)), sm_entity: "corporate" as const },
+        { ...(smSteps === "pre_signed" ? preSignedSm(sentOn, ceo()) : signer("sm", ceo()?.full_name ?? "Strategic Mates", ceo()?.id ?? null, sentOn, smSteps)), sm_entity: "corporate" as const },
       ],
     });
   };

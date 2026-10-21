@@ -38,6 +38,7 @@ import { ENTRY_PARTY_NOTIFICATION_KINDS, type Contract, type EntryContractRule, 
 export { DEMO_PASSWORD } from "./session";
 import type { AreaCode, Business, BusinessEvent, CatalogAdminItem, Lead, LeadEvent, LeadWithComputed } from "../types";
 import { AUTO_DISCARD_MOU_NOT_SIGNED } from "@/lib/leads/entry-flow";
+import { withSigningView } from "@/lib/contracts/parties";
 
 const delay = <T,>(v: T, ms = 120) => new Promise<T>((r) => setTimeout(() => r(structuredClone(v)), ms));
 // Deterministic ids: the seed runs at module scope during SSR, where Cloudflare Workers disallow randomness.
@@ -419,6 +420,8 @@ export function createMockApi(): MockApi {
       const fw = db.frameworkContracts.find((x) => x.id === contractId);
       if (fw) {
         if (u.role === "bishop" && fw.signers.some((s) => s.party === "bishop" && s.user_id === u.id)) return { c: fw, party: "bishop" as const };
+        // SM Global countersigns the framework agreements from Acuerdos.
+        if (u.role === "sm_global") return { c: fw, party: "sm" as const };
         throw new Error("not_found");
       }
       const c = db.contracts.find((x) => x.id === contractId && x.area === "intake");
@@ -468,7 +471,7 @@ export function createMockApi(): MockApi {
           const s = c.signers.find((x) => x.party === party);
           // Only the one who can sign it marks it opened (another SM person only reads it).
           if (s && s.status === "sent" && (party !== "sm" || !smSignBlock(s, me()))) intake.setSignerStatus(c, party, "opened");
-          return delay(c);
+          return delay(withSigningView(c, me()));
         },
         signContract: async (contractId, signature) => {
           const { c, party } = contractInScope(contractId);
@@ -945,7 +948,9 @@ export function createMockApi(): MockApi {
         const l = readableLeads().find((x) => x.id === id);
         const summary = l ? intake.summaryFor(l) : null;
         if (!l || !summary || !l.business_id) return delay(null);
-        return delay({ summary, contracts: intake.contractsOf(l.business_id), documents: intake.docsOf(l.business_id) });
+        // can_sign, my_signature, pending_parties as the API fills them for the person reading.
+        const viewer = me();
+        return delay({ summary, contracts: intake.contractsOf(l.business_id).map((c) => withSigningView(c, viewer, { officeId: l.office_id })), documents: intake.docsOf(l.business_id) });
       },
       acceptDocument: async (id, documentId, fact) => {
         const r = intakeOf(findLead(id));

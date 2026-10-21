@@ -2761,6 +2761,8 @@
       "state_draft": "Draft",
       "state_sent": "Sent, waiting for your signature",
       "state_signed": "Signed",
+      "signed_by_you_pending": "Signed by you, waiting for {{parties}}",
+      "signed_by_all": "Signed by everyone",
       "signed_on": "Signed on {{date}}",
       "not_signed": "Not signed",
       "open_document": "View document",
@@ -3184,6 +3186,7 @@
       "pending": "NDA pending"
     },
     "nda_signed_on_behalf": "Signed on behalf of Strategic Mates",
+    "signed_on_behalf_by": "Signed by {{name}} on behalf of {{entity}}",
     "review_note_title": "Asked again.",
     "help": {
       "counts": "Any of these works"

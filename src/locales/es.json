@@ -2761,6 +2761,8 @@
       "state_draft": "Borrador",
       "state_sent": "Enviado, falta tu firma",
       "state_signed": "Firmado",
+      "signed_by_you_pending": "Firmado por ti, falta {{parties}}",
+      "signed_by_all": "Firmado por todos",
       "signed_on": "Firmado el {{date}}",
       "not_signed": "Sin firmar",
       "open_document": "Ver documento",
@@ -3184,6 +3186,7 @@
       "pending": "NDA pendiente"
     },
     "nda_signed_on_behalf": "Firmado en nombre de Strategic Mates",
+    "signed_on_behalf_by": "Firmado por {{name}} en nombre de {{entity}}",
     "review_note_title": "Pedido de nuevo.",
     "help": {
       "counts": "Sirve"

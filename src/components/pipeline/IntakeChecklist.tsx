@@ -120,9 +120,9 @@ export function IntakeChecklist({ leadId, readOnly, validation }: { leadId: stri
     const acks = c.kind === "mou" ? c.signers.find((s) => s.party === "owner")?.acknowledgments?.length ?? 0 : null;
     const deadline = contractDeadline(c);
     const smPending = !!sm && sm.status !== "signed" && sm.status !== "declined" && !waitingUntil;
-    // Corporate's CEO signs the binding agreement even from SM Global's read-only view.
-    const mySmPart = !!sm?.user_id && sm.user_id === me?.id;
-    const reason = sm && smPending ? signReason(sm) : null;
+    // Corporate's CEO signs the binding agreement even from SM Global's read-only view: the API says so with can_sign.
+    const mySmPart = c.can_sign === true || (!!sm?.user_id && sm.user_id === me?.id);
+    const reason = c.can_sign ? null : sm && smPending ? signReason(sm) : null;
     return (
       <li key={c.id} className="py-2.5">
         <div className="flex flex-wrap items-center gap-2">
@@ -155,9 +155,11 @@ export function IntakeChecklist({ leadId, readOnly, validation }: { leadId: stri
             const last = s.history?.at(-1);
             return (
               <li key={s.party ?? s.name}>
-                {/* The NDA goes out pre-signed with the office signature: "Firmado en nombre de Strategic Mates". */}
+                {/* The SM part is signed by a person on behalf of the company: "Firmado por Marilyn Boraei en nombre de Strategic Mates Corporate". */}
                 {s.party === "sm" ? smLine(s) : t(`intake.party.${s.party ?? "owner"}`)}, <span className={cn(s.status === "signed" && "text-status-success-fg", s.status === "declined" && "text-status-danger-fg")}>
-                  {s.party === "sm" && c.kind === "nda" && s.status === "signed" ? t("intake.nda_signed_on_behalf") : t(`intake.signer_status.${s.status ?? "sent"}`)}
+                  {s.party === "sm" && s.status === "signed"
+                    ? (s.user_id ? t("intake.signed_on_behalf_by", { name: s.name, entity: entities[s.sm_entity ?? "corporate"].name }) : t("intake.nda_signed_on_behalf"))
+                    : t(`intake.signer_status.${s.status ?? "sent"}`)}
                 </span>
                 {last && ` · ${formatDate(last.at, lng)}`}
                 {s.decline_reason && ` · ${t("intake.declined_reason", { reason: s.decline_reason })}`}

@@ -534,6 +534,12 @@ export interface Contract {
   rule_code?: string | null | undefined;
   /** Last day to sign it (rules with deadline_days); absent = no deadline or not known. */
   sign_by?: IsoDate | null | undefined;
+  /** The current person may sign it now (their part is pending and they are the right signer). Absent = unknown. */
+  can_sign?: boolean | undefined;
+  /** The current person's own part, when they are a party: signed or still pending. */
+  my_signature?: "signed" | "pending" | null | undefined;
+  /** Names of the parties that have not signed yet ("Strategic Mates Corporate"); from the signers when absent. */
+  pending_parties?: string[] | undefined;
 }
 
 /** binding: the Acuerdo de Vinculación y Formalización (owner, Bishop and Strategic Mates). other: any other rule. */
@@ -762,6 +768,9 @@ export interface BishopAgreement {
   /** The agreement document exists and can be opened. */
   has_file: boolean;
   file_name: string | null;
+  /** The Bishop's own part, and who still has to sign ("Strategic Mates Corporate"). From the contract when absent. */
+  my_signature?: "signed" | "pending" | null | undefined;
+  pending_parties?: string[] | undefined;
 }
 
 // ---------- Bishop funds and distribution to the firms (visible only to SM and that Bishop) ----------
