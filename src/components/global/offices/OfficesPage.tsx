@@ -3,13 +3,14 @@ import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/format";
-import { useCreateOffice, useOffices } from "@/lib/api/hooks";
-import { inOfficeScope, useOfficeScope } from "@/lib/office-scope";
+import { useCreateOffice, useCurrentUser, useOffices, useOrganizations } from "@/lib/api/hooks";
+import { ALL_OFFICES, inOfficeScope, useOfficeScope } from "@/lib/office-scope";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PrimaryButton } from "@/components/tasks/detail/dialogs";
 import { officeHealth } from "../logic";
 import { EmptyBox, ErrorBox, GlobalHeader, HealthBadge, OfficeStatusBadge } from "../shared";
 import { NewOfficeDialog } from "./OfficeDialogs";
+import { OfficeSignatureSection } from "./OfficeSignatureSection";
 
 const COLUMNS = ["city", "manager", "status", "opened", "programs", "leads", "conversion", "ready", "firms", "health"] as const;
 
@@ -21,6 +22,10 @@ export function OfficesPage() {
   const [scope] = useOfficeScope();
   const create = useCreateOffice();
   const [creating, setCreating] = useState(false);
+  // Corporate (the sm_global organization) signs the NDA, the MOU and the binding agreement through its CEO.
+  const corporate = useOrganizations().data?.find((o) => o.kind === "sm_global");
+  const me = useCurrentUser().data;
+  const ceoName = me?.role === "sm_global" && me.is_admin ? me.full_name : null;
   const header = <GlobalHeader question={t("global.offices.question")} />;
   const open = (officeId: string) => void navigate({ to: "/oficinas/$officeId", params: { officeId } });
 
@@ -86,6 +91,16 @@ export function OfficesPage() {
           </div>
         )}
       </div>
+
+      {corporate && (scope === ALL_OFFICES || scope === corporate.id) && (
+        <div className="mt-2">
+          <OfficeSignatureSection
+            office={corporate}
+            title={t("global.offices.corporate_signature.title")}
+            hint={ceoName ? t("global.offices.corporate_signature.hint_named", { name: ceoName }) : t("global.offices.corporate_signature.hint")}
+          />
+        </div>
+      )}
 
       {creating && (
         <NewOfficeDialog

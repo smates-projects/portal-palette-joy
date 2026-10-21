@@ -2065,6 +2065,11 @@
     },
     "offices": {
       "question": "How is the SM office network doing?",
+      "corporate_signature": {
+        "title": "Strategic Mates Corporate signature",
+        "hint_named": "With this signature the NDA, the MOU and the Binding Agreement go out signed by {{name}} on behalf of Strategic Mates.",
+        "hint": "With this signature the NDA, the MOU and the Binding Agreement go out signed by the CEO on behalf of Strategic Mates."
+      },
       "new": "New office",
       "col_office": "Office",
       "col_city": "City",

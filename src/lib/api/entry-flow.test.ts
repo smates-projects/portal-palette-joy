@@ -255,4 +255,12 @@ describe("office signature", () => {
     await api.session.setViewAs(seed.U_NICOLAS);
     await expect(api.network.setOfficeSignature(seed.ORG_SM, { name: "firma.png" })).rejects.toThrow("forbidden");
   });
+
+  it("Corporate's signature (the CEO's) is loaded by SM Global only, and the organization answers its name", async () => {
+    const api = await as(seed.U_ANDREA);
+    await expect(api.network.setOfficeSignature(seed.ORG_GLOBAL, { name: "firma.png" })).rejects.toThrow("forbidden");
+    await api.session.setViewAs(seed.U_MARYLIN);
+    expect(await api.network.setOfficeSignature(seed.ORG_GLOBAL, { name: "firma-marilyn.png" })).toMatchObject({ signature_file_name: "firma-marilyn.png" });
+    expect((await api.organizations.list()).find((o) => o.id === seed.ORG_GLOBAL)?.signature_file_name).toBe("firma-marilyn.png");
+  });
 });

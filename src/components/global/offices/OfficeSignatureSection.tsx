@@ -19,7 +19,7 @@ const errorKey = (e: unknown) => {
  * "Firma de la oficina": the PNG the NDA and the MOU go out pre-signed with on behalf of Strategic Mates. The file is
  * uploaded, verified by the API ("Verificando el archivo") and only then attached; the saved name comes from the answer.
  */
-export function OfficeSignatureSection({ office }: { office: Organization }) {
+export function OfficeSignatureSection({ office, title, hint }: { office: Organization; title?: string; hint?: string }) {
   const { t } = useTranslation();
   const input = useRef<HTMLInputElement>(null);
   const save = useSetOfficeSignature();
@@ -48,11 +48,11 @@ export function OfficeSignatureSection({ office }: { office: Organization }) {
   };
   return (
     <section className="mt-4 rounded-[4px] border border-border bg-surface">
-      <div className="border-b border-border px-4 py-3"><h2 className="text-sm font-semibold">{t("global.office.signature.title")}</h2></div>
+      <div className="border-b border-border px-4 py-3"><h2 className="text-sm font-semibold">{title ?? t("global.office.signature.title")}</h2></div>
       <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
         <div className="min-w-0">
           <p>{current.signature_file_name ? t("global.office.signature.loaded", { file: current.signature_file_name }) : t("global.office.signature.none")}</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">{t("global.office.signature.hint")}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{hint ?? t("global.office.signature.hint")}</p>
           {phase && (
             <p role="status" className="mt-1.5 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />{t(`global.office.signature.phase_${phase}`)}

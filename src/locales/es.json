@@ -2065,6 +2065,11 @@
     },
     "offices": {
       "question": "¿Cómo está la red de oficinas SM?",
+      "corporate_signature": {
+        "title": "Firma de Strategic Mates Corporate",
+        "hint_named": "Con esta firma el NDA, el MOU y el Acuerdo de Vinculación salen firmados por {{name}} en nombre de Strategic Mates.",
+        "hint": "Con esta firma el NDA, el MOU y el Acuerdo de Vinculación salen firmados por la CEO en nombre de Strategic Mates."
+      },
       "new": "Nueva oficina",
       "col_office": "Oficina",
       "col_city": "Ciudad",

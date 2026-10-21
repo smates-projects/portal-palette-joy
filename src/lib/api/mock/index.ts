@@ -819,12 +819,15 @@ export function createMockApi(): MockApi {
     rules,
     network: {
       ...net.network,
-      /** "Firma de la oficina": SM Global, or the admin of that office. PNG only; the mock keeps the name. */
+      /**
+       * "Firma de la oficina": SM Global, or the admin of that office. Corporate (the sm_global organization) has its
+       * own, the CEO's, uploaded by SM Global from Oficinas. PNG only; the mock keeps the name.
+       */
       setOfficeSignature: async (officeId, file) => {
         const u = me();
-        const office = db.orgs.find((o) => o.id === officeId && o.kind === "sm");
+        const office = db.orgs.find((o) => o.id === officeId && (o.kind === "sm" || o.kind === "sm_global"));
         if (!office) throw new Error("not_found");
-        if (u.role !== "sm_global" && !(u.role === "sm_team" && u.is_admin && u.organization_id === officeId)) throw new Error("forbidden");
+        if (u.role !== "sm_global" && !(office.kind === "sm" && u.role === "sm_team" && u.is_admin && u.organization_id === officeId)) throw new Error("forbidden");
         if (!/\.png$/i.test(file.name.trim())) throw new Error("invalid_file");
         office.signature_file_id = newId();
         office.signature_file_name = file.name.trim();
