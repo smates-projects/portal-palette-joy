@@ -2,10 +2,14 @@
 // 1. POST /files/presign { context, original_name, mime, size_bytes, business_id? } → { file_id, upload_url, headers }.
 // 2. PUT the bytes straight to object storage at upload_url with exactly those headers. Plain fetch, no cookies:
 //    the URL is presigned and the storage host is not the API (sending credentials there would fail CORS).
-// 3. POST /files/{id}/complete: the API queues the verification (magic bytes, scanner).
+// 3. POST /files/{id}/complete: the API queues the verification (magic bytes, scanner) and answers 202 pending.
+// 4. GET /files/{id} until it is ready (waitForFileReady): a pending file cannot be attached yet.
 // The caller then attaches the returned file_id to its resource (document upload, contract signature).
 import type { ReceiptUpload, Uuid } from "../types";
+import type { UploadPhase } from "../repositories";
 import { ApiError, type HttpClient } from "./client";
+
+export type { UploadPhase };
 
 /** `files.owner_type` values the front uploads to today (FILE_CONTEXTS of the API). */
 export type FileContext =
@@ -38,6 +42,82 @@ export interface UploadOptions {
   name?: string | undefined;
   /** Business the file belongs to, when known (the API checks it can be read and fills the office). */
   businessId?: Uuid | null | undefined;
+  /** Told when the phase changes (the bytes go out, the API verifies them). */
+  onProgress?: ((phase: UploadPhase) => void) | undefined;
+  /** Polling of the verification; see waitForFileReady. */
+  wait?: WaitForFileOptions | undefined;
+}
+
+/** GET /files/{id} (and the answer of POST /files/{id}/complete): the verification state of a stored file. */
+export type FileStatus = "pending" | "ready" | "failed";
+
+export interface FileMetadata {
+  id: Uuid;
+  status: FileStatus;
+  /** failed: why the API refused it (scanner, magic bytes). */
+  reason?: string | null | undefined;
+  original_name?: string | undefined;
+}
+
+export interface WaitForFileOptions {
+  /** Time between two reads of the status. */
+  intervalMs?: number | undefined;
+  /** After this the wait gives up with file_verification_timeout. */
+  timeoutMs?: number | undefined;
+  /** Clock to wait with (tests pass one that does not sleep). */
+  sleep?: ((ms: number) => Promise<void>) | undefined;
+}
+
+const DEFAULT_WAIT: { intervalMs: number; timeoutMs: number; sleep: (ms: number) => Promise<void> } = {
+  intervalMs: 1000,
+  timeoutMs: 60_000,
+  sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+};
+
+const asFileMetadata = (value: unknown, fileId: Uuid): FileMetadata | null => {
+  if (typeof value !== "object" || value === null) return null;
+  const record = value as Record<string, unknown>;
+  const status = record["status"];
+  if (status !== "pending" && status !== "ready" && status !== "failed") return null;
+  return {
+    id: typeof record["id"] === "string" ? record["id"] : fileId,
+    status,
+    reason: typeof record["reason"] === "string" ? record["reason"] : null,
+    ...(typeof record["original_name"] === "string" ? { original_name: record["original_name"] } : {}),
+  };
+};
+
+/**
+ * POST /files/{id}/complete answers 202 while the API verifies the bytes (magic bytes, scanner): a file attached
+ * before that is refused. This reads GET /files/{id} until it is `ready`. `failed` throws file_rejected (the API's
+ * reason in `detail`); giving up throws file_verification_timeout. A file already `ready` answers at once.
+ */
+export async function waitForFileReady(
+  client: HttpClient,
+  fileId: Uuid,
+  options: WaitForFileOptions = {},
+): Promise<FileMetadata> {
+  const intervalMs = options.intervalMs ?? DEFAULT_WAIT.intervalMs;
+  const timeoutMs = options.timeoutMs ?? DEFAULT_WAIT.timeoutMs;
+  const sleep = options.sleep ?? DEFAULT_WAIT.sleep;
+  const path = `/files/${encodeURIComponent(fileId)}`;
+  let waited = 0;
+  for (;;) {
+    const metadata = asFileMetadata(await client.get<unknown>(path), fileId);
+    if (metadata?.status === "ready") return metadata;
+    if (metadata?.status === "failed") {
+      throw new ApiError({ code: "file_rejected", status: 422, detail: metadata.reason ?? null });
+    }
+    if (waited >= timeoutMs) {
+      throw new ApiError({
+        code: "file_verification_timeout",
+        status: 0,
+        detail: `The file ${fileId} was still being verified after ${timeoutMs} ms.`,
+      });
+    }
+    await sleep(intervalMs);
+    waited += intervalMs;
+  }
 }
 
 /** Browsers sometimes leave File.type empty (unknown extension on Windows): the API needs a declared MIME. */
@@ -72,6 +152,7 @@ export async function uploadFile(
   options: UploadOptions,
 ): Promise<Uuid> {
   const name = options.name ?? (blob instanceof File ? blob.name : "file");
+  options.onProgress?.("uploading");
   const presigned = await client.post<PresignedFile>(
     "/files/presign",
     {
@@ -107,7 +188,16 @@ export async function uploadFile(
     });
   }
 
-  await client.post(`/files/${encodeURIComponent(presigned.file_id)}/complete`);
+  // 202 { status: "pending" } while the API verifies the bytes: the file is attached only once it is ready. An
+  // empty answer (older API) means it was verified on the spot.
+  const completed = asFileMetadata(
+    await client.post<unknown>(`/files/${encodeURIComponent(presigned.file_id)}/complete`),
+    presigned.file_id,
+  );
+  if (completed && completed.status !== "ready") {
+    options.onProgress?.("verifying");
+    await waitForFileReady(client, presigned.file_id, options.wait);
+  }
   return presigned.file_id;
 }
 

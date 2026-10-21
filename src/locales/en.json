@@ -2113,7 +2113,12 @@
         "upload": "Upload signature",
         "replace": "Change signature",
         "only_png": "The signature has to be a PNG image.",
-        "t_saved": "You saved the signature of {{name}}."
+        "t_saved": "You saved the signature of {{name}}.",
+        "phase_uploading": "Uploading the file",
+        "phase_verifying": "Verifying the file",
+        "error_rejected": "The file did not pass the verification. Upload a PNG of the signature.",
+        "error_timeout": "The verification is taking longer than usual. Try again in a moment.",
+        "error_upload": "We could not upload the file. Check your connection and try again."
       }
     },
     "funnel": {

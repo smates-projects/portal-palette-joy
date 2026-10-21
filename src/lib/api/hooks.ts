@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./index";
-import type { DocumentUpload, SetBrandInput, SubmitVersionInput, TransferInput } from "./repositories";
+import type { DocumentUpload, SetBrandInput, SubmitVersionInput, TransferInput, UploadPhase } from "./repositories";
 import type {
   AvailabilityInput,
   RescheduleMeetingInput,
@@ -555,7 +555,11 @@ export const usePauseOffice = () => useNetworkMutation((v: { officeId: string; r
 export const useActivateOffice = () => useNetworkMutation((officeId: string) => api.network.activateOffice(officeId), OFFICE_ROOTS);
 /** "Firma de la oficina" (PNG) the NDA and the MOU go out pre-signed with. */
 export const useSetOfficeSignature = () =>
-  useNetworkMutation((v: { officeId: string; file: DocumentUpload }) => api.network.setOfficeSignature(v.officeId, v.file), OFFICE_ROOTS);
+  useNetworkMutation(
+    (v: { officeId: string; file: DocumentUpload; onProgress?: ((phase: UploadPhase) => void) | undefined }) =>
+      api.network.setOfficeSignature(v.officeId, v.file, { onProgress: v.onProgress }),
+    OFFICE_ROOTS,
+  );
 
 // ---------- SM Global: rules and catalog admin ----------
 /** PlatformRules: franchisability goal, required task codes, area amber days, amber tolerance. Readable by everyone. */

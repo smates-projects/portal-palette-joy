@@ -58,6 +58,7 @@ const uploadReplies = (fileId: string) => [
   ),
   emptyResponse(200),
   dataResponse({ id: fileId, status: "pending" }, 202),
+  dataResponse({ id: fileId, status: "ready" }),
 ];
 
 const brand = () => createHttpBrandRepository(testClient());
@@ -90,6 +91,7 @@ describe("http brand", () => {
       "POST /files/presign",
       `PUT ${UPLOAD_URL}&id=${LOGO_ID}`,
       `POST /files/${LOGO_ID}/complete`,
+      `GET /files/${LOGO_ID}`,
       `PUT /businesses/${IDS.business}/brand`,
     ]);
     const png = dataUrlToBlob(PNG_DATA_URL)!;
@@ -101,7 +103,7 @@ describe("http brand", () => {
       business_id: IDS.business,
     });
     expect((fetchMock.mock.calls[1]?.[1]?.body as Blob).type).toBe("image/png");
-    expect(calls[3]?.body).toEqual({
+    expect(calls[4]?.body).toEqual({
       primary_color: "#153f58",
       accent_color: "#a77e00",
       font_family: "Inter",
@@ -137,8 +139,8 @@ describe("http brand", () => {
       }),
     ]);
     expect(fetchMock.mock.calls[1]?.[1]?.body).toBe(logo);
-    expect(fetchMock.mock.calls[4]?.[1]?.body).toBe(manual);
-    expect(calls[6]?.body).toMatchObject({ logo_file_id: LOGO_ID, manual_file_id: MANUAL_ID });
+    expect(fetchMock.mock.calls[5]?.[1]?.body).toBe(manual);
+    expect(calls[8]?.body).toMatchObject({ logo_file_id: LOGO_ID, manual_file_id: MANUAL_ID });
   });
 
   it("set without a logo: no upload, logo_file_id null", async () => {

@@ -2113,7 +2113,12 @@
         "upload": "Subir firma",
         "replace": "Cambiar firma",
         "only_png": "La firma tiene que ser una imagen PNG.",
-        "t_saved": "Guardaste la firma de {{name}}."
+        "t_saved": "Guardaste la firma de {{name}}.",
+        "phase_uploading": "Subiendo el archivo",
+        "phase_verifying": "Verificando el archivo",
+        "error_rejected": "El archivo no pasó la verificación. Sube un PNG de la firma.",
+        "error_timeout": "La verificación está tardando más de lo normal. Vuelve a intentar en un momento.",
+        "error_upload": "No pudimos subir el archivo. Revisa tu conexión e intenta de nuevo."
       }
     },
     "funnel": {

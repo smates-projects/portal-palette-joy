@@ -129,6 +129,7 @@ const uploadReplies = (fileId: string) => [
   presigned(fileId),
   emptyResponse(200),
   dataResponse({ id: fileId, status: "pending" }, 202),
+  dataResponse({ id: fileId, status: "ready" }),
 ];
 
 const setup = () => {
@@ -313,13 +314,14 @@ describe("http tasks: SM changes", () => {
       "POST /files/presign",
       `PUT ${UPLOAD_URL}&id=${FILE_1}`,
       `POST /files/${FILE_1}/complete`,
+      `GET /files/${FILE_1}`,
       `POST /tasks/${TASK}/pre-validation`,
     ]);
     expect(calls[0]?.body).toMatchObject({
       context: "pre_validation",
       original_name: "plan-de-ventas.pdf",
     });
-    expect(calls[3]?.body).toEqual({
+    expect(calls[4]?.body).toEqual({
       decision: "existing",
       evidence_file_id: FILE_1,
       note: "Lo usan desde 2024",
@@ -449,9 +451,11 @@ describe("http tasks: the deliverable loop", () => {
       "POST /files/presign",
       `PUT ${UPLOAD_URL}&id=${FILE_1}`,
       `POST /files/${FILE_1}/complete`,
+      `GET /files/${FILE_1}`,
       "POST /files/presign",
       `PUT ${UPLOAD_URL}&id=${FILE_2}`,
       `POST /files/${FILE_2}/complete`,
+      `GET /files/${FILE_2}`,
       `POST /tasks/${TASK}/versions`,
     ]);
     expect(calls[1]?.body).toEqual({
@@ -461,16 +465,16 @@ describe("http tasks: the deliverable loop", () => {
       size_bytes: first.size,
       business_id: IDS.business,
     });
-    expect(calls[4]?.body).toMatchObject({ context: "task_version", original_name: "anexo.pdf" });
+    expect(calls[5]?.body).toMatchObject({ context: "task_version", original_name: "anexo.pdf" });
     expect(fetchMock.mock.calls[2]?.[1]?.body).toBe(first);
-    expect(fetchMock.mock.calls[5]?.[1]?.body).toBe(second);
-    expect(calls[7]?.body).toEqual({
+    expect(fetchMock.mock.calls[6]?.[1]?.body).toBe(second);
+    expect(calls[9]?.body).toEqual({
       note: "Primera versión",
       file_ids: [FILE_1, FILE_2],
       brand_proposal: null,
     });
-    expect(calls[7]?.headers["If-Match"]).toBe('"3"');
-    expect(calls[7]?.headers["Idempotency-Key"]).toBeTruthy();
+    expect(calls[9]?.headers["If-Match"]).toBe('"3"');
+    expect(calls[9]?.headers["Idempotency-Key"]).toBeTruthy();
     expect(client.etags.get(`/tasks/${TASK}`)).toBe('"4"');
   });
 
@@ -506,10 +510,10 @@ describe("http tasks: the deliverable loop", () => {
       expect.objectContaining({ context: "task_version", original_name: "manual-marca.pdf" }),
       expect.objectContaining({ context: "brand", original_name: "logo.png", mime: "image/png" }),
     ]);
-    expect((fetchMock.mock.calls[7]?.[1]?.body as Blob).type).toBe("image/png");
-    expect(calls[9]).toMatchObject({ method: "POST", path: `/tasks/${TASK}/versions` });
-    expect(calls[9]?.headers["If-Match"]).toBe('"5"');
-    expect(calls[9]?.body).toEqual({
+    expect((fetchMock.mock.calls[9]?.[1]?.body as Blob).type).toBe("image/png");
+    expect(calls[12]).toMatchObject({ method: "POST", path: `/tasks/${TASK}/versions` });
+    expect(calls[12]?.headers["If-Match"]).toBe('"5"');
+    expect(calls[12]?.body).toEqual({
       note: "Manual de marca",
       file_ids: [FILE_1, FILE_2, FILE_3],
       brand_proposal: {
@@ -609,7 +613,7 @@ describe("http tasks: comments, owner requests and meetings", () => {
       context: "task_comment",
       original_name: "borrador.pdf",
     });
-    expect(calls[3]?.body).toEqual({ body: "Te dejo el borrador", file_id: FILE_4 });
+    expect(calls[4]?.body).toEqual({ body: "Te dejo el borrador", file_id: FILE_4 });
   });
 
   it("addOwnerRequest: POST /owner-requests { question, due_date }", async () => {
@@ -659,7 +663,7 @@ describe("http tasks: comments, owner requests and meetings", () => {
       context: "owner_request",
       original_name: "registro.pdf",
     });
-    expect(calls[3]).toMatchObject({
+    expect(calls[4]).toMatchObject({
       method: "POST",
       path: `/owner-requests/${REQUEST}/answer`,
       body: { note: "Aquí está", file_id: FILE_1 },

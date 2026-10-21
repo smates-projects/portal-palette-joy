@@ -51,10 +51,13 @@ export function createHttpNetworkRepository(client: HttpClient): NetworkReposito
 
     activateOffice: (officeId) => client.post<OfficeSummary>(`${officePath(officeId)}/activate`),
 
-    /** The PNG is stored first (context contract_signature), then PATCH /offices/{id}/signature { file_id }. */
-    setOfficeSignature: async (officeId, file) => {
+    /**
+     * The PNG is stored first (context contract_signature) and verified (uploadFile waits for GET /files/{id} ready),
+     * then PATCH /offices/{id}/signature { file_id }. The answer carries signature_file_name.
+     */
+    setOfficeSignature: async (officeId, file, options) => {
       if (!isBlob(file)) throw invalidFile("Pick the PNG of the office signature.");
-      const fileId = await uploadFile(client, file, { context: "contract_signature", name: file.name });
+      const fileId = await uploadFile(client, file, { context: "contract_signature", name: file.name, onProgress: options?.onProgress });
       return client.patch<Organization>(`${officePath(officeId)}/signature`, { file_id: fileId });
     },
   };

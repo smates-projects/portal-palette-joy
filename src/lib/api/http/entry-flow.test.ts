@@ -15,19 +15,40 @@ const UPLOAD_URL = "https://storage.test/quarantine/sig?X-Amz-Signature=sig";
 const presigned = () => dataResponse({ file_id: FILE_ID, upload_url: UPLOAD_URL, headers: { "Content-Type": "image/png" }, expires_at: "2026-10-19T12:05:00.000Z" }, 201);
 
 describe("http entry flow adapters", () => {
-  it("setOfficeSignature: uploads the PNG (context contract_signature), then PATCH /offices/{id}/signature { file_id }", async () => {
-    const office = { id: IDS.office, name: "SM Miami", kind: "sm", signature_file_id: FILE_ID };
-    const { calls } = stubFetch(presigned(), emptyResponse(200), dataResponse({ id: FILE_ID, status: "pending" }, 202), dataResponse(office));
+  it("setOfficeSignature: uploads the PNG (context contract_signature), waits until the file is ready, then PATCH /offices/{id}/signature { file_id }", async () => {
+    const office = { id: IDS.office, name: "SM Miami", kind: "sm", signature_file_id: FILE_ID, signature_file_name: "firma.png" };
+    const { calls } = stubFetch(
+      presigned(),
+      emptyResponse(200),
+      dataResponse({ id: FILE_ID, status: "pending" }, 202),
+      dataResponse({ id: FILE_ID, status: "ready" }),
+      dataResponse(office),
+    );
     const file = new File([new Uint8Array([137, 80, 78, 71])], "firma.png", { type: "image/png" });
-    expect(await createHttpNetworkRepository(testClient()).setOfficeSignature(IDS.office, file)).toEqual(office);
+    const phases: string[] = [];
+    expect(await createHttpNetworkRepository(testClient()).setOfficeSignature(IDS.office, file, { onProgress: (p) => phases.push(p) })).toEqual(office);
     expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual([
       "POST /files/presign",
       `PUT ${UPLOAD_URL}`,
       `POST /files/${FILE_ID}/complete`,
+      `GET /files/${FILE_ID}`,
       `PATCH /offices/${IDS.office}/signature`,
     ]);
+    expect(phases).toEqual(["uploading", "verifying"]);
     expect(calls[0]?.body).toMatchObject({ context: "contract_signature", original_name: "firma.png" });
-    expect(calls[3]?.body).toEqual({ file_id: FILE_ID });
+    expect(calls[4]?.body).toEqual({ file_id: FILE_ID });
+  });
+
+  it("setOfficeSignature: a file the verification refuses is file_rejected and nothing is attached", async () => {
+    const { calls } = stubFetch(
+      presigned(),
+      emptyResponse(200),
+      dataResponse({ id: FILE_ID, status: "pending" }, 202),
+      dataResponse({ id: FILE_ID, status: "failed", reason: "not_a_png" }),
+    );
+    const file = new File([new Uint8Array([1, 2, 3])], "firma.png", { type: "image/png" });
+    await expect(createHttpNetworkRepository(testClient()).setOfficeSignature(IDS.office, file)).rejects.toThrow("file_rejected");
+    expect(calls).toHaveLength(4);
   });
 
   it("setOfficeSignature: a name without the file is invalid_file, without calling the API", async () => {

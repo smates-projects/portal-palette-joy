@@ -553,10 +553,19 @@ export interface NetworkRepository {
   activateOffice(officeId: Uuid): Promise<OfficeSummary>;
   /**
    * "Firma de la oficina" (PNG): the signature the NDA and the MOU go out pre-signed with. SM Global, or the admin of
-   * that office. The HTTP adapter uploads the File first (PATCH /offices/{id}/signature { file_id }); the mock keeps
-   * the name.
+   * that office. The HTTP adapter uploads the File first, waits until the API verified it (GET /files/{id} ready) and
+   * then PATCH /offices/{id}/signature { file_id }; the answer carries signature_file_name. The mock keeps the name.
+   * file_rejected when the verification refuses the file; file_verification_timeout when it takes too long.
    */
-  setOfficeSignature(officeId: Uuid, file: DocumentUpload): Promise<Organization>;
+  setOfficeSignature(officeId: Uuid, file: DocumentUpload, options?: UploadProgress): Promise<Organization>;
+}
+
+/** What an upload is doing: the bytes go out, then the API verifies them (magic bytes, scanner). */
+export type UploadPhase = "uploading" | "verifying";
+
+/** Optional progress of a write that uploads a file first (the screen shows "Verificando el archivo"). */
+export interface UploadProgress {
+  onProgress?: ((phase: UploadPhase) => void) | undefined;
 }
 
 /** Platform rules. Everyone reads them; only SM Global changes them, and every change is logged. */

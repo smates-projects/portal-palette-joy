@@ -121,6 +121,7 @@ describe("http funds", () => {
       presigned(),
       emptyResponse(200),
       dataResponse({ id: FILE_ID, status: "pending" }, 202),
+      dataResponse({ id: FILE_ID, status: "ready" }),
       dataResponse(apiFunds(), 201),
     );
     const file = new File(["%PDF-1.7 transferencia"], "comprobante.pdf", {
@@ -141,6 +142,7 @@ describe("http funds", () => {
       "POST /files/presign",
       `PUT ${UPLOAD_URL}`,
       `POST /files/${FILE_ID}/complete`,
+      `GET /files/${FILE_ID}`,
       `POST /businesses/${BIZ}/funds/payments`,
     ]);
     expect(calls[0]?.body).toEqual({
@@ -151,8 +153,8 @@ describe("http funds", () => {
       business_id: BIZ,
     });
     expect(fetchMock.mock.calls[1]?.[1]?.body).toBe(file);
-    expect(calls[3]?.body).toMatchObject({ receipt_file_id: FILE_ID });
-    expect(calls[3]?.headers["Idempotency-Key"]).toBeTruthy();
+    expect(calls[4]?.body).toMatchObject({ receipt_file_id: FILE_ID });
+    expect(calls[4]?.headers["Idempotency-Key"]).toBeTruthy();
   });
 
   it("reportPayment: a { file_name, size_kb } placeholder is invalid_file, without calling the API", async () => {

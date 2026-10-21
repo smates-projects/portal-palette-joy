@@ -177,6 +177,7 @@ describe("http distribution", () => {
       ),
       emptyResponse(200),
       dataResponse({ id: FILE_ID, status: "pending" }, 202),
+      dataResponse({ id: FILE_ID, status: "ready" }),
       dataResponse(apiDistribution(), 200, { ETag: '"7"' }),
     );
     const { distribution, client } = setup();
@@ -195,17 +196,18 @@ describe("http distribution", () => {
       "POST /files/presign",
       `PUT ${UPLOAD_URL}`,
       `POST /files/${FILE_ID}/complete`,
+      `GET /files/${FILE_ID}`,
       `POST /distribution-payments/${PAYMENT}/paid`,
     ]);
     expect(calls[0]?.body).toMatchObject({ context: "distribution_payment", business_id: BIZ });
     expect(fetchMock.mock.calls[1]?.[1]?.body).toBe(file);
-    expect(calls[3]?.body).toEqual({
+    expect(calls[4]?.body).toEqual({
       paid_on: "2026-10-14",
       method: "transfer",
       reference: "T-1",
       receipt_file_id: FILE_ID,
     });
-    expect(calls[3]?.headers["Idempotency-Key"]).toBeTruthy();
+    expect(calls[4]?.headers["Idempotency-Key"]).toBeTruthy();
     // The answer is the whole distribution: its new ETag goes under the distribution.
     expect(client.etags.get(DIST_PATH)).toBe('"7"');
   });

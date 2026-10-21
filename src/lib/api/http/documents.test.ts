@@ -48,6 +48,7 @@ const presigned = (headers: Record<string, string> = UPLOAD_HEADERS) =>
   );
 
 const fileMetadata = () => dataResponse({ id: FILE_ID, status: "pending" }, 202);
+const fileReady = () => dataResponse({ id: FILE_ID, status: "ready" });
 
 /** 1x1 transparent PNG, as SignaturePad's canvas.toDataURL("image/png") gives it. */
 const PNG_DATA_URL =
@@ -90,7 +91,7 @@ describe("http documents", () => {
     expect(calls[0]).toMatchObject({ method: "GET", path: `/businesses/${IDS.business}/intake` });
   });
 
-  it("uploadDocument: presign → PUT the bytes → complete → attach, in this order", async () => {
+  it("uploadDocument: presign â†’ PUT the bytes â†’ complete â†’ attach, in this order", async () => {
     const received = documentFixture({
       state: "received",
       file_name: "banco.pdf",
@@ -99,7 +100,7 @@ describe("http documents", () => {
     const { calls, fetchMock } = stubFetch(
       presigned(),
       emptyResponse(200),
-      fileMetadata(),
+      fileMetadata(), fileReady(),
       dataResponse(received),
     );
     const file = new File(["%PDF-1.7 estados"], "banco.pdf", { type: "application/pdf" });
@@ -110,6 +111,7 @@ describe("http documents", () => {
       "POST /files/presign",
       `PUT ${UPLOAD_URL}`,
       `POST /files/${FILE_ID}/complete`,
+      `GET /files/${FILE_ID}`,
       `POST /documents/${DOC}/upload`,
     ]);
     expect(calls[0]?.body).toEqual({
@@ -125,7 +127,7 @@ describe("http documents", () => {
     expect(putInit?.credentials).toBe("omit");
     expect(putInit?.headers).toEqual(UPLOAD_HEADERS);
     expect(putInit?.body).toBe(file);
-    expect(calls[3]?.body).toEqual({ file_id: FILE_ID });
+    expect(calls[4]?.body).toEqual({ file_id: FILE_ID });
   });
 
   it("uploadDocument: a name without the file is invalid_file, without calling the API", async () => {
@@ -192,12 +194,12 @@ describe("http documents", () => {
     expect(await documents.openContract(CONTRACT)).toEqual(opened);
   });
 
-  it("signContract: uploads the signature as PNG (presign → PUT → complete), then POST /sign with consent", async () => {
+  it("signContract: uploads the signature as PNG (presign â†’ PUT â†’ complete), then POST /sign with consent", async () => {
     const signed = contractFixture({ state: "signed", signed_at: "2026-10-19" });
     const { calls, fetchMock } = stubFetch(
       presigned({ "Content-Type": "image/png" }),
       emptyResponse(200),
-      fileMetadata(),
+      fileMetadata(), fileReady(),
       dataResponse(signed),
     );
 
@@ -209,6 +211,7 @@ describe("http documents", () => {
       "POST /files/presign",
       `PUT ${UPLOAD_URL}`,
       `POST /files/${FILE_ID}/complete`,
+      `GET /files/${FILE_ID}`,
       `POST /contracts/${CONTRACT}/sign`,
     ]);
     const png = dataUrlToBlob(PNG_DATA_URL)!;
@@ -222,7 +225,7 @@ describe("http documents", () => {
     const putBody = fetchMock.mock.calls[1]?.[1]?.body as Blob;
     expect(putBody.type).toBe("image/png");
     expect(putBody.size).toBe(png.size);
-    expect(calls[3]?.body).toEqual({
+    expect(calls[4]?.body).toEqual({
       signature_file_id: FILE_ID,
       signature_kind: "drawn",
       consent: true,
@@ -246,11 +249,11 @@ describe("http documents", () => {
   it("declineContract: POST /contracts/{id}/decline with the reason", async () => {
     const declined = contractFixture({ state: "declined" });
     const { calls } = stubFetch(dataResponse(declined));
-    expect(await asOwner().declineContract(CONTRACT, "Cambiar la cláusula 4")).toEqual(declined);
+    expect(await asOwner().declineContract(CONTRACT, "Cambiar la clÃ¡usula 4")).toEqual(declined);
     expect(calls[0]).toMatchObject({
       method: "POST",
       path: `/contracts/${CONTRACT}/decline`,
-      body: { reason: "Cambiar la cláusula 4" },
+      body: { reason: "Cambiar la clÃ¡usula 4" },
     });
   });
 
@@ -282,7 +285,7 @@ describe("http documents", () => {
   });
 
   it("signContract: a MOU without the four points answers acknowledgment_required", async () => {
-    stubFetch(presigned({ "Content-Type": "image/png" }), emptyResponse(200), fileMetadata(), problemResponse(409, "acknowledgment_required"));
+    stubFetch(presigned({ "Content-Type": "image/png" }), emptyResponse(200), fileMetadata(), fileReady(), problemResponse(409, "acknowledgment_required"));
     await expect(asOwner().signContract(CONTRACT, { kind: "drawn", image_url: PNG_DATA_URL })).rejects.toThrow("acknowledgment_required");
   });
 
@@ -294,7 +297,7 @@ describe("http documents", () => {
   });
 
   it("signContract: the Operating Agreement before its waiting period answers waiting_period with the date in detail", async () => {
-    stubFetch(presigned({ "Content-Type": "image/png" }), emptyResponse(200), fileMetadata(), problemResponse(409, "waiting_period", { detail: "2026-10-18" }));
+    stubFetch(presigned({ "Content-Type": "image/png" }), emptyResponse(200), fileMetadata(), fileReady(), problemResponse(409, "waiting_period", { detail: "2026-10-18" }));
     await expect(asOwner().signContract(CONTRACT, { kind: "drawn", image_url: PNG_DATA_URL })).rejects.toMatchObject({ code: "waiting_period", detail: "2026-10-18" });
   });
 });
