@@ -32,11 +32,15 @@ describe("locales", () => {
     expect(textsOf(es).filter((text) => /provisori/i.test(text))).toEqual([]);
   });
 
-  it("every notification kind has its bell text and its preference label in both languages", () => {
+  it("every notification kind has its bell text (title) and its preference label (body) in both languages, never empty", () => {
     const missing = (locale: { notifications: Record<string, unknown> }) =>
-      NOTIFICATION_KINDS.flatMap((kind) => [`kind_${kind}`, `pref_${kind}`]).filter((key) => typeof locale.notifications[key] !== "string");
+      NOTIFICATION_KINDS.flatMap((kind) => [`kind_${kind}`, `pref_${kind}`]).filter((key) => typeof locale.notifications[key] !== "string" || !(locale.notifications[key] as string).trim());
     expect(missing(es)).toEqual([]);
     expect(missing(en)).toEqual([]);
+    expect(NOTIFICATION_KINDS).toContain("transfer_received");
+    expect(NOTIFICATION_KINDS).toContain("lead_auto_discarded");
+    // The fallbacks the bell fills empty names with.
+    for (const locale of [es, en]) for (const key of ["actor_fallback", "owner_fallback", "framework_fallback", "contract_fallback"]) expect((locale.notifications as Record<string, unknown>)[key]).toEqual(expect.any(String));
   });
 
   it("the MOU ready has its texts; every text of the owner's own NDA is gone", () => {

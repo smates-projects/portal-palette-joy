@@ -542,13 +542,17 @@ export const NOTIFICATION_KINDS = [
   // closed the validation with the definitive percentages.
   "binding_ready",
   "validation_closed",
+  // API only, to the SM team: a lead or business arrived from another office ("Derivar a oficina"); a lead left
+  // the process by itself (meeting held without the MOU signed).
+  "transfer_received",
+  "lead_auto_discarded",
 ] as const;
 /** Kinds about one business entering that its three parties get (owner, Bishop, SM team and Corporate). */
 export const ENTRY_PARTY_NOTIFICATION_KINDS: readonly NotificationKind[] = ["binding_ready", "validation_closed"];
 /** Kinds that only the real API sends (the mock never creates them nor lists their preferences). */
 export const API_ONLY_NOTIFICATION_KINDS: readonly NotificationKind[] = [
   "document_received", "document_requested", "documents_approved", "documents_unlocked", "contract_sent", "contract_signed",
-  "review_overdue", "signature_pending_review", "opportunity_available", "program_started",
+  "review_overdue", "signature_pending_review", "opportunity_available", "program_started", "transfer_received", "lead_auto_discarded",
 ];
 /** Kinds about a lead of the Embudo. Only the SM team of the lead's office gets them. */
 export const LEAD_NOTIFICATION_KINDS: readonly NotificationKind[] = [

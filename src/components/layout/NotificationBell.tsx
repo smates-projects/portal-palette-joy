@@ -9,6 +9,7 @@ import { firstName, formatDateTime, localeTag } from "@/lib/format";
 import { ALL_OFFICES, inOfficeScope, useOfficeScope } from "@/lib/office-scope";
 import { cn } from "@/lib/utils";
 import { describeChange } from "@/lib/tasks/changes";
+import { notificationText } from "@/lib/notifications/text";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -51,6 +52,8 @@ const DOT: Record<NotificationKind, string> = {
   program_started: "bg-status-success-fg",
   binding_ready: "bg-gold",
   validation_closed: "bg-status-success-fg",
+  transfer_received: "bg-link",
+  lead_auto_discarded: "bg-status-danger-fg",
 };
 
 /** Calendar v2: these open the calendar with the meeting in focus. */
@@ -173,15 +176,7 @@ export function NotificationBell() {
                       <span className={cn("block text-sm", !n.read_at && "font-medium")}>
                         {n.change
                           ? describeChange(n.change, n.actor_name ? firstName(n.actor_name) : "", t, i18n.language)
-                          : t(`notifications.kind_${n.kind}`, {
-                              name: n.actor_name ? firstName(n.actor_name) : "",
-                              // Automatic entry: "Nuevo assessment de {business} ({place})", "{owner} agendó reunión para el {date}".
-                              owner: n.actor_name ?? "", business: n.business_name, place: n.lead_place ?? "",
-                              date: n.meeting_at ? formatDateTime(n.meeting_at, i18n.language) : "",
-                              // Contracts and entry documents: the contract's name and the business from the payload.
-                              contract_name: n.contract_name || t("notifications.contract_fallback"),
-                              business_name: n.business_name || "",
-                            })}
+                          : notificationText(n, (key, values) => t(key, values), i18n)}
                       </span>
                       <span className="block truncate text-xs text-muted-foreground">
                         {MEETING_KINDS.has(n.kind) ? (
