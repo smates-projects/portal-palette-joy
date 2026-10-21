@@ -76,4 +76,10 @@ describe("LoginPage: an account without password", () => {
       screen.getByRole("button", { name: "Enviarme un enlace por correo" }),
     ).toBeInTheDocument();
   });
+
+  it("on the mock the password field says the demo password", async () => {
+    renderLogin();
+    await screen.findByLabelText("Correo");
+    expect(screen.getByText(`Demo. Todas las cuentas de prueba usan la contraseña ${DEMO_PASSWORD}`)).toBeInTheDocument();
+  });
 });

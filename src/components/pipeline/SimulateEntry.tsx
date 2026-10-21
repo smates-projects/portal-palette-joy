@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { FlaskConical } from "lucide-react";
 import { useCurrentUser, useOrganizations, useSimulateAssessment, useSimulateBooking } from "@/lib/api/hooks";
+import { isMockRepository } from "@/lib/api/mode";
 import type { LeadWithComputed } from "@/lib/api/types";
 import { formatDateTime } from "@/lib/format";
 import { bookingKind } from "@/lib/leads/entry-flow";
@@ -17,7 +18,8 @@ export function SimulateEntry({ leads, selectedId, onOpen }: { leads: LeadWithCo
   const orgs = useOrganizations().data ?? [];
   const assessment = useSimulateAssessment();
   const booking = useSimulateBooking();
-  if (me?.role !== "sm_team") return null;
+  // Only on the mock: the real API gets assessments and bookings by webhook, there is nothing to simulate.
+  if (me?.role !== "sm_team" || !isMockRepository("leads")) return null;
 
   const fail = () => toast.error(t("pipeline.t_error"));
   const evaluated = leads.filter((l) => l.stage === "evaluated" && !l.meeting).sort((a, b) => b.submitted_at.localeCompare(a.submitted_at));

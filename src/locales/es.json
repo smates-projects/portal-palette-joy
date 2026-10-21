@@ -138,7 +138,8 @@
     },
     "invite": {
       "title": "Invitar persona",
-      "body": "La persona recibe un correo (simulado) y queda como Invitada hasta que acepte.",
+      "body": "La persona recibe un correo y queda como Invitada hasta que acepte.",
+      "body_demo": "Demo. La persona recibe un correo simulado y queda como Invitada hasta que acepte.",
       "role": "Rol",
       "role_placeholder": "Elige el rol",
       "place_sm_global": "Organización",

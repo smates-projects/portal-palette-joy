@@ -3,6 +3,7 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useLogin, useRequestMagicLink } from "@/lib/api/hooks";
 import { DEMO_PASSWORD } from "@/lib/api/mock";
+import { isMockRepository } from "@/lib/api/mode";
 import { authErrorCode, emailProblem, focusFirstError } from "@/lib/auth/form";
 import { nextStepAfterSignIn } from "@/lib/auth/two-factor";
 import { AuthHeading, AuthLayout } from "./AuthLayout";
@@ -185,9 +186,9 @@ export function LoginPage({
             error={fieldErrors.password}
             invalid={serverError === "invalid_credentials"}
             disabled={pending}
-            // Development only: the seeded accounts' password. Never rendered in a production build.
+            // Demo only: the seeded accounts' password. Never rendered when the session talks to the real API.
             hint={
-              import.meta.env.DEV
+              isMockRepository("session")
                 ? t("auth.login.demo_hint", { password: DEMO_PASSWORD })
                 : undefined
             }

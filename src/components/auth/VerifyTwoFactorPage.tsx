@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { buttonVariants } from "@/components/ui/button";
 import { useRecoverTwoFactor, useVerifyTwoFactor } from "@/lib/api/hooks";
 import { DEMO_TOTP_CODE } from "@/lib/api/mock/session";
+import { isMockRepository } from "@/lib/api/mode";
 import { TOTP_CODE_LENGTH } from "@/lib/api/types";
 import { authErrorCode, focusFirstError } from "@/lib/auth/form";
 import { safeNextPath } from "@/lib/auth/redirect";
@@ -164,8 +165,8 @@ export function VerifyTwoFactorPage({
             hint={
               <>
                 {t("auth.two_factor.code_hint")}
-                {/* Development only: the mock's fixed code. Never rendered in a production build. */}
-                {import.meta.env.DEV && (
+                {/* Demo only: the mock's fixed code. Never rendered when the session talks to the real API. */}
+                {isMockRepository("session") && (
                   <> {t("auth.two_factor.demo_hint", { code: DEMO_TOTP_CODE })}</>
                 )}
               </>

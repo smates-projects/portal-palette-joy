@@ -6,6 +6,7 @@ import { useBusinesses, useCurrentUser, useDeactivateUser, useInviteUser, useOrg
 import type { Organization, User, UserRole } from "@/lib/api/types";
 import { canManage, invitableRoles, isActiveFirm, isActiveUser, isFirmAdmin, isOfficeAdmin } from "@/lib/accounts/permissions";
 import { accountError } from "@/lib/accounts/errors";
+import { isMockRepository } from "@/lib/api/mode";
 import { Field, inputCls, linkBtn, primaryBtn, secondaryBtn, selectCls, textareaCls, userStatus } from "./shared";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -85,7 +86,8 @@ export function InvitePersonDialog(props: { open: boolean; onOpenChange: (o: boo
       <DialogContent className="bg-surface sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{t("accounts.invite.title")}</DialogTitle>
-          <DialogDescription>{t("accounts.invite.body")}</DialogDescription>
+          {/* The demo sends no email: its text says so; with the real API the email goes out. */}
+          <DialogDescription>{t(isMockRepository("users") ? "accounts.invite.body_demo" : "accounts.invite.body")}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           {!props.fixedRole && roles.length > 1 && (
@@ -193,7 +195,8 @@ export function PersonActions({ user, orgs, onDeactivate, onHistory }: { user: U
   const fail = (e: unknown) => toast.error(accountError(t, e));
   return (
     <div className="flex flex-wrap items-center justify-start gap-3 md:flex-nowrap md:justify-end [&_button]:whitespace-nowrap">
-      {manages && status === "invited" && (
+      {/* "Simular aceptación" exists only on the mock: with the real API the person accepts from the email. */}
+      {manages && status === "invited" && isMockRepository("users") && (
         <button className={linkBtn} disabled={accept.isPending} onClick={() => accept.mutate(user.id, { onSuccess: () => toast.success(t("accounts.t_accepted", { name: user.full_name })), onError: fail })}>
           {t("accounts.simulate_acceptance")}
         </button>

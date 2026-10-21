@@ -138,7 +138,8 @@
     },
     "invite": {
       "title": "Invite person",
-      "body": "The person gets an email (simulated) and stays Invited until they accept.",
+      "body": "The person gets an email and stays Invited until they accept.",
+      "body_demo": "Demo. The person gets a simulated email and stays Invited until they accept.",
       "role": "Role",
       "role_placeholder": "Pick the role",
       "place_sm_global": "Organization",
