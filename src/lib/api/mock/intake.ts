@@ -316,18 +316,31 @@ export function createIntake(db: IntakeDb, newId: () => string) {
     docsOf,
     contractsOf,
     contractOf,
+    /** A received file, or a "No aplica" SM agrees with (the fact then says why it does not apply). */
     acceptDocument: (r: IntakeRecord, docId: Uuid, fact: string) => {
       const d = findDoc(r.business_id, docId);
-      if (d.state !== "received") throw new Error("invalid_state");
+      if (d.state !== "received" && d.state !== "not_applicable") throw new Error("invalid_state");
       if (!fact.trim()) throw new Error("fact_required");
       Object.assign(d, { state: "reviewed", reviewed_at: todayIso(), verified_fact: fact.trim(), review_comment: null });
       return d;
     },
+    /** "Pedir otro", or "Pedirlo igual" on a "No aplica": back to the owner with the comment. */
     requestAgain: (r: IntakeRecord, docId: Uuid, comment: string) => {
       const d = findDoc(r.business_id, docId);
-      if (d.state !== "received" && d.state !== "reviewed") throw new Error("invalid_state");
+      if (d.state !== "received" && d.state !== "reviewed" && d.state !== "not_applicable") throw new Error("invalid_state");
       if (!comment.trim()) throw new Error("comment_required");
       Object.assign(d, { state: "rejected", reviewed_at: todayIso(), review_comment: comment.trim(), verified_fact: null, pauses: [...(d.pauses ?? []), { from: todayIso(), to: null }] });
+      return d;
+    },
+    /** Owner, "No aplica": same locks as the upload; the reason is required. It counts as answered for the review clock. */
+    markNotApplicable: (businessId: Uuid, d: BusinessDocument, reason: string) => {
+      if (d.locked_until_mou) throw new Error("mou_required");
+      if (d.state !== "requested" && d.state !== "rejected") throw new Error("invalid_state");
+      if (!reason.trim()) throw new Error("reason_required");
+      for (const p of d.pauses ?? []) if (!p.to) p.to = todayIso();
+      Object.assign(d, { state: "not_applicable", received_at: todayIso(), file_name: null, not_applicable_reason: reason.trim(), review_comment: null });
+      const r = db.intakes.find((i) => i.business_id === businessId);
+      if (r) startClockIfComplete(r, todayIso());
       return d;
     },
     /** Owner upload of an entry document: locked until he signs the MOU. Closes the pause of a replacement. */

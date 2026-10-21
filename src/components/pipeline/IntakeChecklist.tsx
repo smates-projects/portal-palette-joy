@@ -32,6 +32,7 @@ const DOC_TONE: Record<BusinessDocument["state"], string> = {
   received: "border-status-info-border bg-status-info-bg text-status-info-fg",
   reviewed: "border-status-success-border bg-status-success-bg text-status-success-fg",
   rejected: "border-status-warning-border bg-status-warning-bg text-status-warning-fg",
+  not_applicable: "border-status-info-border bg-status-info-bg text-status-info-fg",
 };
 
 export function ClockLabel({ clock }: { clock: ReviewClock }) {
@@ -216,11 +217,15 @@ export function IntakeChecklist({ leadId, readOnly, validation }: { leadId: stri
               </p>
               {d.state === "reviewed" && d.verified_fact && <p className="mt-0.5 text-xs text-status-success-fg">{t("intake.verified", { fact: d.verified_fact })}</p>}
               {d.state === "rejected" && d.review_comment && <ReviewNoteAlert comment={d.review_comment} className="mt-1.5" />}
+              {/* "No aplica": the owner's reason, in a bordered note; SM accepts it or asks for it anyway. */}
+              {d.state === "not_applicable" && (
+                <p className="mt-1.5 rounded-[4px] border border-status-info-border bg-status-info-bg px-3 py-2 text-xs text-status-info-fg">{t("intake.not_applicable_reason", { reason: d.not_applicable_reason ?? "" })}</p>
+              )}
               {help && <DocumentHelp help={help} className="mt-1.5" />}
-              {!readOnly && (d.state === "received" || d.state === "reviewed") && (
+              {!readOnly && (d.state === "received" || d.state === "reviewed" || d.state === "not_applicable") && (
                 <div className="mt-1.5 flex gap-3">
-                  {d.state === "received" && <button onClick={() => setAccepting(d)} className="text-xs font-medium text-link hover:underline">{t("intake.accept")}</button>}
-                  <button onClick={() => setRequesting(d)} className="text-xs text-muted-foreground hover:text-foreground hover:underline">{t("intake.request_again")}</button>
+                  {(d.state === "received" || d.state === "not_applicable") && <button onClick={() => setAccepting(d)} className="text-xs font-medium text-link hover:underline">{t("intake.accept")}</button>}
+                  <button onClick={() => setRequesting(d)} className="text-xs text-muted-foreground hover:text-foreground hover:underline">{t(d.state === "not_applicable" ? "intake.request_anyway" : "intake.request_again")}</button>
                 </div>
               )}
             </li>
@@ -248,9 +253,9 @@ function CountRow({ label, n, m }: { label: string; n: number; m: number }) {
   );
 }
 
-export function TextDialog(props: { title: string; body: string; label: string; confirm: string; required: string; placeholder?: string | undefined; serverError?: string | undefined; pending: boolean; onClose: () => void; onConfirm: (v: string) => void }) {
+export function TextDialog(props: { title: string; body: string; label: string; confirm: string; required: string; placeholder?: string | undefined; initialValue?: string | undefined; serverError?: string | undefined; pending: boolean; onClose: () => void; onConfirm: (v: string) => void }) {
   const { t } = useTranslation();
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState(props.initialValue ?? "");
   const [tried, setTried] = useState(false);
   return (
     <Dialog open onOpenChange={(o) => !o && props.onClose()}>
@@ -281,10 +286,13 @@ function AcceptDialog({ leadId, doc, onClose }: { leadId: string; doc: BusinessD
   const { t } = useTranslation();
   const accept = useAcceptDocument();
   const [factRejected, setFactRejected] = useState(false);
+  // Accepting a "No aplica": the fact the Bishop reads starts from the owner's reason.
+  const notApplicable = doc.state === "not_applicable";
   return (
     <TextDialog
-      title={t("intake.accept_title", { name: doc.name })} body={t("intake.accept_body")} label={t("intake.accept_label")}
+      title={t("intake.accept_title", { name: doc.name })} body={t(notApplicable ? "intake.accept_not_applicable_body" : "intake.accept_body")} label={t("intake.accept_label")}
       confirm={t("intake.accept_confirm")} required={t("intake.fact_required")} placeholder={doc.verified_hint ?? undefined}
+      initialValue={notApplicable ? t("intake.not_applicable_fact", { reason: doc.not_applicable_reason ?? "" }) : undefined}
       serverError={factRejected ? t("intake.fact_required") : undefined} pending={accept.isPending} onClose={onClose}
       onConfirm={(fact) => {
         setFactRejected(false);
@@ -301,9 +309,10 @@ function AcceptDialog({ leadId, doc, onClose }: { leadId: string; doc: BusinessD
 function RequestDialog({ leadId, doc, onClose }: { leadId: string; doc: BusinessDocument; onClose: () => void }) {
   const { t } = useTranslation();
   const request = useRequestDocument();
+  const anyway = doc.state === "not_applicable";
   return (
     <TextDialog
-      title={t("intake.request_title", { name: doc.name })} body={t("intake.request_body")} label={t("intake.request_label")}
+      title={t(anyway ? "intake.request_anyway_title" : "intake.request_title", { name: doc.name })} body={t(anyway ? "intake.request_anyway_body" : "intake.request_body")} label={t("intake.request_label")}
       confirm={t("intake.request_confirm")} required={t("intake.comment_required")} pending={request.isPending} onClose={onClose}
       onConfirm={(comment) => request.mutate({ id: leadId, documentId: doc.id, comment }, { onSuccess: () => { toast.success(t("intake.t_requested")); onClose(); }, onError: () => toast.error(t("pipeline.t_error")) })}
     />

@@ -2403,7 +2403,17 @@
       "signer_signed": "signed on {{date}}",
       "signer_pending": "signature missing",
       "area_intake": "Entry",
-      "state_rejected": "Asked again"
+      "state_rejected": "Asked again",
+      "state_not_applicable": "Not applicable",
+      "not_applicable": "Not applicable",
+      "not_applicable_title": "{{name}} does not apply to your business",
+      "not_applicable_body": "Tell Strategic Mates why it does not apply. They review it and accept it or ask for it anyway.",
+      "not_applicable_label": "Why it does not apply",
+      "not_applicable_placeholder": "For example, I work alone and have no employees",
+      "not_applicable_confirm": "Mark as not applicable",
+      "not_applicable_required": "Write why it does not apply.",
+      "not_applicable_reason": "Not applicable. {{reason}}",
+      "t_not_applicable": "You marked {{name}} as not applicable. Strategic Mates will review it."
     },
     "business": {
       "question": "What data does SM have about my business?",
@@ -2951,8 +2961,15 @@
       "requested": "To upload",
       "received": "To review",
       "reviewed": "Accepted",
-      "rejected": "Asked again"
+      "rejected": "Asked again",
+      "not_applicable": "Not applicable"
     },
+    "not_applicable_reason": "The owner says it does not apply. {{reason}}",
+    "not_applicable_fact": "Not applicable. {{reason}}",
+    "accept_not_applicable_body": "If you agree it does not apply, confirm the fact the investor will see.",
+    "request_anyway": "Ask for it anyway",
+    "request_anyway_title": "Ask for it anyway, {{name}}",
+    "request_anyway_body": "Tell the owner why you need it even if they think it does not apply. It goes back to their pending list.",
     "verified": "Verified. {{fact}}",
     "asked_again": "Asked again. {{comment}}",
     "accept_title": "Accept {{name}}",

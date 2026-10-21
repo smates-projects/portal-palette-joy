@@ -643,6 +643,9 @@ export const useContracts = (businessId?: string) =>
   useQuery({ queryKey: ["documents", "contracts", businessId ?? "all"], queryFn: () => api.documents.listContracts(businessId) });
 export const useUploadDocument = () =>
   useNetworkMutation((v: { documentId: string; file: DocumentUpload }) => api.documents.uploadDocument(v.documentId, v.file), ["documents", "leads"]);
+/** Owner, "No aplica": the document waits for SM with the reason. */
+export const useMarkNotApplicable = () =>
+  useNetworkMutation((v: { documentId: string; reason: string }) => api.documents.markNotApplicable(v.documentId, v.reason), ["documents", "leads"]);
 /** FinancialSeries | null: months, revenue, margin %, cash and the before/now table. */
 export const useFinancials = (businessId?: string) =>
   useQuery({ queryKey: ["financials", businessId ?? "own"], queryFn: () => api.financials.get(businessId) });

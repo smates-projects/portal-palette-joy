@@ -446,8 +446,11 @@ export interface PublishManualInput {
 
 // ---------- Documents, contracts, financials, business profile ----------
 
-/** reviewed = accepted by SM. rejected = SM asked for another file. */
-export type DocumentState = "requested" | "received" | "reviewed" | "rejected";
+/**
+ * reviewed = accepted by SM. rejected = SM asked for another file. not_applicable = the owner says the document does
+ * not apply to his business (with a reason); SM accepts it (reviewed) or asks for it anyway (rejected).
+ */
+export type DocumentState = "requested" | "received" | "reviewed" | "rejected" | "not_applicable";
 
 export interface BusinessDocument {
   id: Uuid;
@@ -471,6 +474,8 @@ export interface BusinessDocument {
   pauses?: { from: IsoDate; to: IsoDate | null }[] | undefined;
   /** Entry documents: the owner cannot upload it until he signs the MOU. */
   locked_until_mou?: boolean | undefined;
+  /** not_applicable: why the owner says it does not apply (kept once SM accepts it, as the verified fact says). */
+  not_applicable_reason?: string | null | undefined;
 }
 
 /** Same states DocuSeal reports. */

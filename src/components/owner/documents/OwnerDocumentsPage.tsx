@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { FileText, Upload } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import { useContracts, useCurrentUser, useDocuments, useRules, useUploadDocument } from "@/lib/api/hooks";
+import { useContracts, useCurrentUser, useDocuments, useMarkNotApplicable, useRules, useUploadDocument } from "@/lib/api/hooks";
+import { TextDialog } from "@/components/pipeline/IntakeChecklist";
 import { INTAKE_DOCUMENT_ACCEPT, entryRules, intakeDocumentHelp, oaWaitingUntil } from "@/lib/leads/entry-flow";
 import { DocumentHelp } from "@/components/pipeline/DocumentHelp";
 import { ReviewNoteAlert } from "@/components/pipeline/ReviewNoteAlert";
@@ -21,7 +22,7 @@ const CONTRACT_TONE: Record<ContractState, Tone> = {
   signed: "success",
   declined: "danger",
 };
-const DOCUMENT_TONE: Record<DocumentState, Tone> = { requested: "warning", received: "info", reviewed: "success", rejected: "warning" };
+const DOCUMENT_TONE: Record<DocumentState, Tone> = { requested: "warning", received: "info", reviewed: "success", rejected: "warning", not_applicable: "info" };
 
 /** Documents SM asked for (upload them here), the ones already received, and the contracts with their signature status. */
 export function OwnerDocumentsPage() {
@@ -30,8 +31,11 @@ export function OwnerDocumentsPage() {
   const documentsQ = useDocuments();
   const contractsQ = useContracts();
   const upload = useUploadDocument();
+  const markNotApplicable = useMarkNotApplicable();
   const fileInput = useRef<HTMLInputElement>(null);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
+  // "No aplica": the document whose reason is being written.
+  const [notApplicableFor, setNotApplicableFor] = useState<BusinessDocument | null>(null);
 
   const documents = documentsQ.data ?? [];
   const contracts = contractsQ.data ?? [];
@@ -110,10 +114,16 @@ export function OwnerDocumentsPage() {
                       {d.state === "rejected" && d.review_comment && <ReviewNoteAlert comment={d.review_comment} className="mt-2" />}
                       {help && <DocumentHelp help={help} className="mt-2" />}
                     </div>
-                    <button className={secondaryButtonCls} disabled={upload.isPending || !!d.locked_until_mou} onClick={() => pick(d.id)}>
-                      <Upload className="h-4 w-4" />
-                      {uploadingId === d.id && upload.isPending ? t("owner_extra.documents.uploading") : d.state === "rejected" ? t("intake.owner_docs.upload_new") : t("owner_extra.documents.upload")}
-                    </button>
+                    <div className="flex shrink-0 flex-wrap items-center gap-2">
+                      <button className={secondaryButtonCls} disabled={upload.isPending || !!d.locked_until_mou} onClick={() => pick(d.id)}>
+                        <Upload className="h-4 w-4" />
+                        {uploadingId === d.id && upload.isPending ? t("owner_extra.documents.uploading") : d.state === "rejected" ? t("intake.owner_docs.upload_new") : t("owner_extra.documents.upload")}
+                      </button>
+                      {/* The document does not apply to this business: say why and SM decides. */}
+                      <button className={secondaryButtonCls} disabled={markNotApplicable.isPending || !!d.locked_until_mou} onClick={() => setNotApplicableFor(d)}>
+                        {t("owner_extra.documents.not_applicable")}
+                      </button>
+                    </div>
                   </li>
                   );
                 })}
@@ -135,6 +145,9 @@ export function OwnerDocumentsPage() {
                         {d.file_name ? ` · ${d.file_name}` : ""}
                         {d.received_at ? ` · ${t("owner_extra.documents.received_on", { date: formatDate(d.received_at, lng) })}` : ""}
                       </p>
+                      {d.state === "not_applicable" && d.not_applicable_reason && (
+                        <p className="mt-1 text-xs text-muted-foreground">{t("owner_extra.documents.not_applicable_reason", { reason: d.not_applicable_reason })}</p>
+                      )}
                     </div>
                     <ToneBadge tone={DOCUMENT_TONE[d.state]}>{t(`owner_extra.documents.state_${d.state}`)}</ToneBadge>
                   </li>
@@ -193,6 +206,24 @@ export function OwnerDocumentsPage() {
       )}
       {signing && <DocuSealSigner contract={signing} party="owner" signerName={me?.full_name ?? ""} onClose={() => setSigning(null)} />}
       {viewing && <SignedContractDialog contract={viewing} onClose={() => setViewing(null)} />}
+      {notApplicableFor && (
+        <TextDialog
+          title={t("owner_extra.documents.not_applicable_title", { name: notApplicableFor.name })}
+          body={t("owner_extra.documents.not_applicable_body")}
+          label={t("owner_extra.documents.not_applicable_label")}
+          placeholder={t("owner_extra.documents.not_applicable_placeholder")}
+          confirm={t("owner_extra.documents.not_applicable_confirm")}
+          required={t("owner_extra.documents.not_applicable_required")}
+          pending={markNotApplicable.isPending}
+          onClose={() => setNotApplicableFor(null)}
+          onConfirm={(reason) =>
+            markNotApplicable.mutate({ documentId: notApplicableFor.id, reason }, {
+              onSuccess: () => { setNotApplicableFor(null); toast.success(t("owner_extra.documents.t_not_applicable", { name: notApplicableFor.name })); },
+              onError: () => toast.error(t("owner_extra.common.t_error")),
+            })
+          }
+        />
+      )}
     </div>
   );
 }

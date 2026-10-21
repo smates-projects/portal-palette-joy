@@ -91,6 +91,10 @@ export function createHttpDocumentsRepository(client: HttpClient): HttpDocuments
       });
     },
 
+    /** POST /documents/{id}/not-applicable { reason }: "No aplica", with why. */
+    markNotApplicable: (documentId, reason) =>
+      client.post<BusinessDocument>(`/documents/${encodeURIComponent(documentId)}/not-applicable`, { reason: reason.trim() }),
+
     getIntake: async (businessId) => {
       const id = await businessIdOrOwn(businessId);
       return id ? getOrNull<IntakeSummary>(client, `${businessPath(id)}/intake`) : null;

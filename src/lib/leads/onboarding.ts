@@ -76,7 +76,8 @@ export function summarizeIntake(input: {
     required_total: required.length,
     uploaded: required.filter((d) => d.state !== "requested").length,
     accepted: required.filter((d) => d.state === "reviewed").length,
-    to_review: input.docs.filter((d) => d.state === "received").length,
+    // A "No aplica" waits for SM like a file does.
+    to_review: input.docs.filter((d) => d.state === "received" || d.state === "not_applicable").length,
     nda_signed: fullySigned(nda),
     mou_signed: fullySigned(mou),
     nda_signed_by_owner: signedBy(nda, "owner"),

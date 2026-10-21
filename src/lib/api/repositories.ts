@@ -359,9 +359,9 @@ export interface LeadsRepository {
   presentToBishops(id: Uuid, bishopUserIds: Uuid[]): Promise<LeadInvestors>;
   /** Entry checklist. SM team of the office and SM Global. */
   getIntake(id: Uuid): Promise<LeadIntake | null>;
-  /** Any SM person of the office. The verified fact is what the Bishop sees. */
+  /** Any SM person of the office. The verified fact is what the Bishop sees. Also accepts a "No aplica" (the fact says so). */
   acceptDocument(id: Uuid, documentId: Uuid, verifiedFact: string): Promise<BusinessDocument>;
-  /** Any SM person of the office; comment required. Pauses the review clock. */
+  /** Any SM person of the office; comment required. Pauses the review clock. On a "No aplica": "Pedirlo igual". */
   requestDocument(id: Uuid, documentId: Uuid, comment: string): Promise<BusinessDocument>;
   /** After 3 days without signing. */
   resendContract(id: Uuid, contractId: Uuid): Promise<Contract>;
@@ -665,6 +665,12 @@ export interface DocumentsRepository {
   listContracts(businessId?: Uuid): Promise<Contract[]>;
   /** Owner only: answers a requested document with a file. */
   uploadDocument(documentId: Uuid, file: DocumentUpload): Promise<BusinessDocument>;
+  /**
+   * Owner only, "No aplica": POST /documents/{id}/not-applicable { reason }. The document goes to not_applicable with
+   * the reason; SM then accepts it (acceptDocument) or asks for it anyway (requestDocument). Same locks as the upload
+   * (mou_required, invalid_state); reason_required when empty.
+   */
+  markNotApplicable(documentId: Uuid, reason: string): Promise<BusinessDocument>;
   /** Entry checklist of a business in onboarding (owner: own). Null when it has none. */
   getIntake(businessId?: Uuid): Promise<IntakeSummary | null>;
   /**

@@ -13,6 +13,40 @@ async function as(userId: string) {
 type Api = Awaited<ReturnType<typeof as>>;
 const leadNamed = async (api: Api, name: string) => (await api.leads.list()).find((l) => l.business.name === name)!;
 
+describe("No aplica", () => {
+  it("the owner marks a document as not applicable with a reason; SM accepts it or asks for it anyway; accepted ones count as resolved", async () => {
+    // One in-memory world: the same client switches between the consultant and the owner.
+    const api = await as(seed.U_NICOLAS);
+    const lead = await leadNamed(api, "Castillo Instalaciones");
+    const before = (await api.leads.getIntake(lead.id))!;
+    const pending = before.documents.find((d) => d.state === "requested")!;
+    const ownerId = (await api.users.list()).find((u) => u.role === "business_owner" && u.business_id === lead.business_id)!.id;
+    const asOwner = () => api.session.setViewAs(ownerId);
+    const asSm = () => api.session.setViewAs(seed.U_NICOLAS);
+    await asOwner();
+    await expect(api.documents.markNotApplicable(pending.id, "  ")).rejects.toThrow("reason_required");
+    const marked = await api.documents.markNotApplicable(pending.id, "No tengo empleados, trabajo solo");
+    expect(marked).toMatchObject({ state: "not_applicable", not_applicable_reason: "No tengo empleados, trabajo solo", file_name: null });
+    // It waits for SM like a file, and still blocks the approval until SM accepts it.
+    await asSm();
+    const after = (await api.leads.getIntake(lead.id))!;
+    expect(after.summary.to_review).toBe(before.summary.to_review + 1);
+    expect(after.summary.approval).toMatchObject({ ok: false });
+    // "Pedirlo igual" sends it back to the owner with the comment.
+    const asked = await api.leads.requestDocument(lead.id, pending.id, "Lo necesitamos igual, aunque sea tu propio contrato");
+    expect(asked).toMatchObject({ state: "rejected", review_comment: "Lo necesitamos igual, aunque sea tu propio contrato" });
+    // Marked again and accepted: resolved, with the fact saying why.
+    await asOwner();
+    await api.documents.markNotApplicable(pending.id, "No tengo empleados");
+    await asSm();
+    const accepted = await api.leads.acceptDocument(lead.id, pending.id, "No aplica. No tiene empleados");
+    expect(accepted).toMatchObject({ state: "reviewed", verified_fact: "No aplica. No tiene empleados", not_applicable_reason: "No tengo empleados" });
+    const summary = (await api.leads.getIntake(lead.id))!.summary;
+    expect(summary.accepted).toBe(before.summary.accepted + 1);
+    expect(summary.to_review).toBe(before.summary.to_review);
+  });
+});
+
 describe("booking and the meeting outcome", () => {
   it("a booking creates the owner account, the business in onboarding and the NDA pre-signed by Strategic Mates", async () => {
     const api = await as(seed.U_NICOLAS);

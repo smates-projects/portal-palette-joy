@@ -443,6 +443,12 @@ export function createMockApi(): MockApi {
           if (!fileName.trim()) throw new Error("file_required");
           return delay(intake.upload(d.business_id, d, fileName.trim()));
         },
+        markNotApplicable: async (documentId, reason) => {
+          const u = me();
+          const d = db.documents.find((x) => x.id === documentId);
+          if (d?.area !== "intake" || u.role !== "business_owner" || u.business_id !== d.business_id) throw new Error("not_found");
+          return delay(intake.markNotApplicable(d.business_id, d, reason));
+        },
         getIntake: async (businessId) => {
           const u = me();
           const id = u.role === "business_owner" ? u.business_id : businessId;

@@ -2403,7 +2403,17 @@
       "signer_signed": "firmó el {{date}}",
       "signer_pending": "falta su firma",
       "area_intake": "Ingreso",
-      "state_rejected": "Pedido de nuevo"
+      "state_rejected": "Pedido de nuevo",
+      "state_not_applicable": "No aplica",
+      "not_applicable": "No aplica",
+      "not_applicable_title": "{{name}} no aplica a tu negocio",
+      "not_applicable_body": "Cuéntale a Strategic Mates por qué no aplica. Lo revisan y lo aceptan o te lo piden igual.",
+      "not_applicable_label": "Por qué no aplica",
+      "not_applicable_placeholder": "Por ejemplo, trabajo solo y no tengo empleados",
+      "not_applicable_confirm": "Marcar como no aplica",
+      "not_applicable_required": "Escribe por qué no aplica.",
+      "not_applicable_reason": "No aplica. {{reason}}",
+      "t_not_applicable": "Marcaste {{name}} como no aplica. Strategic Mates lo revisará."
     },
     "business": {
       "question": "¿Qué datos tiene SM de mi negocio?",
@@ -2951,8 +2961,15 @@
       "requested": "Por subir",
       "received": "Por revisar",
       "reviewed": "Aceptado",
-      "rejected": "Pedido de nuevo"
+      "rejected": "Pedido de nuevo",
+      "not_applicable": "No aplica"
     },
+    "not_applicable_reason": "El dueño dice que no aplica. {{reason}}",
+    "not_applicable_fact": "No aplica. {{reason}}",
+    "accept_not_applicable_body": "Si estás de acuerdo con que no aplica, confirma el dato que verá el inversor.",
+    "request_anyway": "Pedirlo igual",
+    "request_anyway_title": "Pedirlo igual, {{name}}",
+    "request_anyway_body": "Cuéntale al dueño por qué lo necesitan aunque crea que no aplica. Vuelve a su lista de pendientes.",
     "verified": "Verificado. {{fact}}",
     "asked_again": "Pedido de nuevo. {{comment}}",
     "accept_title": "Aceptar {{name}}",
