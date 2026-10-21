@@ -59,9 +59,6 @@ const TAMPA_FIRM_IDS: Record<AreaCode, string> = {
   B1: uuid("0a000000", 31), B2: uuid("0a000000", 32), B3: uuid("0a000000", 33), B4: uuid("0a000000", 34), B5: uuid("0a000000", 35), B6: uuid("0a000000", 36),
 };
 export const U_TAMPA_MANAGER = uuid("0c000000", 60);
-/** SM Florida: an operating office that is still empty (demo of the transfer and the office selector). */
-export const ORG_FLORIDA = uuid("0a000000", 40);
-export const U_FLORIDA_MANAGER = uuid("0c000000", 61);
 /** A franchise unit is an Organization too: Franchise.id === its organization id. */
 export const FRANCHISE_ORLANDO_SUR = uuid("0a000000", 20);
 export const FRANCHISE_TAMPA = uuid("0a000000", 21);
@@ -98,8 +95,6 @@ export const organizations: Organization[] = [
   { id: FRANCHISE_ORLANDO_SUR, name: "Bimbo Remodelaciones Orlando Sur", kind: "franchise", area: null, specialty: null, city: "Orlando, FL", email: "orlandosur@bimboremodelaciones.com", phone: "+1 407 555 0310", franchisor_business_id: BIZ_BIMBO },
   { id: FRANCHISE_TAMPA, name: "Bimbo Remodelaciones Tampa", kind: "franchise", area: null, specialty: null, city: "Tampa, FL", email: "tampa@bimboremodelaciones.com", phone: "+1 813 555 0311", franchisor_business_id: BIZ_BIMBO },
   { id: ORG_TAMPA, name: "SM Tampa", kind: "sm", area: null, specialty: null, city: "Tampa, FL", email: "tampa@strategicmates.com", phone: null, default_booking_url: "https://strategicmates.com/tampa", parent_id: ORG_GLOBAL, status: "opening", opened_at: "2026-11-02", manager_user_id: U_TAMPA_MANAGER },
-  // SM Florida: an operating office without leads, businesses or firms yet, so "Derivar a oficina" and the "Viendo" selector can be shown.
-  { id: ORG_FLORIDA, name: "SM Florida", kind: "sm", area: null, specialty: null, city: "Fort Lauderdale, FL", email: "florida@strategicmates.com", phone: null, default_booking_url: "https://strategicmates.com/florida", parent_id: ORG_GLOBAL, status: "operating", opened_at: "2026-10-01", manager_user_id: U_FLORIDA_MANAGER },
   { id: TAMPA_FIRM_IDS.B1, name: "Bahía Estrategia", kind: "partner_firm", area: "B1", specialty: "Modelo de negocio replicable, plan a cinco años y territorios", city: "Tampa, FL", email: "hola@bahiaestrategia.com", phone: "+1 813 555 0401", parent_id: ORG_TAMPA },
   { id: TAMPA_FIRM_IDS.B2, name: "Flujo Operaciones", kind: "partner_firm", area: "B2", specialty: "Procesos, manuales operativos y capacitación del equipo", city: "Tampa, FL", email: "equipo@flujooperaciones.com", phone: "+1 813 555 0402", parent_id: ORG_TAMPA },
   { id: TAMPA_FIRM_IDS.B3, name: "Cifra Contadores", kind: "partner_firm", area: "B3", specialty: "Contabilidad, modelos financieros y cumplimiento fiscal en Florida", city: "Tampa, FL", email: "hola@cifracontadores.com", phone: "+1 813 555 0403", parent_id: ORG_TAMPA },
@@ -129,7 +124,6 @@ export const users: User[] = [
   person(U_LUISA, "Luisa Paredes", "luisa@bimboremodelaciones.com", "franchisee", FRANCHISE_ORLANDO_SUR, null, "Dueña de la franquicia", true),
   person(U_MARCO, "Marco Ibáñez", "marco@bimboremodelaciones.com", "franchisee", FRANCHISE_TAMPA, null, "Dueño de la franquicia", true),
   person(U_TAMPA_MANAGER, "Natalia Escobar", "natalia@strategicmates.com", "sm_team", ORG_TAMPA, null, "Consultora y directora de la oficina", true),
-  person(U_FLORIDA_MANAGER, "Melany Ruiz", "melany@strategicmates.com", "sm_team", ORG_FLORIDA, null, "Consultora y directora de la oficina", true),
 ];
 
 export const businesses: Business[] = [

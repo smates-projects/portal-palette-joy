@@ -206,7 +206,7 @@ export function LeadDetail(props: {
     return t(`pipeline.events.${e.kind}`, {
       actor, owner: lead.contact.name, from: stage(e.from), to: stage(e.to), date: e.signed_on ? formatDate(e.signed_on, lng) : "",
       outcome: e.outcome ? t(`entry.outcome.${e.outcome}`) : "",
-      // transferred: the office name travels in the body ("Derivado a SM Florida por Melany").
+      // transferred: the office name travels in the body ("Derivado a SM Orlando por Marilyn").
       office: e.kind === "transferred" ? e.body ?? "" : "",
     });
   };
