@@ -1,7 +1,8 @@
 {
   "app": {
     "name": "SM Platform",
-    "company": "Strategic Mates"
+    "company": "Strategic Mates",
+    "no_data": "Sin dato"
   },
   "errors": {
     "not_found_title": "Página no encontrada",
@@ -508,6 +509,7 @@
       "m_short_program_end": "Fin programa"
     },
     "calendar": {
+      "week_range": "{{from}} al {{to}}",
       "mode": "Vista del calendario",
       "mode_month": "Mes",
       "mode_week": "Semana",
@@ -3101,8 +3103,8 @@
       "reason_required": "Escribe el motivo.",
       "download": "Descargar PDF firmado",
       "signed_done": "Ya firmaste este contrato.",
-      "t_signed": "Firmaste {{name}}.",
-      "t_declined": "Rechazaste {{name}}.",
+      "t_signed": "Firmaste el {{name}}.",
+      "t_declined": "Rechazaste el {{name}}.",
       "t_error": "No se pudo completar. Prueba de nuevo.",
       "close": "Cerrar",
       "pdf_line": "Este acuerdo protege la información que comparten {{a}} y {{b}} durante el ingreso al Método 180.",

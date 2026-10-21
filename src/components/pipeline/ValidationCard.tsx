@@ -61,8 +61,8 @@ export function ValidationCard({ lead, readOnly, canClose }: { lead: LeadWithCom
             <Pct label={t("entry_contracts.validation.sm")} value={v.equity_sm} />
           </dl>
           <dl className="mt-3 grid gap-2 border-t border-border pt-3 text-xs sm:grid-cols-2">
-            <div><dt className="text-muted-foreground">{t("entry_contracts.validation.investment")}</dt><dd className="mt-0.5 font-display tabular-nums">{v.investment_amount !== null ? formatUsd(v.investment_amount, lng) : "—"}</dd></div>
-            <div><dt className="text-muted-foreground">{t("entry_contracts.validation.center")}</dt><dd className="mt-0.5">{v.sm_square_center ?? "—"} · {nameOf(v.sm_square_holder_user_id) || "—"}</dd></div>
+            <div><dt className="text-muted-foreground">{t("entry_contracts.validation.investment")}</dt><dd className="mt-0.5 font-display tabular-nums">{v.investment_amount !== null ? formatUsd(v.investment_amount, lng) : t("app.no_data")}</dd></div>
+            <div><dt className="text-muted-foreground">{t("entry_contracts.validation.center")}</dt><dd className="mt-0.5">{[v.sm_square_center, nameOf(v.sm_square_holder_user_id)].filter(Boolean).join(" · ") || t("app.no_data")}</dd></div>
           </dl>
           {v.notes && <p className="mt-3 rounded-[4px] border border-border bg-muted/50 px-3 py-2 text-xs">{v.notes}</p>}
           <p className="mt-3 text-xs text-muted-foreground">{t("entry_contracts.validation.closed", { name: nameOf(v.closed_by) || "Strategic Mates", date: v.closed_at ? formatDate(v.closed_at, lng) : "" })}</p>
@@ -167,10 +167,11 @@ function PctInput(props: { id: string; label: string; value: string; disabled: b
 }
 
 function Pct({ label, value }: { label: string; value: number | null }) {
+  const { t } = useTranslation();
   return (
     <div>
       <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="mt-0.5 font-display text-xl font-semibold tabular-nums">{value ?? "—"} %</dd>
+      <dd className="mt-0.5 font-display text-xl font-semibold tabular-nums">{value === null || value === undefined ? <span className="font-sans text-sm font-normal text-muted-foreground">{t("app.no_data")}</span> : `${value} %`}</dd>
     </div>
   );
 }

@@ -55,7 +55,7 @@ export function TaskCalendar(props: {
   const title =
     mode === "month"
       ? cap(fmt({ month: "long", year: "numeric" }, anchor))
-      : `${fmt({ day: "numeric", month: "short" }, days[0]!)} – ${fmt({ day: "numeric", month: "short", year: "numeric" }, days[6]!)}`;
+      : t("tasks.calendar.week_range", { from: fmt({ day: "numeric", month: "short" }, days[0]!), to: fmt({ day: "numeric", month: "short", year: "numeric" }, days[6]!) });
   const time = (iso: string) => fmt({ hour: "2-digit", minute: "2-digit" }, iso);
 
   const Item = ({ it, compact }: { it: CalItem; compact: boolean }) => {

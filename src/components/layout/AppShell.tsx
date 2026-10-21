@@ -237,7 +237,7 @@ function ViewAs() {
             <div>
               <div className="font-medium">{o.organization?.name}</div>
               <div className="text-xs text-muted-foreground">
-                {o.user.full_name}{o.user.is_admin ? ` (${t("topbar.admin")})` : ""} · {o.organization?.area ? t(`areas.${o.organization.area}`) : ""}
+                {[`${o.user.full_name}${o.user.is_admin ? ` (${t("topbar.admin")})` : ""}`, o.organization?.area ? t(`areas.${o.organization.area}`) : ""].filter(Boolean).join(" · ")}
               </div>
             </div>
           </DropdownMenuItem>

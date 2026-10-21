@@ -151,7 +151,7 @@ export function ContractRulesSection() {
 
 /** A history value in a few words: long texts and objects are only said to have changed. */
 function shortValue(t: (key: string) => string, value: unknown): string {
-  if (value === null || value === undefined || value === "") return "—";
+  if (value === null || value === undefined || value === "") return t("app.no_data");
   if (typeof value === "boolean") return t(value ? "entry.rules.flow.yes" : "entry.rules.flow.no");
   if (typeof value === "number") return String(value);
   if (typeof value === "string") return value.length > 60 ? t("entry_contracts.history.text_changed") : value;

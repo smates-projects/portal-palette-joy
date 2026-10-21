@@ -271,10 +271,10 @@ export function NetworkPage({ businessId, officeId, readOnly = false, onOpenBusi
                       )}
                     </td>
                     <td className="px-2 py-2.5 text-right font-display tabular-nums text-muted-foreground">
-                      {f.avg_days_late === null ? "—" : t("sm.days_short", { value: nf(f.avg_days_late) })}
+                      {f.avg_days_late === null ? <span className="text-xs text-muted-foreground">{t("app.no_data")}</span> : t("sm.days_short", { value: nf(f.avg_days_late) })}
                     </td>
                     <td className="px-4 py-2.5 text-right font-display tabular-nums text-muted-foreground">
-                      {f.avg_days_to_approval === null ? "—" : t("sm.days_short", { value: nf(f.avg_days_to_approval) })}
+                      {f.avg_days_to_approval === null ? <span className="text-xs text-muted-foreground">{t("app.no_data")}</span> : t("sm.days_short", { value: nf(f.avg_days_to_approval) })}
                     </td>
                   </tr>
                 ))}

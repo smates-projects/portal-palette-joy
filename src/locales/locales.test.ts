@@ -61,6 +61,17 @@ describe("locales", () => {
     expect(offending(en)).toEqual([]);
   });
 
+  it("the screens write no em or en dash of their own either (an empty value says Sin dato)", () => {
+    const sources = import.meta.glob("/src/{components,routes}/**/*.tsx", { query: "?raw", import: "default", eager: true }) as Record<string, string>;
+    expect(Object.keys(sources).length).toBeGreaterThan(50);
+    expect(Object.entries(sources).filter(([, code]) => /[—–]/.test(code)).map(([path]) => path)).toEqual([]);
+  });
+
+  it("the signature toasts name the contract with its article", () => {
+    expect(es.intake.docuseal.t_signed).toBe("Firmaste el {{name}}.");
+    expect(en.intake.docuseal.t_signed).toBe("You signed the {{name}}.");
+  });
+
   it("the MOU explainer and the meeting warning say it in the agreed words", () => {
     expect(es.intake.owner.mou.when).toBe("Puedes leerlo ahora. Lo firman juntos al final de la reunión");
     expect(es.entry.outcome.mou_warning_body).toBe("El MOU no está firmado. Si marcas que la reunión se hizo, el prospecto sale del proceso");

@@ -209,13 +209,14 @@ export function IntakeChecklist({ leadId, readOnly, validation }: { leadId: stri
                 <span className="min-w-0 flex-1 font-medium">{d.name}</span>
                 <span className={cn("rounded-[4px] border px-1.5 py-0.5 text-[11px] font-medium", DOC_TONE[d.state])}>{t(`intake.state.${d.state}`)}</span>
               </div>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                {d.required ? t("intake.required") : t("intake.optional")}
-                {d.only_if_llc && ` · ${t("intake.only_llc")}`}
-                {d.locked_until_mou && ` · ${t("intake.locked_until_mou")}`}
+              {/* Each item carries its own separator, so a line never ends in a dangling "·" ("Obligatorio · "). */}
+              <p className="mt-0.5 flex flex-wrap gap-x-1 text-xs text-muted-foreground">
+                <span>{d.required ? t("intake.required") : t("intake.optional")}</span>
+                {d.only_if_llc && <span>· {t("intake.only_llc")}</span>}
+                {d.locked_until_mou && <span>· {t("intake.locked_until_mou")}</span>}
                 {d.file_name ? (
-                  <> · <a href="#" onClick={(e) => e.preventDefault()} className="inline-flex items-center gap-1 text-link hover:underline"><FileText className="h-3 w-3" />{t("intake.open_file")} {d.file_name}</a></>
-                ) : ` · ${t("intake.not_uploaded")}`}
+                  <span className="inline-flex min-w-0 items-center gap-1">· <a href="#" onClick={(e) => e.preventDefault()} className="inline-flex min-w-0 items-center gap-1 text-link hover:underline"><FileText className="h-3 w-3 shrink-0" /><span className="truncate">{t("intake.open_file")} {d.file_name}</span></a></span>
+                ) : d.state !== "not_applicable" ? <span>· {t("intake.not_uploaded")}</span> : null}
               </p>
               {d.state === "reviewed" && d.verified_fact && <p className="mt-0.5 text-xs text-status-success-fg">{t("intake.verified", { fact: d.verified_fact })}</p>}
               {d.state === "rejected" && d.review_comment && <ReviewNoteAlert comment={d.review_comment} className="mt-1.5" />}

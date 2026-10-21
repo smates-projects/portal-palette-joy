@@ -203,7 +203,7 @@ function ProgramBar({ day }: { day: number }) {
 function FranchiseCell({ row }: { row: BusinessRow }) {
   const { t } = useTranslation();
   const f = row.franchise;
-  if (!f || !row.franchise_health || row.franchise_expected === null) return <span className="text-muted-foreground">—</span>;
+  if (!f || !row.franchise_health || row.franchise_expected === null) return <span className="text-xs text-muted-foreground">{t("app.no_data")}</span>;
   return (
     <div title={t(`office.biz.franchise_health.${row.franchise_health}`)}>
       <span className="flex flex-wrap items-center gap-1.5">

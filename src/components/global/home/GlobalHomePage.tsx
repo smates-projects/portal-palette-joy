@@ -101,7 +101,7 @@ export function GlobalHomePage() {
           <div key={c.key} className="px-4 py-3">
             <div className="flex items-baseline gap-2">
               <span className={cn("font-display text-2xl font-semibold tabular-nums", !c.value ? "text-muted-foreground/40" : "text-foreground")}>
-                {c.value === null ? "—" : c.percent ? `${c.value}%` : c.value}
+                {c.value === null ? <span className="font-sans text-sm font-normal">{t("global.offices.no_conversion")}</span> : c.percent ? `${c.value}%` : c.value}
               </span>
               <span className="text-xs font-medium text-foreground">{t(`global.home.counters.${c.key}`, { count: c.value ?? 0 })}</span>
             </div>

@@ -38,7 +38,7 @@ export function SettingsPage() {
         ) : (
           <dl className="divide-y divide-border">
             <Row label={t("office.cfg.name")}>{office.name}</Row>
-            <Row label={t("office.cfg.city")}>{office.city ?? "—"}</Row>
+            <Row label={t("office.cfg.city")}>{office.city ?? t("app.no_data")}</Row>
             {office.email && <Row label={t("office.cfg.email")}>{office.email}</Row>}
             <Row label={t("office.cfg.booking")} hint={t("office.cfg.booking_hint")}>
               {office.default_booking_url ? (

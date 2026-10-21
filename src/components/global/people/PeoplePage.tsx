@@ -83,7 +83,7 @@ export function PeoplePage() {
                   </div>
                   <UserStatusBadge status={r.status} />
                 </div>
-                <div className="text-xs text-muted-foreground">{t(`roles.${r.user.role}`)}{r.user.title ? ` · ${r.user.title}` : ""} · {r.place || "—"} · {r.office || (r.user.role === "sm_global" ? t("roles.sm_global") : "—")}</div>
+                <div className="text-xs text-muted-foreground">{[t(`roles.${r.user.role}`), r.user.title, r.place, r.office || (r.user.role === "sm_global" ? t("roles.sm_global") : "")].filter(Boolean).join(" · ")}</div>
                 <SmSquareToggle user={r.user} />
                 <FrameworkState user={r.user} />
                 <PersonActions user={r.user} orgs={orgs} onDeactivate={setDeactivating} onHistory={setHistory} />
@@ -114,8 +114,8 @@ export function PeoplePage() {
                       {t(`roles.${r.user.role}`)}{r.user.title ? <span className="block text-xs text-muted-foreground">{r.user.title}</span> : null}
                       <FrameworkState user={r.user} />
                     </td>
-                    <td className="px-3 py-3">{r.place || "—"}</td>
-                    <td className="px-3 py-3">{r.office || (r.user.role === "sm_global" ? t("roles.sm_global") : "—")}</td>
+                    <td className="px-3 py-3">{r.place || <span className="text-xs text-muted-foreground">{t("app.no_data")}</span>}</td>
+                    <td className="px-3 py-3">{r.office || (r.user.role === "sm_global" ? t("roles.sm_global") : <span className="text-xs text-muted-foreground">{t("app.no_data")}</span>)}</td>
                     <td className="px-3 py-3"><UserStatusBadge status={r.status} /></td>
                     <td className="px-3 py-3 text-center"><SmSquareToggle user={r.user} bare /></td>
                     <td className="px-3 py-3"><PersonActions user={r.user} orgs={orgs} onDeactivate={setDeactivating} onHistory={setHistory} /></td>

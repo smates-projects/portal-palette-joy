@@ -1,7 +1,8 @@
 {
   "app": {
     "name": "SM Platform",
-    "company": "Strategic Mates"
+    "company": "Strategic Mates",
+    "no_data": "No data"
   },
   "errors": {
     "not_found_title": "Page not found",
@@ -508,6 +509,7 @@
       "m_short_program_end": "Program ends"
     },
     "calendar": {
+      "week_range": "{{from}} to {{to}}",
       "mode": "Calendar view",
       "mode_month": "Month",
       "mode_week": "Week",
@@ -3101,8 +3103,8 @@
       "reason_required": "Write the reason.",
       "download": "Download signed PDF",
       "signed_done": "You already signed this contract.",
-      "t_signed": "You signed {{name}}.",
-      "t_declined": "You declined {{name}}.",
+      "t_signed": "You signed the {{name}}.",
+      "t_declined": "You declined the {{name}}.",
       "t_error": "It could not be completed. Try again.",
       "close": "Close",
       "pdf_line": "This agreement protects the information {{a}} and {{b}} share during entry to Método 180.",

@@ -190,14 +190,14 @@ export function ReportPage() {
           <section className="grid grid-cols-2 rounded-md border border-border bg-surface">
             <div className="border-r border-border p-4">
               <p className="text-xs text-muted-foreground">{t("report.avg_days")}</p>
-              {r.avg_days_to_approval === null ? <p className="mt-1 text-3xl text-muted-foreground/50">—</p> : (
+              {r.avg_days_to_approval === null ? <p className="mt-2 text-sm text-muted-foreground">{t("app.no_data")}</p> : (
                 <Num onClick={() => go({ status: "accepted" })} className="mt-1 text-3xl font-semibold">{nf(r.avg_days_to_approval)}</Num>
               )}
               <p className="mt-1 text-xs text-muted-foreground">{t("report.avg_days_hint")}</p>
             </div>
             <div className="p-4">
               <p className="text-xs text-muted-foreground">{t("report.avg_rounds")}</p>
-              {r.avg_change_rounds === null ? <p className="mt-1 text-3xl text-muted-foreground/50">—</p> : (
+              {r.avg_change_rounds === null ? <p className="mt-2 text-sm text-muted-foreground">{t("app.no_data")}</p> : (
                 <Num onClick={() => go({ status: "accepted" })} className="mt-1 text-3xl font-semibold">{nf(r.avg_change_rounds)}</Num>
               )}
               <p className="mt-1 text-xs text-muted-foreground">{t("report.avg_rounds_hint")}</p>

@@ -281,7 +281,7 @@ function TeamTab() {
                 </div>
                 <UserStatusBadge status={userStatus(r.user)} />
               </div>
-              <div className="text-xs text-muted-foreground">{r.user.title ?? "—"} · {r.supervises.length ? r.supervises.map((b) => b.name).join(", ") : t("office.cat.supervises_none")}</div>
+              <div className="text-xs text-muted-foreground">{r.user.title ? `${r.user.title} · ` : ""}{r.supervises.length ? r.supervises.map((b) => b.name).join(", ") : t("office.cat.supervises_none")}</div>
               <div className={cn("text-xs", r.has_booking_url ? "text-status-success-fg" : "text-muted-foreground")}>{r.has_booking_url ? t("office.cat.booking_yes") : t("office.cat.booking_no")}</div>
               {admin && <PersonActions user={r.user} orgs={orgsQ.data ?? []} onDeactivate={setDeactivating} onHistory={setHistory} />}
             </li>
@@ -306,7 +306,7 @@ function TeamTab() {
                     <span className="flex items-center gap-2 font-medium"><span className="whitespace-nowrap">{r.user.full_name}</span>{r.user.is_admin && <AdminTag />}{r.user.id === me.id && <span className="text-xs font-normal text-muted-foreground">{t("profile.you")}</span>}</span>
                     <span className="block text-xs text-muted-foreground">{r.user.email}</span>
                   </td>
-                  <td className="px-3 py-3">{r.user.title ?? "—"}</td>
+                  <td className="px-3 py-3">{r.user.title ?? <span className="text-xs text-muted-foreground">{t("app.no_data")}</span>}</td>
                   <td className="px-3 py-3">{r.supervises.length ? r.supervises.map((b) => b.name).join(", ") : <span className="text-muted-foreground">{t("office.cat.supervises_none")}</span>}</td>
                   <td className={cn("px-3 py-3", r.has_booking_url ? "text-status-success-fg" : "text-muted-foreground")}>{r.has_booking_url ? t("office.cat.booking_yes") : t("office.cat.booking_no")}</td>
                   <td className="px-3 py-3"><UserStatusBadge status={userStatus(r.user)} /></td>
