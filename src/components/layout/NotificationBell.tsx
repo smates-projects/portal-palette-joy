@@ -3,9 +3,10 @@ import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Bell } from "lucide-react";
 import { nowIso } from "@/lib/clock";
-import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications } from "@/lib/api/hooks";
+import { useBusinesses, useCurrentUser, useLeads, useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications } from "@/lib/api/hooks";
 import type { AppNotification, NotificationKind } from "@/lib/api/types";
 import { firstName, formatDateTime, localeTag } from "@/lib/format";
+import { ALL_OFFICES, inOfficeScope, useOfficeScope } from "@/lib/office-scope";
 import { cn } from "@/lib/utils";
 import { describeChange } from "@/lib/tasks/changes";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -31,7 +32,6 @@ const DOT: Record<NotificationKind, string> = {
   calendar_disconnected: "bg-status-warning-fg",
   brand_logo_rejected: "bg-status-danger-fg",
   meeting_outcome_pending: "bg-status-warning-fg",
-  owner_nda_received: "bg-link",
   mou_ready: "bg-primary",
   opportunity_presented: "bg-gold",
   meeting_scheduled: "bg-primary",
@@ -66,7 +66,16 @@ export function NotificationBell() {
   const q = useNotifications();
   const markRead = useMarkNotificationRead();
   const markAll = useMarkAllNotificationsRead();
-  const all = q.data ?? [];
+  // SM Global with "Viendo" on one office: only the notifications whose lead or business is of that office (the
+  // ones about nothing in particular, like the calendar, always show).
+  const me = useCurrentUser().data;
+  const [scope] = useOfficeScope();
+  const scoped = me?.role === "sm_global" && scope !== ALL_OFFICES;
+  const leadsQ = useLeads(undefined, scoped);
+  const bizQ = useBusinesses(scoped);
+  const officeOf = (n: AppNotification) =>
+    (n.lead_id && leadsQ.data?.find((l) => l.id === n.lead_id)?.office_id) || (n.business_id && bizQ.data?.find((b) => b.id === n.business_id)?.office_id) || null;
+  const all = (q.data ?? []).filter((n) => !scoped || inOfficeScope(scope, officeOf(n)));
   const unread = all.filter((n) => !n.read_at);
   const list = tab === "unread" ? unread : all;
 
@@ -88,8 +97,7 @@ export function NotificationBell() {
     if (MEETING_KINDS.has(n.kind) && n.meeting_id) void navigate({ to: "/tareas", search: { view: "calendar", meeting: n.meeting_id } });
     else if (PROFILE_KINDS.has(n.kind)) void navigate({ to: "/perfil" });
     else if (n.kind === "meeting_outcome_pending" && n.lead_id) void navigate({ to: "/embudo", search: { lead: n.lead_id, focus: "meeting" } });
-    // The owner's MOU is ready: "Tu ingreso" with the MOU step in view. The owner's own NDA reaches the consultant
-    // as a lead notification (the lead opens with its entry checklist, where he signs it).
+    // The owner's MOU is ready: "Tu ingreso" with the MOU step in view.
     else if (n.kind === "mou_ready") void navigate({ to: "/", search: { step: "mou" } });
     // Binding agreement ready, validation closed: SM opens the lead (below), the Bishop his opportunity, the owner the
     // step of "Tu ingreso" that changed.

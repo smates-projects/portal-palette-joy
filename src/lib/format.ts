@@ -4,8 +4,15 @@ import { todayIso } from "@/lib/clock";
 export const localeTag = (lng: string) => (lng === "en" ? "en-US" : "es-US");
 const toDate = (iso: string) => new Date(iso.length === 10 ? `${iso}T12:00:00` : iso);
 
-export const formatDate = (iso: string, lng: string) =>
-  new Intl.DateTimeFormat(localeTag(lng), { day: "numeric", month: "short", year: "numeric" }).format(toDate(iso));
+/**
+ * Dates are written the US way in both languages (Marilyn, 21 Oct 2026: "en territorio americano es mes, día y
+ * año"): 10/14/2026. The locale only decides the words around them (weekdays, relative times, numbers).
+ */
+const US_DATE: Intl.DateTimeFormatOptions = { month: "2-digit", day: "2-digit", year: "numeric" };
+const US_SHORT_DATE: Intl.DateTimeFormatOptions = { month: "2-digit", day: "2-digit" };
+
+/** "10/14/2026" in every language. */
+export const formatDate = (iso: string, _lng: string) => new Intl.DateTimeFormat("en-US", US_DATE).format(toDate(iso));
 
 export function formatRelativeDate(iso: string, lng: string, today: string = todayIso()) {
   const days = Math.round((toDate(iso).getTime() - toDate(today).getTime()) / 86_400_000);
@@ -16,11 +23,17 @@ export function formatRelativeDate(iso: string, lng: string, today: string = tod
 export const formatUsd = (amount: number, lng: string) =>
   new Intl.NumberFormat(localeTag(lng), { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: Number.isInteger(amount) ? 0 : 2 }).format(amount);
 
-export const formatShortDate = (iso: string, lng: string) =>
-  new Intl.DateTimeFormat(localeTag(lng), { day: "numeric", month: "short" }).format(toDate(iso));
+/** "10/14", month first. */
+export const formatShortDate = (iso: string, _lng: string) => new Intl.DateTimeFormat("en-US", US_SHORT_DATE).format(toDate(iso));
 
-export const formatDateTime = (iso: string, lng: string) =>
-  new Intl.DateTimeFormat(localeTag(lng), { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
+/** "mié 10/14, 10:00" / "Wed 10/14, 10:00 AM": the weekday in the viewer's language, the date the US way. */
+export const formatDateTime = (iso: string, lng: string) => {
+  const d = new Date(iso);
+  const weekday = new Intl.DateTimeFormat(localeTag(lng), { weekday: "short" }).format(d);
+  const date = new Intl.DateTimeFormat("en-US", US_SHORT_DATE).format(d);
+  const time = new Intl.DateTimeFormat(localeTag(lng), { hour: "2-digit", minute: "2-digit" }).format(d);
+  return `${weekday} ${date}, ${time}`;
+};
 
 export const formatNumber = (n: number, lng: string, options?: Intl.NumberFormatOptions) =>
   new Intl.NumberFormat(localeTag(lng), options).format(n);

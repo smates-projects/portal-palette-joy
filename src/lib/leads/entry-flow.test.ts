@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { Contract, LeadMeeting, Signer } from "@/lib/api/types";
 import {
-  ENTRY_RULE_DEFAULTS, INTAKE_DOCUMENT_ACCEPT, OWNER_STEPS, OWN_NDA_MAX_LENGTH, acknowledgedAll, bishopSees, bookingKind, cleanDocumentHelp,
-  entryRules, fillOwnNdaTemplate, intakeDocumentHelp, missingAcknowledgments, ndaStatus, oaSendBlock, oaSignableFrom, oaWaitingUntil,
-  outcomeBlock, outcomePending, ownNdaBodyError, ownNdaEditable, ownNdaView, ownerMeetingView, ownerSteps, signBlock, validAcknowledgment,
+  ENTRY_RULE_DEFAULTS, INTAKE_DOCUMENT_ACCEPT, OWNER_STEPS, acknowledgedAll, bishopSees, bookingKind, cleanDocumentHelp,
+  entryRules, intakeDocumentHelp, missingAcknowledgments, ndaStatus, oaSendBlock, oaSignableFrom, oaWaitingUntil,
+  outcomeBlock, outcomePending, ownerMeetingView, ownerSteps, signBlock, validAcknowledgment,
 } from "./entry-flow";
 
 const ALL = ["funds_finance_intervention", "business_stays_yours", "franchisor_entity_participation", "do_it_together_no_debt"] as const;
@@ -140,25 +140,6 @@ describe("NDA status and owner steps", () => {
       nda, mou: signedMou, operatingAgreement: contract("tripartite", [signer("owner", "sent")]), rules: ENTRY_RULE_DEFAULTS,
     });
     expect(after.map((s) => `${s.key}:${s.state}`)).toEqual(["nda:done", "mou:done", "meeting:done", "documents:done", "expansion:done", "operating_agreement:current"]);
-  });
-});
-
-describe("the owner's own NDA", () => {
-  it("none, waiting for Strategic Mates, signed by Strategic Mates, signed by both; editable only while nobody signed", () => {
-    expect(ownNdaView(null)).toBe("none");
-    expect(ownNdaView({ signed_by_sm: false, signed_by_owner: false })).toBe("waiting_sm");
-    expect(ownNdaView({ signed_by_sm: true, signed_by_owner: false })).toBe("signed_by_sm");
-    expect(ownNdaView({ signed_by_sm: true, signed_by_owner: true })).toBe("signed_by_both");
-    expect(ownNdaEditable({ signed_by_sm: false, signed_by_owner: false })).toBe(true);
-    expect(ownNdaEditable({ signed_by_sm: true, signed_by_owner: false })).toBe(false);
-    expect(ownNdaEditable(null)).toBe(false);
-  });
-  it("the body is required and has a maximum length; the template gets the business and the owner", () => {
-    expect(ownNdaBodyError("  ")).toBe("body_required");
-    expect(ownNdaBodyError("x".repeat(OWN_NDA_MAX_LENGTH + 1))).toBe("body_too_long");
-    expect(ownNdaBodyError("Mi acuerdo")).toBeNull();
-    expect(fillOwnNdaTemplate("Entre {{business_name}} y {{ owner_name }}, por {{business_name}}.", { business_name: "Vossler", owner_name: "Carla Méndez" }))
-      .toBe("Entre Vossler y Carla Méndez, por Vossler.");
   });
 });
 

@@ -49,7 +49,7 @@ describe("Aprobar documentación", () => {
 });
 
 describe("entry flow in the mock", () => {
-  it("'Se hizo' on Rivera's meeting sends the documents: Documentación, the 14 documents locked until the MOU is signed", async () => {
+  it("'Se hizo' on Rivera's meeting, with the MOU signed in it, sends the documents: Documentación, the 14 documents open", async () => {
     const api = createMockApi();
     await api.session.setViewAs(seed.U_NICOLAS);
     const rivera = (await api.leads.list()).find((l) => l.business.name === "Rivera Roofing & Remodel")!;
@@ -58,14 +58,21 @@ describe("entry flow in the mock", () => {
     expect(before.contracts.map((c) => c.kind)).toEqual(["nda"]);
     expect(before.contracts[0]!.signers.find((s) => s.party === "sm")!.status).toBe("signed");
     expect(before.documents).toHaveLength(0);
+    // The owner signs the NDA and the MOU during the meeting.
+    const owner = (await api.users.list()).find((u) => u.email === rivera.contact.email)!;
+    await api.session.setViewAs(owner.id);
+    await api.documents.signContract(before.contracts[0]!.id);
+    const mou = (await api.documents.listContracts()).find((c) => c.kind === "mou")!;
+    await api.documents.acknowledge(mou.id, ["funds_finance_intervention", "business_stays_yours", "franchisor_entity_participation", "do_it_together_no_debt"]);
+    await api.documents.signContract(mou.id);
+    await api.session.setViewAs(seed.U_NICOLAS);
     const moved = await api.leads.setMeetingOutcome(rivera.id, rivera.meeting!.id!, { outcome: "held", note: "Quiere empezar en enero" });
     expect(moved.stage).toBe("documents");
     const intake = (await api.leads.getIntake(rivera.id))!;
-    // The MOU comes with the owner's NDA signature, not with the meeting.
-    expect(intake.contracts.map((c) => c.kind)).toEqual(["nda"]);
+    expect(intake.contracts.map((c) => c.kind)).toEqual(["nda", "mou"]);
     expect(intake.documents).toHaveLength(14);
     expect(intake.summary.required_total).toBe(13);
-    expect(intake.documents.every((d) => d.locked_until_mou)).toBe(true);
+    expect(intake.documents.every((d) => !d.locked_until_mou)).toBe(true);
     expect(intake.summary.clock.status).toBe("waiting_upload");
     // Program screens do not list a business that is still entering.
     expect((await api.businesses.list()).some((b) => b.id === moved.business_id)).toBe(false);
@@ -73,10 +80,13 @@ describe("entry flow in the mock", () => {
   it("the owner uploads only after confirming the four MOU points and signing it", async () => {
     const api = createMockApi();
     await api.session.setViewAs(seed.U_NICOLAS);
-    const rivera = (await api.leads.list()).find((l) => l.business.name === "Rivera Roofing & Remodel")!;
-    await api.leads.setMeetingOutcome(rivera.id, rivera.meeting!.id!, { outcome: "held" });
-    const { documents, contracts } = (await api.leads.getIntake(rivera.id))!;
-    const owner = (await api.users.list()).find((u) => u.email === rivera.contact.email)!;
+    // Torres, moved by hand: NDA and MOU sent by SM, the documents locked until the MOU is signed.
+    const torres = (await api.leads.list()).find((l) => l.business.name === "Torres Concrete")!;
+    await api.leads.move(torres.id, "meeting");
+    await api.leads.sendNda(torres.id);
+    await api.leads.sendMou(torres.id);
+    const { documents, contracts } = (await api.leads.getIntake(torres.id))!;
+    const owner = (await api.users.list()).find((u) => u.email === torres.contact.email)!;
     await api.session.setViewAs(owner.id);
     await api.documents.signContract(contracts.find((c) => c.kind === "nda")!.id);
     const mou = (await api.documents.listContracts()).find((c) => c.kind === "mou")!;

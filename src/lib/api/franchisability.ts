@@ -10,31 +10,6 @@ export const DEFAULT_FRANCHISABILITY_RULES: FranchisabilityRules = {
 /** Defaults of the other platform rules (SM Global edits them in Reglas). */
 export const DEFAULT_AREA_AMBER_DAYS = 7;
 export const DEFAULT_AMBER_TOLERANCE_POINTS = 10;
-/**
- * Starting text of the owner's own confidentiality agreement ("Escribir mi acuerdo"). {{business_name}} and
- * {{owner_name}} are filled in when the owner opens the editor. Plain words: the owner may change anything.
- */
-export const DEFAULT_OWNER_NDA_TEMPLATE = `Acuerdo de confidencialidad
-
-Entre {{business_name}}, representado por {{owner_name}} (el dueño), y Strategic Mates.
-
-1. Qué protege este acuerdo
-Toda la información de {{business_name}} que el dueño comparta con Strategic Mates durante el ingreso y el programa: números, clientes, precios, proveedores, procesos, documentos y cualquier otro dato del negocio.
-
-2. Qué se compromete a hacer Strategic Mates
-Usar esa información solo para el programa. No compartirla con nadie que no trabaje en el programa. Pedir lo mismo a las firmas y a las personas que trabajen con ella.
-
-3. Qué no cubre
-La información que ya era pública o que la ley obliga a entregar.
-
-4. Cuánto dura
-Mientras dure la relación entre {{business_name}} y Strategic Mates y dos años después de que termine.
-
-5. Si se termina la relación
-Strategic Mates devuelve o borra la información de {{business_name}} cuando el dueño lo pida.
-
-Firmado por {{owner_name}}, por {{business_name}}, y por Strategic Mates.`;
-
 /** An entry document of the default list: id suffix, name, sample verified fact, "Alcance de la entrega". */
 const doc = (n: string, name: string, verified_hint: string, what: string, required = true): IntakeDocRule => ({
   id: `a1000000-0000-4000-8000-000000000${n}`, name, required, only_if_llc: false, verified_hint, archived: false,
@@ -94,7 +69,8 @@ export const DEFAULT_PLATFORM_RULES: PlatformRules = {
   ],
   // "Indicaciones para preparar la entrega" of the same document.
   intake_help_text: DEFAULT_INTAKE_HELP_TEXT,
-  owner_nda_template: DEFAULT_OWNER_NDA_TEMPLATE,
+  // Who can enter: the declared annual revenue (the year of operation is a hard rule of the assessment itself).
+  eligibility: { min_annual_revenue: 250_000 },
 };
 /** Statuses that don't count toward the program total. */
 const EXCLUDED = new Set(["cancelled", "with_third_party", "excluded"]);

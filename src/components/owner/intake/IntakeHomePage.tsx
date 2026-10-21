@@ -15,14 +15,13 @@ import { SignedContractDialog } from "@/components/docuseal/SignedContractDialog
 import { ErrorState, LoadingState, PageHeader, primaryButtonCls } from "../shared";
 import { ContractExplainerCard } from "./ContractExplainer";
 import { MouAcceptance } from "./MouAcceptance";
-import { OwnNdaCard } from "./OwnNdaCard";
 
 const linkCls = "text-sm text-link hover:underline";
 
 /**
- * "Tu ingreso": what the owner still has to do before the program starts. NDA (with the window that explains it,
- * and "Protege tu información" for his own agreement), MOU (available once the NDA is signed: what it is, the full
- * text, the four points with "Entendí"), Tu reunión, Documentos (locked until the MOU is signed); after the approval,
+ * "Tu ingreso": what the owner still has to do before the program starts. NDA (Strategic Mates' only NDA, with the
+ * window that explains it), MOU (available once the NDA is signed: what it is, the full text, the four points with
+ * "Entendí"; signed together at the end of the meeting), Tu reunión, Documentos (locked until the MOU is signed); after the approval,
  * the expansion meeting and the Operating Agreement with its waiting period. One highlighted step at a time.
  * `focusStep` brings one step into view (the mou_ready notification).
  */
@@ -57,7 +56,6 @@ export function IntakeHomePage({ focusStep }: { focusStep?: OwnerStepKey | undef
   // The Acuerdo de Vinculación: with the rules, every business entering has the step (null until a Bishop accepts).
   const binding = contracts.find((c) => c.kind === "binding") ?? null;
   const usesBinding = !!binding || !oa;
-  const ownNda = contracts.find((c) => c.kind === "owner_nda") ?? null;
   const docs = (docsQ.data ?? []).filter((d) => d.area === "intake");
   const missing = docs.filter((d) => d.state === "requested" || d.state === "rejected").length;
   const entry = s.entry ?? null;
@@ -75,9 +73,6 @@ export function IntakeHomePage({ focusStep }: { focusStep?: OwnerStepKey | undef
   const smSigned = (c: Contract | null) => !!c?.signers.some((x) => x.party === "sm" && x.status === "signed");
   // The API creates the documents at the NDA signature: they say nothing about the meeting (only its outcome does).
   const docsSent = docs.length > 0;
-  const ownNdaCard = me?.business_id ? (
-    <OwnNdaCard businessId={me.business_id} own={s.own_nda ?? null} contract={ownNda} onView={setReading} onSign={setSigning} />
-  ) : null;
   const readFull = (c: Contract, key: string) =>
     c.body ? <button className={linkCls} onClick={() => setReading(c)}>{t(key)}</button> : null;
 
@@ -121,12 +116,9 @@ export function IntakeHomePage({ focusStep }: { focusStep?: OwnerStepKey | undef
         if (!nda) return <p className="text-sm text-muted-foreground">{t("intake.owner.nda.not_sent")}</p>;
         if (ndaStatus(nda) === "signed")
           return (
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-center gap-4">
-                <p className="text-sm">{t("intake.owner.nda.signed")}</p>
-                {readFull(nda, "intake.owner.nda.view")}
-              </div>
-              {ownNdaCard}
+            <div className="flex flex-wrap items-center gap-4">
+              <p className="text-sm">{t("intake.owner.nda.signed")}</p>
+              {readFull(nda, "intake.owner.nda.view")}
             </div>
           );
         return (
@@ -142,7 +134,6 @@ export function IntakeHomePage({ focusStep }: { focusStep?: OwnerStepKey | undef
               <p className="text-sm text-muted-foreground">{t("intake.owner.nda.body")}</p>
             )}
             {ownerPending(nda) && <button className={primaryButtonCls} onClick={() => setSigning(nda)}>{t("intake.owner.nda.sign")}</button>}
-            {ownNdaCard}
           </div>
         );
       }

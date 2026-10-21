@@ -103,58 +103,58 @@ describe("the MOU at the NDA signature", () => {
     expect(intake.documents.every((d) => !d.locked_until_mou)).toBe(true);
   });
 
-  it("'Se hizo' before the owner signed the NDA: documents locked, no MOU until he signs", async () => {
-    const { api, lead, nda, owner } = await rivera();
-    await api.leads.setMeetingOutcome(lead.id, lead.meeting!.id!, { outcome: "held" });
-    let intake = (await api.leads.getIntake(lead.id))!;
-    expect(intake.contracts.map((c) => c.kind)).toEqual(["nda"]);
-    expect(intake.documents.every((d) => d.locked_until_mou)).toBe(true);
-    await api.session.setViewAs(owner.id);
-    await api.documents.signContract(nda.id);
-    await api.session.setViewAs(seed.U_NICOLAS);
-    intake = (await api.leads.getIntake(lead.id))!;
+  it("'Enviar MOU' by hand still sends the documents locked until the owner signs the MOU", async () => {
+    const api = await as(seed.U_NICOLAS);
+    const torres = await leadNamed(api, "Torres Concrete");
+    await api.leads.move(torres.id, "meeting");
+    await api.leads.sendNda(torres.id);
+    await api.leads.sendMou(torres.id);
+    const intake = (await api.leads.getIntake(torres.id))!;
     expect(intake.contracts.map((c) => c.kind)).toEqual(["nda", "mou"]);
-    expect(intake.summary.approval).toMatchObject({ ok: false, reason: "contracts", missing: ["MOU"] });
+    expect(intake.documents.every((d) => d.locked_until_mou)).toBe(true);
+    expect(intake.summary.approval).toMatchObject({ ok: false, reason: "contracts" });
   });
 });
 
-describe("the owner's own NDA", () => {
-  it("the owner starts from the template with his business and name, sends it, and edits it while nobody signed", async () => {
+describe("only Strategic Mates' NDA", () => {
+  it("the owner's own NDA is gone: no repository method, no summary field, only the NDA of Strategic Mates in the entry", async () => {
     const { api, lead, owner } = await rivera();
-    const businessId = lead.business_id!;
-    await expect(api.documents.createOwnNda(businessId, "Mi acuerdo")).rejects.toThrow("owner_only");
+    expect((api.documents as unknown as Record<string, unknown>)["createOwnNda"]).toBeUndefined();
     await api.session.setViewAs(owner.id);
-    const { body } = await api.documents.getOwnNdaTemplate(businessId);
-    expect(body).toContain("Rivera Roofing & Remodel");
-    expect(body).toContain(owner.full_name);
-    expect(body).not.toContain("{{");
-    await expect(api.documents.createOwnNda(businessId, "   ")).rejects.toThrow("body_required");
-    await expect(api.documents.createOwnNda(businessId, "x".repeat(20_001))).rejects.toThrow("body_too_long");
-    const c = await api.documents.createOwnNda(businessId, `${body}\n\n6. Extra\nNada más.`);
-    expect(c).toMatchObject({ kind: "owner_nda", area: "intake", state: "sent" });
-    expect(c.signers.map((s) => `${s.party}:${s.status}`)).toEqual(["owner:sent", "sm:sent"]);
-    await expect(api.documents.createOwnNda(businessId, body)).rejects.toThrow("own_nda_exists");
-    expect((await api.documents.updateOwnNda(businessId, "Texto nuevo")).body).toBe("Texto nuevo");
-    expect((await api.documents.getIntake())!.own_nda).toMatchObject({ id: c.id, signed_by_sm: false, signed_by_owner: false });
+    const summary = (await api.documents.getIntake())!;
+    expect(summary).not.toHaveProperty("own_nda");
+    expect((await api.documents.listContracts()).filter((c) => c.area === "intake").map((c) => c.kind)).toEqual(["nda"]);
+    expect(lead.business_id).toBeTruthy();
+  });
+});
+
+describe("meeting held without the MOU signed", () => {
+  it("'Se hizo' with the MOU unsigned discards the lead by itself with reason mou_not_signed; SM Global reactivates it", async () => {
+    const { api, lead } = await rivera();
+    const held = await api.leads.setMeetingOutcome(lead.id, lead.meeting!.id!, { outcome: "held" });
+    expect(held).toMatchObject({ stage: "discarded", discarded_from: "meeting", discard_reason: "mou_not_signed" });
+    const events = (await api.leads.get(lead.id))!.events;
+    expect(events.at(-1)).toMatchObject({ kind: "discarded", body: "mou_not_signed" });
+    // The office cannot bring it back; SM Global can, to the stage it was in.
+    await expect(api.leads.reactivate(lead.id)).rejects.toThrow("global_only");
+    await api.session.setViewAs(seed.U_MARYLIN);
+    const back = await api.leads.reactivate(lead.id);
+    expect(back).toMatchObject({ stage: "meeting", discarded_from: null, discard_reason: null });
+    expect((await api.leads.get(lead.id))!.events.at(-1)).toMatchObject({ kind: "reactivated" });
+    await expect(api.leads.reactivate(lead.id)).rejects.toThrow("invalid_transition");
   });
 
-  it("the consultant hears about it and signs it through the usual signer; then the owner may sign too, and it never blocks the approval", async () => {
+  it("with the MOU signed, 'Se hizo' sends the documents as before", async () => {
     const { api, lead, owner } = await rivera();
-    const businessId = lead.business_id!;
+    const nda = (await api.leads.getIntake(lead.id))!.contracts.find((c) => c.kind === "nda")!;
     await api.session.setViewAs(owner.id);
-    const c = await api.documents.createOwnNda(businessId, "Acuerdo de Javier\n\n1. Qué protege\nTodo.");
+    await api.documents.signContract(nda.id);
+    const mou = (await api.documents.listContracts()).find((c) => c.kind === "mou")!;
+    await api.documents.acknowledge(mou.id, ["funds_finance_intervention", "business_stays_yours", "franchisor_entity_participation", "do_it_together_no_debt"]);
+    await api.documents.signContract(mou.id);
     await api.session.setViewAs(seed.U_NICOLAS);
-    expect((await api.notifications.list()).some((n) => n.kind === "owner_nda_received" && n.lead_id === lead.id)).toBe(true);
-    const intake = (await api.leads.getIntake(lead.id))!;
-    expect(intake.contracts.find((x) => x.kind === "owner_nda")!.body).toContain("Acuerdo de Javier");
-    await api.documents.signContract(c.id);
-    expect((await api.leads.getIntake(lead.id))!.summary.own_nda).toMatchObject({ signed_by_sm: true, signed_by_owner: false });
-    await api.session.setViewAs(owner.id);
-    await expect(api.documents.updateOwnNda(businessId, "Otro texto")).rejects.toThrow("invalid_state");
-    expect((await api.documents.signContract(c.id)).state).toBe("signed");
-    expect((await api.documents.getIntake())!.own_nda).toMatchObject({ state: "signed", signed_by_owner: true });
-    // Approval counts only the NDA and the MOU.
-    expect((await api.documents.getIntake())!.approval).toMatchObject({ reason: "contracts", missing: ["NDA mutuo", "MOU"] });
+    const held = await api.leads.setMeetingOutcome(lead.id, lead.meeting!.id!, { outcome: "held" });
+    expect(held.stage).toBe("documents");
   });
 });
 

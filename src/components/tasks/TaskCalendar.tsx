@@ -121,7 +121,7 @@ export function TaskCalendar(props: {
     return (
       <button
         onClick={() => props.onOpen(it.task.id)}
-        title={`${t("tasks.calendar.due")}: ${it.task.code} ${it.task.name} · ${props.businessName(it.task.business_id)}`}
+        title={`${t("tasks.calendar.due")} ${it.task.code} ${it.task.name} · ${props.businessName(it.task.business_id)}`}
         className={cn(
           base,
           "border border-border text-foreground hover:brightness-95",

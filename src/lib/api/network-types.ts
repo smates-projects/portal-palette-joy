@@ -172,15 +172,18 @@ export interface PlatformRules {
   nda_auto_signed_by_sm?: boolean | undefined;
   /** Calendar v2: window where meetings can be scheduled. Absent = 09:00-18:00 America/New_York (lib/calendar). */
   meeting_hours?: MeetingHours | undefined;
-  /**
-   * Text the owner's own NDA starts from ("Escribir mi acuerdo"). {{business_name}} and {{owner_name}} are filled in
-   * by GET /businesses/{id}/own-nda/template. Absent = the API's default.
-   */
-  owner_nda_template?: string | undefined;
+  /** Who can enter the program. Absent = DEFAULT_ELIGIBILITY (lib/leads/readiness). */
+  eligibility?: EligibilityRules | undefined;
   /** General note at the top of the entry documents list (the "Indicaciones para preparar la entrega"). */
   intake_help_text?: string | undefined;
   /** Names of the Strategic Mates companies that sign (Corporate and SM Square). Absent = DEFAULT_SM_ENTITIES. */
   sm_entities?: SmEntities | undefined;
+}
+
+/** Eligibility rules of the program (SM Global, Reglas). The year of operation stays a hard rule of the assessment. */
+export interface EligibilityRules {
+  /** Lowest annual revenue the owner declares in the assessment, in USD. Default 250,000. */
+  min_annual_revenue: number;
 }
 
 /** Help of one entry document: what it is, what counts as that document, and a tip. */
@@ -507,9 +510,8 @@ export interface Contract {
   business_id: Uuid;
   area: AreaCode | "diagnosis" | "closing" | "intake";
   /**
-   * Entry contracts. nda is Strategic Mates' NDA (SM pre-signed); owner_nda is the owner's own confidentiality
-   * agreement, written in the portal and signed by Strategic Mates (optional); tripartite is the Operating Agreement
-   * (owner, SM and Bishop).
+   * Entry contracts. nda is Strategic Mates' NDA (SM pre-signed, the only NDA of the entry); tripartite is the
+   * Operating Agreement (owner, SM and Bishop).
    */
   kind?: ContractKind | undefined;
   name: string;
@@ -519,7 +521,7 @@ export interface Contract {
   signers: Signer[];
   /** What the contract means in plain words, shown above the signer. Absent on older answers. */
   explainer?: ContractExplainer | null | undefined;
-  /** Full text of the contract (NDA, owner_nda, MOU): the document dialog shows it. Absent = no text yet. */
+  /** Full text of the contract (NDA, MOU): the document dialog shows it. Absent = no text yet. */
   body?: string | null | undefined;
   /** The entry contract rule that created it (EntryContractRule.code); absent on contracts older than the rules. */
   rule_code?: string | null | undefined;
@@ -528,7 +530,7 @@ export interface Contract {
 }
 
 /** binding: the Acuerdo de Vinculación y Formalización (owner, Bishop and Strategic Mates). other: any other rule. */
-export type ContractKind = "nda" | "mou" | "owner_nda" | "binding" | "tripartite" | "framework" | "other";
+export type ContractKind = "nda" | "mou" | "binding" | "tripartite" | "framework" | "other";
 
 /** The plain-words window above a contract: a title, a few paragraphs and the key points. */
 export interface ContractExplainer {

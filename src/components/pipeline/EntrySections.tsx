@@ -85,7 +85,7 @@ export function SummaryEmail({ lead }: { lead: LeadWithComputed }) {
               <p className="text-xs font-medium text-muted-foreground">{t("entry.email.meeting_title")}</p>
               <p className="mt-0.5 font-medium tabular-nums">{t("entry.email.meeting_when", { date: formatDateTime(m.starts_at, i18n.language), minutes: m.duration_minutes })}</p>
               <p className="mt-0.5 text-xs">
-                <span className="text-muted-foreground">{t("entry.email.meeting_link")}: </span>
+                <span className="text-muted-foreground">{t("entry.email.meeting_link")} </span>
                 <span className="break-all">{m.meet_url}</span>
               </p>
             </div>

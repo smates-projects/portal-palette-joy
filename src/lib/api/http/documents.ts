@@ -14,7 +14,7 @@ type SignerStatus = "sent" | "opened" | "signed" | "declined";
 /** GET /contracts/{id}/signed-document: the sealed text, its fingerprint and the audit trail. */
 export interface SignedDocument {
   contract_id: Uuid;
-  kind: "nda" | "mou" | "owner_nda" | "tripartite" | "framework" | "other";
+  kind: "nda" | "mou" | "tripartite" | "framework" | "other";
   name: string;
   text: string;
   fingerprint: string | null;
@@ -137,15 +137,6 @@ export function createHttpDocumentsRepository(client: HttpClient): HttpDocuments
     /** POST /acknowledge { points }: the four points of the MOU, before signing it. */
     acknowledge: (contractId, points) =>
       client.post<Contract>(`${contractPath(contractId)}/acknowledge`, { points }),
-
-    /** GET /businesses/{id}/own-nda/template: the owner's own NDA text to start from, already filled in. */
-    getOwnNdaTemplate: (businessId) => client.get<{ body: string }>(`${businessPath(businessId)}/own-nda/template`),
-
-    /** POST /businesses/{id}/own-nda { body }: the owner's own NDA (kind owner_nda), for Strategic Mates to sign. */
-    createOwnNda: (businessId, body) => client.post<Contract>(`${businessPath(businessId)}/own-nda`, { body }),
-
-    /** PATCH /businesses/{id}/own-nda { body }: only while nobody signed it. */
-    updateOwnNda: (businessId, body) => client.patch<Contract>(`${businessPath(businessId)}/own-nda`, { body }),
 
     getSignedDocument: (contractId) =>
       client.get<SignedDocument>(`${contractPath(contractId)}/signed-document`),

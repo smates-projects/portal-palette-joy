@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 import { toast } from "sonner";
-import { useBusinesses, useCurrentUser, useFranchisabilityMany, useOrganizations, useSetBusinessConsultant, useTasks, useUsers, useVersions } from "@/lib/api/hooks";
+import { useBusinesses, useCurrentUser, useFranchisabilityMany, useOrganizations, useSetBusinessConsultant, useTasks, useTransferBusiness, useUsers, useVersions } from "@/lib/api/hooks";
+import { TransferDialog, canFollowOffice, canTransfer } from "@/components/pipeline/TransferDialog";
 import { buildBusinessRows, filterBusinessRows, type BusinessRow, type BusinessesSearch } from "@/lib/tasks/office";
 import type { Health } from "@/lib/tasks/owner";
 import { cn } from "@/lib/utils";
@@ -228,7 +230,7 @@ function AreaDots({ row }: { row: BusinessRow }) {
   return (
     <span className="flex items-center gap-1.5">
       {row.areas.map((a) => (
-        <span key={a.area} className={cn("h-2.5 w-2.5 rounded-full", DOT[a.health])} title={`${a.area} ${t(`areas.${a.area}`)}: ${t(`sm.health.${a.health}`)}`} aria-label={`${t(`areas.${a.area}`)}: ${t(`sm.health.${a.health}`)}`} />
+        <span key={a.area} className={cn("h-2.5 w-2.5 rounded-full", DOT[a.health])} title={`${a.area} ${t(`areas.${a.area}`)}, ${t(`sm.health.${a.health}`)}`} aria-label={`${t(`areas.${a.area}`)}, ${t(`sm.health.${a.health}`)}`} />
       ))}
     </span>
   );
@@ -255,6 +257,7 @@ function BusinessProfile({ row }: { row: BusinessRow }) {
         <div className="mt-5 flex flex-wrap gap-2">
           <Button asChild size="sm"><Link to="/tareas" search={{ business: b.id, sup: "all" }}>{t("office.biz.see_tasks")}</Link></Button>
           <Button asChild size="sm" variant="outline"><Link to="/red" search={{ biz: b.id }}>{t("office.biz.see_network")}</Link></Button>
+          <TransferBusinessButton business={b} />
         </div>
       </div>
       <div className="p-6">
@@ -275,7 +278,8 @@ function ConsultantPicker({ row }: { row: BusinessRow }) {
   const me = useCurrentUser().data;
   const users = useUsers().data ?? [];
   const setConsultant = useSetBusinessConsultant();
-  const team = users.filter((u) => u.role === "sm_team" && u.organization_id === row.business.office_id);
+  // The SM team of the office, plus anyone of SM Global (they can follow a business of any office).
+  const team = users.filter((u) => canFollowOffice(u, row.business.office_id));
   if (me?.role !== "sm_team") return <>{row.consultant?.full_name ?? t("office.biz.no_consultant")}</>;
   return (
     <Select
@@ -295,8 +299,40 @@ function ConsultantPicker({ row }: { row: BusinessRow }) {
         <SelectValue placeholder={t("office.biz.no_consultant")} />
       </SelectTrigger>
       <SelectContent>
-        {team.map((u) => <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>)}
+        {team.map((u) => <SelectItem key={u.id} value={u.id}>{u.full_name}{u.role === "sm_global" ? ` (${t("topbar.role_global")})` : ""}</SelectItem>)}
       </SelectContent>
     </Select>
+  );
+}
+
+/** "Derivar a oficina" on the business detail: SM Global and the admin of its office. */
+export function TransferBusinessButton({ business }: { business: { id: string; name: string; office_id: string } }) {
+  const { t } = useTranslation();
+  const me = useCurrentUser().data;
+  const transfer = useTransferBusiness();
+  const [open, setOpen] = useState(false);
+  if (!canTransfer(me, business.office_id)) return null;
+  return (
+    <>
+      <Button size="sm" variant="outline" onClick={() => setOpen(true)}>{t("pipeline.actions.transfer")}</Button>
+      {open && (
+        <TransferDialog
+          name={business.name}
+          currentOfficeId={business.office_id}
+          pending={transfer.isPending}
+          consultantOptional
+          onClose={() => setOpen(false)}
+          onConfirm={(input, labels) =>
+            transfer.mutate({ businessId: business.id, input }, {
+              onSuccess: (moved) => {
+                setOpen(false);
+                toast.success(t("pipeline.transfer.t_done", { name: business.name, office: labels.office, consultant: labels.consultant || moved.consultant_id || "" }));
+              },
+              onError: (e) => toast.error(e instanceof Error && ["admin_only", "invalid_consultant", "same_office"].includes(e.message) ? t(`pipeline.transfer.errors.${e.message}`) : t("office.biz.consultant_error")),
+            })
+          }
+        />
+      )}
+    </>
   );
 }

@@ -1,32 +1,31 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useLeads, useOffices, useUsers } from "@/lib/api/hooks";
+import { useLeads, useOrganizations, useUsers } from "@/lib/api/hooks";
 import { LEAD_STAGES } from "@/lib/api/types";
+import { ALL_OFFICES, officeIdForQuery, useOfficeScope } from "@/lib/office-scope";
 import { cn } from "@/lib/utils";
 import { LeadDetail } from "@/components/pipeline/LeadDetail";
 import { LeadBoard, LeadTable } from "@/components/pipeline/LeadViews";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyBox, ErrorBox, GlobalHeader } from "../shared";
 
-const ALL = "__all";
-
 /**
  * Embudo of the whole network, read only. It looks like the office funnel (same board and table) but SM Global
- * never moves, discards or writes on a lead: each office does. Optional filter by office.
+ * never moves or writes on a lead: each office does. The office in view comes from "Viendo" in the header (one
+ * control for every Global screen), and the API gets it as office_id.
  */
 export function GlobalFunnelPage({ initialLeadId }: { initialLeadId?: string | undefined } = {}) {
   const { t } = useTranslation();
-  const [officeId, setOfficeId] = useState<string>(ALL);
+  const [scope] = useOfficeScope();
   const [view, setView] = useState<"board" | "table">("board");
   // Opened from the bell (?lead=): that lead comes up at once (Corporate signs the binding agreement there).
   const [leadId, setLeadId] = useState<string | undefined>(initialLeadId);
-  const leadsQ = useLeads(officeId === ALL ? undefined : officeId);
-  const officesQ = useOffices();
+  const leadsQ = useLeads(officeIdForQuery(scope));
+  const orgsQ = useOrganizations();
   const usersQ = useUsers();
   const header = <GlobalHeader question={t("global.funnel.question")} />;
-  const queries = [leadsQ, officesQ, usersQ];
+  const queries = [leadsQ, orgsQ, usersQ];
 
   if (queries.some((q) => q.isError))
     return (
@@ -44,9 +43,10 @@ export function GlobalFunnelPage({ initialLeadId }: { initialLeadId?: string | u
     );
 
   const leads = leadsQ.data ?? [];
-  const offices = officesQ.data ?? [];
   const consultantName = (id: string) => usersQ.data?.find((u) => u.id === id)?.full_name ?? "";
   const selected = leads.find((l) => l.id === leadId);
+  const office = scope === ALL_OFFICES ? null : orgsQ.data?.find((o) => o.id === scope);
+  const officeLabel = office ? (office.kind === "sm_global" ? t("topbar.viewing_corporate") : office.name) : t("global.funnel.all_offices");
 
   return (
     <div className="mx-auto max-w-[1440px] px-6 py-8">
@@ -65,15 +65,7 @@ export function GlobalFunnelPage({ initialLeadId }: { initialLeadId?: string | u
             </button>
           ))}
         </div>
-        <Select value={officeId} onValueChange={setOfficeId}>
-          <SelectTrigger aria-label={t("global.funnel.office")} className={cn("h-8 w-auto min-w-44 gap-2 bg-surface text-sm", officeId !== ALL && "border-ring")}>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>{t("global.funnel.all_offices")}</SelectItem>
-            {offices.map((o) => <SelectItem key={o.office.id} value={o.office.id}>{o.office.name}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <span className="rounded-[4px] border border-border bg-surface px-2 py-1 text-sm">{officeLabel}</span>
         <span className="text-sm text-muted-foreground">{t("global.funnel.total", { count: leads.length })}</span>
         <p className="rounded-[4px] border border-border bg-muted px-2 py-1 text-xs text-muted-foreground">{t("global.funnel.read_only")}</p>
       </div>

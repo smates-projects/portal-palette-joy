@@ -3,9 +3,10 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { FileText, Upload } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import { useContracts, useCurrentUser, useDocuments, useIsOnboarding, useRules, useUploadDocument } from "@/lib/api/hooks";
+import { useContracts, useCurrentUser, useDocuments, useRules, useUploadDocument } from "@/lib/api/hooks";
 import { INTAKE_DOCUMENT_ACCEPT, entryRules, intakeDocumentHelp, oaWaitingUntil } from "@/lib/leads/entry-flow";
 import { DocumentHelp } from "@/components/pipeline/DocumentHelp";
+import { ReviewNoteAlert } from "@/components/pipeline/ReviewNoteAlert";
 import type { Contract } from "@/lib/api/types";
 import { DocuSealSigner } from "@/components/docuseal/DocuSealSigner";
 import { SignedContractDialog } from "@/components/docuseal/SignedContractDialog";
@@ -35,7 +36,6 @@ export function OwnerDocumentsPage() {
   const documents = documentsQ.data ?? [];
   const contracts = contractsQ.data ?? [];
   const me = useCurrentUser().data;
-  const onboarding = useIsOnboarding();
   const [signing, setSigning] = useState<Contract | null>(null);
   const [viewing, setViewing] = useState<Contract | null>(null);
   // Documents asked again go first, with the Strategic Mates comment.
@@ -47,13 +47,9 @@ export function OwnerDocumentsPage() {
   const rules = entryRules(rulesData);
   const helpText = rulesData?.intake_help_text?.trim() ?? "";
   const hasIntake = documents.some((d) => d.area === "intake");
-  /**
-   * The MOU is signed from "Tu ingreso" (the four points first), and so is the owner's own NDA (after Strategic Mates
-   * signed it); the Operating Agreement only after its waiting period. Once the program started "Tu ingreso" is gone,
-   * so the owner's own NDA, still optional, is signed here.
-   */
+  /** The MOU is signed from "Tu ingreso" (the four points first); the Operating Agreement only after its waiting period. */
   const signableHere = (c: Contract) =>
-    c.kind !== "mou" && (c.kind !== "owner_nda" || !onboarding) && !(c.kind === "tripartite" && oaWaitingUntil(c, rules.oa_waiting_days));
+    c.kind !== "mou" && !(c.kind === "tripartite" && oaWaitingUntil(c, rules.oa_waiting_days));
 
   const areaLabel = (area: BusinessDocument["area"]) => (area === "diagnosis" || area === "closing" || area === "intake" ? t(`owner_extra.documents.area_${area}`) : t(`areas.${area}`));
 
@@ -111,9 +107,7 @@ export function OwnerDocumentsPage() {
                       <p className="text-xs text-muted-foreground">
                         {areaLabel(d.area)} · {t("owner_extra.documents.asked_on", { date: formatDate(d.requested_at, lng) })}
                       </p>
-                      {d.state === "rejected" && d.review_comment && (
-                        <p className="mt-1 text-xs text-status-warning-fg">{t("intake.owner_docs.sm_comment", { comment: d.review_comment })}</p>
-                      )}
+                      {d.state === "rejected" && d.review_comment && <ReviewNoteAlert comment={d.review_comment} className="mt-2" />}
                       {help && <DocumentHelp help={help} className="mt-2" />}
                     </div>
                     <button className={secondaryButtonCls} disabled={upload.isPending || !!d.locked_until_mou} onClick={() => pick(d.id)}>
@@ -168,9 +162,7 @@ export function OwnerDocumentsPage() {
                               : ""}
                         </p>
                       </div>
-                      {/* The owner's own NDA: his signature is optional and comes after Strategic Mates' one. */}
-                      {c.signers.some((x) => x.party === "owner" && (x.status === "sent" || x.status === "opened")) &&
-                        (c.kind !== "owner_nda" || c.signers.some((x) => x.party === "sm" && x.status === "signed")) && (
+                      {c.signers.some((x) => x.party === "owner" && (x.status === "sent" || x.status === "opened")) && (
                         signableHere(c)
                           ? <button className={secondaryButtonCls} onClick={() => setSigning(c)}>{t("intake.owner_docs.sign")}</button>
                           : <Link to="/" className={secondaryButtonCls}>{t("intake.owner_docs.go_home")}</Link>
@@ -184,7 +176,7 @@ export function OwnerDocumentsPage() {
                       <ul className="mt-2 space-y-0.5 text-xs text-muted-foreground">
                         {c.signers.map((s) => (
                           <li key={`${s.name}-${s.role}`}>
-                            {s.name} ({s.party ? t(`intake.party.${s.party}`) : s.role}):{" "}
+                            {s.name} ({s.party ? t(`intake.party.${s.party}`) : s.role}),{" "}
                             <span className={s.signed_at ? "text-status-success-fg" : undefined}>
                               {s.signed_at ? t("owner_extra.documents.signer_signed", { date: formatDate(s.signed_at, lng) }) : t("owner_extra.documents.signer_pending")}
                             </span>

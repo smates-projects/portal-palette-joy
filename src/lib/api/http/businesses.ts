@@ -82,5 +82,19 @@ export function createHttpBusinessesRepository(client: HttpClient): BusinessesRe
       if (!client.etags.has(resource)) await client.get<Business>(resource);
       return client.patch<Business>(`${resource}/consultant`, { user_id: userId }, { resource });
     },
+
+    /**
+     * POST /businesses/{id}/transfer { office_id, consultant_user_id? } (If-Match like the consultant change): "Derivar
+     * a oficina". The consultant is optional: without one the API picks who follows it in the target office.
+     */
+    transfer: async (businessId, input) => {
+      const resource = businessPath(businessId);
+      if (!client.etags.has(resource)) await client.get<Business>(resource);
+      return client.post<Business>(
+        `${resource}/transfer`,
+        { office_id: input.office_id, ...(input.consultant_user_id ? { consultant_user_id: input.consultant_user_id } : {}) },
+        { resource },
+      );
+    },
   };
 }

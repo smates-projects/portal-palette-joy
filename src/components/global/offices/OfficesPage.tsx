@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/format";
 import { useCreateOffice, useOffices } from "@/lib/api/hooks";
+import { inOfficeScope, useOfficeScope } from "@/lib/office-scope";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PrimaryButton } from "@/components/tasks/detail/dialogs";
 import { officeHealth } from "../logic";
@@ -17,6 +18,7 @@ export function OfficesPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const officesQ = useOffices();
+  const [scope] = useOfficeScope();
   const create = useCreateOffice();
   const [creating, setCreating] = useState(false);
   const header = <GlobalHeader question={t("global.offices.question")} />;
@@ -30,7 +32,8 @@ export function OfficesPage() {
       </div>
     );
 
-  const offices = officesQ.data ?? [];
+  // "Viendo" in the header narrows the table to the office in view.
+  const offices = (officesQ.data ?? []).filter((o) => inOfficeScope(scope, o.office.id));
   return (
     <div className="mx-auto max-w-7xl px-6 py-8">
       <div className="flex flex-wrap items-start justify-between gap-3">

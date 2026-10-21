@@ -163,6 +163,13 @@ export function createHttpLeadsRepository(client: HttpClient): HttpLeadsReposito
 
     discard: (id, reason) => guardedWrite(id, "discard", { reason }),
 
+    /** POST /reactivate (If-Match on the lead): SM Global brings back a lead discarded by itself (mou_not_signed). */
+    reactivate: (id) => guardedWrite(id, "reactivate"),
+
+    /** POST /transfer { office_id, consultant_user_id } (If-Match on the lead): "Derivar a oficina". */
+    transfer: (id, input) =>
+      guardedWrite(id, "transfer", { office_id: input.office_id, consultant_user_id: input.consultant_user_id ?? null }),
+
     addNote: async (id, body) =>
       forgetVersion(
         id,

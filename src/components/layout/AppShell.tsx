@@ -9,6 +9,7 @@ import { BrandLogo } from "@/components/brand/BrandLogo";
 import { isNavActive, navFor } from "./nav";
 import { firmName } from "@/components/office/shared";
 import { NotificationBell } from "./NotificationBell";
+import { OfficeScopeSelect } from "./OfficeScopeSelect";
 import { PasswordSetupDialog } from "@/components/auth/PasswordSetupDialog";
 import { cn } from "@/lib/utils";
 import { brandStyle } from "@/lib/brand/style";
@@ -219,9 +220,9 @@ function ViewAs() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger aria-label={`${t("topbar.view_as")}: ${currentOpt ? label(currentOpt) : ""}`} className="flex h-8 min-w-0 max-w-[8.5rem] items-center gap-2 rounded-md border border-border bg-surface px-2.5 text-sm hover:bg-muted sm:max-w-none md:min-w-60">
+      <DropdownMenuTrigger aria-label={`${t("topbar.view_as")} ${currentOpt ? label(currentOpt) : ""}`} className="flex h-8 min-w-0 max-w-[8.5rem] items-center gap-2 rounded-md border border-border bg-surface px-2.5 text-sm hover:bg-muted sm:max-w-none md:min-w-60">
         <Eye className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="hidden text-muted-foreground sm:inline">{t("topbar.view_as")}:</span>
+        <span className="hidden text-muted-foreground sm:inline">{t("topbar.view_as")}</span>
         <span className="truncate font-medium">{currentOpt ? label(currentOpt) : "…"}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-72">
@@ -352,6 +353,8 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
           className="h-8 w-full rounded-md border border-input bg-background pl-8 pr-3 text-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30"
         />
       </label>
+      {/* SM Global only: "Viendo" the whole network, Corporate or one office. */}
+      <OfficeScopeSelect />
       <NotificationBell />
       <div className="hidden shrink-0 md:block"><LanguageSwitch /></div>
       <ViewAs />

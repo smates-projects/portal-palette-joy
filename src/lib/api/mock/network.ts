@@ -7,7 +7,7 @@ import { bishopShareAt, estimatePaybackMonth } from "@/lib/bishop/split";
 import { computeReportAmounts, nextMonth, previousMonth } from "@/lib/franchise/fees";
 import { buildPipelineCounters } from "@/lib/leads/pipeline";
 import { validateMeetingHours } from "@/lib/calendar/scheduling";
-import { ownNdaBodyError } from "@/lib/leads/entry-flow";
+import { eligibilityError } from "@/lib/leads/readiness";
 import { expectedFranchisePct } from "@/lib/tasks/office";
 import { buildNetworkMatrix } from "@/lib/tasks/sm";
 import { areaHealth, AREAS } from "@/lib/tasks/owner";
@@ -484,8 +484,8 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       if (next.opportunity_visibility !== undefined && next.opportunity_visibility !== "presented" && next.opportunity_visibility !== "all") throw new Error("invalid_visibility");
       if (next.oa_waiting_days !== undefined && (!Number.isInteger(next.oa_waiting_days) || next.oa_waiting_days < 0 || next.oa_waiting_days > 60)) throw new Error("invalid_waiting_days");
       if (next.meeting_hours !== undefined && validateMeetingHours(next.meeting_hours)) throw new Error("invalid_meeting_hours");
-      // The owner's own NDA starts from this text: never empty, and as long as the API lets the owner send.
-      if (next.owner_nda_template !== undefined && ownNdaBodyError(next.owner_nda_template)) throw new Error(ownNdaBodyError(next.owner_nda_template)!);
+      // Eligibility: the declared annual revenue is a whole number of dollars (0 = no minimum).
+      if (next.eligibility !== undefined && eligibilityError(next.eligibility)) throw new Error(eligibilityError(next.eligibility)!);
       const known = new Set(db.catalog.filter((c) => !c.archived).map((c) => c.code));
       if (new Set(next.required_task_codes).size !== next.required_task_codes.length || next.required_task_codes.some((c) => !known.has(c))) throw new Error("unknown_task_code");
       const fields = Object.keys(next) as (keyof PlatformRules)[];

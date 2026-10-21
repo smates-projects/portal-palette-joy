@@ -285,6 +285,38 @@ describe("http leads", () => {
     expect(calls[0]?.headers["Idempotency-Key"]).toBeTruthy();
   });
 
+  it("reactivate: reads the lead for its ETag, then POST /reactivate with If-Match; the new ETag is kept", async () => {
+    const back = leadFixture({ stage: "meeting", discarded_from: null, discard_reason: null });
+    const { calls } = stubFetch(
+      dataResponse(detailFixture({ stage: "discarded", discarded_from: "meeting", discard_reason: "mou_not_signed" }), 200, { ETag: '"3"' }),
+      dataResponse(back, 200, { ETag: '"4"' }),
+    );
+    const { leads, client } = setup();
+    expect(await leads.reactivate(LEAD)).toEqual(back);
+    expect(calls[0]).toMatchObject({ method: "GET", path: LEAD_PATH });
+    expect(calls[1]).toMatchObject({ method: "POST", path: `${LEAD_PATH}/reactivate` });
+    expect(calls[1]?.headers["If-Match"]).toBe('"3"');
+    expect(client.etags.get(LEAD_PATH)).toBe('"4"');
+  });
+
+  it("transfer: POST /transfer { office_id, consultant_user_id } with If-Match; the API's codes reach the screen", async () => {
+    const moved = leadFixture({ office_id: IDS.zone, consultant_user_id: IDS.andrea });
+    const { calls } = stubFetch(
+      dataResponse(moved, 200, { ETag: '"9"' }),
+      problemResponse(409, "same_office"),
+      problemResponse(422, "invalid_consultant"),
+      problemResponse(403, "admin_only"),
+    );
+    const { leads, client } = setup();
+    client.etags.set(LEAD_PATH, '"8"');
+    expect(await leads.transfer(LEAD, { office_id: IDS.zone, consultant_user_id: IDS.andrea })).toEqual(moved);
+    expect(calls[0]).toMatchObject({ method: "POST", path: `${LEAD_PATH}/transfer`, body: { office_id: IDS.zone, consultant_user_id: IDS.andrea } });
+    expect(calls[0]?.headers["If-Match"]).toBe('"8"');
+    await expect(leads.transfer(LEAD, { office_id: IDS.office, consultant_user_id: IDS.andrea })).rejects.toThrow("same_office");
+    await expect(leads.transfer(LEAD, { office_id: IDS.zone, consultant_user_id: IDS.member })).rejects.toThrow("invalid_consultant");
+    await expect(leads.transfer(LEAD, { office_id: IDS.zone, consultant_user_id: IDS.andrea })).rejects.toThrow("admin_only");
+  });
+
   it("sendAssessment: POST /send-assessment", async () => {
     const sent = leadFixture({ source: "manual", assessment_sent_at: "2026-10-19T12:00:00.000Z" });
     const { calls } = stubFetch(dataResponse(sent, 200, { ETag: '"2"' }));

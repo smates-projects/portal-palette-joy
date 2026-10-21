@@ -27,9 +27,9 @@ describe("roles and seed", () => {
     const orgs = await api.organizations.list();
     expect(orgs.find((o) => o.id === me.organization_id)?.kind).toBe("sm_global");
     const offices = orgs.filter((o) => o.kind === "sm");
-    expect(offices.map((o) => o.name).sort()).toEqual(["SM Miami", "SM Orlando", "SM Tampa"]);
+    expect(offices.map((o) => o.name).sort()).toEqual(["SM Florida", "SM Miami", "SM Orlando", "SM Tampa"]);
     expect(offices.every((o) => o.parent_id === seed.ORG_GLOBAL)).toBe(true);
-    expect(offices.map((o) => `${o.name}:${o.status}`).sort()).toEqual(["SM Miami:operating", "SM Orlando:operating", "SM Tampa:opening"]);
+    expect(offices.map((o) => `${o.name}:${o.status}`).sort()).toEqual(["SM Florida:operating", "SM Miami:operating", "SM Orlando:operating", "SM Tampa:opening"]);
     expect(offices.find((o) => o.id === seed.ORG_SM)?.city).toBe("Miami, FL");
   });
   it("the franchisor is a business owner of a franchisor business, not a new role", async () => {
@@ -125,7 +125,10 @@ describe("scoping", () => {
     expect((await miami.businesses.list()).every((b) => b.office_id === seed.ORG_SM)).toBe(true);
     expect((await miami.network.listOffices()).map((o) => o.office.id)).toEqual([seed.ORG_SM]);
     expect(await miami.network.getOffice(net.ORG_ORLANDO)).toBeNull();
-    expect((await miami.organizations.list()).every((o) => o.id === seed.ORG_SM || o.parent_id === seed.ORG_SM)).toBe(true);
+    // Its own firms only; the other SM offices are listed as plain names (targets of "Derivar a oficina").
+    const miamiOrgs = await miami.organizations.list();
+    expect(miamiOrgs.filter((o) => o.kind === "partner_firm").every((o) => o.parent_id === seed.ORG_SM)).toBe(true);
+    expect(miamiOrgs.some((o) => o.id === net.ORG_FLORIDA)).toBe(true);
     await expect(miami.network.getStructure()).rejects.toThrow("global_only");
     await expect(miami.rules.update({ franchisability_goal: 70 })).rejects.toThrow("global_only");
     const valentina = await as(net.U_VALENTINA);
@@ -254,13 +257,15 @@ describe("rules (SM Global)", () => {
     expect(rules.intake_documents.find((d) => d.name === "Cuentas bancarias")!.help!.what).toContain("últimos seis meses");
     expect(rules.intake_documents.find((d) => d.name === "Documentación adicional según la actividad")).toMatchObject({ required: false });
     expect(rules.intake_help_text).toContain("No envíe contraseñas ni credenciales de acceso.");
-    expect(rules.owner_nda_template).toContain("{{business_name}}");
+    expect(rules.eligibility).toEqual({ min_annual_revenue: 250_000 });
+    expect(rules).not.toHaveProperty("owner_nda_template");
   });
-  it("the owner's NDA template cannot be emptied", async () => {
+  it("the minimum declared revenue is a whole number of dollars, and its change is logged", async () => {
     const api = await asGlobal();
-    await expect(api.rules.update({ owner_nda_template: "  " })).rejects.toThrow("body_required");
-    expect((await api.rules.update({ owner_nda_template: "Entre {{business_name}} y Strategic Mates.", intake_help_text: "Sirve una foto." })).owner_nda_template)
-      .toBe("Entre {{business_name}} y Strategic Mates.");
+    await expect(api.rules.update({ eligibility: { min_annual_revenue: -1 } })).rejects.toThrow("invalid_min_revenue");
+    await expect(api.rules.update({ eligibility: { min_annual_revenue: 1.5 } })).rejects.toThrow("invalid_min_revenue");
+    expect((await api.rules.update({ eligibility: { min_annual_revenue: 300_000 } })).eligibility).toEqual({ min_annual_revenue: 300_000 });
+    expect((await api.rules.listHistory())[0]!.changes).toEqual([{ field: "eligibility", from: { min_annual_revenue: 250_000 }, to: { min_annual_revenue: 300_000 } }]);
   });
   it("changes are logged, validated and reach franchisability", async () => {
     const api = await asGlobal();
@@ -332,17 +337,20 @@ describe("catalog admin (SM Global)", () => {
 describe("network (SM Global)", () => {
   it("the structure tree counts offices, businesses, franchisors, franchises and firms", async () => {
     const tree = await (await asGlobal()).network.getStructure();
-    expect(tree.counts).toEqual({ offices: 3, businesses: 5, franchisors: 1, franchises: 2, firms: 17 });
+    // SM Florida is the fourth office: operating and still empty (demo of "Derivar a oficina" and "Viendo").
+    expect(tree.counts).toEqual({ offices: 4, businesses: 5, franchisors: 1, franchises: 2, firms: 17 });
     expect(tree.root.kind).toBe("global");
-    expect(tree.root.children.map((c) => c.name)).toEqual(["SM Miami", "SM Orlando", "SM Tampa"]);
-    const miami = tree.root.children[0]!;
+    expect(tree.root.children.map((c) => c.name)).toEqual(["SM Florida", "SM Miami", "SM Orlando", "SM Tampa"]);
+    const miami = tree.root.children.find((c) => c.name === "SM Miami")!;
     const bimbo = miami.children.find((c) => c.name === "Bimbo Remodelaciones")!;
     expect(bimbo.children.filter((c) => c.kind === "franchise").map((c) => c.name).sort()).toEqual(["Bimbo Remodelaciones Orlando Sur", "Bimbo Remodelaciones Tampa"]);
     expect(bimbo.children.filter((c) => c.kind === "investor").map((c) => c.name)).toEqual(["Jefferson Paula"]);
     expect(miami.children.filter((c) => c.kind === "firm")).toHaveLength(5);
-    const orlando = tree.root.children[1]!;
+    const orlando = tree.root.children.find((c) => c.name === "SM Orlando")!;
     expect(orlando.children.filter((c) => c.kind === "business")).toHaveLength(2);
     expect(orlando.children.filter((c) => c.kind === "firm")).toHaveLength(6);
+    // SM Florida: operating and still empty.
+    expect(tree.root.children.find((c) => c.name === "SM Florida")!.children).toEqual([]);
   });
   it("lists offices with their stats", async () => {
     const api = await asGlobal();
@@ -358,7 +366,7 @@ describe("network (SM Global)", () => {
     expect(detail.firms).toHaveLength(6);
     expect(detail.team.map((u) => u.full_name)).toEqual(["Valentina Ríos"]);
     const summary = await api.network.getSummary();
-    expect(summary).toMatchObject({ offices: 3, programs: 5, franchisors: 1, franchises: 2, partner_firms: 17, last_month: "2026-09", franchise_sales_last_month: 75200, royalties_last_month: 3760 });
+    expect(summary).toMatchObject({ offices: 4, programs: 5, franchisors: 1, franchises: 2, partner_firms: 17, last_month: "2026-09", franchise_sales_last_month: 75200, royalties_last_month: 3760 });
     expect(summary.open_leads).toBe(offices.reduce((sum, o) => sum + o.stats.open_leads, 0));
     expect(summary.open_leads).toBe(miami.stats.open_leads + orlando.stats.open_leads + 1); // + the first lead of SM Tampa
   });
@@ -377,7 +385,8 @@ describe("network (SM Global)", () => {
     const total = funnel.stages.reduce((a, s) => a + s.count, 0);
     expect(total).toBe(seedLeads.leads.length + net.leads.length);
     expect(funnel.by_office.flatMap((o) => o.stages).reduce((a, s) => a + s.count, 0)).toBe(total);
-    expect(funnel.by_office).toHaveLength(3);
+    expect(funnel.by_office).toHaveLength(4);
+    expect(funnel.by_office.find((o) => o.office_name === "SM Florida")!.stages.every((s) => s.count === 0)).toBe(true);
   });
 });
 

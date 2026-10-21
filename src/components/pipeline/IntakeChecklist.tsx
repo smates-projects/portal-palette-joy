@@ -10,6 +10,7 @@ import { formatDate } from "@/lib/format";
 import { canResend } from "@/lib/leads/onboarding";
 import { entryRules, intakeDocumentHelp, ndaStatus, oaWaitingUntil, type NdaStatus } from "@/lib/leads/entry-flow";
 import { DocumentHelp } from "./DocumentHelp";
+import { ReviewNoteAlert } from "./ReviewNoteAlert";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -114,9 +115,6 @@ export function IntakeChecklist({ leadId, readOnly, validation }: { leadId: stri
     const done = c.signers.every((s) => s.status === "signed");
     const sm = c.signers.find((s) => s.party === "sm");
     const nda = c.kind === "nda" ? ndaStatus(c) : null;
-    // The owner's own NDA: what counts is Strategic Mates' signature (the owner's is optional).
-    const ownerNda = c.kind === "owner_nda";
-    const smSigned = sm?.status === "signed";
     const waitingUntil = oaWaitingUntil(c, rules.oa_waiting_days);
     const acks = c.kind === "mou" ? c.signers.find((s) => s.party === "owner")?.acknowledgments?.length ?? 0 : null;
     const deadline = contractDeadline(c);
@@ -127,26 +125,21 @@ export function IntakeChecklist({ leadId, readOnly, validation }: { leadId: stri
     return (
       <li key={c.id} className="py-2.5">
         <div className="flex flex-wrap items-center gap-2">
-          {done || (ownerNda && smSigned) ? <Check className="h-4 w-4 text-status-success-fg" /> : <Circle className="h-4 w-4 text-muted-foreground" />}
-          <span className="text-sm font-medium">{ownerNda ? t("intake.owner_nda.title") : c.name}</span>
+          {done ? <Check className="h-4 w-4 text-status-success-fg" /> : <Circle className="h-4 w-4 text-muted-foreground" />}
+          <span className="text-sm font-medium">{c.name}</span>
           {nda && nda !== "none" && (
             <span className={cn("rounded-[4px] border px-1.5 py-0.5 text-[11px] font-medium", NDA_TONE[nda])}>{t(`intake.nda_status.${nda}`)}</span>
           )}
-          {ownerNda && (
-            <span className={cn("rounded-[4px] border px-1.5 py-0.5 text-[11px] font-medium", NDA_TONE[smSigned ? "signed" : "pending"])}>
-              {t(smSigned ? "intake.owner_nda.signed" : "intake.owner_nda.to_sign")}
-            </span>
-          )}
           <span className="ml-auto flex gap-2">
-            {(c.signers.some((s) => s.signed_at) || (ownerNda && c.body)) && (
-              <button onClick={() => setViewing(c)} className="text-xs text-link hover:underline">{t(ownerNda && !smSigned ? "intake.owner_nda.read" : "intake.docuseal.view_signed")}</button>
+            {c.signers.some((s) => s.signed_at) && (
+              <button onClick={() => setViewing(c)} className="text-xs text-link hover:underline">{t("intake.docuseal.view_signed")}</button>
             )}
             {smPending && (!readOnly || mySmPart) && (
               <button onClick={() => setSigning(c)} disabled={!!reason} title={reason ?? undefined} className="text-xs text-link hover:underline disabled:cursor-not-allowed disabled:text-muted-foreground disabled:no-underline">
-                {sm?.sm_entity ? t("entry_contracts.checklist.sign_for", { entity: entities[sm.sm_entity].name }) : t(ownerNda ? "intake.owner_nda.sign" : "intake.sign_as_sm")}
+                {sm?.sm_entity ? t("entry_contracts.checklist.sign_for", { entity: entities[sm.sm_entity].name }) : t("intake.sign_as_sm")}
               </button>
             )}
-            {!readOnly && !ownerNda && canResend(c) && (
+            {!readOnly && canResend(c) && (
               <button
                 onClick={() => resend.mutate({ id: leadId, contractId: c.id }, { onSuccess: () => toast.success(t("intake.t_resent", { name: c.name })), onError: () => toast.error(t("pipeline.t_error")) })}
                 className="text-xs text-link hover:underline"
@@ -161,7 +154,10 @@ export function IntakeChecklist({ leadId, readOnly, validation }: { leadId: stri
             const last = s.history?.at(-1);
             return (
               <li key={s.party ?? s.name}>
-                {s.party === "sm" ? smLine(s) : t(`intake.party.${s.party ?? "owner"}`)}: <span className={cn(s.status === "signed" && "text-status-success-fg", s.status === "declined" && "text-status-danger-fg")}>{t(`intake.signer_status.${s.status ?? "sent"}`)}</span>
+                {/* The NDA goes out pre-signed with the office signature: "Firmado en nombre de Strategic Mates". */}
+                {s.party === "sm" ? smLine(s) : t(`intake.party.${s.party ?? "owner"}`)}, <span className={cn(s.status === "signed" && "text-status-success-fg", s.status === "declined" && "text-status-danger-fg")}>
+                  {s.party === "sm" && c.kind === "nda" && s.status === "signed" ? t("intake.nda_signed_on_behalf") : t(`intake.signer_status.${s.status ?? "sent"}`)}
+                </span>
                 {last && ` · ${formatDate(last.at, lng)}`}
                 {s.decline_reason && ` · ${t("intake.declined_reason", { reason: s.decline_reason })}`}
               </li>
@@ -172,7 +168,6 @@ export function IntakeChecklist({ leadId, readOnly, validation }: { leadId: stri
           {deadline.state === "open" && <li>{t("entry_contracts.checklist.sign_by", { date: formatDate(deadline.sign_by, lng) })}</li>}
           {deadline.state === "overdue" && <li className="text-status-danger-fg">{t("entry_contracts.checklist.overdue", { date: formatDate(deadline.sign_by, lng) })}</li>}
           {reason && !readOnly && <li>{reason}</li>}
-          {ownerNda && !smSigned && <li>{t("intake.owner_nda.hint")}</li>}
         </ul>
       </li>
     );
@@ -220,7 +215,7 @@ export function IntakeChecklist({ leadId, readOnly, validation }: { leadId: stri
                 ) : ` · ${t("intake.not_uploaded")}`}
               </p>
               {d.state === "reviewed" && d.verified_fact && <p className="mt-0.5 text-xs text-status-success-fg">{t("intake.verified", { fact: d.verified_fact })}</p>}
-              {d.state === "rejected" && d.review_comment && <p className="mt-0.5 text-xs text-status-warning-fg">{t("intake.asked_again", { comment: d.review_comment })}</p>}
+              {d.state === "rejected" && d.review_comment && <ReviewNoteAlert comment={d.review_comment} className="mt-1.5" />}
               {help && <DocumentHelp help={help} className="mt-1.5" />}
               {!readOnly && (d.state === "received" || d.state === "reviewed") && (
                 <div className="mt-1.5 flex gap-3">

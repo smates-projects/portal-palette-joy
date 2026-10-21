@@ -85,7 +85,7 @@ function CatalogTab({ q, onQ }: { q: string; onQ: (q: string) => void }) {
               <section key={area} className="rounded-md border border-border bg-surface">
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
                   <h2 className="text-sm font-semibold"><span className="font-display">{area}</span> {t(`areas.${area}`)}</h2>
-                  <span className="text-xs text-muted-foreground">{t("office.cat.goes_to")}: {firmName(t, firm)} · {t("office.cat.tasks", { count: inArea.length })}</span>
+                  <span className="text-xs text-muted-foreground">{t("office.cat.goes_to")} {firmName(t, firm)} · {t("office.cat.tasks", { count: inArea.length })}</span>
                 </div>
                 <ul className="divide-y divide-border">
                   {inArea.map((e) => (
@@ -93,8 +93,8 @@ function CatalogTab({ q, onQ }: { q: string; onQ: (q: string) => void }) {
                       <span className="font-display text-xs font-semibold tabular-nums">{e.code}</span>
                       <div className="min-w-0">
                         <p className="text-sm font-medium">{e.name}</p>
-                        <p className="mt-1 text-xs text-muted-foreground"><span className="font-medium text-foreground">{t("office.cat.acceptance")}:</span> {e.acceptance}</p>
-                        <p className="mt-1 text-xs text-muted-foreground"><span className="font-medium text-foreground">{t("office.cat.applies")}:</span> {e.applies}</p>
+                        <p className="mt-1 text-xs text-muted-foreground"><span className="font-medium text-foreground">{t("office.cat.acceptance")}</span> {e.acceptance}</p>
+                        <p className="mt-1 text-xs text-muted-foreground"><span className="font-medium text-foreground">{t("office.cat.applies")}</span> {e.applies}</p>
                       </div>
                     </li>
                   ))}

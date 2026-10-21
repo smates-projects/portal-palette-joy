@@ -7,7 +7,9 @@ import { ASSESSMENT_BLOCKS, type AreaCode, type AssessmentAreaMap, type Organiza
 import type { PlatformRules } from "@/lib/api/network-types";
 import { validateZone } from "@/lib/leads/entry";
 import { entryRules } from "@/lib/leads/entry-flow";
+import { eligibilityRules } from "@/lib/leads/readiness";
 import { DEFAULT_ASSESSMENT_AREA_MAP } from "@/lib/leads/prevalidation";
+import { formatUsd } from "@/lib/format";
 import { AREAS } from "@/lib/tasks/owner";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -254,6 +256,47 @@ export function EntryFlowRules({ rules }: { rules: PlatformRules }) {
       ))}
       <div className="mt-3 flex justify-end">
         <PrimaryButton onClick={save} disabled={!dirty || !daysOk || update.isPending}>{t("entry.rules.flow.save")}</PrimaryButton>
+      </div>
+    </Box>
+  );
+}
+
+/**
+ * SM Global: who can enter the program. The declared annual revenue of the assessment ("Facturación anual mínima
+ * declarada", USD 250,000 by default). The year of operation stays a hard rule of the assessment itself.
+ */
+export function EligibilityRulesSection({ rules }: { rules: PlatformRules }) {
+  const { t, i18n } = useTranslation();
+  const update = useUpdateRules();
+  const saved = eligibilityRules(rules);
+  const [amount, setAmount] = useState(String(saved.min_annual_revenue));
+  const parsed = Number(amount.replace(/[,\s]/g, ""));
+  const ok = amount.trim() !== "" && Number.isInteger(parsed) && parsed >= 0;
+  const dirty = ok && parsed !== saved.min_annual_revenue;
+  const save = () => {
+    if (!dirty) return;
+    update.mutate({ patch: { eligibility: { min_annual_revenue: parsed } } }, {
+      onSuccess: () => toast.success(t("entry.rules.eligibility.t_saved", { amount: formatUsd(parsed, i18n.language) }), {
+        action: { label: t("global.undo"), onClick: () => update.mutate({ patch: { eligibility: saved } }) },
+      }),
+      onError: () => toast.error(t("global.t_error")),
+    });
+  };
+  return (
+    <Box title={t("entry.rules.eligibility.title")} hint={t("entry.rules.eligibility.hint")}>
+      <p className="text-sm">{t("entry.rules.eligibility.years_fixed")}</p>
+      <label className="mt-3 block space-y-1 text-sm">
+        <span className="block font-medium">{t("entry.rules.eligibility.min_revenue")}</span>
+        <span className="flex items-center gap-2">
+          <span className="font-display">USD</span>
+          <input inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value)} aria-label={t("entry.rules.eligibility.min_revenue")}
+            className={cn(inputCls, "w-40 font-display tabular-nums", !ok && "border-status-danger-fg")} aria-invalid={!ok} />
+        </span>
+        <span className="block text-xs text-muted-foreground">{t("entry.rules.eligibility.min_revenue_hint")}</span>
+        {!ok && <span className="block text-xs text-status-danger-fg">{t("entry.rules.eligibility.min_revenue_error")}</span>}
+      </label>
+      <div className="mt-3 flex justify-end">
+        <PrimaryButton onClick={save} disabled={!dirty || update.isPending}>{t("entry.rules.eligibility.save")}</PrimaryButton>
       </div>
     </Box>
   );

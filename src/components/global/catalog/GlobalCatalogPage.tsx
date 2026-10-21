@@ -160,11 +160,11 @@ export function GlobalCatalogPage() {
                             {e.name}
                             {e.archived && <span className="ml-2 inline-flex rounded-[4px] border border-status-neutral-border bg-status-neutral-bg px-1.5 py-0.5 align-middle text-xs font-medium text-status-neutral-fg">{t("global.catalog.archived")}</span>}
                           </p>
-                          <p className="mt-1 text-xs text-muted-foreground"><span className="font-medium text-foreground">{t("office.cat.acceptance")}:</span> {e.acceptance}</p>
+                          <p className="mt-1 text-xs text-muted-foreground"><span className="font-medium text-foreground">{t("office.cat.acceptance")}</span> {e.acceptance}</p>
                           <p className="mt-1 text-xs text-muted-foreground">
-                            <span className="font-medium text-foreground">{t("global.catalog.firm")}:</span> {e.owner || t("global.history.empty")}
-                            {" · "}<span className="font-medium text-foreground">{t("office.cat.applies")}:</span> {e.applies || t("global.history.empty")}
-                            {" · "}<span className="font-medium text-foreground">{t("global.catalog.window")}:</span>{" "}
+                            <span className="font-medium text-foreground">{t("global.catalog.firm")}</span> {e.owner || t("global.history.empty")}
+                            {" · "}<span className="font-medium text-foreground">{t("office.cat.applies")}</span> {e.applies || t("global.history.empty")}
+                            {" · "}<span className="font-medium text-foreground">{t("global.catalog.window")}</span>{" "}
                             {e.start_day === null && e.due_day === null
                               ? t("global.catalog.window_default")
                               : t("global.catalog.window_value", { start: e.start_day ?? "?", due: e.due_day ?? "?" })}

@@ -1,19 +1,18 @@
 // Entry flow in the mock: the NDA at booking (Strategic Mates pre-signed), the MOU as soon as the owner signs the NDA
 // (the four points he confirms), the due diligence documents after "Se hizo" (locked until the MOU is signed), the
-// owner's own NDA (he writes it, Strategic Mates signs it), the review clock and the approval. The real backend gets
-// the DocuSeal events by webhook; here signing is simulated through the same repository calls.
+// review clock and the approval. The real backend gets the DocuSeal events by webhook; here signing is simulated
+// through the same repository calls.
 import { todayIso } from "@/lib/clock";
 import { summarizeIntake, isDocsAdmin, canResend } from "@/lib/leads/onboarding";
-import { entryRules, fillOwnNdaTemplate, oaWaitingUntil, ownNdaBodyError, signBlock, validAcknowledgment } from "@/lib/leads/entry-flow";
+import { entryRules, oaWaitingUntil, signBlock, validAcknowledgment } from "@/lib/leads/entry-flow";
 import { typedSignatureDataUrl } from "@/lib/contracts/signature";
-import { DEFAULT_OWNER_NDA_TEMPLATE } from "../franchisability";
 import type {
   Business, BusinessDocument, Contract, IntakeSummary, Lead, MouAcknowledgmentPoint, Organization, OwnerEntry, Signer, SignerStatus, User, Uuid,
 } from "../types";
 import type { PlatformRules } from "../network-types";
 import type { EntryContractRule } from "../entry-types";
 import { fillContractTemplate } from "@/lib/leads/contract-rules";
-import { MOU_EXPLAINER, NDA_EXPLAINER, OWNER_NDA_EXPLAINER, mouBody, ndaBody } from "./contract-texts";
+import { MOU_EXPLAINER, NDA_EXPLAINER, mouBody, ndaBody } from "./contract-texts";
 
 export interface IntakeRecord {
   lead_id: Uuid;
@@ -80,7 +79,7 @@ export function createIntake(db: IntakeDb, newId: () => string) {
   const record = (leadId: Uuid) => db.intakes.find((i) => i.lead_id === leadId);
   const docsOf = (businessId: Uuid) => db.documents.filter((d) => d.business_id === businessId && d.area === "intake");
   const contractsOf = (businessId: Uuid) => db.contracts.filter((c) => c.business_id === businessId && c.area === "intake");
-  const contractOf = (businessId: Uuid, kind: "nda" | "mou" | "owner_nda") => contractsOf(businessId).find((c) => c.kind === kind);
+  const contractOf = (businessId: Uuid, kind: "nda" | "mou") => contractsOf(businessId).find((c) => c.kind === kind);
   const businessName = (businessId: Uuid) => db.businesses.find((b) => b.id === businessId)?.name ?? "";
   const ownerOf = (businessId: Uuid) => db.users.find((u) => u.role === "business_owner" && u.business_id === businessId);
   const signedBy = (c: Contract | undefined, party: "owner" | "sm") => !!c?.signers.some((s) => s.party === party && s.status === "signed");
@@ -107,7 +106,6 @@ export function createIntake(db: IntakeDb, newId: () => string) {
     const r = db.intakes.find((i) => i.business_id === businessId);
     if (!r) return null;
     const mou = contractOf(businessId, "mou");
-    const own = contractOf(businessId, "owner_nda");
     return {
       ...summarizeIntake({
         business_id: businessId, contracts: contractsOf(businessId), docs: docsOf(businessId),
@@ -116,7 +114,6 @@ export function createIntake(db: IntakeDb, newId: () => string) {
       mou_sent: !!mou,
       mou_signed_by_owner: signedBy(mou, "owner"),
       entry: ownerEntry(db.leads.find((l) => l.id === r.lead_id)),
-      own_nda: own ? { id: own.id, state: own.state, signed_by_sm: signedBy(own, "sm"), signed_by_owner: signedBy(own, "owner") } : null,
     };
   };
   const summaryFor = (lead: Lead): IntakeSummary | null => (lead.business_id && record(lead.id) ? summaryForBusiness(lead.business_id) : null);
@@ -222,43 +219,6 @@ export function createIntake(db: IntakeDb, newId: () => string) {
     return created ? mou : null;
   };
 
-  // ---------- The owner's own NDA (kind owner_nda) ----------
-  const ownNdaTemplate = (businessId: Uuid) =>
-    fillOwnNdaTemplate(db.rules.owner_nda_template ?? DEFAULT_OWNER_NDA_TEMPLATE, {
-      business_name: businessName(businessId), owner_name: ownerOf(businessId)?.full_name ?? "",
-    });
-
-  const checkBody = (body: string) => {
-    const error = ownNdaBodyError(body);
-    if (error) throw new Error(error);
-  };
-
-  /** The owner sends his text: Strategic Mates signs it (any SM person of the office), the owner may sign too. */
-  const createOwnNda = (businessId: Uuid, body: string) => {
-    if (!db.intakes.some((i) => i.business_id === businessId)) throw new Error("invalid_state");
-    if (contractOf(businessId, "owner_nda")) throw new Error("own_nda_exists");
-    checkBody(body);
-    const owner = ownerOf(businessId);
-    const today = todayIso();
-    const c: Contract = {
-      id: newId(), business_id: businessId, area: "intake", kind: "owner_nda", name: "Acuerdo de confidencialidad del dueño",
-      state: "sent", sent_at: today, signed_at: null, explainer: OWNER_NDA_EXPLAINER, body: body.trim(),
-      signers: [signer("owner", owner?.full_name ?? "", owner?.id ?? null, today), signer("sm", "Strategic Mates", null, today)],
-    };
-    db.contracts.push(c);
-    return c;
-  };
-
-  /** Editing is allowed only while nobody signed it. */
-  const updateOwnNda = (businessId: Uuid, body: string) => {
-    const c = contractOf(businessId, "owner_nda");
-    if (!c) throw new Error("not_found");
-    if (c.signers.some((s) => s.status === "signed")) throw new Error("invalid_state");
-    checkBody(body);
-    c.body = body.trim();
-    return c;
-  };
-
   const unlockDocuments = (businessId: Uuid) => {
     for (const d of docsOf(businessId)) d.locked_until_mou = false;
   };
@@ -350,9 +310,6 @@ export function createIntake(db: IntakeDb, newId: () => string) {
     sendMou,
     sendDocuments,
     mouOnNdaSigned,
-    ownNdaTemplate,
-    createOwnNda,
-    updateOwnNda,
     record,
     summaryFor,
     summaryForBusiness,

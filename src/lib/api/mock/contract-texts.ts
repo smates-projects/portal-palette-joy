@@ -19,15 +19,3 @@ export const MOU_EXPLAINER: ContractExplainer = explainerOf("mou");
 
 export const mouBody = (businessName: string, ownerName: string, values: Values = {}) =>
   fillContractTemplate(defaultRule("mou")!.template, { business_name: businessName, owner_name: ownerName, ...values });
-
-/** The owner's own NDA: he wrote it in the portal, Strategic Mates signs it. */
-export const OWNER_NDA_EXPLAINER: ContractExplainer = {
-  title: "Tu acuerdo de confidencialidad",
-  paragraphs: [
-    "Es el acuerdo que escribió el dueño para proteger la información de su negocio. Strategic Mates lo firma; el dueño puede firmarlo también.",
-  ],
-  bullets: [
-    "No reemplaza al NDA de Strategic Mates: se suman.",
-    "El texto es el que escribió el dueño.",
-  ],
-};

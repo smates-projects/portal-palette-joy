@@ -201,8 +201,21 @@ export interface BusinessesRepository {
   getFranchisability(businessId: Uuid): Promise<Franchisability>;
   /** Business activity, newest first. SM only. */
   listEvents(businessId: Uuid): Promise<BusinessEvent[]>;
-  /** SM only: change the assigned consultant (an SM person of the same office); logged in the activity. */
+  /** SM only: change the assigned consultant (an SM person of the same office, or anyone of SM Global); logged in the activity. */
   setConsultant(businessId: Uuid, userId: Uuid): Promise<Business>;
+  /**
+   * POST /businesses/{id}/transfer { office_id, consultant_user_id? }: "Derivar a oficina". SM Global and the admin
+   * of the source office. The consultant must belong to the target office or to SM Global (invalid_consultant);
+   * without one the business keeps its consultant only when that person is SM Global, otherwise the target office's
+   * manager takes it. same_office when nothing changes.
+   */
+  transfer(businessId: Uuid, input: TransferInput): Promise<Business>;
+}
+
+/** "Derivar a oficina": the target office and who follows the lead or business there. */
+export interface TransferInput {
+  office_id: Uuid;
+  consultant_user_id?: Uuid | null | undefined;
 }
 
 /** POST /me/calendar/connect: where to send the person to grant the calendar access. */
@@ -300,6 +313,17 @@ export interface LeadsRepository {
   move(id: Uuid, to: Exclude<LeadStage, "discarded" | "in_program">): Promise<LeadWithComputed>;
   /** Required reason. Not allowed once in program. */
   discard(id: Uuid, reason: string): Promise<LeadWithComputed>;
+  /**
+   * POST /leads/{id}/reactivate: SM Global brings back a lead the API discarded by itself (reason mou_not_signed when
+   * the meeting was held without the MOU signed). Back to the stage it was in. invalid_transition when not discarded.
+   */
+  reactivate(id: Uuid): Promise<LeadWithComputed>;
+  /**
+   * POST /leads/{id}/transfer { office_id, consultant_user_id }: "Derivar a oficina". SM Global and the admin of the
+   * source office. The consultant must be of the target office or SM Global (invalid_consultant); same_office when
+   * the office does not change. Logged as "transferred" with the office name.
+   */
+  transfer(id: Uuid, input: TransferInput): Promise<LeadWithComputed>;
   addNote(id: Uuid, body: string): Promise<LeadEvent>;
   /**
    * POST /leads/{id}/send-nda. The booking already does it by itself; SM uses it for a lead moved to Reunión by hand:
@@ -640,19 +664,6 @@ export interface DocumentsRepository {
   declineContract(contractId: Uuid, reason: string): Promise<Contract>;
   /** Owner, MOU: the four points confirmed with "Entendí" (POST /contracts/{id}/acknowledge). All four, or invalid_points. */
   acknowledge(contractId: Uuid, points: MouAcknowledgmentPoint[]): Promise<Contract>;
-  /**
-   * Owner: the text his own confidentiality agreement starts from (GET /businesses/{id}/own-nda/template), with the
-   * business and the owner already filled in. SM Global edits the template in Reglas (owner_nda_template).
-   */
-  getOwnNdaTemplate(businessId: Uuid): Promise<{ body: string }>;
-  /**
-   * Owner: "Enviar para la firma de Strategic Mates" (POST /businesses/{id}/own-nda { body }). Creates the contract of
-   * kind owner_nda; the consultant is told and signs it through the usual signer. own_nda_exists when there is one;
-   * body_required / body_too_long for the text.
-   */
-  createOwnNda(businessId: Uuid, body: string): Promise<Contract>;
-  /** Owner: changes the text while nobody signed it (PATCH /businesses/{id}/own-nda { body }). */
-  updateOwnNda(businessId: Uuid, body: string): Promise<Contract>;
 }
 
 export interface FinancialsRepository {

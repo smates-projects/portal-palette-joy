@@ -37,6 +37,7 @@ import { ENTRY_PARTY_NOTIFICATION_KINDS, type Contract, type EntryContractRule, 
 
 export { DEMO_PASSWORD } from "./session";
 import type { AreaCode, Business, BusinessEvent, CatalogAdminItem, Lead, LeadEvent, LeadWithComputed } from "../types";
+import { AUTO_DISCARD_MOU_NOT_SIGNED } from "@/lib/leads/entry-flow";
 
 const delay = <T,>(v: T, ms = 120) => new Promise<T>((r) => setTimeout(() => r(structuredClone(v)), ms));
 // Deterministic ids: the seed runs at module scope during SSR, where Cloudflare Workers disallow randomness.
@@ -296,6 +297,20 @@ export function createMockApi(): MockApi {
       tripartite: tripartiteState(opps.tripartiteOf(l)), funds: fundsMod.leadFunds(l),
     };
   };
+  /** "Derivar a oficina": SM Global, or the admin of the office the lead or business is in. */
+  const canTransferFrom = (officeId: string) => {
+    const u = me();
+    return u.role === "sm_global" || (u.role === "sm_team" && !!u.is_admin && u.organization_id === officeId);
+  };
+  /** Who can follow a lead or business of an office: its SM team, or anyone of SM Global (any office). */
+  const canFollow = (user: User, officeId: string) =>
+    user.status !== "inactive" && (user.role === "sm_global" || (user.role === "sm_team" && user.organization_id === officeId));
+  /** An SM office (or Corporate) a lead or business can be moved to. */
+  const targetOffice = (officeId: string) => {
+    const office = db.orgs.find((o) => o.id === officeId && (o.kind === "sm" || o.kind === "sm_global"));
+    if (!office) throw new Error("invalid_office");
+    return office;
+  };
   const pushLeadEvent = (e: Omit<LeadEvent, "id" | "actor_user_id" | "created_at">) => {
     const full: LeadEvent = { id: newId(), actor_user_id: currentUserId, created_at: nowIso(), ...e };
     db.leadEvents.push(full);
@@ -472,33 +487,8 @@ export function createMockApi(): MockApi {
           if (party !== "owner") throw new Error("owner_only");
           return delay(intake.acknowledge(c, points));
         },
-        getOwnNdaTemplate: async (businessId) => {
-          ownBusiness(businessId);
-          return delay({ body: intake.ownNdaTemplate(businessId) });
-        },
-        createOwnNda: async (businessId, body) => {
-          ownBusiness(businessId);
-          const c = intake.createOwnNda(businessId, body);
-          const l = leadOfBusiness(businessId);
-          if (l) {
-            pushLeadEvent({ lead_id: l.id, kind: "owner_nda_received", from: null, to: null, body: null });
-            notifyConsultant(l, "owner_nda_received", { actor_name: me().full_name });
-          }
-          return delay(c);
-        },
-        updateOwnNda: async (businessId, body) => {
-          ownBusiness(businessId);
-          return delay(intake.updateOwnNda(businessId, body));
-        },
       },
     };
-  };
-  const leadOfBusiness = (businessId: string) => db.leads.find((l) => l.business_id === businessId);
-  /** The owner's own NDA is written by the owner of that business only. */
-  const ownBusiness = (businessId: string) => {
-    const u = me();
-    if (u.role !== "business_owner") throw new Error("owner_only");
-    if (u.business_id !== businessId) throw new Error("not_found");
   };
 
   const net = createNetworkRepositories({ db, me, newId, delay });
@@ -653,8 +643,10 @@ export function createMockApi(): MockApi {
       list: async () => {
         const u = me();
         if (u.role === "sm_global") return delay(db.orgs);
-        // An office sees itself and its own firms, never other offices.
-        if (u.role === "sm_team") return delay(db.orgs.filter((o) => o.id === u.organization_id || o.parent_id === u.organization_id));
+        // An office sees itself and its own firms, never the firms of other offices. The other SM offices (and
+        // Corporate) are listed as plain names: "Derivar a oficina" needs them as targets.
+        if (u.role === "sm_team")
+          return delay(db.orgs.filter((o) => o.id === u.organization_id || o.parent_id === u.organization_id || o.kind === "sm" || o.kind === "sm_global"));
         // A franchisee sees its own unit; a Bishop sees no organization.
         if (u.role === "franchisee") return delay(db.orgs.filter((o) => o.id === u.organization_id));
         if (u.role === "bishop") return delay([]);
@@ -700,10 +692,38 @@ export function createMockApi(): MockApi {
         const b = db.businesses.find((x) => x.id === businessId);
         if (u.role !== "sm_team" || !b || b.office_id !== u.organization_id) throw new Error("sm_only");
         const target = db.users.find((x) => x.id === userId);
-        if (!target || target.role !== "sm_team" || target.organization_id !== b.office_id) throw new Error("invalid_consultant");
+        // Anyone of SM Global can follow a business of any office.
+        if (!target || !canFollow(target, b.office_id)) throw new Error("invalid_consultant");
         if (b.consultant_id !== userId) {
           db.businessEvents.push({ id: newId(), business_id: b.id, kind: "consultant_changed", actor_user_id: u.id, from_user_id: b.consultant_id, to_user_id: userId, created_at: nowIso() });
           b.consultant_id = userId;
+        }
+        return delay({ ...b });
+      },
+      transfer: async (businessId, input) => {
+        const u = me();
+        const b = db.businesses.find((x) => x.id === businessId);
+        if (!b) throw new Error("not_found");
+        if (!canTransferFrom(b.office_id)) throw new Error("admin_only");
+        const office = targetOffice(input.office_id);
+        if (office.id === b.office_id) throw new Error("same_office");
+        const current = db.users.find((x) => x.id === b.consultant_id);
+        // Without a consultant named: a Global consultant stays; otherwise the manager of the target office takes it.
+        const consultant = input.consultant_user_id
+          ? db.users.find((x) => x.id === input.consultant_user_id)
+          : current && canFollow(current, office.id) ? current : db.users.find((x) => x.id === office.manager_user_id);
+        if (!consultant || !canFollow(consultant, office.id)) throw new Error("invalid_consultant");
+        b.office_id = office.id;
+        if (b.consultant_id !== consultant.id) {
+          db.businessEvents.push({ id: newId(), business_id: b.id, kind: "consultant_changed", actor_user_id: u.id, from_user_id: b.consultant_id, to_user_id: consultant.id, created_at: nowIso() });
+          b.consultant_id = consultant.id;
+        }
+        // Its lead (the record of how it entered) moves with it.
+        const l = db.leads.find((x) => x.business_id === b.id);
+        if (l) {
+          l.office_id = office.id;
+          l.consultant_user_id = consultant.id;
+          pushLeadEvent({ lead_id: l.id, kind: "transferred", from: null, to: null, body: office.name });
         }
         return delay({ ...b });
       },
@@ -825,6 +845,35 @@ export function createMockApi(): MockApi {
         pushLeadEvent({ lead_id: id, kind: "discarded", from, to: "discarded", body: reason.trim() });
         return delay(withBooking(l));
       },
+      reactivate: async (id) => {
+        if (me().role !== "sm_global") throw new Error("global_only");
+        const l = db.leads.find((x) => x.id === id);
+        if (!l) throw new Error("not_found");
+        if (l.stage !== "discarded") throw new Error("invalid_transition");
+        const to = l.discarded_from ?? "evaluated";
+        setStage(l, to);
+        l.discarded_from = null;
+        l.discard_reason = null;
+        pushLeadEvent({ lead_id: id, kind: "reactivated", from: "discarded", to, body: null });
+        return delay(withBooking(l));
+      },
+      transfer: async (id, input) => {
+        const l = db.leads.find((x) => x.id === id);
+        if (!l) throw new Error("not_found");
+        if (!canTransferFrom(l.office_id)) throw new Error("admin_only");
+        const office = targetOffice(input.office_id);
+        if (office.id === l.office_id) throw new Error("same_office");
+        const consultant = db.users.find((x) => x.id === input.consultant_user_id);
+        if (!consultant || !canFollow(consultant, office.id)) throw new Error("invalid_consultant");
+        l.office_id = office.id;
+        l.consultant_user_id = consultant.id;
+        l.last_contact_at = nowIso();
+        // The business entering with it follows the lead.
+        const b = db.businesses.find((x) => x.id === l.business_id);
+        if (b) { b.office_id = office.id; b.consultant_id = consultant.id; }
+        pushLeadEvent({ lead_id: id, kind: "transferred", from: null, to: null, body: office.name });
+        return delay(withBooking(l));
+      },
       addNote: async (id, body) => {
         if (!body.trim()) throw new Error("note_required");
         const l = findLead(id);
@@ -859,6 +908,15 @@ export function createMockApi(): MockApi {
         const note = input.outcome === "held" ? input.note?.trim() || null : null;
         pushLeadEvent({ lead_id: l.id, kind: "meeting_outcome", from: null, to: null, body: note, outcome: input.outcome, meeting_kind: m.kind ?? "initial" });
         if (input.outcome === "held" && initial) {
+          // The MOU is signed together at the end of the meeting. A meeting held without it signed means the owner
+          // did not commit: the lead leaves the process by itself (SM Global can bring it back with reactivate).
+          if (!intake.summaryFor(l)?.mou_signed_by_owner) {
+            setStage(l, "discarded");
+            l.discarded_from = "meeting";
+            l.discard_reason = AUTO_DISCARD_MOU_NOT_SIGNED;
+            pushLeadEvent({ lead_id: l.id, kind: "discarded", from: "meeting", to: "discarded", body: AUTO_DISCARD_MOU_NOT_SIGNED });
+            return delay(withBooking(l));
+          }
           // "Se hizo" sends the documents list only (and the NDA first when the booking did not create it): the MOU
           // already exists once the owner signed the NDA.
           if (!intake.record(l.id)) openNda(l, currentUserId);

@@ -401,7 +401,7 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
                       {v.note && <p className="text-sm">{v.note}</p>}
                       {review && (
                         <blockquote className="rounded-md border-l-2 border-status-warning-border bg-status-warning-bg px-3 py-2 text-sm">
-                          <span className="font-medium text-status-warning-fg">{firstName(userName(review.author_user_id))}: </span>
+                          <span className="font-medium text-status-warning-fg">{firstName(userName(review.author_user_id))}. </span>
                           “{review.body}”
                         </blockquote>
                       )}
@@ -468,7 +468,7 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
                       </p>
                       {r.answer && (
                         <p className="mt-2 rounded-md border border-border bg-muted px-3 py-2 text-sm">
-                          <span className="text-xs font-medium text-muted-foreground">{t("taskDetail.owner_answer", { name: ownerFirst })}: </span>
+                          <span className="text-xs font-medium text-muted-foreground">{t("taskDetail.owner_answer", { name: ownerFirst })}. </span>
                           {r.answer}
                         </p>
                       )}

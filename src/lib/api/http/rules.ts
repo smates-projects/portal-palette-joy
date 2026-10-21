@@ -37,10 +37,10 @@ const toRules = (rules: PlatformRulesResponse): PlatformRules => ({
     : {}),
   // Calendar v2: absent until SM Global sets it (lib/calendar applies 09:00-18:00 America/New_York).
   ...(rules.meeting_hours !== undefined ? { meeting_hours: rules.meeting_hours } : {}),
-  // Entry help: the owner's own NDA template and the general note of the documents list (help per document travels
-  // inside intake_documents).
-  ...(rules.owner_nda_template !== undefined ? { owner_nda_template: rules.owner_nda_template } : {}),
+  // Entry help: the general note of the documents list (help per document travels inside intake_documents).
   ...(rules.intake_help_text !== undefined ? { intake_help_text: rules.intake_help_text } : {}),
+  // Eligibility (absent = lib/leads/readiness DEFAULT_ELIGIBILITY: USD 250,000 declared a year).
+  ...(rules.eligibility !== undefined ? { eligibility: rules.eligibility } : {}),
   // Configurable entry contracts: the names of Corporate and SM Square (absent = lib/leads/contract-rules defaults).
   ...(rules.sm_entities !== undefined ? { sm_entities: rules.sm_entities } : {}),
 });

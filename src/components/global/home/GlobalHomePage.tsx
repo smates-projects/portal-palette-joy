@@ -14,6 +14,7 @@ import {
   useVersions,
 } from "@/lib/api/hooks";
 import { buildNetworkMatrix } from "@/lib/tasks/sm";
+import { inOfficeScope, useOfficeScope } from "@/lib/office-scope";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MAX_HOME_ITEMS, buildNetworkAttention, buildOfficeCards, sortBottlenecks, stuckBusinesses } from "../logic";
@@ -30,6 +31,7 @@ export function GlobalHomePage() {
   const versionsQ = useVersions();
   const orgsQ = useOrganizations();
   const rulesQ = useRules();
+  const [scope] = useOfficeScope();
   const [openArea, setOpenArea] = useState<string | null>(null);
   const [showAllAttention, setShowAllAttention] = useState(false);
   const [businessId, setBusinessId] = useState<string | null>(null);
@@ -54,9 +56,11 @@ export function GlobalHomePage() {
     );
 
   const summary = summaryQ.data!;
-  const offices = officesQ.data ?? [];
-  const businesses = bizQ.data ?? [];
-  const tasks = (tasksQ.data ?? []).filter((x) => x.status !== "cancelled");
+  // "Viendo" in the header: one office, Corporate or the whole network. The counters stay network-wide.
+  const offices = (officesQ.data ?? []).filter((o) => inOfficeScope(scope, o.office.id));
+  const businesses = (bizQ.data ?? []).filter((b) => inOfficeScope(scope, b.office_id));
+  const businessIds = new Set(businesses.map((b) => b.id));
+  const tasks = (tasksQ.data ?? []).filter((x) => x.status !== "cancelled" && businessIds.has(x.business_id));
   const inProgram = businesses.filter((b) => b.status === "in_program");
   const matrix = buildNetworkMatrix(tasks, versionsQ.data ?? [], inProgram, todayIso(), rulesQ.data?.area_amber_days);
   const cards = buildOfficeCards(offices, matrix);

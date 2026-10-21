@@ -5,9 +5,9 @@ import { useCatalogAdmin, useRules, useRulesHistory, useUpdateRules, useUsers } 
 import type { IntakeDocRule, MeetingHours, PlatformRules } from "@/lib/api/network-types";
 import { IntakeDocsEditor, IntakeTextsEditor } from "./IntakeDocsEditor";
 import { MeetingHoursRules, zoneKey } from "./MeetingHoursRules";
-import { AssessmentMapEditor, EntryFlowRules, ZonesSection } from "./EntryRules";
+import { AssessmentMapEditor, EligibilityRulesSection, EntryFlowRules, ZonesSection } from "./EntryRules";
 import { ContractRulesSection, SmEntitiesSection } from "./ContractRulesSection";
-import type { SmEntities } from "@/lib/api/types";
+import type { EligibilityRules, SmEntities } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 import { formatUsd } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -61,8 +61,8 @@ export function RulesPage() {
       ? t("global.rules.days", { count: Number(value) })
       : field === "assessment_area_map"
       ? t("entry.rules.map_history")
-      : field === "owner_nda_template"
-      ? t("intake.rules.template_history")
+      : field === "eligibility"
+      ? formatUsd(Number((value as EligibilityRules).min_annual_revenue), i18n.language)
       : field === "intake_help_text"
       ? String(value)
       : field === "sm_entities"
@@ -96,7 +96,9 @@ export function RulesPage() {
       {/* Re-keyed by the stored rules so the form starts from what was just saved. */}
       <RulesEditor key={JSON.stringify(rulesQ.data)} rules={rulesQ.data} catalog={catalogQ.data ?? []} />
       <IntakeDocsEditor key={`docs-${JSON.stringify(rulesQ.data.intake_documents)}`} rules={rulesQ.data} />
-      <IntakeTextsEditor key={`texts-${rulesQ.data.intake_help_text ?? ""}-${rulesQ.data.owner_nda_template ?? ""}`} rules={rulesQ.data} />
+      <IntakeTextsEditor key={`texts-${rulesQ.data.intake_help_text ?? ""}`} rules={rulesQ.data} />
+      {/* Who can enter: the declared annual revenue (the year of operation is a hard rule of the assessment). */}
+      <EligibilityRulesSection key={`eligibility-${JSON.stringify(rulesQ.data.eligibility ?? null)}`} rules={rulesQ.data} />
       {/* Configurable entry contracts: the companies Strategic Mates signs with, then the contracts themselves. */}
       <SmEntitiesSection key={`entities-${JSON.stringify(rulesQ.data.sm_entities ?? null)}`} rules={rulesQ.data} />
       <ContractRulesSection />

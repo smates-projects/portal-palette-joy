@@ -286,28 +286,11 @@ describe("http documents", () => {
     await expect(asOwner().signContract(CONTRACT, { kind: "drawn", image_url: PNG_DATA_URL })).rejects.toThrow("acknowledgment_required");
   });
 
-  it("getOwnNdaTemplate: GET /businesses/{id}/own-nda/template answers { body }", async () => {
-    const { calls } = stubFetch(dataResponse({ body: "Acuerdo de confidencialidad\n\nEntre Vossler y Strategic Mates." }));
-    expect(await asOwner().getOwnNdaTemplate(IDS.business)).toEqual({ body: "Acuerdo de confidencialidad\n\nEntre Vossler y Strategic Mates." });
-    expect(calls[0]).toMatchObject({ method: "GET", path: `/businesses/${IDS.business}/own-nda/template` });
-  });
-
-  it("createOwnNda / updateOwnNda: POST and PATCH /businesses/{id}/own-nda { body }, answering the owner_nda contract", async () => {
-    const own = contractFixture({ kind: "owner_nda", body: "Mi acuerdo", explainer: { title: "Tu acuerdo", paragraphs: [], bullets: [] } });
-    const { calls } = stubFetch(dataResponse(own, 201), dataResponse({ ...own, body: "Mi acuerdo, corregido" }));
-    const documents = asOwner();
-    expect(await documents.createOwnNda(IDS.business, "Mi acuerdo")).toEqual(own);
-    expect((await documents.updateOwnNda(IDS.business, "Mi acuerdo, corregido")).body).toBe("Mi acuerdo, corregido");
-    expect(calls[0]).toMatchObject({ method: "POST", path: `/businesses/${IDS.business}/own-nda`, body: { body: "Mi acuerdo" } });
-    expect(calls[1]).toMatchObject({ method: "PATCH", path: `/businesses/${IDS.business}/own-nda`, body: { body: "Mi acuerdo, corregido" } });
-  });
-
-  it("createOwnNda: the API's own_nda_exists, body_required and body_too_long reach the screen as codes", async () => {
-    stubFetch(problemResponse(409, "own_nda_exists"), problemResponse(422, "body_required"), problemResponse(422, "body_too_long"));
-    const documents = asOwner();
-    await expect(documents.createOwnNda(IDS.business, "Otra vez")).rejects.toThrow("own_nda_exists");
-    await expect(documents.createOwnNda(IDS.business, " ")).rejects.toThrow("body_required");
-    await expect(documents.updateOwnNda(IDS.business, "x".repeat(30_000))).rejects.toThrow("body_too_long");
+  it("the owner's own NDA is gone: the documents adapter no longer calls /own-nda", () => {
+    const documents = asOwner() as unknown as Record<string, unknown>;
+    expect(documents["getOwnNdaTemplate"]).toBeUndefined();
+    expect(documents["createOwnNda"]).toBeUndefined();
+    expect(documents["updateOwnNda"]).toBeUndefined();
   });
 
   it("signContract: the Operating Agreement before its waiting period answers waiting_period with the date in detail", async () => {

@@ -11,11 +11,11 @@ import {
   type IntakeSummary,
   type IsoDate,
   type LeadMeeting,
+  type MeetingKind,
   type MeetingOutcome,
   type MouAcknowledgmentPoint,
   type OpportunityVisibility,
   type OwnerEntry,
-  type OwnNdaSummary,
   type PlatformRules,
 } from "@/lib/api/types";
 import { meetingHeld } from "./entry";
@@ -49,6 +49,16 @@ export const entryRules = (rules: Partial<PlatformRules> | null | undefined): En
 });
 
 // ---------- Meeting outcome ----------
+
+/**
+ * The reason the API writes when it discards a lead by itself: the meeting was held and the MOU was not signed in it.
+ * The lead detail translates it and SM Global gets "Reactivar".
+ */
+export const AUTO_DISCARD_MOU_NOT_SIGNED = "mou_not_signed";
+
+/** "Se hizo" on the first meeting with the MOU unsigned: the lead leaves the process. The screen warns before. */
+export const heldWithoutMou = (outcome: MeetingOutcome, kind: MeetingKind | null | undefined, mouSignedByOwner: boolean | null | undefined) =>
+  outcome === "held" && (kind ?? "initial") === "initial" && !mouSignedByOwner;
 
 const kindOf = (m: Pick<LeadMeeting, "kind">) => m.kind ?? "initial";
 
@@ -155,38 +165,6 @@ export function ndaStatus(c: Contract | null | undefined): NdaStatus {
   if (c.signers.length > 0 && c.signers.every((s) => s.status === "signed")) return "signed";
   return "pending";
 }
-
-// ---------- The owner's own NDA (kind owner_nda) ----------
-
-/** Longest text the API accepts for the owner's own NDA (body_too_long beyond it). */
-export const OWN_NDA_MAX_LENGTH = 20_000;
-
-/**
- * Where the owner's own NDA stands. none: he did not write one; waiting_sm: sent, Strategic Mates has not signed;
- * signed_by_sm: Strategic Mates signed (the owner may sign too); signed_by_both.
- */
-export type OwnNdaView = "none" | "waiting_sm" | "signed_by_sm" | "signed_by_both";
-
-export function ownNdaView(own: Pick<OwnNdaSummary, "signed_by_sm" | "signed_by_owner"> | null | undefined): OwnNdaView {
-  if (!own) return "none";
-  if (!own.signed_by_sm) return "waiting_sm";
-  return own.signed_by_owner ? "signed_by_both" : "signed_by_sm";
-}
-
-/** The owner edits his text only while nobody signed it. */
-export const ownNdaEditable = (own: Pick<OwnNdaSummary, "signed_by_sm" | "signed_by_owner"> | null | undefined) =>
-  !!own && !own.signed_by_sm && !own.signed_by_owner;
-
-/** body_required / body_too_long, or null: the same check the API makes on POST and PATCH /own-nda. */
-export function ownNdaBodyError(body: string): "body_required" | "body_too_long" | null {
-  if (!body.trim()) return "body_required";
-  if (body.length > OWN_NDA_MAX_LENGTH) return "body_too_long";
-  return null;
-}
-
-/** Fills {{business_name}} and {{owner_name}} in the template (what GET /own-nda/template answers). */
-export const fillOwnNdaTemplate = (template: string, values: { business_name: string; owner_name: string }) =>
-  template.replace(/\{\{\s*business_name\s*\}\}/g, values.business_name).replace(/\{\{\s*owner_name\s*\}\}/g, values.owner_name);
 
 // ---------- Documents ----------
 

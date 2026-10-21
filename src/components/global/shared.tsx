@@ -7,6 +7,7 @@ import type { OfficeStatus } from "@/lib/api/types";
 import { formatDateTime } from "@/lib/format";
 import type { Health } from "@/lib/tasks/owner";
 import { BusinessFile } from "@/components/business/BusinessFile";
+import { TransferBusinessButton } from "@/components/office/BusinessesPage";
 import { buildNetworkMatrix } from "@/lib/tasks/sm";
 import { cn } from "@/lib/utils";
 import { DOT } from "@/components/office/shared";
@@ -126,11 +127,13 @@ export function BusinessSheet({ businessId, onClose }: { businessId: string | nu
           </div>
           {inProgram && row && <div className="mt-3"><HealthBadge health={row.health} /></div>}
           <p className="mt-3 rounded-[4px] border border-border bg-muted px-2 py-1 text-xs text-muted-foreground">{t("global.business.read_only")}</p>
+          {/* The one change SM Global makes here: "Derivar a oficina". */}
+          <div className="mt-3"><TransferBusinessButton business={business} /></div>
         </header>
 
         {/* Ficha del negocio (same five parts the office sees), read only. */}
         <div className="px-6 py-4">
-          <p className="mb-4 text-xs text-muted-foreground">{t("global.business.office")}: <span className="font-medium text-foreground">{office}</span></p>
+          <p className="mb-4 text-xs text-muted-foreground">{t("global.business.office")} <span className="font-medium text-foreground">{office}</span></p>
           <BusinessFile businessId={business.id} variant="sm" />
         </div>
 

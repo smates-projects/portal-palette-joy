@@ -174,7 +174,7 @@ export function NetworkPage({ businessId, officeId, readOnly = false, onOpenBusi
                       </td>
                       {row.cells.map((c) => {
                         const label = t(`sm.health.${c.health}`);
-                        const cellLabel = `${row.business.name} · ${t(`areas.${c.area}`)}: ${label}`;
+                        const cellLabel = `${row.business.name} · ${t(`areas.${c.area}`)}, ${label}`;
                         return (
                           <td key={c.area} className="px-2 py-2.5 text-center">
                             {c.health === "grey" ? (

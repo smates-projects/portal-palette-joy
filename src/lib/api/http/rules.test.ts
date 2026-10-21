@@ -55,17 +55,32 @@ describe("http rules", () => {
     expect(result.program_amount).toBeUndefined();
   });
 
-  it("get: the owner's NDA template, the documents note and the help of each document come through", async () => {
+  it("get: the eligibility rule, the documents note and the help of each document come through", async () => {
     const help = { what: "Muestra que tu empresa existe.", counts: ["Certificado de Sunbiz"], tip: "Sirve una foto." };
     const withHelp = apiRules({
-      owner_nda_template: "Entre {{business_name}} y Strategic Mates.",
+      eligibility: { min_annual_revenue: 300_000 },
       intake_help_text: "No hace falta un documento armado.",
       intake_documents: [{ ...apiRules().intake_documents[0], help }],
     });
     stubFetch(dataResponse(withHelp));
     const result = await setup().rules.get();
-    expect(result).toMatchObject({ owner_nda_template: "Entre {{business_name}} y Strategic Mates.", intake_help_text: "No hace falta un documento armado." });
+    expect(result).toMatchObject({ eligibility: { min_annual_revenue: 300_000 }, intake_help_text: "No hace falta un documento armado." });
     expect(result.intake_documents[0]?.help).toEqual(help);
+  });
+
+  it("get: without the eligibility rule the field stays absent (the default applies)", async () => {
+    stubFetch(dataResponse(apiRules()));
+    expect(await setup().rules.get()).not.toHaveProperty("eligibility");
+  });
+
+  it("update: PATCH /rules carries eligibility.min_annual_revenue", async () => {
+    const { calls } = stubFetch(
+      dataResponse(apiRules(), 200, { ETag: '"3"' }),
+      dataResponse(apiRules({ eligibility: { min_annual_revenue: 300_000 } }), 200, { ETag: '"4"' }),
+    );
+    const result = await setup().rules.update({ eligibility: { min_annual_revenue: 300_000 } }, null);
+    expect(result.eligibility).toEqual({ min_annual_revenue: 300_000 });
+    expect(calls[1]).toMatchObject({ method: "PATCH", path: "/rules", body: { eligibility: { min_annual_revenue: 300_000 }, note: null } });
   });
 
   it("update: reads the rules for the ETag, then PATCH /rules with If-Match, the changes and the note", async () => {

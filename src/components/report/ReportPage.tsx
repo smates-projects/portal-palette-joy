@@ -151,7 +151,7 @@ export function ReportPage() {
                     <button
                       key={s}
                       onClick={() => go({ business: c.business.id, status: s })}
-                      title={`${t(`status.${s}`)}: ${c.counts[s]}`}
+                      title={`${t(`status.${s}`)}, ${c.counts[s]}`}
                       style={{ width: `${(c.counts[s] / c.total) * 100}%` }}
                       className={cn("grid place-items-center border-r border-surface text-[10px] font-medium tabular-nums last:border-r-0 hover:brightness-95", TASK_STATUS_LOOK[s].solid, TASK_STATUS_LOOK[s].onSolid)}
                     >

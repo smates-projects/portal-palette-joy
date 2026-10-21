@@ -39,15 +39,37 @@ describe("locales", () => {
     expect(missing(en)).toEqual([]);
   });
 
-  it("the MOU ready and the owner's own NDA have their texts; the own-NDA review kinds are gone", () => {
+  it("the MOU ready has its texts; every text of the owner's own NDA is gone", () => {
     for (const locale of [es, en] as { notifications: Record<string, unknown> }[]) {
       expect(locale.notifications["kind_mou_ready"]).toEqual(expect.any(String));
       expect(locale.notifications["pref_mou_ready"]).toEqual(expect.any(String));
-      expect(locale.notifications["kind_owner_nda_received"]).toContain("{{owner}}");
-      expect(locale.notifications["pref_owner_nda_received"]).toEqual(expect.any(String));
-      expect(Object.keys(locale.notifications).filter((k) => k.includes("own_nda_"))).toEqual([]);
+      expect(Object.keys(locale.notifications).filter((k) => k.includes("own_nda") || k.includes("owner_nda"))).toEqual([]);
+      expect(keysOf(locale).filter((k) => k.includes("own_nda") || k.includes("owner_nda"))).toEqual([]);
     }
-    expect(NOTIFICATION_KINDS).toEqual(expect.arrayContaining(["mou_ready", "owner_nda_received"]));
+    expect(NOTIFICATION_KINDS).toContain("mou_ready");
+    expect(NOTIFICATION_KINDS).not.toContain("owner_nda_received");
+  });
+
+  it("client-facing texts carry no colon and no em or en dash (times like 10:00 and URLs excepted)", () => {
+    const offending = (locale: unknown) =>
+      textsOf(locale).filter((text) => /[—–]/.test(text) || /:/.test(text.replace(/\d{1,2}:\d{2}/g, "").replace(/https?:\/\/\S+/g, "")));
+    expect(offending(es)).toEqual([]);
+    expect(offending(en)).toEqual([]);
+  });
+
+  it("the MOU explainer and the meeting warning say it in the agreed words", () => {
+    expect(es.intake.owner.mou.when).toBe("Puedes leerlo ahora. Lo firman juntos al final de la reunión");
+    expect(es.entry.outcome.mou_warning_body).toBe("El MOU no está firmado. Si marcas que la reunión se hizo, el prospecto sale del proceso");
+    expect(es.entry.outcome.mou_warning_reschedule).toBe("Reagendar");
+    expect(es.entry.outcome.mou_warning_confirm).toBe("Confirmar igual");
+    expect(es.pipeline.actions.reactivate).toBe("Reactivar");
+    expect(es.pipeline.actions.transfer).toBe("Derivar a oficina");
+    expect(es.topbar.viewing).toBe("Viendo");
+    expect(es.entry.rules.eligibility.min_revenue).toBe("Facturación anual mínima declarada");
+  });
+
+  it("Spanish says aquí, never acá", () => {
+    expect(textsOf(es).filter((text) => /\bacá\b/i.test(text))).toEqual([]);
   });
 
   it("the signed contract names the contract and the business from the payload", () => {

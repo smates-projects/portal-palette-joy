@@ -146,6 +146,26 @@ describe("http businesses", () => {
     expect(client.etags.get(`/businesses/${IDS.business}`)).toBe('"5"');
   });
 
+  it("transfer: reads the business for its ETag, then POST /transfer with If-Match; the consultant travels only when given", async () => {
+    const moved = businessFixture({ office_id: IDS.zone, consultant_id: NICOLAS });
+    const { calls } = stubFetch(
+      dataResponse(businessFixture(), 200, { ETag: '"3"' }),
+      dataResponse(moved, 200, { ETag: '"4"' }),
+      dataResponse(moved, 200, { ETag: '"5"' }),
+      problemResponse(409, "same_office"),
+    );
+    const { businesses, client } = setup();
+    expect(await businesses.transfer(IDS.business, { office_id: IDS.zone, consultant_user_id: NICOLAS })).toEqual(moved);
+    expect(calls[0]).toMatchObject({ method: "GET", path: `/businesses/${IDS.business}` });
+    expect(calls[1]).toMatchObject({ method: "POST", path: `/businesses/${IDS.business}/transfer`, body: { office_id: IDS.zone, consultant_user_id: NICOLAS } });
+    expect(calls[1]?.headers["If-Match"]).toBe('"3"');
+    await businesses.transfer(IDS.business, { office_id: IDS.zone });
+    expect(calls[2]).toMatchObject({ body: { office_id: IDS.zone } });
+    expect(calls[2]?.headers["If-Match"]).toBe('"4"');
+    expect(client.etags.get(`/businesses/${IDS.business}`)).toBe('"5"');
+    await expect(businesses.transfer(IDS.business, { office_id: IDS.office })).rejects.toThrow("same_office");
+  });
+
   it("setConsultant: a stale version is precondition_failed", async () => {
     stubFetch(problemResponse(412, "precondition_failed"));
     const { businesses, client } = setup();

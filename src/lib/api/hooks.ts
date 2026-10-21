@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./index";
-import type { DocumentUpload, SetBrandInput, SubmitVersionInput } from "./repositories";
+import type { DocumentUpload, SetBrandInput, SubmitVersionInput, TransferInput } from "./repositories";
 import type {
   AvailabilityInput,
   RescheduleMeetingInput,
@@ -58,7 +58,7 @@ export const useFranchisabilityMany = (businessIds: string[]) =>
 /** Active catalog entries. SM Global admin screens use useCatalogAdmin (archived included). */
 export const useCatalog = () => useQuery({ queryKey: ["catalog", "active"], queryFn: () => api.catalog.list() });
 export const useOpenOwnerRequests = () => useQuery({ queryKey: ["tasks", "owner-requests"], queryFn: api.tasks.listOpenOwnerRequests });
-export const useBusinesses = () => useQuery({ queryKey: queryKeys.businesses, queryFn: api.businesses.list });
+export const useBusinesses = (enabled = true) => useQuery({ queryKey: queryKeys.businesses, queryFn: api.businesses.list, enabled });
 /** True when the current user owns a business that already finished the program and franchises. Decides the owner menu and home. */
 export function useIsFranchisor(): boolean {
   const me = useCurrentUser().data;
@@ -311,12 +311,13 @@ export const useCancelTasks = () => useTaskMutation((v: { ids: string[]; reason:
 
 // ---------- Pipeline (SM) ----------
 /** LeadWithComputed[]. SM team: its office. SM Global: every office (read only), or one office with officeId. */
-export const useLeads = (officeId?: string) =>
+export const useLeads = (officeId?: string, enabled = true) =>
   useQuery({
     queryKey: ["leads", "list", officeId ?? "all"],
     queryFn: () => api.leads.list(officeId ? { office_id: officeId } : undefined),
     // Changing the office filter keeps the previous board on screen until the new one arrives.
     placeholderData: keepPreviousData,
+    enabled,
   });
 export const useLeadDetail = (id: string | undefined) =>
   useQuery({ queryKey: ["leads", "detail", id], queryFn: () => api.leads.get(id!), enabled: !!id });
@@ -327,6 +328,13 @@ function useLeadMutation<V, R>(fn: (v: V) => Promise<R>) {
 export const useMoveLead = () =>
   useLeadMutation((v: { id: string; to: "evaluated" | "meeting" | "documents" | "accepted" }) => api.leads.move(v.id, v.to));
 export const useDiscardLead = () => useLeadMutation((v: { id: string; reason: string }) => api.leads.discard(v.id, v.reason));
+/** SM Global: "Reactivar" a lead the API discarded by itself (meeting held without the MOU signed). */
+export const useReactivateLead = () => useNetworkMutation((id: string) => api.leads.reactivate(id), ["leads", "notifications"]);
+/** "Derivar a oficina": the lead (and its business entering) moves to another office with who follows it there. */
+export const useTransferLead = () =>
+  useNetworkMutation((v: { id: string; input: TransferInput }) => api.leads.transfer(v.id, v.input), ["leads", "businesses", "network", "notifications"]);
+export const useTransferBusiness = () =>
+  useNetworkMutation((v: { businessId: string; input: TransferInput }) => api.businesses.transfer(v.businessId, v.input), ["leads", "businesses", "tasks", "network", "notifications"]);
 export const useAddLeadNote = () => useLeadMutation((v: { id: string; body: string }) => api.leads.addNote(v.id, v.body));
 /** "Agregar negocio": a lead added by hand, in Evaluado with source "manual" and no result. */
 export const useCreateManualLead = () => useLeadMutation((input: ManualLeadInput) => api.leads.createManual(input));
@@ -422,12 +430,6 @@ export const useSendMou = () => useIntakeMutation((id: string) => api.leads.send
 export const usePresentToBishops = () => useIntakeMutation((v: { id: string; bishopUserIds: string[] }) => api.leads.presentToBishops(v.id, v.bishopUserIds));
 /** Owner, MOU: the four points confirmed with "Entendí". */
 export const useAcknowledgeMou = () => useIntakeMutation((v: { contractId: string; points: import("./types").MouAcknowledgmentPoint[] }) => api.documents.acknowledge(v.contractId, v.points));
-/** Owner: the text "Escribir mi acuerdo" starts from, read only when the editor opens. */
-export const useOwnNdaTemplate = (businessId: string | null | undefined, enabled: boolean) =>
-  useQuery({ queryKey: ["documents", "own-nda-template", businessId], queryFn: () => api.documents.getOwnNdaTemplate(businessId!), enabled: enabled && !!businessId, staleTime: Infinity });
-/** Owner: "Enviar para la firma de Strategic Mates", and the edits while nobody signed it. */
-export const useCreateOwnNda = () => useIntakeMutation((v: { businessId: string; body: string }) => api.documents.createOwnNda(v.businessId, v.body));
-export const useUpdateOwnNda = () => useIntakeMutation((v: { businessId: string; body: string }) => api.documents.updateOwnNda(v.businessId, v.body));
 export const useAcceptDocument = () => useIntakeMutation((v: { id: string; documentId: string; fact: string }) => api.leads.acceptDocument(v.id, v.documentId, v.fact));
 export const useRequestDocument = () => useIntakeMutation((v: { id: string; documentId: string; comment: string }) => api.leads.requestDocument(v.id, v.documentId, v.comment));
 export const useResendContract = () => useIntakeMutation((v: { id: string; contractId: string }) => api.leads.resendContract(v.id, v.contractId));

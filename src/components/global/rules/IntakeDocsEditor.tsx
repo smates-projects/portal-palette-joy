@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useUpdateRules } from "@/lib/api/hooks";
 import type { IntakeDocRule, IntakeDocumentHelp, PlatformRules } from "@/lib/api/network-types";
-import { OWN_NDA_MAX_LENGTH, cleanDocumentHelp, ownNdaBodyError } from "@/lib/leads/entry-flow";
+import { cleanDocumentHelp } from "@/lib/leads/entry-flow";
 import { cn } from "@/lib/utils";
 import { PrimaryButton } from "@/components/tasks/detail/dialogs";
 
@@ -87,24 +87,17 @@ export function IntakeDocsEditor({ rules }: { rules: PlatformRules }) {
   );
 }
 
-/**
- * SM Global: the note at the top of the entry documents list (intake_help_text) and the text the owner's own NDA
- * starts from (owner_nda_template, with {{business_name}} and {{owner_name}}). Applies from now on.
- */
+/** SM Global: the note at the top of the entry documents list (intake_help_text). Applies from now on. */
 export function IntakeTextsEditor({ rules }: { rules: PlatformRules }) {
   const { t } = useTranslation();
   const update = useUpdateRules();
-  const initial = { help: rules.intake_help_text ?? "", template: rules.owner_nda_template ?? "" };
-  const [help, setHelpText] = useState(initial.help);
-  const [template, setTemplate] = useState(initial.template);
-  const [tried, setTried] = useState(false);
-  const templateError = ownNdaBodyError(template);
-  const dirty = help !== initial.help || template !== initial.template;
+  const initial = rules.intake_help_text ?? "";
+  const [help, setHelpText] = useState(initial);
+  const dirty = help !== initial;
   const save = () => {
-    setTried(true);
-    if (templateError || !dirty) return;
-    const patch = { intake_help_text: help.trim(), owner_nda_template: template.trim() };
-    const prev = { intake_help_text: rules.intake_help_text, owner_nda_template: rules.owner_nda_template };
+    if (!dirty) return;
+    const patch = { intake_help_text: help.trim() };
+    const prev = { intake_help_text: rules.intake_help_text };
     update.mutate({ patch }, {
       onSuccess: () => toast.success(t("intake.rules.texts_saved"), { action: { label: t("global.undo"), onClick: () => update.mutate({ patch: prev }) } }),
       onError: () => toast.error(t("global.t_error")),
@@ -116,15 +109,8 @@ export function IntakeTextsEditor({ rules }: { rules: PlatformRules }) {
       <label className="mt-3 block space-y-1">
         <span className="text-sm font-medium">{t("intake.rules.help_text")}</span>
         <span className="block text-xs text-muted-foreground">{t("intake.rules.help_text_hint")}</span>
-        <textarea rows={2} value={help} onChange={(e) => setHelpText(e.target.value)} className={areaCls} />
+        <textarea rows={4} value={help} onChange={(e) => setHelpText(e.target.value)} className={areaCls} />
       </label>
-      <label className="mt-4 block space-y-1">
-        <span className="text-sm font-medium">{t("intake.rules.template")}</span>
-        <span className="block text-xs text-muted-foreground">{t("intake.rules.template_hint", { business: "{{business_name}}", owner: "{{owner_name}}" })}</span>
-        <textarea rows={14} value={template} maxLength={OWN_NDA_MAX_LENGTH} onChange={(e) => setTemplate(e.target.value)}
-          aria-invalid={tried && !!templateError} className={cn(areaCls, tried && templateError && "border-status-danger-fg")} />
-      </label>
-      {tried && templateError && <p role="alert" className="mt-1 text-xs text-status-danger-fg">{t(`intake.owner.own_nda.errors.${templateError}`)}</p>}
       <div className="mt-3 flex justify-end">
         <PrimaryButton onClick={save} disabled={!dirty || update.isPending}>{t("intake.rules.texts_save")}</PrimaryButton>
       </div>

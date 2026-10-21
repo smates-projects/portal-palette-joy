@@ -512,10 +512,9 @@ export const NOTIFICATION_KINDS = [
   "calendar_disconnected",
   // Brand (API): to whoever uploaded the logo, the file failed verification and left the brand.
   "brand_logo_rejected",
-  // Revised entry. To the consultant: a meeting ended and nobody answered "¿Se hizo?"; the owner sent his own NDA to
-  // sign. To the owner: the MOU is ready (it exists once he signed the NDA).
+  // Revised entry. To the consultant: a meeting ended and nobody answered "¿Se hizo?". To the owner: the MOU is ready
+  // (it exists once he signed the NDA).
   "meeting_outcome_pending",
-  "owner_nda_received",
   "mou_ready",
   // To a Bishop: SM presented him an approved business (opens his opportunities).
   "opportunity_presented",
@@ -553,7 +552,7 @@ export const API_ONLY_NOTIFICATION_KINDS: readonly NotificationKind[] = [
 ];
 /** Kinds about a lead of the Embudo. Only the SM team of the lead's office gets them. */
 export const LEAD_NOTIFICATION_KINDS: readonly NotificationKind[] = [
-  "bishop_accepted", "funds_reported", "lead_assessment", "meeting_booked", "meeting_outcome_pending", "owner_nda_received",
+  "bishop_accepted", "funds_reported", "lead_assessment", "meeting_booked", "meeting_outcome_pending",
 ];
 /** Kinds only a business owner gets (about his own entry). */
 export const OWNER_NOTIFICATION_KINDS: readonly NotificationKind[] = ["mou_ready"];
@@ -862,15 +861,6 @@ export interface IntakeSummary {
   mou_signed_by_owner?: boolean | undefined;
   /** Meetings and booking link for the owner's "Tu ingreso" (the owner never reads the lead). */
   entry?: OwnerEntry | null | undefined;
-  /** The owner's own confidentiality agreement (kind owner_nda), or null when he did not write one. */
-  own_nda?: OwnNdaSummary | null | undefined;
-}
-
-export interface OwnNdaSummary {
-  id: Uuid;
-  state: import("./network-types").ContractState;
-  signed_by_sm: boolean;
-  signed_by_owner: boolean;
 }
 
 export type LeadEventKind =
@@ -882,10 +872,12 @@ export type LeadEventKind =
   | "created_manual" | "assessment_sent"
   // Automatic entry (actor null): summary email sent, meeting booked by the owner. meeting_note: the consultant's note after it.
   | "summary_sent" | "meeting_booked" | "meeting_note"
-  // Revised entry: outcome of a meeting, MOU sent, the owner's own NDA received, presented to Bishops, expansion
-  // meeting booked.
-  | "meeting_outcome" | "mou_sent" | "owner_nda_received"
+  // Revised entry: outcome of a meeting, MOU sent, presented to Bishops, expansion meeting booked.
+  | "meeting_outcome" | "mou_sent"
   | "presented_to_bishops" | "expansion_booked"
+  // Moved to another office ("Derivar a oficina"): body carries the office name. Reactivated by SM Global after an
+  // automatic discard.
+  | "transferred" | "reactivated"
   // Configurable entry contracts: a rule created a contract; the validation saved or closed.
   | "contract_created" | "validation_saved" | "validation_closed";
 

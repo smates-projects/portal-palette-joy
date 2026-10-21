@@ -3,10 +3,12 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Mail, MapPin, Phone, X } from "lucide-react";
 import {
-  useAddLeadNote, useApproveDocuments, useBusinessFunds, useConfirmProgramStart, useCurrentUser, useLeadDetail, useLeadIntake, useRecordFundPayment,
-  useRejectDocuments, useRemoveFundPayment, useRules, useSendTripartite, useSetMeetingOutcome, useUsers,
+  useAddLeadNote, useApproveDocuments, useBusinessFunds, useConfirmProgramStart, useCurrentUser, useLeadDetail, useLeadIntake, useOrganizations,
+  useReactivateLead, useRecordFundPayment, useRejectDocuments, useRemoveFundPayment, useRules, useSendTripartite, useSetMeetingOutcome, useTransferLead, useUsers,
 } from "@/lib/api/hooks";
-import { entryRules, oaSendBlock } from "@/lib/leads/entry-flow";
+import { AUTO_DISCARD_MOU_NOT_SIGNED, entryRules, heldWithoutMou, oaSendBlock } from "@/lib/leads/entry-flow";
+import { MouUnsignedDialog } from "./LeadDialogs";
+import { TransferDialog, canTransfer } from "./TransferDialog";
 import { meetingIdOf } from "@/lib/leads/meetings";
 import { leadOwnerOf, scheduleRoute } from "@/lib/leads/scheduling";
 import type { LeadMeeting, MeetingOutcome } from "@/lib/api/types";
@@ -60,8 +62,14 @@ export function LeadDetail(props: {
   const [recording, setRecording] = useState(false);
   const [starting, setStarting] = useState(false);
   const [noting, setNoting] = useState<LeadMeeting | null>(null);
+  // "Se hizo" with the MOU unsigned: the warning before the answer goes out.
+  const [warning, setWarning] = useState<LeadMeeting | null>(null);
   const [scheduling, setScheduling] = useState(false);
+  const [transferring, setTransferring] = useState(false);
   const outcome = useSetMeetingOutcome();
+  const reactivate = useReactivateLead();
+  const transfer = useTransferLead();
+  const orgsQ = useOrganizations();
   const rules = entryRules(useRules().data);
   const businessIdForFunds = q.data?.lead.funds ? q.data.lead.business_id ?? undefined : undefined;
   const fundsQ = useBusinessFunds(businessIdForFunds);
@@ -103,24 +111,43 @@ export function LeadDetail(props: {
   const fail = (e?: unknown) =>
     toast.error(e instanceof Error && ["outcome_already_set", "expansion_meeting_required", "invalid_transition"].includes(e.message)
       ? t(`entry.errors.${e.message}`) : t("pipeline.t_error"));
+  const mouSigned = !!lead.intake?.mou_signed_by_owner;
   /** "Se hizo" asks for the note first; the other two answers go at once. */
   const answer = (m: LeadMeeting, value: MeetingOutcome, note?: string) => {
     const meetingId = meetingIdOf(m);
     // Never a silent no-op: without the meeting's id the API cannot take the answer, so say so.
     if (!meetingId) {
       setNoting(null);
+      setWarning(null);
       toast.error(t("entry.errors.meeting_id_missing"));
       return;
     }
+    const discards = heldWithoutMou(value, m.kind, mouSigned);
     outcome.mutate({ leadId: lead.id, meetingId, input: { outcome: value, note: note ?? null } }, {
-      onSuccess: () => { setNoting(null); toast.success(t(`entry.outcome.t_${value}${m.kind === "expansion" ? "_expansion" : ""}`, { name: lead.business.name })); },
+      onSuccess: (after) => {
+        setNoting(null);
+        setWarning(null);
+        const key = discards || after.stage === "discarded" ? "entry.outcome.t_held_discarded" : `entry.outcome.t_${value}${m.kind === "expansion" ? "_expansion" : ""}`;
+        toast.success(t(key, { name: lead.business.name }));
+      },
       onError: fail,
     });
   };
   const onOutcome = (m: LeadMeeting, value: MeetingOutcome) => {
     if (!meetingIdOf(m)) return answer(m, value);
+    // The MOU is signed together at the end of the meeting: "Se hizo" without it makes the lead leave the process.
+    if (heldWithoutMou(value, m.kind, mouSigned)) return setWarning(m);
     return value === "held" ? setNoting(m) : answer(m, value);
   };
+  const globalReader = meQ.data?.role === "sm_global";
+  const autoDiscarded = lead.stage === "discarded" && lead.discard_reason === AUTO_DISCARD_MOU_NOT_SIGNED;
+  const onReactivate = () =>
+    reactivate.mutate(lead.id, {
+      onSuccess: (back) => toast.success(t("pipeline.t_reactivated", { name: lead.business.name, to: t(`pipeline.stages.${back.stage}`) })),
+      onError: fail,
+    });
+  const transferable = canTransfer(meQ.data, lead.office_id) && lead.stage !== "discarded";
+  const officeName = orgsQ.data?.find((o) => o.id === lead.office_id)?.name ?? "";
   const runPrimary = () => {
     if (action === "review_docs") return document.getElementById("intake-docs")?.scrollIntoView({ behavior: "smooth", block: "start" });
     if (action === "approve_docs")
@@ -179,8 +206,13 @@ export function LeadDetail(props: {
     return t(`pipeline.events.${e.kind}`, {
       actor, owner: lead.contact.name, from: stage(e.from), to: stage(e.to), date: e.signed_on ? formatDate(e.signed_on, lng) : "",
       outcome: e.outcome ? t(`entry.outcome.${e.outcome}`) : "",
+      // transferred: the office name travels in the body ("Derivado a SM Florida por Melany").
+      office: e.kind === "transferred" ? e.body ?? "" : "",
     });
   };
+  /** The automatic discard carries a code, not a free text: it reads in plain words. */
+  const discardText = (reason: string) =>
+    reason === AUTO_DISCARD_MOU_NOT_SIGNED ? t("pipeline.detail.discard_mou_not_signed") : t("pipeline.detail.discard_reason", { reason });
   const submitNote = () => {
     if (!note.trim()) return;
     addNote.mutate({ id: lead.id, body: note }, {
@@ -197,7 +229,7 @@ export function LeadDetail(props: {
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <StageBadge stage={lead.stage} />
-              <span className="text-xs text-muted-foreground">{t("pipeline.consultant")}: {consultant?.full_name}</span>
+              <span className="text-xs text-muted-foreground">{t("pipeline.consultant")} {consultant?.full_name}{officeName ? ` · ${officeName}` : ""}</span>
             </div>
             <h2 className="mt-2 text-xl font-semibold tracking-tight">{lead.business.name}</h2>
             <p className="mt-0.5 text-sm text-muted-foreground">
@@ -219,7 +251,19 @@ export function LeadDetail(props: {
           <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{lead.contact.city}, {lead.contact.state}</span>
         </div>
         {lead.stage === "discarded" && lead.discard_reason && (
-          <p className="mt-3 rounded-md border border-border bg-muted px-3 py-2 text-sm">{t("pipeline.detail.discard_reason", { reason: lead.discard_reason })}</p>
+          <p className="mt-3 rounded-md border border-border bg-muted px-3 py-2 text-sm">{discardText(lead.discard_reason)}</p>
+        )}
+        {/* SM Global brings back a lead the API discarded by itself; the office cannot. */}
+        {globalReader && autoDiscarded && (
+          <div className="mt-3">
+            <PrimaryButton onClick={onReactivate} disabled={reactivate.isPending}>{t("pipeline.actions.reactivate")}</PrimaryButton>
+          </div>
+        )}
+        {/* "Derivar a oficina": SM Global from its read-only view, the office admin from the embudo. */}
+        {transferable && (
+          <div className="mt-3">
+            <button onClick={() => setTransferring(true)} className="text-sm text-link hover:underline">{t("pipeline.actions.transfer")}</button>
+          </div>
         )}
         {props.readOnly && !showGlobalApprove ? (
           <p className="mt-4 rounded-[4px] border border-border bg-muted px-2 py-1 text-xs text-muted-foreground">{t("pipeline.detail.read_only")}</p>
@@ -298,7 +342,7 @@ export function LeadDetail(props: {
             <Item
               label={t("pipeline.industry")}
               value={lead.business.industry === "other_related" && lead.business.activity_other
-                ? `${t("pipeline.industries.other_related")}: ${lead.business.activity_other}`
+                ? `${t("pipeline.industries.other_related")}, ${lead.business.activity_other}`
                 : t(`pipeline.industries.${lead.business.industry}`)}
             />
             <Item label={t("pipeline.detail.activity")} value={lead.business.activity} />
@@ -365,6 +409,29 @@ export function LeadDetail(props: {
           pending={outcome.isPending}
           onClose={() => setNoting(null)}
           onConfirm={(body) => answer(noting, "held", body)}
+        />
+      )}
+      {warning && (
+        <MouUnsignedDialog
+          name={lead.business.name}
+          pending={outcome.isPending}
+          onClose={() => setWarning(null)}
+          onReschedule={() => answer(warning, "reschedule")}
+          onConfirm={() => answer(warning, "held")}
+        />
+      )}
+      {transferring && (
+        <TransferDialog
+          name={lead.business.name}
+          currentOfficeId={lead.office_id}
+          pending={transfer.isPending}
+          onClose={() => setTransferring(false)}
+          onConfirm={(input, labels) =>
+            transfer.mutate({ id: lead.id, input }, {
+              onSuccess: () => { setTransferring(false); toast.success(t("pipeline.transfer.t_done", { name: lead.business.name, office: labels.office, consultant: labels.consultant })); },
+              onError: (e) => toast.error(e instanceof Error && ["admin_only", "invalid_consultant", "same_office"].includes(e.message) ? t(`pipeline.transfer.errors.${e.message}`) : t("pipeline.t_error")),
+            })
+          }
         />
       )}
       {rejecting && (
