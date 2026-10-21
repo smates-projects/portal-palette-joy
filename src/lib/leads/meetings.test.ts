@@ -108,6 +108,8 @@ describe("entryMeetings: one selector for the meeting ids", () => {
       starts_at: "2026-10-22T15:00:00Z",
     };
     expect(entryMeetings({ meetings: [old, fresh] }).initial?.id).toBe("new");
+    // The owner's entry still naming the old one as `meeting`: the newer booking of the list wins.
+    expect(entryMeetings({ meeting: { ...old, id: undefined }, meetings: [old, fresh] }).initial).toMatchObject({ id: "new", outcome: null, starts_at: "2026-10-22T15:00:00Z" });
   });
 
   it("no id anywhere: the selector says so (null), the screen shows an error instead of doing nothing", () => {

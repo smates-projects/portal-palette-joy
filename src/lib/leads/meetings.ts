@@ -75,7 +75,10 @@ function pick(src: MeetingSources, kind: MeetingKind): LeadMeeting | null {
         ? src.meeting
         : null;
   const newest = [...list].sort((a, b) => recency(b) - recency(a))[0];
-  const base = explicit ?? newest;
+  // After a reschedule the answer may still carry the old meeting as `meeting`: a newer booking in the list wins, so
+  // "Tu reunión" shows the new date instead of "Reunión hecha el <old date>".
+  const newerInList = !!explicit && !!newest && !sameInstant(newest.starts_at, explicit.starts_at) && recency(newest) > recency(explicit);
+  const base = newerInList ? newest : explicit ?? newest;
   if (!base) return null;
   // The same meeting in the list: by id when the base has one, otherwise by its start (that is how the id is found).
   const twin = base.id

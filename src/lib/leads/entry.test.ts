@@ -47,6 +47,14 @@ describe("entry phase inside the stage", () => {
     expect(entryTimeline(lead({}), NOW).map((s) => s.state)).toEqual(["current", "pending", "pending", "pending"]);
     expect(entryTimeline(lead({ stage: "accepted", meeting: meeting("2026-10-01T14:00:00Z", "2026-10-01T15:00:00Z") }), NOW).every((s) => s.state === "done")).toBe(true);
   });
+  it("Reunión hecha is done as soon as the outcome is held; a rescheduled meeting is not held", () => {
+    const held = booked("2026-10-14T15:30:00Z", { meeting: { ...meeting("2026-10-14T15:30:00Z", NOW), outcome: "held" } });
+    expect(entryTimeline(held, NOW).map((s) => s.state)).toEqual(["done", "done", "done", "done"]);
+    const waiting = booked("2026-10-14T15:30:00Z");
+    expect(entryTimeline(waiting, NOW)[3].state).toBe("current");
+    const moved = booked("2026-10-14T15:30:00Z", { meeting: { ...meeting("2026-10-14T15:30:00Z", NOW), outcome: "reschedule" } });
+    expect(entryPhase(moved, NOW)).toBe("summary_sent");
+  });
   it("one primary action at a time in Reunión: join, then the outcome; without a booking, the NDA and then the MOU", () => {
     expect(primaryActionFor({ stage: "meeting", meeting: meeting("2026-10-15T14:00:00Z") }, NOW)).toBe("join_meet");
     expect(primaryActionFor({ stage: "meeting", meeting: meeting("2026-10-14T10:00:00Z") }, NOW)).toBe("meeting_outcome");

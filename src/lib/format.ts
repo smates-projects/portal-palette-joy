@@ -38,4 +38,10 @@ export const formatDateTime = (iso: string, lng: string) => {
 export const formatNumber = (n: number, lng: string, options?: Intl.NumberFormatOptions) =>
   new Intl.NumberFormat(localeTag(lng), options).format(n);
 
+/**
+ * A sentence whose last value already ends in a period ("03:00 p.m.") keeps one: "Lo marcaste el mié 10/14, 03:00 p.m."
+ * and never "p.m..".
+ */
+export const oneFinalPeriod = (text: string) => text.replace(/\.{2,}$/, ".");
+
 export const firstName = (fullName: string) => fullName.split(" ")[0] ?? fullName;

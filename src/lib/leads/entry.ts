@@ -22,6 +22,13 @@ export const UNBOOKED_DAYS = 2;
 export const meetingHeld = (m: Pick<LeadMeeting, "starts_at" | "duration_minutes">, now: string = nowIso()) =>
   Date.parse(m.starts_at) + m.duration_minutes * 60_000 <= Date.parse(now);
 
+/**
+ * Phase 4 is reached when the consultant answered "Se hizo", or when the time passed and nobody answered yet. A
+ * meeting answered as no-show or to reschedule did not happen: the lead waits for the next booking.
+ */
+const reachedHeld = (m: LeadMeeting, now: string) =>
+  m.outcome === "held" || (!m.outcome && meetingHeld(m, now));
+
 type EntryLead = Pick<Lead, "stage" | "discarded_from" | "summary_sent_at" | "meeting">;
 
 /** Stage the entry phase is read from: a discarded lead keeps the phase it had when SM discarded it. */
@@ -36,7 +43,7 @@ export function entryPhase(lead: EntryLead, now: string = nowIso()): EntryPhase 
   const stage = baseStage(lead);
   if (stage !== "evaluated" && stage !== "meeting") return "meeting_held";
   if (!lead.meeting) return stage === "meeting" ? "meeting_scheduled" : "assessment";
-  if (stage === "meeting" && meetingHeld(lead.meeting, now)) return "meeting_held";
+  if (stage === "meeting" && reachedHeld(lead.meeting, now)) return "meeting_held";
   return lead.summary_sent_at ? "summary_sent" : "meeting_scheduled";
 }
 
@@ -56,16 +63,18 @@ export function entryTimeline(lead: EntryLead & Pick<Lead, "submitted_at" | "sta
   const reached = ENTRY_PHASES.indexOf(entryPhase(lead, now));
   const entering = ["evaluated", "meeting"].includes(baseStage(lead));
   const m = lead.meeting;
+  // "Se hizo" answered: the meeting phase is done right away, even while the lead still sits in Reunión.
+  const heldAnswered = m?.outcome === "held";
   const dates: Record<EntryPhase, string | null> = {
     assessment: lead.submitted_at,
     // Moved to Reunión by hand (no booking): the day it entered the stage.
     meeting_scheduled: m?.booked_at ?? (baseStage(lead) === "meeting" ? lead.stage_entered_at : null),
     summary_sent: lead.summary_sent_at,
-    meeting_held: m && meetingHeld(m, now) ? m.starts_at : null,
+    meeting_held: m && reachedHeld(m, now) ? m.starts_at : null,
   };
   return ENTRY_PHASES.map((phase, i) => ({
     phase,
-    state: i < reached || (i === reached && !entering) ? "done" : i === reached ? "current" : "pending",
+    state: i < reached || (i === reached && (!entering || (phase === "meeting_held" && heldAnswered))) ? "done" : i === reached ? "current" : "pending",
     at: i <= reached ? dates[phase] : null,
   }));
 }

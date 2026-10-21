@@ -6,7 +6,7 @@ import type { LeadMeeting, LeadWithComputed, MeetingOutcome } from "@/lib/api/ty
 import { emailItems, entryTimeline, meetingHeld } from "@/lib/leads/entry";
 import { outcomePending } from "@/lib/leads/entry-flow";
 import { entryMeetings } from "@/lib/leads/meetings";
-import { formatDate, formatDateTime } from "@/lib/format";
+import { formatDate, formatDateTime, oneFinalPeriod } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PrimaryButton, SecondaryButton } from "@/components/tasks/detail/dialogs";
@@ -162,7 +162,7 @@ function OneMeeting(props: {
               <p className="text-xs text-muted-foreground">{t("entry.meeting.with", { name: props.consultantName })}</p>
               {m.outcome && (
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {t(`entry.outcome.done_${m.outcome}`, { date: m.notes_at ? formatDateTime(m.notes_at, i18n.language) : "" })}
+                  {oneFinalPeriod(t(`entry.outcome.done_${m.outcome}`, { date: formatDateTime(m.notes_at ?? m.starts_at, i18n.language) }))}
                 </p>
               )}
             </div>
