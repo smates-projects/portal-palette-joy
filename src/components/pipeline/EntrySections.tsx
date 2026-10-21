@@ -198,7 +198,10 @@ function OneMeeting(props: {
   );
 }
 
-/** "Se hizo": an optional note of the meeting. On the first meeting it sends the MOU; on the expansion, it opens the Operating Agreement. */
+/**
+ * "Se hizo": an optional note of the meeting. On the first meeting it sends the documents list (the MOU is already
+ * signed by then, together at the end of the meeting); on the expansion, it opens the Operating Agreement.
+ */
 export function MeetingNoteDialog(props: { name: string; expansion?: boolean; pending: boolean; onClose: () => void; onConfirm: (body: string) => void }) {
   const { t } = useTranslation();
   const [body, setBody] = useState("");

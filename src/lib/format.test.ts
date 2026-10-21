@@ -2,9 +2,13 @@ import { describe, expect, it } from "vitest";
 import en from "@/locales/en.json";
 import es from "@/locales/es.json";
 import { bishopNav, franchiseeNav, franchisorNav, smGlobalNav } from "@/components/layout/nav";
-import { formatDate, formatDateTime, formatNumber, formatShortDate, formatUsd, localeTag } from "./format";
+import { formatDate, formatDateTime, formatNumber, formatShortDate, formatUsd, localeTag, oneFinalPeriod } from "./format";
 
 describe("formatting", () => {
+  it("a sentence ending in p.m. keeps one period", () => {
+    expect(oneFinalPeriod("Reunión hecha. Lo marcaste el mié 10/14, 03:00 p.m..")).toBe("Reunión hecha. Lo marcaste el mié 10/14, 03:00 p.m.");
+    expect(oneFinalPeriod("Listo.")).toBe("Listo.");
+  });
   it("uses es-US for Spanish and en-US for English", () => {
     expect(localeTag("es")).toBe("es-US");
     expect(localeTag("en")).toBe("en-US");
