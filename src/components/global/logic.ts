@@ -1,4 +1,4 @@
-import type { AreaBottleneck, OfficeSummary, StructureDetail, StructureNode, StructureTree } from "@/lib/api/network-types";
+import type { AreaBottleneck, NetworkSummary, OfficeSummary, StructureDetail, StructureNode, StructureTree } from "@/lib/api/network-types";
 import type { AreaCode, Business, Organization, TaskWithComputed } from "@/lib/api/types";
 import { AREAS, type Health } from "@/lib/tasks/owner";
 import { buildAttention, type AttentionItem, type MatrixRow } from "@/lib/tasks/sm";
@@ -67,6 +67,56 @@ export const sortBottlenecks = (rows: AreaBottleneck[]): AreaBottleneck[] =>
 export interface StuckBusiness {
   business: Business;
   overdue: number;
+}
+
+/**
+ * "¿Dónde se traba la red?" for the office in "Viendo": the API answers the whole network (with a breakdown by
+ * office), so one office keeps its own overdue count and its red businesses come from the scoped matrix. The red
+ * count never goes past the businesses in program ("2 de 0" cannot happen).
+ */
+export function scopeBottlenecks(rows: AreaBottleneck[], officeId: string | null, matrix: MatrixRow[]): AreaBottleneck[] {
+  const total = matrix.length;
+  return rows.map((b) => {
+    if (!officeId) return { ...b, red_businesses: Math.min(b.red_businesses, total) };
+    const mine = b.by_office.find((o) => o.office_id === officeId);
+    return {
+      ...b,
+      open: mine?.open ?? 0,
+      overdue: mine?.overdue ?? 0,
+      red_businesses: Math.min(stuckBusinesses(matrix, b.area).length, total),
+      by_office: mine ? [mine] : [],
+    };
+  });
+}
+
+export interface HomeCounters {
+  offices: number;
+  programs: number;
+  leads_month: number;
+  conversion: number | null;
+  ready: number;
+}
+
+/**
+ * The Global home counters for "Viendo": the network summary as is, or the sum of the offices in view. Conversion is
+ * a percentage, so it only stays when one office is in view (and it has one).
+ */
+export function scopeCounters(
+  summary: Pick<NetworkSummary, "offices" | "programs" | "leads_this_month" | "conversion_month" | "ready_to_franchise">,
+  offices: OfficeSummary[],
+  scoped: boolean,
+  programs: number,
+): HomeCounters {
+  if (!scoped)
+    return { offices: summary.offices, programs: summary.programs, leads_month: summary.leads_this_month, conversion: summary.conversion_month, ready: summary.ready_to_franchise };
+  const sum = (pick: (o: OfficeSummary) => number) => offices.reduce((n, o) => n + pick(o), 0);
+  return {
+    offices: offices.length,
+    programs,
+    leads_month: sum((o) => o.stats.leads_this_month),
+    conversion: offices.length === 1 ? offices[0].stats.conversion_month : null,
+    ready: sum((o) => o.stats.ready_to_franchise),
+  };
 }
 
 /** Businesses of the matrix with the area in red, most overdue first. */

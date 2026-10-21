@@ -2003,6 +2003,8 @@
       "attention_title": "Needs attention",
       "attention_empty": "Nothing needs attention. Here you will see overdue tasks, deliverables not approved and long blocks across the network.",
       "see_less": "See less",
+      "scope_empty_title": "This office has no activity yet",
+      "scope_empty_body": "Its businesses in program and this month's leads will show here when they arrive. To see the whole network pick All in Viewing.",
       "stuck_title": "Where does the network get stuck?",
       "stuck_line_one": "{{area}} behind in {{red}} of {{total}} businesses, {{count}} overdue task",
       "stuck_line_other": "{{area}} behind in {{red}} of {{total}} businesses, {{count}} overdue tasks",

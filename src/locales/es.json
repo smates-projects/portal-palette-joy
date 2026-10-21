@@ -2003,6 +2003,8 @@
       "attention_title": "Necesita atención",
       "attention_empty": "Nada necesita atención. Aquí verás tareas vencidas, entregas sin aprobar y bloqueos largos de toda la red.",
       "see_less": "Ver menos",
+      "scope_empty_title": "Esta oficina todavía no tiene movimiento",
+      "scope_empty_body": "Aquí vas a ver sus negocios en programa y sus prospectos del mes cuando lleguen. Para ver toda la red elige Todas en Viendo.",
       "stuck_title": "¿Dónde se traba la red?",
       "stuck_line_one": "{{area}} atrasada en {{red}} de {{total}} negocios, {{count}} tarea vencida",
       "stuck_line_other": "{{area}} atrasada en {{red}} de {{total}} negocios, {{count}} tareas vencidas",

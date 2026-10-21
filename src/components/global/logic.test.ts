@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { AreaBottleneck, StructureNode, StructureTree } from "@/lib/api/network-types";
+import type { AreaBottleneck, OfficeSummary, StructureNode, StructureTree } from "@/lib/api/network-types";
 import type { Business } from "@/lib/api/types";
 import type { MatrixRow } from "@/lib/tasks/sm";
-import { buildDiagramTree, buildStructureView, collapsibleIds, descendantCount, diagramSearch, expandableIds, filterTree, initialsOf, officeHealth, sortBottlenecks, stuckBusinesses, worstHealth, type TreeNode } from "./logic";
+import { buildDiagramTree, buildStructureView, collapsibleIds, descendantCount, diagramSearch, expandableIds, filterTree, initialsOf, officeHealth, scopeBottlenecks, scopeCounters, sortBottlenecks, stuckBusinesses, worstHealth, type TreeNode } from "./logic";
 
 const business = (id: string, name: string, status: Business["status"] = "in_program"): Business => ({
   id, name, industry: "services", city: "Miami", state: "FL", owner_user_id: "u", status,
@@ -49,6 +49,24 @@ describe("stuckBusinesses", () => {
     const rows = [row(business("a", "Alfa"), "red", 2), row(business("b", "Beta"), "green", 0), row(business("c", "Gamma"), "red", 5)];
     expect(stuckBusinesses(rows, "B6").map((s) => [s.business.name, s.overdue])).toEqual([["Gamma", 5], ["Alfa", 2]]);
     expect(stuckBusinesses(rows, "B1")).toEqual([]);
+  });
+});
+
+describe("Viendo on the Global home", () => {
+  it("one office keeps its own overdue tasks and red businesses, never more red than businesses in program", () => {
+    const network = { ...bottleneck("B6", 9, 4), by_office: [{ office_id: "o1", office_name: "Miami", open: 2, overdue: 3 }] };
+    const rows = [row(business("a", "Alfa"), "red", 3)];
+    expect(scopeBottlenecks([network], "o1", rows)[0]).toMatchObject({ overdue: 3, red_businesses: 1, open: 2 });
+    expect(scopeBottlenecks([network], "o2", rows)[0]).toMatchObject({ overdue: 0, by_office: [] });
+    expect(scopeBottlenecks([network], null, [])[0].red_businesses).toBe(0);
+  });
+  it("the counters add up the offices in view; conversion only for one office", () => {
+    const summary = { offices: 3, programs: 9, leads_this_month: 20, conversion_month: 15, ready_to_franchise: 2 };
+    const office = (leads: number, conversion: number | null, ready: number) =>
+      ({ stats: { leads_this_month: leads, conversion_month: conversion, ready_to_franchise: ready } }) as unknown as OfficeSummary;
+    expect(scopeCounters(summary, [], false, 0)).toEqual({ offices: 3, programs: 9, leads_month: 20, conversion: 15, ready: 2 });
+    expect(scopeCounters(summary, [office(4, 25, 1)], true, 2)).toEqual({ offices: 1, programs: 2, leads_month: 4, conversion: 25, ready: 1 });
+    expect(scopeCounters(summary, [], true, 0)).toEqual({ offices: 0, programs: 0, leads_month: 0, conversion: null, ready: 0 });
   });
 });
 

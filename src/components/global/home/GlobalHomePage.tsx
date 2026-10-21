@@ -14,10 +14,10 @@ import {
   useVersions,
 } from "@/lib/api/hooks";
 import { buildNetworkMatrix } from "@/lib/tasks/sm";
-import { inOfficeScope, useOfficeScope } from "@/lib/office-scope";
+import { ALL_OFFICES, inOfficeScope, useOfficeScope } from "@/lib/office-scope";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MAX_HOME_ITEMS, buildNetworkAttention, buildOfficeCards, sortBottlenecks, stuckBusinesses } from "../logic";
+import { MAX_HOME_ITEMS, buildNetworkAttention, buildOfficeCards, scopeBottlenecks, scopeCounters, sortBottlenecks, stuckBusinesses } from "../logic";
 import { BusinessSheet, EmptyBox, ErrorBox, GlobalHeader, HealthBadge } from "../shared";
 
 /** Inicio de SM Global: how the whole network is doing, which offices need a look and where work gets stuck. */
@@ -56,7 +56,8 @@ export function GlobalHomePage() {
     );
 
   const summary = summaryQ.data!;
-  // "Viendo" in the header: one office, Corporate or the whole network. The counters stay network-wide.
+  // "Viendo" in the header: one office, Corporate or the whole network. Counters, cards and areas follow it.
+  const scoped = scope !== ALL_OFFICES;
   const offices = (officesQ.data ?? []).filter((o) => inOfficeScope(scope, o.office.id));
   const businesses = (bizQ.data ?? []).filter((b) => inOfficeScope(scope, b.office_id));
   const businessIds = new Set(businesses.map((b) => b.id));
@@ -65,16 +66,20 @@ export function GlobalHomePage() {
   const matrix = buildNetworkMatrix(tasks, versionsQ.data ?? [], inProgram, todayIso(), rulesQ.data?.area_amber_days);
   const cards = buildOfficeCards(offices, matrix);
   const attention = buildNetworkAttention(tasks, businesses, orgsQ.data ?? []);
-  const bottlenecks = sortBottlenecks(bottlenecksQ.data ?? []);
+  const bottlenecks = sortBottlenecks(scopeBottlenecks(bottlenecksQ.data ?? [], scoped ? scope : null, matrix));
+  const totals = scopeCounters(summary, offices, scoped, inProgram.length);
 
-  // Conversion is a percentage: it has no plural and shows a dash when no assessment arrived this month.
+  // Conversion is a percentage: it has no plural and shows a dash when no assessment arrived this month. With one
+  // office in view the office count says nothing, and a conversion it does not have is left out instead of a dash.
   const counters: { key: string; value: number | null; percent?: boolean }[] = [
-    { key: "offices", value: summary.offices },
-    { key: "programs", value: summary.programs },
-    { key: "leads_month", value: summary.leads_this_month },
-    { key: "conversion", value: summary.conversion_month, percent: true },
-    { key: "ready", value: summary.ready_to_franchise },
+    ...(scoped ? [] : [{ key: "offices", value: totals.offices }]),
+    { key: "programs", value: totals.programs },
+    { key: "leads_month", value: totals.leads_month },
+    ...(scoped && totals.conversion === null ? [] : [{ key: "conversion", value: totals.conversion, percent: true }]),
+    { key: "ready", value: totals.ready },
   ];
+  // The office in view has nothing yet: one plain sentence instead of a row of zeros.
+  const scopeEmpty = scoped && totals.programs === 0 && totals.leads_month === 0 && totals.ready === 0;
   const reasonText = (a: (typeof attention)[number]) =>
     a.reason === "overdue"
       ? t("tasks.overdue_days", { count: a.days })
@@ -88,7 +93,10 @@ export function GlobalHomePage() {
       {header}
 
       {/* Counters */}
-      <div className="mt-6 grid grid-cols-2 overflow-hidden rounded-md border border-border bg-surface sm:grid-cols-5 sm:divide-x sm:divide-border">
+      {scopeEmpty ? (
+        <div className="mt-6"><EmptyBox title={t("global.home.scope_empty_title")} body={t("global.home.scope_empty_body")} /></div>
+      ) : (
+      <div className={cn("mt-6 grid grid-cols-2 overflow-hidden rounded-md border border-border bg-surface sm:divide-x sm:divide-border", counters.length === 5 ? "sm:grid-cols-5" : counters.length === 4 ? "sm:grid-cols-4" : "sm:grid-cols-3")}>
         {counters.map((c) => (
           <div key={c.key} className="px-4 py-3">
             <div className="flex items-baseline gap-2">
@@ -100,8 +108,10 @@ export function GlobalHomePage() {
           </div>
         ))}
       </div>
+      )}
 
-      {/* One card per office */}
+      {/* One card per office; with Corporate in view there is no office card to show */}
+      {(!scoped || cards.length > 0) && (
       <section className="mt-6" aria-labelledby="home-offices">
         <h2 id="home-offices" className="text-sm font-semibold">{t("global.home.offices_title")}</h2>
         {cards.length === 0 ? (
@@ -143,6 +153,7 @@ export function GlobalHomePage() {
           </div>
         )}
       </section>
+      )}
 
       {/* Needs attention: 5 rows and "Ver todo" */}
       <section className="mt-6 rounded-md border border-border bg-surface">
@@ -177,7 +188,8 @@ export function GlobalHomePage() {
         )}
       </section>
 
-      {/* Where the network gets stuck: six areas, worst first */}
+      {/* Where the network gets stuck: six areas, worst first. Hidden while no business of the view is in program. */}
+      {inProgram.length > 0 && (
       <section className="mt-6 rounded-md border border-border bg-surface">
         <div className="border-b border-border px-4 py-3">
           <h2 className="text-sm font-semibold">{t("global.home.stuck_title")}</h2>
@@ -220,6 +232,7 @@ export function GlobalHomePage() {
         </ul>
         <p className="border-t border-border px-4 py-2.5 text-xs text-muted-foreground">{t("global.home.stuck_hint")}</p>
       </section>
+      )}
 
       <BusinessSheet businessId={businessId} onClose={() => setBusinessId(null)} />
     </div>
