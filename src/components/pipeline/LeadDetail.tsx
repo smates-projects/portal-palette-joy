@@ -4,10 +4,11 @@ import { toast } from "sonner";
 import { Mail, MapPin, Phone, X } from "lucide-react";
 import {
   useAddLeadNote, useApproveDocuments, useBusinessFunds, useConfirmProgramStart, useCurrentUser, useLeadDetail, useLeadIntake, useOrganizations,
-  useReactivateLead, useRecordFundPayment, useRejectDocuments, useRemoveFundPayment, useRules, useSendTripartite, useSetMeetingOutcome, useTransferLead, useUsers,
+  useReactivateLead, useRecordFundPayment, useRegisterMeeting, useRejectDocuments, useRemoveFundPayment, useRules, useSendTripartite, useSetMeetingOutcome, useTransferLead, useUsers,
 } from "@/lib/api/hooks";
-import { AUTO_DISCARD_MOU_NOT_SIGNED, entryRules, heldWithoutMou, oaSendBlock } from "@/lib/leads/entry-flow";
+import { AUTO_DISCARD_MOU_NOT_SIGNED, bookingKind, entryRules, heldWithoutMou, oaSendBlock } from "@/lib/leads/entry-flow";
 import { MouUnsignedDialog } from "./LeadDialogs";
+import { RegisterMeetingDialog } from "./RegisterMeetingDialog";
 import { TransferDialog, canTransfer } from "./TransferDialog";
 import { meetingIdOf } from "@/lib/leads/meetings";
 import { leadOwnerOf, scheduleRoute } from "@/lib/leads/scheduling";
@@ -65,9 +66,11 @@ export function LeadDetail(props: {
   // "Se hizo" with the MOU unsigned: the warning before the answer goes out.
   const [warning, setWarning] = useState<LeadMeeting | null>(null);
   const [scheduling, setScheduling] = useState(false);
+  const [registering, setRegistering] = useState(false);
   const [transferring, setTransferring] = useState(false);
   const outcome = useSetMeetingOutcome();
   const reactivate = useReactivateLead();
+  const register = useRegisterMeeting();
   const transfer = useTransferLead();
   const orgsQ = useOrganizations();
   const rules = entryRules(useRules().data);
@@ -96,8 +99,12 @@ export function LeadDetail(props: {
     .map((u) => ({ user_id: u.id, name: u.full_name }));
   const admin = isDocsAdmin(meQ.data, lead.office_id);
   const approval = lead.intake?.approval;
+  // "Agendar reunión" / "Reagendar" through the booking link needs a link: without one the button waits for it.
+  const bookingRoute = scheduleRoute(action, !!leadOwner);
+  const noBookingUrl = bookingRoute === "booking_link" && !lead.booking_url;
   // Why the primary action is disabled (shown under it), or null when it can be used.
   const blockedHint =
+    noBookingUrl ? t("pipeline.detail.no_booking_url") :
     action === "wait_investor" || action === "wait_signatures" ? "" :
     action === "approve_docs" && !admin ? t("intake.admin_only") :
     action === "approve_docs" && approval && !approval.ok
@@ -140,11 +147,23 @@ export function LeadDetail(props: {
     return value === "held" ? setNoting(m) : answer(m, value);
   };
   const globalReader = meQ.data?.role === "sm_global";
-  const autoDiscarded = lead.stage === "discarded" && lead.discard_reason === AUTO_DISCARD_MOU_NOT_SIGNED;
+  // Only SM Global brings a discarded lead back, always through reactivate (never a move); the office never sees it.
+  const canReactivate = globalReader && lead.stage === "discarded";
   const onReactivate = () =>
     reactivate.mutate(lead.id, {
       onSuccess: (back) => toast.success(t("pipeline.t_reactivated", { name: lead.business.name, to: t(`pipeline.stages.${back.stage}`) })),
       onError: fail,
+    });
+  // "Registrar reunión": the consultant (office) or SM Global, on an evaluated lead or after a reschedule.
+  const registerKind = bookingKind(lead);
+  const canRegister = (registerKind === "initial" || registerKind === "rebook") && (globalReader || (meQ.data?.role === "sm_team" && !props.readOnly));
+  const onRegister = (input: import("@/lib/api/types").RegisterMeetingInput) =>
+    register.mutate({ id: lead.id, input }, {
+      onSuccess: (after) => {
+        setRegistering(false);
+        toast.success(t("entry.register.t_done", { name: lead.business.name, date: after.meeting ? formatDateTime(after.meeting.starts_at, lng) : "" }));
+      },
+      onError: (e) => toast.error(e instanceof Error && ["invalid_transition", "invalid_url", "invalid_date"].includes(e.message) ? t(`entry.register.errors.${e.message}`) : t("pipeline.t_error")),
     });
   const transferable = canTransfer(meQ.data, lead.office_id) && lead.stage !== "discarded";
   const officeName = orgsQ.data?.find((o) => o.id === lead.office_id)?.name ?? "";
@@ -163,11 +182,12 @@ export function LeadDetail(props: {
     if (action === "meeting_outcome") return document.getElementById("lead-meeting")?.scrollIntoView({ behavior: "smooth", block: "center" });
     // Calendar v2: a lead whose owner already has an account is scheduled with the portal's dialog; without an
     // account the booking link keeps doing it (the person books on the consultant's calendar).
-    const route = scheduleRoute(action, !!leadOwner);
-    if (route === "dialog") return setScheduling(true);
-    if (route === "booking_link" && action === "rebook") {
+    if (bookingRoute === "dialog") return setScheduling(true);
+    // Without a link nothing opens and nothing moves: the hint under the button says where to load one.
+    if (bookingRoute === "booking_link" && !lead.booking_url) return;
+    if (bookingRoute === "booking_link" && action === "rebook") {
       // Open synchronously from the click so the browser does not block the new tab.
-      if (lead.booking_url) window.open(lead.booking_url, "_blank", "noopener,noreferrer");
+      window.open(lead.booking_url!, "_blank", "noopener,noreferrer");
       return;
     }
     props.onPrimary?.(lead);
@@ -197,11 +217,14 @@ export function LeadDetail(props: {
     });
   const showGlobalApprove = props.readOnly && action === "approve_docs" && admin;
   const consultant = usersQ.data?.find((u) => u.id === lead.consultant_user_id);
-  const fromOffice = action === "schedule" && consultant && !consultant.booking_url;
+  const fromOffice = action === "schedule" && !!lead.booking_url && (lead.booking_url_source ? lead.booking_url_source === "office" : !!consultant && !consultant.booking_url);
   const canDiscard = lead.stage !== "in_program" && lead.stage !== "discarded" && lead.stage !== "documents";
+  // A discarded lead has no primary action: the office waits, SM Global reactivates it from the header.
+  const showPrimary = lead.stage !== "discarded";
 
   const describe = (e: LeadEvent) => {
-    const actor = userName(e.actor_user_id);
+    // The API names the actor; the office could not list SM Global's people otherwise ("Marilyn lo reactivó").
+    const actor = e.actor_name || userName(e.actor_user_id) || t("pipeline.events.actor_fallback");
     const stage = (s: string | null) => (s ? t(`pipeline.stages.${s}`) : "");
     return t(`pipeline.events.${e.kind}`, {
       actor, owner: lead.contact.name, from: stage(e.from), to: stage(e.to), date: e.signed_on ? formatDate(e.signed_on, lng) : "",
@@ -253,10 +276,17 @@ export function LeadDetail(props: {
         {lead.stage === "discarded" && lead.discard_reason && (
           <p className="mt-3 rounded-md border border-border bg-muted px-3 py-2 text-sm">{discardText(lead.discard_reason)}</p>
         )}
-        {/* SM Global brings back a lead the API discarded by itself; the office cannot. */}
-        {globalReader && autoDiscarded && (
+        {/* SM Global brings back a discarded lead (by hand or by the API); the office cannot. */}
+        {canReactivate && (
           <div className="mt-3">
             <PrimaryButton onClick={onReactivate} disabled={reactivate.isPending}>{t("pipeline.actions.reactivate")}</PrimaryButton>
+            <p className="mt-1.5 text-xs text-muted-foreground">{t("pipeline.detail.reactivate_hint", { to: t(`pipeline.stages.${lead.discarded_from ?? "evaluated"}`) })}</p>
+          </div>
+        )}
+        {/* A meeting agreed by hand: the consultant from the embudo, SM Global from its read-only view. */}
+        {canRegister && (
+          <div className="mt-3">
+            <button onClick={() => setRegistering(true)} className="text-sm text-link hover:underline">{t("entry.register.action")}</button>
           </div>
         )}
         {/* "Derivar a oficina": SM Global from its read-only view, the office admin from the embudo. */}
@@ -267,7 +297,7 @@ export function LeadDetail(props: {
         )}
         {props.readOnly && !showGlobalApprove ? (
           <p className="mt-4 rounded-[4px] border border-border bg-muted px-2 py-1 text-xs text-muted-foreground">{t("pipeline.detail.read_only")}</p>
-        ) : (
+        ) : !showPrimary ? null : (
           <>
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <PrimaryButton onClick={runPrimary} disabled={(props.pending ?? false) || approve.isPending || sendTripartite.isPending || record.isPending || start.isPending || outcome.isPending || (blockedHint !== null && action !== "meeting_outcome")}>
@@ -286,7 +316,7 @@ export function LeadDetail(props: {
             {blockedHint && <p className="mt-2 text-xs text-muted-foreground">{blockedHint}</p>}
             {action === "record_funds" && lead.funds?.to_confirm && <p className="mt-2 text-xs text-status-warning-fg">{t("funds.to_confirm_hint")}</p>}
             {action === "start_program" && <p className="mt-2 text-xs text-muted-foreground">{t("funds.start.ready_hint")}</p>}
-            {fromOffice && <p className="mt-2 text-xs text-muted-foreground">{t("pipeline.detail.booking_from_office", { name: consultant.full_name })}</p>}
+            {fromOffice && <p className="mt-2 text-xs text-muted-foreground">{t("pipeline.detail.booking_from_office", { name: consultant?.full_name ?? "" })}</p>}
           </>
         )}
       </header>
@@ -361,7 +391,10 @@ export function LeadDetail(props: {
             {[...events].reverse().map((e) => (
               <li key={e.id} className="text-sm">
                 <p>{describe(e)}</p>
-                {e.body && <p className="mt-1 rounded-md border border-border bg-muted/50 px-3 py-2 text-sm">{e.body}</p>}
+                {/* The automatic discard logs a code, never shown raw. */}
+                {e.body && e.kind !== "transferred" && (
+                  <p className="mt-1 rounded-md border border-border bg-muted/50 px-3 py-2 text-sm">{e.kind === "discarded" && e.body === AUTO_DISCARD_MOU_NOT_SIGNED ? t("pipeline.detail.discard_mou_not_signed") : e.body}</p>
+                )}
                 <p className="mt-0.5 text-xs text-muted-foreground">{formatDateTime(e.created_at, lng)}</p>
               </li>
             ))}
@@ -410,6 +443,9 @@ export function LeadDetail(props: {
           onClose={() => setNoting(null)}
           onConfirm={(body) => answer(noting, "held", body)}
         />
+      )}
+      {registering && (
+        <RegisterMeetingDialog name={lead.business.name} rebook={registerKind === "rebook"} pending={register.isPending} onClose={() => setRegistering(false)} onConfirm={onRegister} />
       )}
       {warning && (
         <MouUnsignedDialog

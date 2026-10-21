@@ -292,11 +292,19 @@ export function createMockApi(): MockApi {
   const withBooking = (l: Lead): LeadWithComputed => {
     const consultant = db.users.find((u) => u.id === l.consultant_user_id);
     const office = db.orgs.find((o) => o.id === l.office_id);
+    const bookingUrl = consultant?.booking_url?.trim() || null;
+    const officeUrl = office?.default_booking_url?.trim() || null;
     return {
-      ...l, booking_url: consultant?.booking_url || office?.default_booking_url || "", intake: intake.summaryFor(l),
+      ...l, booking_url: bookingUrl ?? officeUrl, booking_url_source: bookingUrl ? "consultant" : officeUrl ? "office" : null, intake: intake.summaryFor(l),
       tripartite: tripartiteState(opps.tripartiteOf(l)), funds: fundsMod.leadFunds(l),
     };
   };
+  /** Lead events with the actor's name: the office cannot list SM Global's people, yet reads "Marilyn lo reactivó". */
+  const leadEventsOf = (leadId: string): LeadEvent[] =>
+    db.leadEvents
+      .filter((e) => e.lead_id === leadId)
+      .sort((a, b) => a.created_at.localeCompare(b.created_at))
+      .map((e) => ({ ...e, actor_name: e.actor_user_id ? db.users.find((u) => u.id === e.actor_user_id)?.full_name ?? null : null }));
   /** "Derivar a oficina": SM Global, or the admin of the office the lead or business is in. */
   const canTransferFrom = (officeId: string) => {
     const u = me();
@@ -821,16 +829,16 @@ export function createMockApi(): MockApi {
         crules.sweep();
         const l = readableLeads().find((x) => x.id === id);
         if (!l) return delay(null);
-        return delay({ lead: withBooking(l), events: db.leadEvents.filter((e) => e.lead_id === id).sort((a, b) => a.created_at.localeCompare(b.created_at)) });
+        return delay({ lead: withBooking(l), events: leadEventsOf(id) });
       },
+      /** Never a discarded lead: resolveLeadMove refuses it (global_only), the API answers invalid_transition. */
       move: async (id, to) => {
         const l = findLead(id);
         const m = resolveLeadMove(l.stage, to);
-        if (!m.ok || (m.action !== "move" && m.action !== "restore")) throw new Error("invalid_transition");
+        if (!m.ok || m.action !== "move") throw new Error("invalid_transition");
         const from = l.stage;
         setStage(l, to);
-        if (m.action === "restore") { l.discarded_from = null; l.discard_reason = null; }
-        pushLeadEvent({ lead_id: id, kind: m.action === "restore" ? "restored" : "stage_changed", from, to, body: null });
+        pushLeadEvent({ lead_id: id, kind: "stage_changed", from, to, body: null });
         return delay(withBooking(l));
       },
       discard: async (id, reason) => {
@@ -845,6 +853,7 @@ export function createMockApi(): MockApi {
         pushLeadEvent({ lead_id: id, kind: "discarded", from, to: "discarded", body: reason.trim() });
         return delay(withBooking(l));
       },
+      /** SM Global only, any discarded lead (by hand or by the API): back to the stage it was in. */
       reactivate: async (id) => {
         if (me().role !== "sm_global") throw new Error("global_only");
         const l = db.leads.find((x) => x.id === id);

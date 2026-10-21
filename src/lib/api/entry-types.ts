@@ -12,6 +12,17 @@ export type MeetingKind = "initial" | "expansion";
 export const MEETING_OUTCOMES = ["held", "no_show", "reschedule"] as const;
 export type MeetingOutcome = (typeof MEETING_OUTCOMES)[number];
 
+/**
+ * POST /leads/{id}/meetings { ..., source: "manual" }: a meeting SM agreed with the owner outside the booking calendar
+ * ("Registrar reunión"). On an evaluated lead it books the first meeting; after "No se presentó" or "Reagendar", the
+ * new one. The Meet link is optional.
+ */
+export interface RegisterMeetingInput {
+  starts_at: IsoDateTime;
+  duration_minutes: number;
+  meet_url?: string | null | undefined;
+}
+
 /** POST /leads/{id}/meetings/{meetingId}/outcome. The note only travels with "held". */
 export interface MeetingOutcomeInput {
   outcome: MeetingOutcome;

@@ -383,6 +383,19 @@ describe("http leads", () => {
     expect(calls[0]).toMatchObject({ method: "GET", path: "/meetings" });
   });
 
+  it("registerMeeting: POST /meetings with source manual, duration_minutes and a null Meet link when empty", async () => {
+    const { calls } = stubFetch(dataResponse(leadFixture(), 201, { ETag: '"3"' }));
+    const { leads, client } = setup();
+    await leads.registerMeeting(LEAD, { starts_at: "2026-10-21T14:00:00.000Z", duration_minutes: 30, meet_url: " " });
+    expect(calls[0]).toMatchObject({
+      method: "POST",
+      path: `${LEAD_PATH}/meetings`,
+      body: { starts_at: "2026-10-21T14:00:00.000Z", duration_minutes: 30, meet_url: null, source: "manual" },
+    });
+    expect(calls[0]?.headers["Idempotency-Key"]).toBeTruthy();
+    expect(client.etags.get(LEAD_PATH)).toBe('"3"');
+  });
+
   it("bookMeeting: POST /meetings with duration_min and a null Meet link when empty", async () => {
     const { calls } = stubFetch(dataResponse(leadFixture(), 201, { ETag: '"3"' }));
     const { leads, client } = setup();

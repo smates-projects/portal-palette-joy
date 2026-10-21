@@ -328,8 +328,11 @@ function useLeadMutation<V, R>(fn: (v: V) => Promise<R>) {
 export const useMoveLead = () =>
   useLeadMutation((v: { id: string; to: "evaluated" | "meeting" | "documents" | "accepted" }) => api.leads.move(v.id, v.to));
 export const useDiscardLead = () => useLeadMutation((v: { id: string; reason: string }) => api.leads.discard(v.id, v.reason));
-/** SM Global: "Reactivar" a lead the API discarded by itself (meeting held without the MOU signed). */
+/** SM Global: "Reactivar" a discarded lead (by hand, or by the API after a meeting held without the MOU signed). */
 export const useReactivateLead = () => useNetworkMutation((id: string) => api.leads.reactivate(id), ["leads", "notifications"]);
+/** "Registrar reunión": a meeting agreed by hand. It may create the owner account and the NDA: refresh the entry too. */
+export const useRegisterMeeting = () =>
+  useNetworkMutation((v: { id: string; input: import("./types").RegisterMeetingInput }) => api.leads.registerMeeting(v.id, v.input), ["leads", "documents", "users", "notifications"]);
 /** "Derivar a oficina": the lead (and its business entering) moves to another office with who follows it there. */
 export const useTransferLead = () =>
   useNetworkMutation((v: { id: string; input: TransferInput }) => api.leads.transfer(v.id, v.input), ["leads", "businesses", "network", "notifications"]);

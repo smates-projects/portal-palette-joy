@@ -1250,7 +1250,7 @@
     "move": {
       "no_skip": "{{name}} cannot move to {{to}}. Go back one stage at a time.",
       "no_locked": "{{name}} is already in the program and cannot be moved.",
-      "no_restore_only": "A discarded lead can only be reactivated to Evaluated.",
+      "no_global_only": "A discarded lead cannot be moved. Only SM Global can reactivate it.",
       "no_action_only": "{{name}} moves to {{to}} only with its action, not by dragging the card."
     },
     "t_moved": "{{name}} moved to {{to}}.",
@@ -1305,6 +1305,8 @@
       "not_found": "This lead does not exist or is not from your office.",
       "submitted_at": "Took the assessment on {{date}}",
       "booking_from_office": "The office link will open because {{name}} has not added one yet.",
+      "no_booking_url": "Add a booking link in the profile or in the office to be able to schedule.",
+      "reactivate_hint": "It goes back to {{to}}, the stage it was in.",
       "read_only": "Read only. The office makes the changes."
     },
     "blocks": {
@@ -1354,6 +1356,8 @@
       "mou_signed": "The MOU was signed",
       "transferred": "Transferred to {{office}} by {{actor}}",
       "reactivated": "{{actor}} reactivated it from SM Global",
+      "meeting_registered": "{{actor}} registered the meeting agreed with the owner",
+      "actor_fallback": "Strategic Mates",
       "contract_created": "An entry contract was created",
       "validation_saved": "{{actor}} saved the validation",
       "validation_closed": "{{actor}} closed the validation with the final percentages"
@@ -1466,6 +1470,29 @@
       "manual": "Moved to Meeting without a booking from the owner. Agree on the date with them.",
       "expansion_title": "Expansion meeting",
       "expansion_none": "The expansion meeting is not booked yet."
+    },
+    "register": {
+      "action": "Register meeting",
+      "title": "Register the meeting with {{name}}",
+      "body": "For a meeting you agreed with the owner outside the booking calendar. The business moves to Meeting booked and its account is created with the NDA.",
+      "body_rebook": "The previous meeting did not happen. Register the new date you agreed with the owner.",
+      "date": "Date",
+      "time": "Time",
+      "duration": "Length",
+      "minutes": "{{count}} min",
+      "meet_url": "Google Meet link (optional)",
+      "meet_url_hint": "If you already have the video call link, paste it here.",
+      "confirm": "Register meeting",
+      "error_date_required": "Pick the date.",
+      "error_time_required": "Pick the time.",
+      "error_invalid_duration": "Pick a length.",
+      "error_invalid_url": "Write a valid link, starting with https.",
+      "t_done": "You registered the meeting with {{name}} for {{date}}.",
+      "errors": {
+        "invalid_transition": "This business already has its meeting or is not in a stage where one can be registered.",
+        "invalid_url": "The video call link is not valid.",
+        "invalid_date": "The date and time are not valid."
+      }
     },
     "note": {
       "title": "Meeting note with {{name}}",

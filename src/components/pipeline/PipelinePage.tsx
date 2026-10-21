@@ -55,8 +55,8 @@ export function PipelinePage({ search }: { search: LeadsSearch }) {
     const from = lead.stage;
     move.mutate({ id: lead.id, to }, {
       onSuccess: () =>
-        toast.success(msg ?? t(from === "discarded" ? "pipeline.t_restored" : "pipeline.t_moved", { name: lead.business.name, to: stageName(to) }), {
-          action: from !== "discarded" && from !== "in_program"
+        toast.success(msg ?? t("pipeline.t_moved", { name: lead.business.name, to: stageName(to) }), {
+          action: from !== "in_program"
             ? { label: t("pipeline.undo"), onClick: () => move.mutate({ id: lead.id, to: from as MoveTarget }, { onError: fail }) }
             : undefined,
         }),
@@ -84,8 +84,11 @@ export function PipelinePage({ search }: { search: LeadsSearch }) {
       return sendNda.mutate(lead.id, { onSuccess: () => toast.success(t("pipeline.t_nda_sent", { name: lead.business.name })), onError: fail });
     if (action === "send_mou")
       return sendMou.mutate(lead.id, { onSuccess: () => toast.success(t("pipeline.t_mou_sent", { name: lead.business.name })), onError: fail });
-    if (action === "restore") return doMove(lead, "evaluated");
+    // A discarded lead has no primary action here: only SM Global reactivates it (never through move).
+    if (action === "restore") return;
     if (action === "schedule") {
+      // Without a booking link there is nothing to open and the lead stays put (the detail disables the button).
+      if (!lead.booking_url) return;
       // Open synchronously from the click so the browser does not block the new tab.
       window.open(lead.booking_url, "_blank", "noopener,noreferrer");
       return doMove(lead, "meeting", t("pipeline.t_scheduled", { name: lead.business.name }));

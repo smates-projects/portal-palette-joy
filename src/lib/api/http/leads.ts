@@ -161,6 +161,20 @@ export function createHttpLeadsRepository(client: HttpClient): HttpLeadsReposito
 
     move: (id, to) => guardedWrite(id, "move", { to }),
 
+    /** POST /meetings { ..., source: "manual" } (Idempotency-Key): "Registrar reunión". The new ETag is kept. */
+    registerMeeting: (id, input) =>
+      leadWrite(
+        id,
+        "meetings",
+        {
+          starts_at: input.starts_at,
+          duration_minutes: input.duration_minutes,
+          meet_url: input.meet_url?.trim() ? input.meet_url.trim() : null,
+          source: "manual",
+        },
+        true,
+      ),
+
     discard: (id, reason) => guardedWrite(id, "discard", { reason }),
 
     /** POST /reactivate (If-Match on the lead): SM Global brings back a lead discarded by itself (mou_not_signed). */

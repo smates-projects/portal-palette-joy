@@ -30,10 +30,10 @@ describe("pipeline transitions", () => {
     expect(resolveLeadMove("in_program", "accepted")).toEqual({ ok: false, reason: "locked" });
     expect(resolveLeadMove("in_program", "discarded")).toEqual({ ok: false, reason: "locked" });
   });
-  it("discards from any active stage and reactivates only to Evaluado", () => {
+  it("discards from any active stage; a discarded lead is never moved (SM Global reactivates it)", () => {
     expect(resolveLeadMove("meeting", "discarded")).toEqual({ ok: true, action: "discard" });
-    expect(resolveLeadMove("discarded", "evaluated")).toEqual({ ok: true, action: "restore" });
-    expect(resolveLeadMove("discarded", "meeting").ok).toBe(false);
+    expect(resolveLeadMove("discarded", "evaluated")).toEqual({ ok: false, reason: "global_only" });
+    expect(resolveLeadMove("discarded", "meeting")).toEqual({ ok: false, reason: "global_only" });
   });
 });
 

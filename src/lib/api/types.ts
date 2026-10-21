@@ -816,8 +816,10 @@ export interface Lead {
 export type TripartiteState = "none" | "pending" | "signed";
 
 export interface LeadWithComputed extends Lead {
-  /** Consultant's booking link, or the office default. Resolved by the data layer. */
-  booking_url: string;
+  /** Consultant's booking link, or the office default. Null when neither is set: "Agendar reunión" cannot open a link. */
+  booking_url: string | null;
+  /** Where booking_url came from; null when there is none. */
+  booking_url_source?: "consultant" | "office" | null | undefined;
   /** Entry checklist once NDA and MOU were sent (null before). Computed by the data layer. */
   intake: IntakeSummary | null;
   tripartite: TripartiteState;
@@ -876,8 +878,8 @@ export type LeadEventKind =
   | "meeting_outcome" | "mou_sent"
   | "presented_to_bishops" | "expansion_booked"
   // Moved to another office ("Derivar a oficina"): body carries the office name. Reactivated by SM Global after an
-  // automatic discard.
-  | "transferred" | "reactivated"
+  // automatic discard. A meeting SM registered by hand ("Registrar reunión").
+  | "transferred" | "reactivated" | "meeting_registered"
   // Configurable entry contracts: a rule created a contract; the validation saved or closed.
   | "contract_created" | "validation_saved" | "validation_closed";
 
@@ -886,6 +888,8 @@ export interface LeadEvent {
   lead_id: Uuid;
   kind: LeadEventKind;
   actor_user_id: Uuid | null;
+  /** Name of the actor, so the office reads "Marilyn lo reactivó" even when it cannot list SM Global's people. */
+  actor_name?: string | null | undefined;
   created_at: IsoDateTime;
   from: LeadStage | null;
   to: LeadStage | null;

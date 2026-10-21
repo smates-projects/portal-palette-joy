@@ -193,7 +193,37 @@ export function createEntry(d: Deps) {
   };
 
   // ---------- Leads: calendar, simulation ----------
-  const leads: Pick<LeadsRepository, "listMeetings" | "simulateAssessment" | "simulateBooking"> = {
+  const leads: Pick<LeadsRepository, "listMeetings" | "simulateAssessment" | "simulateBooking" | "registerMeeting"> = {
+    /**
+     * "Registrar reunión": the consultant (SM team of the office) or SM Global types a meeting agreed by hand. Same
+     * effects as a booking (Evaluado → Reunión, owner account and NDA), but no summary email: SM already talked to the
+     * owner. After "No se presentó" / "Reagendar" it only replaces the meeting.
+     */
+    registerMeeting: async (id, input) => {
+      const u = me();
+      const l = db.leads.find((x) => x.id === id);
+      if (!l) throw new Error("not_found");
+      if (!(u.role === "sm_global" || (u.role === "sm_team" && u.organization_id === l.office_id))) throw new Error("forbidden");
+      const kind = bookingKind(l);
+      if (kind !== "initial" && kind !== "rebook") throw new Error("invalid_transition");
+      if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(input.starts_at) || Number.isNaN(Date.parse(input.starts_at))) throw new Error("invalid_date");
+      if (!Number.isInteger(input.duration_minutes) || input.duration_minutes <= 0) throw new Error("invalid_duration");
+      const meetUrl = input.meet_url?.trim() ?? "";
+      if (meetUrl && !/^https?:\/\/\S+/.test(meetUrl)) throw new Error("invalid_url");
+      const now = nowIso();
+      l.meeting = {
+        id: newId(), kind: "initial", starts_at: new Date(input.starts_at).toISOString(), duration_minutes: input.duration_minutes, meet_url: meetUrl,
+        consultant_user_id: l.consultant_user_id, booked_at: now, notes_at: null, outcome: null, outcome_prompted_at: null,
+      };
+      l.last_contact_at = now;
+      if (kind === "initial") {
+        l.stage = "meeting";
+        l.stage_entered_at = now;
+        d.openNda(l);
+      }
+      db.leadEvents.push({ id: newId(), lead_id: l.id, kind: "meeting_registered", actor_user_id: u.id, created_at: now, from: kind === "initial" ? "evaluated" : null, to: kind === "initial" ? "meeting" : null, body: null });
+      return delay(d.withBooking(l));
+    },
     listMeetings: async () => {
       const u = me();
       if (u.role !== "sm_team") return delay([]);

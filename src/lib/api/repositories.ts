@@ -101,6 +101,7 @@ import type {
   CalendarConnection,
   IsoDateTime,
   PortalMeeting,
+  RegisterMeetingInput,
   RescheduleMeetingInput,
   ScheduleMeetingInput,
   EntryContractRule,
@@ -309,8 +310,15 @@ export interface LeadDetail {
 export interface LeadsRepository {
   list(opts?: { office_id?: Uuid }): Promise<LeadWithComputed[]>;
   get(id: Uuid): Promise<LeadDetail | null>;
-  /** One step back, Evaluado → Reunión, or reactivate a discarded lead to evaluated (see resolveLeadMove). */
+  /** One step back, or Evaluado → Reunión (see resolveLeadMove). A discarded lead is refused: only reactivate brings it back. */
   move(id: Uuid, to: Exclude<LeadStage, "discarded" | "in_program">): Promise<LeadWithComputed>;
+  /**
+   * POST /leads/{id}/meetings { starts_at, duration_minutes, meet_url?, source: "manual" }: "Registrar reunión". The
+   * consultant (SM team of the office) or SM Global registers a meeting agreed by hand: Evaluado → Reunión (the owner
+   * account and the NDA are created as with a booking), or a new meeting after "No se presentó" / "Reagendar".
+   * invalid_transition anywhere else.
+   */
+  registerMeeting(id: Uuid, input: RegisterMeetingInput): Promise<LeadWithComputed>;
   /** Required reason. Not allowed once in program. */
   discard(id: Uuid, reason: string): Promise<LeadWithComputed>;
   /**

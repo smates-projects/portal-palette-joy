@@ -59,6 +59,46 @@ describe("automatic entry (mock)", () => {
     await expect(api.leads.simulateBooking(l.id)).rejects.toThrow("invalid_transition");
   });
 
+  it("Registrar reunión: the consultant types the meeting; Evaluado → Reunión with the NDA and no summary email; SM Global may too", async () => {
+    const api = createMockApi();
+    await api.session.setViewAs(seed.U_NICOLAS);
+    const l = await api.leads.simulateAssessment();
+    const registered = await api.leads.registerMeeting(l.id, { starts_at: "2026-10-22T14:30:00.000Z", duration_minutes: 45, meet_url: null });
+    expect(registered.stage).toBe("meeting");
+    expect(registered.meeting).toMatchObject({ kind: "initial", starts_at: "2026-10-22T14:30:00.000Z", duration_minutes: 45, meet_url: "", outcome: null });
+    expect(registered.summary_sent_at).toBeNull();
+    expect(registered.intake).toMatchObject({ nda_signed: false });
+    const events = (await api.leads.get(l.id))!.events;
+    expect(events.find((e) => e.kind === "meeting_registered")).toMatchObject({ actor_user_id: seed.U_NICOLAS, actor_name: "Nicolás García", from: "evaluated", to: "meeting" });
+    // Once booked there is nothing to register until the meeting is answered "No se presentó" or "Reagendar".
+    await expect(api.leads.registerMeeting(l.id, { starts_at: "2026-10-23T14:30:00.000Z", duration_minutes: 30 })).rejects.toThrow("invalid_transition");
+    await expect(api.leads.registerMeeting(l.id, { starts_at: "nope", duration_minutes: 30 })).rejects.toThrow("invalid_transition");
+    // After a reschedule: the new meeting replaces the old one, from SM Global's view too.
+    await api.leads.setMeetingOutcome(l.id, registered.meeting!.id!, { outcome: "reschedule" });
+    await api.session.setViewAs(seed.U_MARYLIN);
+    const again = await api.leads.registerMeeting(l.id, { starts_at: "2026-10-24T15:00:00.000Z", duration_minutes: 30, meet_url: "https://meet.google.com/abc-defg-hij" });
+    expect(again.meeting).toMatchObject({ starts_at: "2026-10-24T15:00:00.000Z", meet_url: "https://meet.google.com/abc-defg-hij", outcome: null });
+    expect(again.stage).toBe("meeting");
+    await api.session.setViewAs(seed.U_NICOLAS);
+    await expect(api.leads.registerMeeting(l.id, { starts_at: "2026-10-24T15:00:00.000Z", duration_minutes: 30, meet_url: "meet.google.com/x" })).rejects.toThrow("invalid_transition");
+  });
+
+  it("a discarded lead is never moved: the office gets invalid_transition, only SM Global reactivates it", async () => {
+    const api = createMockApi();
+    await api.session.setViewAs(seed.U_NICOLAS);
+    const l = await api.leads.simulateAssessment();
+    await api.leads.discard(l.id, "No le interesa por ahora");
+    await expect(api.leads.move(l.id, "evaluated")).rejects.toThrow("invalid_transition");
+    await expect(api.leads.reactivate(l.id)).rejects.toThrow("global_only");
+    await api.session.setViewAs(seed.U_MARYLIN);
+    const back = await api.leads.reactivate(l.id);
+    expect(back).toMatchObject({ stage: "evaluated", discard_reason: null, discarded_from: null });
+    // The office reads who did it by name, although it cannot list SM Global's people.
+    await api.session.setViewAs(seed.U_NICOLAS);
+    const events = (await api.leads.get(l.id))!.events;
+    expect(events.at(-1)).toMatchObject({ kind: "reactivated", actor_name: "Marilyn Boraei", to: "evaluated" });
+  });
+
   it("Simular reserva sends the summary with the meeting: summary_sent_at is set and the phase is summary_sent", async () => {
     const api = createMockApi();
     await api.session.setViewAs(seed.U_NICOLAS);

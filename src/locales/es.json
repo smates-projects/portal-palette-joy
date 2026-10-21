@@ -1250,7 +1250,7 @@
     "move": {
       "no_skip": "{{name}} no puede pasar a {{to}}. Se vuelve de a una etapa.",
       "no_locked": "{{name}} ya está en programa. No se puede mover.",
-      "no_restore_only": "Un lead descartado solo se puede reactivar a Evaluado.",
+      "no_global_only": "Un lead descartado no se mueve. Solo SM Global puede reactivarlo.",
       "no_action_only": "{{name}} pasa a {{to}} solo con su acción, no arrastrando la tarjeta."
     },
     "t_moved": "{{name}} pasó a {{to}}.",
@@ -1305,6 +1305,8 @@
       "not_found": "Este lead no existe o no es de tu oficina.",
       "submitted_at": "Hizo el assessment el {{date}}",
       "booking_from_office": "Se abrirá el link de la oficina porque {{name}} todavía no cargó el suyo.",
+      "no_booking_url": "Carga un link de reservas en el perfil o en la oficina para poder agendar.",
+      "reactivate_hint": "Vuelve a {{to}}, la etapa en la que estaba.",
       "read_only": "Solo lectura. Los cambios los hace la oficina."
     },
     "blocks": {
@@ -1354,6 +1356,8 @@
       "mou_signed": "Se firmó el MOU",
       "transferred": "Derivado a {{office}} por {{actor}}",
       "reactivated": "{{actor}} lo reactivó desde SM Global",
+      "meeting_registered": "{{actor}} registró la reunión acordada con el dueño",
+      "actor_fallback": "Strategic Mates",
       "contract_created": "Se creó un contrato del ingreso",
       "validation_saved": "{{actor}} guardó la validación",
       "validation_closed": "{{actor}} cerró la validación con los porcentajes definitivos"
@@ -1466,6 +1470,29 @@
       "manual": "Pasó a Reunión sin reserva del dueño. Acuerda la fecha con él.",
       "expansion_title": "Reunión de ampliación",
       "expansion_none": "Todavía no se reservó la reunión de ampliación."
+    },
+    "register": {
+      "action": "Registrar reunión",
+      "title": "Registrar la reunión con {{name}}",
+      "body": "Para una reunión que acordaste con el dueño fuera del calendario de reservas. El negocio pasa a Reunión agendada y se crea su cuenta con el NDA.",
+      "body_rebook": "La reunión anterior no se hizo. Registra la nueva fecha que acordaste con el dueño.",
+      "date": "Fecha",
+      "time": "Hora",
+      "duration": "Duración",
+      "minutes": "{{count}} min",
+      "meet_url": "Link de Google Meet (opcional)",
+      "meet_url_hint": "Si ya tienes el link de la videollamada, pégalo aquí.",
+      "confirm": "Registrar reunión",
+      "error_date_required": "Elige la fecha.",
+      "error_time_required": "Elige la hora.",
+      "error_invalid_duration": "Elige una duración.",
+      "error_invalid_url": "Escribe un link válido, que empiece con https.",
+      "t_done": "Registraste la reunión con {{name}} para el {{date}}.",
+      "errors": {
+        "invalid_transition": "Este negocio ya tiene su reunión o no está en una etapa donde se pueda registrar.",
+        "invalid_url": "El link de la videollamada no es válido.",
+        "invalid_date": "La fecha y la hora no son válidas."
+      }
     },
     "note": {
       "title": "Nota de la reunión con {{name}}",

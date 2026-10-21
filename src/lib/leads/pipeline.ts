@@ -23,8 +23,8 @@ export const daysSince = (iso: string, today: string = todayIso()) =>
   Math.round((Date.parse(`${today}T12:00:00Z`) - Date.parse(`${day(iso)}T12:00:00Z`)) / 86_400_000);
 
 export type LeadMove =
-  | { ok: true; action: "move" | "restore" | "discard" }
-  | { ok: false; reason: "same" | "skip" | "locked" | "restore_only" | "action_only" };
+  | { ok: true; action: "move" | "discard" }
+  | { ok: false; reason: "same" | "skip" | "locked" | "global_only" | "action_only" };
 
 /** Stages reached only through their action (Enviar NDA y MOU, Aprobar documentación, start of the program). */
 const ACTION_ONLY: LeadStage[] = ["documents", "accepted", "in_program"];
@@ -32,12 +32,12 @@ const ACTION_ONLY: LeadStage[] = ["documents", "accepted", "in_program"];
 /**
  * Valid moves: one step back, or Evaluado → Reunión. Documentación, Aceptado and En programa are reached only with
  * their action, never by dragging. Discard from any active stage (needs a reason). En programa is never left.
- * A discarded lead can only be reactivated to Evaluado.
+ * A discarded lead is never moved: only SM Global brings it back, with "Reactivar" (LeadsRepository.reactivate).
  */
 export function resolveLeadMove(from: LeadStage, to: LeadStage): LeadMove {
   if (from === to) return { ok: false, reason: "same" };
   if (from === "in_program") return { ok: false, reason: "locked" };
-  if (from === "discarded") return to === "evaluated" ? { ok: true, action: "restore" } : { ok: false, reason: "restore_only" };
+  if (from === "discarded") return { ok: false, reason: "global_only" };
   if (to === "discarded") return { ok: true, action: "discard" };
   const diff = LEAD_STAGES.indexOf(to as ActiveLeadStage) - LEAD_STAGES.indexOf(from);
   if (diff === -1) return { ok: true, action: "move" };
