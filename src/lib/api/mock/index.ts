@@ -420,7 +420,7 @@ export function createMockApi(): MockApi {
       const fw = db.frameworkContracts.find((x) => x.id === contractId);
       if (fw) {
         if (u.role === "bishop" && fw.signers.some((s) => s.party === "bishop" && s.user_id === u.id)) return { c: fw, party: "bishop" as const };
-        // SM Global countersigns the framework agreements from Acuerdos.
+        // SM Global countersigns the framework agreements from Bishops.
         if (u.role === "sm_global") return { c: fw, party: "sm" as const };
         throw new Error("not_found");
       }

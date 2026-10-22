@@ -136,7 +136,9 @@
       "empty_title": "There is nobody in the network yet",
       "empty_body": "When you invite the first person, they will show up here with their status.",
       "empty_filtered_title": "Nobody matches these filters",
-      "empty_filtered_body": "Remove a filter to see more people."
+      "empty_filtered_body": "Remove a filter to see more people.",
+      "bishops_note": "Bishops are managed on their own screen.",
+      "bishops_link": "Go to Bishops"
     },
     "invite": {
       "title": "Invite person",
@@ -165,13 +167,7 @@
       "err_email": "Enter a valid email, for example name@company.com.",
       "err_place": "Pick where the person goes.",
       "t_sent": "We sent the invitation to {{name}} ({{email}}).",
-      "bishop_framework": "Their framework agreement with Strategic Mates is created. They sign it from their portal and Strategic Mates signs it from Agreements. Until then no business can be presented to them."
-    },
-    "framework": {
-      "none": "No framework agreement",
-      "signed": "Framework agreement signed by both parties",
-      "pending": "Framework agreement, waiting for {{parties}}",
-      "go_sign": "Sign in Agreements"
+      "bishop_framework": "Their framework agreement with Strategic Mates is created. They sign it from their portal and Strategic Mates signs it from Bishops. Until then no business can be presented to them."
     },
     "deactivate": {
       "title": "Deactivate {{name}}",
@@ -1439,7 +1435,7 @@
       "t_presented_one": "You presented {{name}} to {{count}} investor.",
       "t_presented_other": "You presented {{name}} to {{count}} investors.",
       "no_framework": "Framework agreement not signed yet",
-      "framework_explainer": "A Bishop shows here once his framework agreement is signed by him and by Strategic Mates. The agreement is created with the invitation and Strategic Mates signs it from Agreements.",
+      "framework_explainer": "A Bishop shows here once his framework agreement is signed by him and by Strategic Mates. The agreement is created with the invitation and Strategic Mates signs it from Bishops.",
       "load_error": "We could not show the investors of this business."
     },
     "t_tripartite_sent": "We sent the tripartite contract for {{name}}.",

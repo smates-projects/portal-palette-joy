@@ -136,7 +136,9 @@
       "empty_title": "Todavía no hay personas en la red",
       "empty_body": "Cuando invites a la primera persona, aparecerá aquí con su estado.",
       "empty_filtered_title": "Ninguna persona coincide con estos filtros",
-      "empty_filtered_body": "Quita algún filtro para ver más personas."
+      "empty_filtered_body": "Quita algún filtro para ver más personas.",
+      "bishops_note": "Los Bishops se administran en su propia pantalla.",
+      "bishops_link": "Ir a Bishops"
     },
     "invite": {
       "title": "Invitar persona",
@@ -165,13 +167,7 @@
       "err_email": "Escribe un correo válido, por ejemplo nombre@empresa.com.",
       "err_place": "Elige dónde va la persona.",
       "t_sent": "Enviamos la invitación a {{name}} ({{email}}).",
-      "bishop_framework": "Se crea su acuerdo marco con Strategic Mates. Él lo firma desde su portal y Strategic Mates lo firma desde Acuerdos. Hasta entonces no se le pueden presentar negocios."
-    },
-    "framework": {
-      "none": "Sin acuerdo marco",
-      "signed": "Acuerdo marco firmado por ambas partes",
-      "pending": "Acuerdo marco, falta {{parties}}",
-      "go_sign": "Firmar en Acuerdos"
+      "bishop_framework": "Se crea su acuerdo marco con Strategic Mates. Él lo firma desde su portal y Strategic Mates lo firma desde Bishops. Hasta entonces no se le pueden presentar negocios."
     },
     "deactivate": {
       "title": "Desactivar a {{name}}",
@@ -1439,7 +1435,7 @@
       "t_presented_one": "Presentaste {{name}} a {{count}} inversor.",
       "t_presented_other": "Presentaste {{name}} a {{count}} inversores.",
       "no_framework": "Falta firmar el acuerdo marco",
-      "framework_explainer": "Un Bishop aparece aquí cuando su acuerdo marco está firmado por él y por Strategic Mates. El acuerdo se crea al invitarlo y Strategic Mates lo firma desde Acuerdos.",
+      "framework_explainer": "Un Bishop aparece aquí cuando su acuerdo marco está firmado por él y por Strategic Mates. El acuerdo se crea al invitarlo y Strategic Mates lo firma desde Bishops.",
       "load_error": "No pudimos mostrar los inversores de este negocio."
     },
     "t_tripartite_sent": "Enviamos el contrato tripartito de {{name}}.",

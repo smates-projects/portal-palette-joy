@@ -6,7 +6,9 @@ import "@/lib/i18n";
 import { api } from "@/lib/api";
 import * as seed from "@/lib/api/mock/seed";
 import * as net from "@/lib/api/mock/seed-network";
+import { PeoplePage } from "../people/PeoplePage";
 import { BishopDetailPage } from "./BishopDetailPage";
+import { BishopsPage } from "./BishopsPage";
 
 /** The Bishops screens alone, on a memory router with both addresses (the rows and "Ver" link to the detail). */
 const renderAt = (path: string) => {
@@ -19,7 +21,9 @@ const renderAt = (path: string) => {
       return <BishopDetailPage userId={userId} />;
     },
   });
-  const router = createRouter({ routeTree: rootRoute.addChildren([detail]), history: createMemoryHistory({ initialEntries: [path] }) });
+  const list = createRoute({ getParentRoute: () => rootRoute, path: "/bishops", component: BishopsPage });
+  const people = createRoute({ getParentRoute: () => rootRoute, path: "/personas", component: PeoplePage });
+  const router = createRouter({ routeTree: rootRoute.addChildren([list, detail, people]), history: createMemoryHistory({ initialEntries: [path] }) });
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={client}>
@@ -60,5 +64,17 @@ describe("Bishop detail (SM Global)", () => {
   it("an unknown id says so", async () => {
     renderAt("/bishops/nope");
     expect(await screen.findByText(/No encontramos a este Bishop/)).toBeInTheDocument();
+  });
+});
+
+describe("Personas without Bishops", () => {
+  it("lists the SM team and the network but no Bishop, with the way to Bishops", async () => {
+    renderAt("/personas");
+    // The phone list and the table both carry each person.
+    expect((await screen.findAllByText("Valentina Ríos", {}, { timeout: 3000 })).length).toBeGreaterThan(0);
+    expect(screen.queryByText("Jefferson Paula")).toBeNull();
+    expect(screen.queryByText("Diego Rivas")).toBeNull();
+    expect(screen.getByText("Los Bishops se administran en su propia pantalla.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ir a Bishops" })).toHaveAttribute("href", "/bishops");
   });
 });

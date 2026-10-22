@@ -3,10 +3,9 @@ import { useTranslation } from "react-i18next";
 import { UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
-import { useBusinesses, useCurrentUser, useFrameworkAgreements, useOrganizations, useRules, useSetSigningEntities, useUsersWithInactive } from "@/lib/api/hooks";
+import { useBusinesses, useCurrentUser, useOrganizations, useRules, useSetSigningEntities, useUsersWithInactive } from "@/lib/api/hooks";
 import { smEntitiesOf } from "@/lib/leads/contract-rules";
-import { pendingPartyNames } from "@/lib/contracts/parties";
-import type { Contract, User, UserRole, UserStatus } from "@/lib/api/types";
+import type { User, UserRole, UserStatus } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EmptyBox, ErrorBox, GlobalHeader, ListSkeleton } from "../shared";
@@ -14,10 +13,14 @@ import { AccountHistorySheet, AdminTag, officeNameOf, placeOf, primaryBtn, UserS
 import { DeactivatePersonDialog, InvitePersonDialog, PersonActions } from "@/components/accounts/AccountDialogs";
 
 const ALL = "__all";
-const ROLES: UserRole[] = ["sm_global", "sm_team", "partner_firm", "business_owner", "bishop", "franchisee"];
+// Bishops are not listed here: they have their own screen (Bishops), since they talk only to headquarters.
+const ROLES: UserRole[] = ["sm_global", "sm_team", "partner_firm", "business_owner", "franchisee"];
 const STATUSES: UserStatus[] = ["invited", "active", "inactive"];
 
-/** Personas (SM Global): everyone in the network, by office, role and status. One action: "Invitar persona". */
+/**
+ * Personas (SM Global): everyone in the network except the Bishops (they have their own screen), by office, role and
+ * status. One action: "Invitar persona".
+ */
 export function PeoplePage() {
   const { t } = useTranslation();
   const me = useCurrentUser().data;
@@ -46,7 +49,7 @@ export function PeoplePage() {
   const orgs = orgsQ.data ?? [];
   const businesses = bizQ.data ?? [];
   const offices = orgs.filter((o) => o.kind === "sm").sort((a, b) => a.name.localeCompare(b.name));
-  const all = (usersQ.data ?? []).map((u) => ({ user: u, office: officeNameOf(u, orgs, businesses), place: placeOf(u, orgs, businesses, t), status: userStatus(u) }));
+  const all = (usersQ.data ?? []).filter((u) => u.role !== "bishop").map((u) => ({ user: u, office: officeNameOf(u, orgs, businesses), place: placeOf(u, orgs, businesses, t), status: userStatus(u) }));
   const rows = all
     .filter((r) => (!office || (office === "global" ? r.user.role === "sm_global" : r.office === offices.find((o) => o.id === office)?.name)) && (!role || r.user.role === role) && (!status || r.status === status))
     .sort((a, b) => a.office.localeCompare(b.office) || ROLES.indexOf(a.user.role) - ROLES.indexOf(b.user.role) || a.user.full_name.localeCompare(b.user.full_name));
@@ -57,6 +60,9 @@ export function PeoplePage() {
     <div className="mx-auto max-w-7xl px-6 py-8">
       {header}
       <p className="mt-2 text-sm text-muted-foreground">{t("accounts.people.summary", { total: all.length, invited: counts.invited, inactive: counts.inactive })}</p>
+      <p className="mt-1 text-sm text-muted-foreground">
+        {t("accounts.people.bishops_note")} <Link to="/bishops" className="text-link hover:underline">{t("accounts.people.bishops_link")}</Link>
+      </p>
 
       <div className="mt-6 flex flex-wrap items-center gap-2">
         <Filter label={t("accounts.people.filter_office")} value={office} all={t("accounts.people.all_offices")} onChange={setOffice}
@@ -85,7 +91,6 @@ export function PeoplePage() {
                 </div>
                 <div className="text-xs text-muted-foreground">{[t(`roles.${r.user.role}`), r.user.title, r.place, r.office || (r.user.role === "sm_global" ? t("roles.sm_global") : "")].filter(Boolean).join(" · ")}</div>
                 <SmSquareToggle user={r.user} />
-                <FrameworkState user={r.user} />
                 <PersonActions user={r.user} orgs={orgs} onDeactivate={setDeactivating} onHistory={setHistory} />
               </li>
             ))}
@@ -112,7 +117,6 @@ export function PeoplePage() {
                     </td>
                     <td className="px-3 py-3">
                       {t(`roles.${r.user.role}`)}{r.user.title ? <span className="block text-xs text-muted-foreground">{r.user.title}</span> : null}
-                      <FrameworkState user={r.user} />
                     </td>
                     <td className="px-3 py-3">{r.place || <span className="text-xs text-muted-foreground">{t("app.no_data")}</span>}</td>
                     <td className="px-3 py-3">{r.office || (r.user.role === "sm_global" ? t("roles.sm_global") : <span className="text-xs text-muted-foreground">{t("app.no_data")}</span>)}</td>
@@ -132,22 +136,6 @@ export function PeoplePage() {
       <DeactivatePersonDialog user={deactivating} onClose={() => setDeactivating(null)} />
       <AccountHistorySheet user={history} onClose={() => setHistory(null)} />
     </div>
-  );
-}
-
-/** Bishops only: the state of their framework agreement (created with the invitation), with the way to Acuerdos. */
-function FrameworkState({ user }: { user: User }) {
-  const { t } = useTranslation();
-  const q = useFrameworkAgreements(user.role === "bishop");
-  if (user.role !== "bishop") return null;
-  const c: Contract | undefined = q.data?.find((x) => x.signers.some((s) => s.party === "bishop" && s.user_id === user.id));
-  const pending = c ? pendingPartyNames(c) : [];
-  const text = !c ? t("accounts.framework.none") : c.state === "signed" || pending.length === 0 ? t("accounts.framework.signed") : t("accounts.framework.pending", { parties: pending.join(", ") });
-  return (
-    <p className="mt-1 text-xs text-muted-foreground">
-      {text}
-      {c && c.state !== "signed" && c.can_sign && <> · <Link to="/acuerdos" className="text-link hover:underline">{t("accounts.framework.go_sign")}</Link></>}
-    </p>
   );
 }
 

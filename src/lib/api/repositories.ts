@@ -700,7 +700,7 @@ export interface DocumentsRepository {
   acknowledge(contractId: Uuid, points: MouAcknowledgmentPoint[]): Promise<Contract>;
   /**
    * SM Global: every Bishop's framework agreement (GET /contracts?kind=framework), with can_sign for the one reading.
-   * Created by itself when a Bishop is invited; Corporate countersigns it from Acuerdos. forbidden for anyone else.
+   * Created by itself when a Bishop is invited; Corporate countersigns it from Bishops. forbidden for anyone else.
    */
   listFrameworkAgreements(): Promise<Contract[]>;
 }
