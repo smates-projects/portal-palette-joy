@@ -383,6 +383,12 @@ describe("http leads", () => {
     expect(calls[0]).toMatchObject({ method: "GET", path: "/meetings" });
   });
 
+  it("listMeetings with an office (SM Global, Viendo): GET /meetings?office_id=", async () => {
+    const { calls } = stubFetch(dataResponse([]));
+    expect(await setup().leads.listMeetings("office-1")).toEqual([]);
+    expect(calls[0]).toMatchObject({ method: "GET", path: "/meetings?office_id=office-1" });
+  });
+
   it("registerMeeting: POST /meetings with source manual, duration_minutes and a null Meet link when empty", async () => {
     const { calls } = stubFetch(dataResponse(leadFixture(), 201, { ETag: '"3"' }));
     const { leads, client } = setup();

@@ -3,7 +3,9 @@
 //   the entry meetings of the leads she follows as consultant (from GET /leads) and her Google events, read only.
 // - One office: that office's entry meetings (GET /leads?office_id=) and her portal meetings about its leads or
 //   businesses. Her Google events stay out, they are not the office's.
-// The API has no list of an office's portal meetings for Global, so the office view is built from its leads.
+// Entry meetings are read from GET /meetings first (Global's own, or the office's with office_id); when it answers
+// nothing they are built here from the leads in view (GET /leads), the fallback for an API that still answers []
+// to Global. The API has no list of an office's portal meetings for Global, so those come from her own only.
 import { ALL_OFFICES, type OfficeScope } from "@/lib/office-scope";
 import type { LeadMeeting, LeadMeetingItem } from "@/lib/api/entry-types";
 import type { PortalMeeting } from "@/lib/api/types";

@@ -378,8 +378,12 @@ export function useConfirmProgramStart() {
 }
 
 // ---------- Automatic entry, zones, "Ya lo tenía", ficha del negocio ----------
-/** LeadMeetingItem[]: booked meetings of the current consultant's leads (SM team; empty for anyone else). */
-export const useLeadMeetings = (enabled = true) => useQuery({ queryKey: ["leads", "meetings"], queryFn: api.leads.listMeetings, enabled: whenSignedIn(enabled) });
+/**
+ * LeadMeetingItem[]: booked meetings of the current consultant's leads (SM team and SM Global; empty for anyone else).
+ * officeId: SM Global looking at one office ("Viendo"), every booked meeting there.
+ */
+export const useLeadMeetings = (enabled = true, officeId?: string) =>
+  useQuery({ queryKey: ["leads", "meetings", officeId ?? "mine"], queryFn: () => api.leads.listMeetings(officeId), enabled: whenSignedIn(enabled) });
 /** "¿Se hizo?": Se hizo (with an optional note) / No se presentó / Reagendar. "Se hizo" may send the MOU: refresh the entry too. */
 export const useSetMeetingOutcome = () =>
   useNetworkMutation(

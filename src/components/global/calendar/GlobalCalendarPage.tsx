@@ -3,7 +3,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
-  useBusinesses, useCalendarConnection, useCurrentUser, useLeads, useOrganizations, useRegisterMeeting, useUsers,
+  useBusinesses, useCalendarConnection, useCurrentUser, useLeadMeetings, useLeads, useOrganizations, useRegisterMeeting, useUsers,
 } from "@/lib/api/hooks";
 import type { RegisterMeetingInput } from "@/lib/api/types";
 import { useOfficeScope } from "@/lib/office-scope";
@@ -87,11 +87,15 @@ export function GlobalCalendarPage({ search }: { search: GlobalCalendarSearch })
       <Link to="/embudo" className="text-link hover:underline">{t("calendar.global.empty_link")}</Link>
     </div>
   );
+  // GET /meetings first (her own, or the office's with office_id); while it answers nothing for Global, the same
+  // meetings come from the leads in view.
+  const meetingsQ = useLeadMeetings(true, view.kind === "office" ? view.officeId : undefined);
+  const leadMeetings = meetingsQ.data && meetingsQ.data.length > 0 ? meetingsQ.data : entryMeetingsOf(inView);
   const meetingsOnly: MeetingsOnlyScope = {
-    leadMeetings: entryMeetingsOf(inView),
+    leadMeetings,
     portalFilter: portalMeetingFilter(view, view.kind === "office" ? inView : [], officeBusinessIds),
     showGoogle: view.kind === "own",
-    loading: leadsQ.isLoading,
+    loading: leadsQ.isLoading || meetingsQ.isLoading,
     initialMode: "week",
     renderEmpty: empty,
   };

@@ -408,8 +408,11 @@ export interface LeadsRepository {
   createManual(input: ManualLeadInput): Promise<LeadWithComputed>;
   /** SM team: sends the assessment link to a manual lead (simulated); it shows "Assessment pendiente" until the result arrives. */
   sendAssessment(id: Uuid): Promise<LeadWithComputed>;
-  /** Booked meetings of the current SM person's leads (consultant), soonest first. */
-  listMeetings(): Promise<LeadMeetingItem[]>;
+  /**
+   * Booked meetings of the current SM person's leads (consultant), soonest first. SM Global gets its own the same
+   * way; with `officeId` (Global only) it gets every booked meeting of that office instead.
+   */
+  listMeetings(officeId?: Uuid): Promise<LeadMeetingItem[]>;
   /**
    * Demo only (in production these come by webhook). SM team. A new assessment with credible data, routed by zone,
    * in Evaluado with no email sent; and a booking on an evaluated lead, which moves it to Reunión by itself, creates

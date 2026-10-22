@@ -224,12 +224,14 @@ export function createEntry(d: Deps) {
       db.leadEvents.push({ id: newId(), lead_id: l.id, kind: "meeting_registered", actor_user_id: u.id, created_at: now, from: kind === "initial" ? "evaluated" : null, to: kind === "initial" ? "meeting" : null, body: null });
       return delay(d.withBooking(l));
     },
-    listMeetings: async () => {
+    listMeetings: async (officeId) => {
       const u = me();
-      if (u.role !== "sm_team") return delay([]);
+      if (u.role !== "sm_team" && u.role !== "sm_global") return delay([]);
+      // office_id is SM Global's "Viendo" on one office: every booked meeting there. Otherwise the person's own.
+      const office = u.role === "sm_global" ? officeId : undefined;
       // The initial meeting while in Reunión, and the expansion meeting of an accepted lead until it is held.
       const items: LeadMeetingItem[] = d.visibleLeads()
-        .filter((l) => l.consultant_user_id === u.id)
+        .filter((l) => (office ? l.office_id === office : l.consultant_user_id === u.id))
         .flatMap((l) => {
           const m = l.stage === "meeting" ? l.meeting : l.stage === "accepted" && !l.expansion_meeting_held_at ? l.expansion_meeting ?? null : null;
           return m ? [{ lead_id: l.id, business_name: l.business.name, owner_name: l.contact.name, city: l.contact.city, state: l.contact.state, meeting: m }] : [];

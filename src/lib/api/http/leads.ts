@@ -292,7 +292,8 @@ export function createHttpLeadsRepository(client: HttpClient): HttpLeadsReposito
 
     sendAssessment: (id) => leadWrite(id, "send-assessment", undefined, true),
 
-    listMeetings: () => client.get<LeadMeetingItem[]>("/meetings"),
+    /** office_id only for SM Global looking at one office ("Viendo"); the office team never sends it. */
+    listMeetings: (officeId) => client.get<LeadMeetingItem[]>("/meetings", officeId ? { query: { office_id: officeId } } : undefined),
 
     /**
      * Demo only. In production the assessment arrives at POST /webhooks/assessment signed with an HMAC secret
