@@ -276,7 +276,7 @@ export function TaskCalendar(props: {
       <AreaLegend areas={AREAS} className="pb-2" />
       {scoped && loaded && visibleCount === 0 && scoped.renderEmpty(mode)}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border border-border bg-surface">
-        <div className={cn("grid border-b border-border", mode === "week" ? "grid-cols-[3.25rem_repeat(7,minmax(0,1fr))]" : "grid-cols-7")}>
+        <div className={cn("grid border-b border-border", mode === "week" ? "grid-cols-[4.25rem_repeat(7,minmax(0,1fr))]" : "grid-cols-7")}>
           {mode === "week" && <div />}
           {days.slice(0, 7).map((d) => (
             <div key={d} className={cn("px-2 py-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground", mode === "week" && "border-l border-border text-center")}>
@@ -291,7 +291,7 @@ export function TaskCalendar(props: {
         {mode === "week" ? (
           <div className="min-h-0 flex-1 overflow-auto">
             {/* All-day strip: the due dates of the week, which have no hour. */}
-            <div className="grid grid-cols-[3.25rem_repeat(7,minmax(0,1fr))] border-b border-border">
+            <div className="grid grid-cols-[4.25rem_repeat(7,minmax(0,1fr))] border-b border-border">
               <div className="px-1.5 py-1 text-right text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{t("tasks.calendar.all_day")}</div>
               {days.map((d) => (
                 <div key={d} className={cn("flex min-h-9 min-w-0 flex-col gap-0.5 border-l border-border p-1", d === todayIso() && "bg-accent/40")}>
@@ -302,10 +302,10 @@ export function TaskCalendar(props: {
               ))}
             </div>
             {/* Time grid: hour gutter plus one column per day, blocks positioned by their start time. */}
-            <div className="grid grid-cols-[3.25rem_repeat(7,minmax(0,1fr))]">
+            <div className="grid grid-cols-[4.25rem_repeat(7,minmax(0,1fr))]">
               <div className="relative" style={{ height: gridHeight }}>
                 {hours.slice(1).map((h) => (
-                  <span key={h} className="absolute right-1.5 -translate-y-1/2 text-[10px] tabular-nums text-muted-foreground" style={{ top: (h - WEEK_START_HOUR) * WEEK_HOUR_PX }}>
+                  <span key={h} className="absolute right-1.5 -translate-y-1/2 whitespace-nowrap text-[10px] tabular-nums text-muted-foreground" style={{ top: (h - WEEK_START_HOUR) * WEEK_HOUR_PX }}>
                     {hourLabel(h)}
                   </span>
                 ))}
