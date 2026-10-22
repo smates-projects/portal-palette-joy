@@ -12,6 +12,7 @@ import { ReviewNoteAlert } from "@/components/pipeline/ReviewNoteAlert";
 import type { Contract } from "@/lib/api/types";
 import { DocuSealSigner } from "@/components/docuseal/DocuSealSigner";
 import { SignedContractDialog } from "@/components/docuseal/SignedContractDialog";
+import { SealedCopyLinks } from "@/components/docuseal/SealedCopies";
 import type { BusinessDocument, ContractState, DocumentState } from "@/lib/api/types";
 import { formatDate } from "@/lib/format";
 import { EmptyState, ErrorState, LoadingState, PageHeader, Panel, secondaryButtonCls, ToneBadge, type Tone } from "../shared";
@@ -187,6 +188,7 @@ export function OwnerDocumentsPage() {
                       )}
                       <ToneBadge tone={CONTRACT_TONE[c.state]}>{t(`owner_extra.documents.contract_${c.state}`)}</ToneBadge>
                     </div>
+                    <SealedCopyLinks contract={c} className="mt-2" />
                     {c.signers.length > 0 && (
                       <ul className="mt-2 space-y-0.5 text-xs text-muted-foreground">
                         {c.signers.map((s) => (

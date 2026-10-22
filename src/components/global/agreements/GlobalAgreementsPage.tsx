@@ -8,6 +8,7 @@ import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { DocuSealSigner } from "@/components/docuseal/DocuSealSigner";
 import { SignedContractDialog } from "@/components/docuseal/SignedContractDialog";
+import { SealedCopyLinks } from "@/components/docuseal/SealedCopies";
 import { primaryBtn, secondaryBtn } from "@/components/accounts/shared";
 import { EmptyBox, ErrorBox, GlobalHeader, ListSkeleton } from "../shared";
 
@@ -65,6 +66,7 @@ export function GlobalAgreementsPage() {
                     {c.signers.some((s) => s.signed_at) && (
                       <button className={secondaryBtn} onClick={() => setViewing(c)}><FileText className="h-4 w-4" />{t("intake.docuseal.view_signed")}</button>
                     )}
+                    <SealedCopyLinks contract={c} />
                   </div>
                 </li>
               );

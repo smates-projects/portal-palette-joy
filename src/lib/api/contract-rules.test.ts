@@ -64,7 +64,12 @@ describe("the rule engine in the demo", () => {
       await api.documents.signContract(binding.id);
     }
     await api.session.setViewAs(seed.U_CAMILA);
-    expect((await contractsOf(api, brisa.id)).find((c) => c.kind === "binding")!.state).toBe("signed");
+    const signed = (await contractsOf(api, brisa.id)).find((c) => c.kind === "binding")!;
+    expect(signed.state).toBe("signed");
+    // The last signature seals the two copies (fake ids and links in the demo).
+    expect(signed.sealed_files?.es?.download_url).toMatch(/\/es\.pdf\?/);
+    expect(signed.sealed_files?.en?.download_url).toMatch(/\/en\.pdf\?/);
+    expect(signed.sealed_files?.es?.file_id).not.toBe(signed.sealed_files?.en?.file_id);
     expect((await contractsOf(api, brisa.id)).some((c) => c.kind === "tripartite")).toBe(false);
     await expect(api.leads.sendTripartite(brisa.id)).rejects.toThrow("validation_open");
   });
@@ -171,6 +176,8 @@ describe("rules repository (SM Global edits, SM reads)", () => {
     expect(annex.text).toMatchObject({ en: null });
     expect(annex.explainers).toMatchObject({ en: null });
     expect(annex.signers.find((s) => s.party === "sm")!.status).toBe("signed");
+    // Signed by SM only: no sealed copy until the owner signs too.
+    expect(annex.sealed_files ?? null).toBeNull();
   });
 });
 

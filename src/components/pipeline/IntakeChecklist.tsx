@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { PrimaryButton, SecondaryButton } from "@/components/tasks/detail/dialogs";
 import { DocuSealSigner } from "@/components/docuseal/DocuSealSigner";
 import { SignedContractDialog } from "@/components/docuseal/SignedContractDialog";
+import { SealedCopyLinks } from "@/components/docuseal/SealedCopies";
 
 const TONE: Record<ReviewClock["tone"], string> = {
   ok: "border-border bg-muted text-foreground",
@@ -172,6 +173,7 @@ export function IntakeChecklist({ leadId, readOnly, validation }: { leadId: stri
           {deadline.state === "overdue" && <li className="text-status-danger-fg">{t("entry_contracts.checklist.overdue", { date: formatDate(deadline.sign_by, lng) })}</li>}
           {reason && !readOnly && <li>{reason}</li>}
         </ul>
+        <SealedCopyLinks contract={c} className="mt-2 pl-6" />
       </li>
     );
   };

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useBishopAgreements, useCurrentUser } from "@/lib/api/hooks";
 import { DocuSealSigner } from "@/components/docuseal/DocuSealSigner";
 import { SignedContractDialog } from "@/components/docuseal/SignedContractDialog";
+import { SealedCopyLinks } from "@/components/docuseal/SealedCopies";
 import type { AgreementState, BishopAgreement, Contract } from "@/lib/api/types";
 import { signingStatus } from "@/lib/contracts/parties";
 import { formatDate } from "@/lib/format";
@@ -73,7 +74,10 @@ export function AgreementsPage() {
                 <tbody className="divide-y divide-border border-t border-border">
                   {agreementsQ.data.map((a) => (
                     <tr key={a.id}>
-                      <td className="px-4 py-3 font-medium">{a.name}</td>
+                      <td className="px-4 py-3 font-medium">
+                        {a.name}
+                        {a.contract && <SealedCopyLinks contract={a.contract} className="mt-2 font-normal" />}
+                      </td>
                       <td className="px-4 py-3 text-muted-foreground">{a.counterparties}</td>
                       <td className="px-4 py-3"><AgreementStatus agreement={a} /></td>
                       <td className="px-4 py-3 tabular-nums">

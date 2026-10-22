@@ -3993,6 +3993,10 @@
       "option_es": "Español",
       "option_en": "Inglés",
       "t_saved": "Guardaste el idioma que prevalece. {{language}} desde ahora"
-    }
+    },
+    "download_es": "Descargar en español",
+    "download_en": "Download in English",
+    "sealed_label": "Copias selladas de {{name}}",
+    "t_demo_download": "En la demo no hay PDF real. Con la API la copia sellada se abre en otra pestaña"
   }
 }

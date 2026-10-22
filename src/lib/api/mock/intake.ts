@@ -11,7 +11,7 @@ import type {
 } from "../types";
 import type { PlatformRules } from "../network-types";
 import type { EntryContractRule } from "../entry-types";
-import { MOU_EXPLAINER, NDA_EXPLAINER, bilingualContract, defaultTemplateOf, governingLanguageOfRules } from "./contract-texts";
+import { MOU_EXPLAINER, NDA_EXPLAINER, bilingualContract, defaultTemplateOf, governingLanguageOfRules, sealIfSigned } from "./contract-texts";
 
 export interface IntakeRecord {
   lead_id: Uuid;
@@ -74,7 +74,7 @@ export const contractState = (c: Contract): Contract["state"] =>
 const settle = (c: Contract) => {
   c.state = contractState(c);
   c.signed_at = c.state === "signed" ? c.signers.map((s) => s.signed_at ?? "").sort().at(-1) ?? null : null;
-  return c;
+  return sealIfSigned(c);
 };
 
 export function createIntake(db: IntakeDb, newId: () => string) {
@@ -406,6 +406,8 @@ export function createIntake(db: IntakeDb, newId: () => string) {
       if (status === "declined") s.decline_reason = reason?.trim() || null;
       c.state = contractState(c);
       if (c.state === "signed") c.signed_at = todayIso();
+      // After the last signature the API seals one PDF per language; the mock fakes the two copies.
+      sealIfSigned(c);
       if (c.kind === "mou" && party === "owner" && status === "signed") unlockDocuments(c.business_id);
       return c;
     },

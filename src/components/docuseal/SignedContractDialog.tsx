@@ -9,6 +9,7 @@ import { formatDate } from "@/lib/format";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PrimaryButton, SecondaryButton } from "@/components/tasks/detail/dialogs";
 import { ContractText, SignatureMark } from "./ContractDocument";
+import { SealedCopyLinks } from "./SealedCopies";
 import { ContractFallbackNote, ContractGoverningNote, ContractLanguageToggle, useContractLanguage } from "./ContractLanguage";
 
 /**
@@ -111,7 +112,8 @@ export function SignedContractDialog({ contract, language: initial, onClose }: {
         </section>
         </div>
 
-        <div className="no-print flex justify-end gap-2">
+        <div className="no-print flex flex-wrap items-center justify-end gap-2">
+          <SealedCopyLinks contract={contract} className="mr-auto" />
           <SecondaryButton onClick={() => window.print()}><Printer className="mr-1.5 h-4 w-4" />{t("intake.docuseal.print")}</SecondaryButton>
           <PrimaryButton onClick={onClose}>{t("intake.docuseal.close")}</PrimaryButton>
         </div>

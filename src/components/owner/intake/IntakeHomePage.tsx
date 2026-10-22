@@ -12,6 +12,7 @@ import { isSplitFinal } from "@/lib/leads/validation";
 import { cn } from "@/lib/utils";
 import { DocuSealSigner } from "@/components/docuseal/DocuSealSigner";
 import { SignedContractDialog } from "@/components/docuseal/SignedContractDialog";
+import { SealedCopyLinks } from "@/components/docuseal/SealedCopies";
 import { ErrorState, LoadingState, PageHeader, primaryButtonCls } from "../shared";
 import { ContractExplainerCard } from "./ContractExplainer";
 import { useContractLanguage } from "@/components/docuseal/ContractLanguage";
@@ -123,6 +124,7 @@ export function IntakeHomePage({ focusStep }: { focusStep?: OwnerStepKey | undef
             <div className="flex flex-wrap items-center gap-4">
               <p className="text-sm">{t("intake.owner.nda.signed")}</p>
               {readFull(nda, "intake.owner.nda.view")}
+              <SealedCopyLinks contract={nda} />
             </div>
           );
         return (
@@ -152,6 +154,7 @@ export function IntakeHomePage({ focusStep }: { focusStep?: OwnerStepKey | undef
             <div className="flex flex-wrap items-center gap-4">
               <p className="text-sm">{t("intake.owner.mou.signed")}</p>
               {readFull(mou, "intake.owner.mou.view")}
+              <SealedCopyLinks contract={mou} />
             </div>
           );
         return (
@@ -208,6 +211,7 @@ export function IntakeHomePage({ focusStep }: { focusStep?: OwnerStepKey | undef
             <div className="flex flex-wrap items-center gap-4">
               <p className="text-sm">{t("entry_contracts.owner.binding_signed")}</p>
               {readFull(binding, "entry_contracts.owner.binding_view")}
+              <SealedCopyLinks contract={binding} />
             </div>
           );
         return (
@@ -232,7 +236,7 @@ export function IntakeHomePage({ focusStep }: { focusStep?: OwnerStepKey | undef
               {splitBlock}
             </div>
           );
-        if (!ownerPending(oa)) return <div className="space-y-3"><p className="text-sm">{t("intake.owner.oa.signed")}</p>{splitBlock}</div>;
+        if (!ownerPending(oa)) return <div className="space-y-3"><p className="text-sm">{t("intake.owner.oa.signed")}</p><SealedCopyLinks contract={oa} />{splitBlock}</div>;
         const until = oaWaitingUntil(oa, rules.oa_waiting_days);
         const deadline = contractDeadline(oa);
         return (

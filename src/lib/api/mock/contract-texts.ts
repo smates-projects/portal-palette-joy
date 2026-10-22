@@ -78,7 +78,8 @@ export const MOCK_SEALED_ORIGIN = "https://sealed.mock.strategicmates.local";
  * text), each with a fake file id and a fake presigned link. Once sealed it stays sealed.
  */
 export function sealIfSigned(c: Contract): Contract {
-  if (c.state !== "signed" || c.sealed_files) return c;
+  // Only a contract with its text is sealed (older sample contracts without one keep no copy).
+  if (c.state !== "signed" || c.sealed_files || !(c.text?.es ?? c.body)) return c;
   const copy = (language: ContractLanguage) => ({
     file_id: `${c.id.slice(0, 24)}${language === "es" ? "5ea1ed0000e5" : "5ea1ed0000e6"}`,
     download_url: `${MOCK_SEALED_ORIGIN}/contracts/${c.id}/${language}.pdf?X-Amz-Expires=900`,

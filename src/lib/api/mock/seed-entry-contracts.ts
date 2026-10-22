@@ -4,6 +4,7 @@
 import type { Contract, Lead, User } from "../types";
 import { typedSignatureDataUrl } from "@/lib/contracts/signature";
 import * as seed from "./seed";
+import { sealIfSigned } from "./contract-texts";
 
 /** Corporate (Marilyn), the office admin (Andrea) and Camila may sign for SM Square; Nicolás may not. */
 export function seedSigningPeople(users: User[]) {
@@ -61,5 +62,6 @@ export function seedTechosBinding(db: { leads: Lead[]; contracts: Contract[] }, 
   }
   binding.state = "signed";
   binding.signed_at = "2026-10-11";
+  sealIfSigned(binding);
   sweep();
 }
