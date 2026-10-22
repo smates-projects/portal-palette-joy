@@ -18,6 +18,8 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import "../lib/i18n";
 import { AppShell } from "@/components/layout/AppShell";
 import { isPublicAuthPath } from "@/lib/auth/redirect";
+import { useHydrated } from "@/lib/hydrated";
+import { Logo } from "@/components/brand/Logo";
 
 const primaryBtn =
   "inline-flex items-center justify-center rounded-[4px] bg-primary px-4 py-2 font-display text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover";
@@ -121,15 +123,22 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   // Sign-in screens are public: no rail, no top bar, no route guard. They bring their own AuthLayout.
   const isPublic = useRouterState({ select: (s) => isPublicAuthPath(s.location.pathname) });
+  // The signed-in portal depends on the person (unknown to the server): it renders once hydrated, after a neutral
+  // loading frame that the server and the first browser render share.
+  const hydrated = useHydrated();
 
   return (
     <QueryClientProvider client={queryClient}>
       {isPublic ? (
         <Outlet />
-      ) : (
+      ) : hydrated ? (
         <AppShell>
           <Outlet />
         </AppShell>
+      ) : (
+        <div className="flex h-screen items-center justify-center bg-background" aria-busy="true">
+          <Logo variant="isotype" className="h-10 w-10 opacity-60" />
+        </div>
       )}
       <Toaster position="bottom-right" />
     </QueryClientProvider>

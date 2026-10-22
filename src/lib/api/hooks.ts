@@ -40,7 +40,7 @@ export const useViewAsOptions = () =>
 export const useTasks = () => useQuery({ queryKey: queryKeys.tasks, queryFn: () => api.tasks.list() });
 /** Includes cancelled tasks: only for the SM "Cancelada" filter. */
 export const useTasksWithCancelled = (enabled: boolean) =>
-  useQuery({ queryKey: ["tasks", "with-cancelled"], queryFn: () => api.tasks.list({ include_cancelled: true }), enabled });
+  useQuery({ queryKey: ["tasks", "with-cancelled"], queryFn: () => api.tasks.list({ include_cancelled: true }), enabled: whenSignedIn(enabled) });
 export const useUpcomingMeetings = () =>
   useQuery({ queryKey: queryKeys.meetings, queryFn: api.tasks.listUpcomingMeetings });
 export const useMeetings = () => useQuery({ queryKey: ["tasks", "meetings", "all"], queryFn: api.tasks.listMeetings });
@@ -58,7 +58,7 @@ export const useFranchisabilityMany = (businessIds: string[]) =>
 /** Active catalog entries. SM Global admin screens use useCatalogAdmin (archived included). */
 export const useCatalog = () => useQuery({ queryKey: ["catalog", "active"], queryFn: () => api.catalog.list() });
 export const useOpenOwnerRequests = () => useQuery({ queryKey: ["tasks", "owner-requests"], queryFn: api.tasks.listOpenOwnerRequests });
-export const useBusinesses = (enabled = true) => useQuery({ queryKey: queryKeys.businesses, queryFn: api.businesses.list, enabled });
+export const useBusinesses = (enabled = true) => useQuery({ queryKey: queryKeys.businesses, queryFn: api.businesses.list, enabled: whenSignedIn(enabled) });
 /** True when the current user owns a business that already finished the program and franchises. Decides the owner menu and home. */
 export function useIsFranchisor(): boolean {
   const me = useCurrentUser().data;
@@ -88,7 +88,7 @@ const CALENDAR_KEY = "calendar";
 export const useCalendarConnection = () => useQuery({ queryKey: [CALENDAR_KEY, "connection"], queryFn: api.calendar.getConnection });
 /** PortalMeeting[] the current user organizes or joins in [from, to). */
 export const useMyMeetings = (from: string, to: string, enabled = true) =>
-  useQuery({ queryKey: [CALENDAR_KEY, "meetings", from, to], queryFn: () => api.calendar.listMyMeetings(from, to), enabled });
+  useQuery({ queryKey: [CALENDAR_KEY, "meetings", from, to], queryFn: () => api.calendar.listMyMeetings(from, to), enabled: whenSignedIn(enabled) });
 export const usePortalMeeting = (id: string | null | undefined) =>
   useQuery({ queryKey: [CALENDAR_KEY, "meeting", id], queryFn: () => api.calendar.getMeeting(id!), enabled: !!id });
 /** Common free slots; read again on every open of the slot picker (never cached between people). */
@@ -202,10 +202,32 @@ export function useDisableTwoFactor() {
 export function useLogout() {
   const qc = useQueryClient();
   return useMutation({
+    // Whatever the closed session still had in flight is dropped first: it would only come back as 401.
+    onMutate: () => qc.cancelQueries(),
     mutationFn: (_: void) => api.session.logout(),
-    // Not awaited: the caller navigates to /login right away and the shell unmounts.
-    onSuccess: () => void qc.invalidateQueries({ queryKey: queryKeys.me }),
+    // Signed out, every query of the portal is disabled (see sessionQueryDefaults), so nothing refetches on the way
+    // to /login. Not awaited: the caller navigates to /login right away and the shell unmounts.
+    onSuccess: () => {
+      void qc.cancelQueries();
+      void qc.invalidateQueries({ queryKey: queryKeys.me });
+    },
   });
+}
+
+/**
+ * Defaults of the app's QueryClient. Once the session is over (logout, or a 401 that ended it) the portal's queries
+ * stop: no refetch on invalidation, focus or remount, so a sign-out does not end in a burst of 401. The sign-in
+ * screens' own queries (auth links, invitations) keep working. A 401 is never retried either.
+ */
+export const sessionQueryDefaults = {
+  enabled: (query: { queryKey: readonly unknown[] }) => query.queryKey[0] === AUTH_KEY || api.session.isAuthenticated(),
+  retry: (failures: number, error: unknown) =>
+    !(typeof error === "object" && error !== null && (error as { status?: unknown }).status === 401) && failures < 3,
+};
+
+/** For hooks that take an `enabled` flag: it replaces the default, so the signed-out stop is kept here too. */
+function whenSignedIn(on: boolean) {
+  return on ? sessionQueryDefaults.enabled : false;
 }
 export const useRequestMagicLink = () => useMutation({ mutationFn: (email: string) => api.session.requestMagicLink(email) });
 export const useForgotPassword = () => useMutation({ mutationFn: (email: string) => api.session.forgotPassword(email) });
@@ -317,7 +339,7 @@ export const useLeads = (officeId?: string, enabled = true) =>
     queryFn: () => api.leads.list(officeId ? { office_id: officeId } : undefined),
     // Changing the office filter keeps the previous board on screen until the new one arrives.
     placeholderData: keepPreviousData,
-    enabled,
+    enabled: whenSignedIn(enabled),
   });
 export const useLeadDetail = (id: string | undefined) =>
   useQuery({ queryKey: ["leads", "detail", id], queryFn: () => api.leads.get(id!), enabled: !!id });
@@ -357,7 +379,7 @@ export function useConfirmProgramStart() {
 
 // ---------- Automatic entry, zones, "Ya lo tenía", ficha del negocio ----------
 /** LeadMeetingItem[]: booked meetings of the current consultant's leads (SM team; empty for anyone else). */
-export const useLeadMeetings = (enabled = true) => useQuery({ queryKey: ["leads", "meetings"], queryFn: api.leads.listMeetings, enabled });
+export const useLeadMeetings = (enabled = true) => useQuery({ queryKey: ["leads", "meetings"], queryFn: api.leads.listMeetings, enabled: whenSignedIn(enabled) });
 /** "¿Se hizo?": Se hizo (with an optional note) / No se presentó / Reagendar. "Se hizo" may send the MOU: refresh the entry too. */
 export const useSetMeetingOutcome = () =>
   useNetworkMutation(
@@ -380,7 +402,7 @@ export const useBusinessSnapshot = (businessId?: string) =>
   useQuery({ queryKey: ["business-file", "snapshot", businessId ?? "own"], queryFn: () => api.businessFile.getSnapshot(businessId) });
 /** BusinessMilestone[] newest first (SM only). */
 export const useBusinessMilestones = (businessId: string, enabled = true) =>
-  useQuery({ queryKey: ["business-file", "milestones", businessId], queryFn: () => api.businessFile.listMilestones(businessId), enabled });
+  useQuery({ queryKey: ["business-file", "milestones", businessId], queryFn: () => api.businessFile.listMilestones(businessId), enabled: whenSignedIn(enabled) });
 
 // ---------- Bishop funds and distribution (SM and that Bishop only) ----------
 /** Funds and distribution writes also change the lead (action, activity) and the Bishop screens. */
@@ -389,7 +411,7 @@ const MONEY_ROOTS = ["funds", "distribution", "leads", "bishop", "notifications"
 export const useBusinessFunds = (businessId: string | undefined) =>
   useQuery({ queryKey: ["funds", "business", businessId], queryFn: () => api.funds.get(businessId!), enabled: !!businessId });
 /** BishopFunds[]: every business the current Bishop funds. */
-export const useMyFunds = (enabled = true) => useQuery({ queryKey: ["funds", "mine"], queryFn: api.funds.listMine, enabled });
+export const useMyFunds = (enabled = true) => useQuery({ queryKey: ["funds", "mine"], queryFn: api.funds.listMine, enabled: whenSignedIn(enabled) });
 export const useRecordFundPayment = () =>
   useNetworkMutation((v: { businessId: string; input: FundPaymentInput }) => api.funds.recordPayment(v.businessId, v.input), MONEY_ROOTS);
 export const useReportFundPayment = () =>
@@ -507,7 +529,7 @@ export const useMakeOwner = () => useNetworkMutation((memberId: string) => api.b
 export const useMyBrand = () => useQuery({ queryKey: ["brand", "mine"], queryFn: api.brand.getMine });
 /** BusinessBrand | null of a business (owner: own; SM: the one named). */
 export const useBusinessBrand = (businessId?: string, enabled = true) =>
-  useQuery({ queryKey: ["brand", "business", businessId ?? "own"], queryFn: () => api.brand.get(businessId), enabled });
+  useQuery({ queryKey: ["brand", "business", businessId ?? "own"], queryFn: () => api.brand.get(businessId), enabled: whenSignedIn(enabled) });
 export const useBrandEvents = (businessId: string | undefined) =>
   useQuery({ queryKey: ["brand", "events", businessId], queryFn: () => api.brand.listEvents(businessId!), enabled: !!businessId });
 export const useSetBrand = () => useNetworkMutation((v: { businessId: string; palette: SetBrandInput }) => api.brand.set(v.businessId, v.palette), ["brand"]);
@@ -573,7 +595,7 @@ export const useUpdateRules = () =>
   useNetworkMutation((v: { patch: Partial<PlatformRules>; note?: string | null }) => api.rules.update(v.patch, v.note ?? null), ["rules", "tasks", "businesses", "network"]);
 // ---------- Entry contracts as rules ----------
 /** EntryContractRule[] in position order, archived ones included (active false). SM people. */
-export const useContractRules = (enabled = true) => useQuery({ queryKey: ["contract-rules"], queryFn: () => api.contractRules.list(), enabled });
+export const useContractRules = (enabled = true) => useQuery({ queryKey: ["contract-rules"], queryFn: () => api.contractRules.list(), enabled: whenSignedIn(enabled) });
 export const useContractRulesHistory = () => useQuery({ queryKey: ["contract-rules", "history"], queryFn: () => api.contractRules.listHistory() });
 /** A rule change may create contracts at once (the engine runs): leads, documents and the Bishop refresh too. */
 const CONTRACT_RULE_ROOTS = ["contract-rules", "leads", "documents", "bishop"];
@@ -645,7 +667,7 @@ export const useUploadDocument = () =>
   useNetworkMutation((v: { documentId: string; file: DocumentUpload }) => api.documents.uploadDocument(v.documentId, v.file), ["documents", "leads"]);
 /** SM Global: the Bishops' framework agreements, to countersign from Acuerdos and to show their state in Personas. */
 export const useFrameworkAgreements = (enabled = true) =>
-  useQuery({ queryKey: ["documents", "framework"], queryFn: api.documents.listFrameworkAgreements, enabled });
+  useQuery({ queryKey: ["documents", "framework"], queryFn: api.documents.listFrameworkAgreements, enabled: whenSignedIn(enabled) });
 /** Owner, "No aplica": the document waits for SM with the reason. */
 export const useMarkNotApplicable = () =>
   useNetworkMutation((v: { documentId: string; reason: string }) => api.documents.markNotApplicable(v.documentId, v.reason), ["documents", "leads"]);
