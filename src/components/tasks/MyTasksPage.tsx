@@ -49,7 +49,7 @@ export function MyTasksPage({ search, calendarRoute = false }: { search: TasksSe
   const isOwner = me?.role === "business_owner";
   const isSm = me?.role === "sm_team";
   const isGlobal = me?.role === "sm_global";
-  const activeQ = useTasks();
+  const activeQ = useTasks(!calendarRoute);
   const withCancelledQ = useTasksWithCancelled(isSm && search.status === "cancelled");
   const tasksQ = isSm && search.status === "cancelled" ? withCancelledQ : activeQ;
   const bizQ = useBusinesses();
@@ -62,8 +62,7 @@ export function MyTasksPage({ search, calendarRoute = false }: { search: TasksSe
 
   const setSearch = (patch: Partial<TasksSearch>, replace = false) => {
     if (!calendarRoute) return tasksNavigate({ search: (prev: TasksSearch) => ({ ...prev, ...patch }), replace });
-    // On /calendario a view tab goes to Mis tareas; the meeting panel stays here.
-    if ("view" in patch) return plainNavigate({ to: "/tareas", search: { view: patch.view } });
+    // /calendario has no other view: only the meeting of the side panel travels in its address.
     return plainNavigate({ to: "/calendario", search: { meeting: patch.meeting ?? undefined }, replace });
   };
 
@@ -138,7 +137,8 @@ export function MyTasksPage({ search, calendarRoute = false }: { search: TasksSe
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t(isOwner ? "owner.for_role" : isSm ? "sm.for_role" : isGlobal ? "global.for_role" : "tasks.for_role")}</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight">{t(view === "calendar" ? "tasks.calendar_heading" : isOwner ? "owner.tasks_heading" : isSm ? "sm.tasks_heading" : "tasks.heading")}</h1>
         </div>
-        <div role="tablist" aria-label={t("tasks.views.label")} className="flex max-w-full overflow-x-auto rounded-md border border-border bg-surface p-0.5">
+        {/* /calendario is only the calendar: no view switcher. */}
+        {!calendarRoute && <div role="tablist" aria-label={t("tasks.views.label")} className="flex max-w-full overflow-x-auto rounded-md border border-border bg-surface p-0.5">
           {VIEWS.map((v) => {
             const Icon = VIEW_ICONS[v];
             return (
@@ -157,7 +157,7 @@ export function MyTasksPage({ search, calendarRoute = false }: { search: TasksSe
               </button>
             );
           })}
-        </div>
+        </div>}
       </div>
 
       {(
@@ -298,14 +298,15 @@ export function MyTasksPage({ search, calendarRoute = false }: { search: TasksSe
 
           {/* Table */}
           <div className={cn("mt-3 min-h-0", view === "board" || view === "roadmap" || view === "calendar" ? "flex flex-1 flex-col" : "overflow-auto rounded-md border border-border bg-surface")}>
-            {tasksQ.isError ? (
+            {/* SM Global's calendar shows no task, so it never waits for them. */}
+            {tasksQ.isError && !globalCalendar ? (
               <EmptyState
                 inline
                 title={t("tasks.error_title")}
                 body={t("tasks.error_body")}
                 action={{ label: t("tasks.retry"), onClick: () => void tasksQ.refetch() }}
               />
-            ) : tasksQ.isLoading || bizQ.isLoading ? (
+            ) : (tasksQ.isLoading || bizQ.isLoading) && !globalCalendar ? (
               <div className="divide-y divide-border">
                 {Array.from({ length: 8 }).map((_, i) => (
                   <div key={i} className="flex items-center gap-4 px-4 py-3">

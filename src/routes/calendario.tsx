@@ -7,7 +7,7 @@ import type { TasksSearch } from "@/lib/tasks/table";
 export const Route = createFileRoute("/calendario")({
   // Only the meeting in the side panel travels in the address; the view is always the calendar.
   validateSearch: (search: Record<string, unknown>): Pick<TasksSearch, "meeting"> =>
-    typeof search.meeting === "string" && search.meeting ? { meeting: search.meeting } : {},
+    typeof search["meeting"] === "string" && search["meeting"] ? { meeting: search["meeting"] } : {},
   head: () => ({
     meta: [
       { title: `${tStatic("pages.calendar.title")} · SM Platform` },

@@ -37,7 +37,8 @@ export const queryKeys = {
 export const useCurrentUser = () => useQuery({ queryKey: queryKeys.me, queryFn: api.session.getCurrentUser });
 export const useViewAsOptions = () =>
   useQuery({ queryKey: queryKeys.viewAs, queryFn: api.session.getViewAsOptions });
-export const useTasks = () => useQuery({ queryKey: queryKeys.tasks, queryFn: () => api.tasks.list() });
+/** enabled false: a screen that shows no task (SM Global's Calendario) reads none. */
+export const useTasks = (enabled = true) => useQuery({ queryKey: queryKeys.tasks, queryFn: () => api.tasks.list(), enabled });
 /** Includes cancelled tasks: only for the SM "Cancelada" filter. */
 export const useTasksWithCancelled = (enabled: boolean) =>
   useQuery({ queryKey: ["tasks", "with-cancelled"], queryFn: () => api.tasks.list({ include_cancelled: true }), enabled: whenSignedIn(enabled) });

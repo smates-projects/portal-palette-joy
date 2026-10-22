@@ -18,7 +18,7 @@ const renderAt = (path: string) => {
   const calendar = createRoute({
     getParentRoute: () => rootRoute,
     path: "/calendario",
-    validateSearch: (s: Record<string, unknown>) => (typeof s.meeting === "string" ? { meeting: s.meeting } : {}),
+    validateSearch: (s: Record<string, unknown>) => (typeof s["meeting"] === "string" ? { meeting: s["meeting"] } : {}),
     component: function Calendar() {
       return <MyTasksPage search={{ view: "calendar", meeting: calendar.useSearch().meeting }} calendarRoute />;
     },
@@ -43,7 +43,7 @@ const renderAt = (path: string) => {
 
 const routeSources = import.meta.glob("/src/routes/{calendario,tareas.index}.tsx", { query: "?raw", import: "default", eager: true }) as Record<string, string>;
 
-describe("Calendario of SM Global is the team's calendar page", () => {
+describe("Calendario of SM Global shares the team's calendar", () => {
   it("/calendario and /tareas render the same page component, and no Global-only page exists", () => {
     const calendario = routeSources["/src/routes/calendario.tsx"]!;
     const tareas = routeSources["/src/routes/tareas.index.tsx"]!;
@@ -69,7 +69,9 @@ describe("Calendario (SM Global)", () => {
     renderAt("/calendario");
     await screen.findByRole("heading", { level: 1, name: "Tu calendario" }, T);
     await screen.findByText("SM Global", {}, T);
-    expect(screen.getByRole("tab", { name: /Calendario/ })).toHaveAttribute("aria-selected", "true");
+    // Only the calendar: no view switcher, so no table, board or roadmap of the tasks.
+    expect(screen.queryByRole("tablist")).toBeNull();
+    expect(screen.queryByRole("tab", { name: /Tabla/ })).toBeNull();
     // Month view, as for the team: jump to the demo week to read the chips with their full text.
     fireEvent.click(await screen.findByRole("radio", { name: "Semana" }, T));
     await screen.findByText("Seguimiento del programa de Vossler", {}, T);
