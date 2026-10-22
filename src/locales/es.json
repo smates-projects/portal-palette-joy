@@ -3812,7 +3812,15 @@
       "empty_month": "No tienes reuniones este mes",
       "empty_office_week": "{{office}} no tiene reuniones esta semana",
       "empty_office_month": "{{office}} no tiene reuniones este mes",
-      "empty_link": "Ver el embudo"
+      "empty_link": "Ver el embudo",
+      "not_connected": "Conecta tu Google Calendar para ver aquí tus eventos y crear reuniones con enlace de Meet. Mientras tanto, lo que agendes queda como propuesta.",
+      "not_connected_link": "Conectarlo en mi perfil",
+      "pick_label": "Negocio",
+      "pick_placeholder": "Elige un negocio",
+      "pick_hint_schedule": "Elige el negocio. Aparecen los que sigues y cuyo dueño ya tiene cuenta en el portal.",
+      "pick_hint_register": "Elige el negocio. Aparecen los evaluados y los que tienen una reunión para reagendar.",
+      "pick_empty": "No hay negocios para elegir en esta vista. Cambia la oficina en Viendo o revisa el embudo.",
+      "pick_continue": "Continuar"
     }
   },
   "entry_contracts": {

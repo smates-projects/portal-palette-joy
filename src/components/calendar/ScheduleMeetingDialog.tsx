@@ -179,9 +179,16 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
           )}
         </div>
         <DialogFooter className="gap-2 sm:items-center">
-          <Link to="/tareas" search={{ view: "calendar", meeting: result.id }} onClick={() => props.onOpenChange(false)} className="text-sm text-link hover:underline">
-            {t("calendar.see_in_calendar")}
-          </Link>
+          {/* SM Global has its own Calendario; everyone else sees it in Mis tareas, calendar view. */}
+          {me?.role === "sm_global" ? (
+            <Link to="/calendario" search={{ meeting: result.id }} onClick={() => props.onOpenChange(false)} className="text-sm text-link hover:underline">
+              {t("calendar.see_in_calendar")}
+            </Link>
+          ) : (
+            <Link to="/tareas" search={{ view: "calendar", meeting: result.id }} onClick={() => props.onOpenChange(false)} className="text-sm text-link hover:underline">
+              {t("calendar.see_in_calendar")}
+            </Link>
+          )}
           <PrimaryButton onClick={() => props.onOpenChange(false)}>{t("calendar.done")}</PrimaryButton>
         </DialogFooter>
       </>

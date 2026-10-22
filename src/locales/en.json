@@ -3812,7 +3812,15 @@
       "empty_month": "You have no meetings this month",
       "empty_office_week": "{{office}} has no meetings this week",
       "empty_office_month": "{{office}} has no meetings this month",
-      "empty_link": "Open the pipeline"
+      "empty_link": "Open the pipeline",
+      "not_connected": "Connect your Google Calendar to see your events here and create meetings with a Meet link. Until then, what you schedule stays as a proposal.",
+      "not_connected_link": "Connect it in my profile",
+      "pick_label": "Business",
+      "pick_placeholder": "Choose a business",
+      "pick_hint_schedule": "Choose the business. The ones you follow whose owner already has a portal account show here.",
+      "pick_hint_register": "Choose the business. Evaluated ones and those with a meeting to rebook show here.",
+      "pick_empty": "There are no businesses to choose in this view. Change the office in Viewing or check the pipeline.",
+      "pick_continue": "Continue"
     }
   },
   "entry_contracts": {
