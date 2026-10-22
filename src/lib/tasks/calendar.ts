@@ -43,6 +43,68 @@ export type CalItem =
   | { kind: "lead"; day: string; at: string; item: LeadMeetingItem }
   | { kind: "portal"; day: string; at: string; meeting: PortalMeeting };
 
+// ---------- Week view: time grid ----------
+
+/** The week grid shows this hour range (local time), top to bottom. */
+export const WEEK_START_HOUR = 7;
+export const WEEK_END_HOUR = 21;
+/** Vertical pixels per hour; the block positions derive from it. */
+export const WEEK_HOUR_PX = 48;
+
+export interface WeekPlacement {
+  item: Exclude<CalItem, { kind: "due" }>;
+  /** Distance from the grid top, in px. */
+  top: number;
+  /** Block height, in px (never below one line of text). */
+  height: number;
+  /** Column inside the day when events overlap (0-based). */
+  lane: number;
+  /** How many columns the day needs for its overlaps. */
+  lanes: number;
+}
+
+/** Length of a timed item in minutes. */
+function durationOf(item: Exclude<CalItem, { kind: "due" }>): number {
+  switch (item.kind) {
+    case "google":
+      return item.event.duration_minutes;
+    case "meeting":
+      return item.meeting.duration_minutes;
+    case "lead":
+      return item.item.meeting.duration_minutes;
+    case "portal":
+      return Math.max(15, Math.round((Date.parse(item.meeting.ends_at) - Date.parse(item.meeting.starts_at)) / 60_000));
+  }
+}
+
+/**
+ * Lays out one day of the week grid: the due dates go to the all-day strip and every timed item gets its vertical
+ * position from its local start time. Overlapping events share the day in lanes, side by side. Items outside the
+ * visible hours stick to the nearest edge.
+ */
+export function placeWeekItems(list: CalItem[]): { allDay: CalItem[]; timed: WeekPlacement[] } {
+  const allDay = list.filter((i) => i.kind === "due");
+  const span = (WEEK_END_HOUR - WEEK_START_HOUR) * 60;
+  const timedItems = list
+    .filter((i): i is Exclude<CalItem, { kind: "due" }> => i.kind !== "due")
+    .map((item) => {
+      const start = new Date(item.at);
+      const startMin = start.getHours() * 60 + start.getMinutes();
+      return { item, startMin, endMin: startMin + durationOf(item) };
+    })
+    .sort((a, b) => a.startMin - b.startMin || a.endMin - b.endMin);
+  const laneEnds: number[] = [];
+  const timed = timedItems.map((x) => {
+    let lane = laneEnds.findIndex((end) => end <= x.startMin);
+    if (lane === -1) lane = laneEnds.push(x.endMin) - 1;
+    else laneEnds[lane] = x.endMin;
+    const topMin = Math.min(Math.max(x.startMin - WEEK_START_HOUR * 60, 0), span - 15);
+    const heightMin = Math.max(Math.min(x.endMin - x.startMin, span - topMin), 20);
+    return { item: x.item, top: (topMin / 60) * WEEK_HOUR_PX, height: (heightMin / 60) * WEEK_HOUR_PX, lane, lanes: Math.max(1, laneEnds.length) };
+  });
+  return { allDay, timed };
+}
+
 const instant = (iso: string) => new Date(iso).getTime();
 const sameText = (a: string, b: string) => a.trim().toLocaleLowerCase() === b.trim().toLocaleLowerCase();
 
