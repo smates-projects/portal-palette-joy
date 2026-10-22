@@ -17,9 +17,10 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import "../lib/i18n";
 import { AppShell } from "@/components/layout/AppShell";
+import { SessionGate } from "@/components/layout/SessionGate";
 import { isPublicAuthPath } from "@/lib/auth/redirect";
 import { useHydrated } from "@/lib/hydrated";
-import { Logo } from "@/components/brand/Logo";
+import { BrandLoader } from "@/components/brand/BrandLoader";
 
 const primaryBtn =
   "inline-flex items-center justify-center rounded-[4px] bg-primary px-4 py-2 font-display text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover";
@@ -132,13 +133,14 @@ function RootComponent() {
       {isPublic ? (
         <Outlet />
       ) : hydrated ? (
-        <AppShell>
-          <Outlet />
-        </AppShell>
+        // Nothing of the portal renders until GET /me answers (SessionGate); the SSR frame is the brand loader.
+        <SessionGate>
+          <AppShell>
+            <Outlet />
+          </AppShell>
+        </SessionGate>
       ) : (
-        <div className="flex h-screen items-center justify-center bg-background" aria-busy="true">
-          <Logo variant="isotype" className="h-10 w-10 opacity-60" />
-        </div>
+        <BrandLoader immediate />
       )}
       <Toaster position="bottom-right" />
     </QueryClientProvider>
