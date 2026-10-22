@@ -10,7 +10,7 @@ describe("new role routes", () => {
   const paths = [
     "/estructura", "/oficinas", "/oficinas/abc", "/reglas", "/embudo", "/catalogo",
     "/franquiciadora", "/franquicias", "/franquicias/abc", "/numeros", "/documentos", "/negocio",
-    "/oportunidades", "/oportunidades/abc", "/acuerdos", "/bishops", "/manual", "/pagos",
+    "/oportunidades", "/oportunidades/abc", "/acuerdos", "/bishops", "/bishops/abc","/manual", "/pagos",
     // Public sign-in screens of the two-factor flow and the owner entry link.
     "/verificacion", "/activar-verificacion", "/entrada/abc",
   ];

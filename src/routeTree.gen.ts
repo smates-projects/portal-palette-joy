@@ -34,6 +34,7 @@ import { Route as ReglasRouteImport } from './routes/reglas'
 import { Route as ReporteRouteImport } from './routes/reporte'
 import { Route as VerificacionRouteImport } from './routes/verificacion'
 import { Route as BishopsIndexRouteImport } from './routes/bishops.index'
+import { Route as BishopsUserIdRouteImport } from './routes/bishops.$userId'
 import { Route as EnlaceTokenRouteImport } from './routes/enlace.$token'
 import { Route as EntradaTokenRouteImport } from './routes/entrada.$token'
 import { Route as FranquiciasIndexRouteImport } from './routes/franquicias.index'
@@ -172,6 +173,11 @@ const BishopsIndexRoute = BishopsIndexRouteImport.update({
   path: '/bishops/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BishopsUserIdRoute = BishopsUserIdRouteImport.update({
+  id: '/bishops/$userId',
+  path: '/bishops/$userId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EnlaceTokenRoute = EnlaceTokenRouteImport.update({
   id: '/enlace/$token',
   path: '/enlace/$token',
@@ -259,6 +265,7 @@ export interface FileRoutesByFullPath {
   '/reglas': typeof ReglasRoute
   '/reporte': typeof ReporteRoute
   '/verificacion': typeof VerificacionRoute
+  '/bishops/$userId': typeof BishopsUserIdRoute
   '/enlace/$token': typeof EnlaceTokenRoute
   '/entrada/$token': typeof EntradaTokenRoute
   '/franquicias/$franchiseId': typeof FranquiciasFranchiseIdRoute
@@ -298,6 +305,7 @@ export interface FileRoutesByTo {
   '/reglas': typeof ReglasRoute
   '/reporte': typeof ReporteRoute
   '/verificacion': typeof VerificacionRoute
+  '/bishops/$userId': typeof BishopsUserIdRoute
   '/enlace/$token': typeof EnlaceTokenRoute
   '/entrada/$token': typeof EntradaTokenRoute
   '/franquicias/$franchiseId': typeof FranquiciasFranchiseIdRoute
@@ -338,6 +346,7 @@ export interface FileRoutesById {
   '/reglas': typeof ReglasRoute
   '/reporte': typeof ReporteRoute
   '/verificacion': typeof VerificacionRoute
+  '/bishops/$userId': typeof BishopsUserIdRoute
   '/enlace/$token': typeof EnlaceTokenRoute
   '/entrada/$token': typeof EntradaTokenRoute
   '/franquicias/$franchiseId': typeof FranquiciasFranchiseIdRoute
@@ -379,6 +388,7 @@ export interface FileRouteTypes {
     | '/reglas'
     | '/reporte'
     | '/verificacion'
+    | '/bishops/$userId'
     | '/enlace/$token'
     | '/entrada/$token'
     | '/franquicias/$franchiseId'
@@ -418,6 +428,7 @@ export interface FileRouteTypes {
     | '/reglas'
     | '/reporte'
     | '/verificacion'
+    | '/bishops/$userId'
     | '/enlace/$token'
     | '/entrada/$token'
     | '/franquicias/$franchiseId'
@@ -457,6 +468,7 @@ export interface FileRouteTypes {
     | '/reglas'
     | '/reporte'
     | '/verificacion'
+    | '/bishops/$userId'
     | '/enlace/$token'
     | '/entrada/$token'
     | '/franquicias/$franchiseId'
@@ -497,6 +509,7 @@ export interface RootRouteChildren {
   ReglasRoute: typeof ReglasRoute
   ReporteRoute: typeof ReporteRoute
   VerificacionRoute: typeof VerificacionRoute
+  BishopsUserIdRoute: typeof BishopsUserIdRoute
   EnlaceTokenRoute: typeof EnlaceTokenRoute
   EntradaTokenRoute: typeof EntradaTokenRoute
   FranquiciasFranchiseIdRoute: typeof FranquiciasFranchiseIdRoute
@@ -689,6 +702,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BishopsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/bishops/$userId': {
+      id: '/bishops/$userId'
+      path: '/bishops/$userId'
+      fullPath: '/bishops/$userId'
+      preLoaderRoute: typeof BishopsUserIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/enlace/$token': {
       id: '/enlace/$token'
       path: '/enlace/$token'
@@ -801,6 +821,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReglasRoute: ReglasRoute,
   ReporteRoute: ReporteRoute,
   VerificacionRoute: VerificacionRoute,
+  BishopsUserIdRoute: BishopsUserIdRoute,
   EnlaceTokenRoute: EnlaceTokenRoute,
   EntradaTokenRoute: EntradaTokenRoute,
   FranquiciasFranchiseIdRoute: FranquiciasFranchiseIdRoute,
