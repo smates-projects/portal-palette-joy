@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Check, ExternalLink, Video } from "lucide-react";
 import { nowIso } from "@/lib/clock";
 import type { LeadMeeting, LeadWithComputed, MeetingOutcome } from "@/lib/api/types";
-import { emailItems, entryTimeline, meetingHeld } from "@/lib/leads/entry";
+import { emailItems, entryTimeline, meetingHeld, rebookedAfterSummary } from "@/lib/leads/entry";
 import { outcomePending } from "@/lib/leads/entry-flow";
 import { entryMeetings } from "@/lib/leads/meetings";
 import { formatDate, formatDateTime, oneFinalPeriod } from "@/lib/format";
@@ -52,6 +52,8 @@ export function SummaryEmail({ lead }: { lead: LeadWithComputed }) {
   const first = lead.contact.name.split(" ")[0] ?? lead.contact.name;
   const result = lead.result;
   const m = lead.meeting;
+  // Booked again after a reschedule: the summary was about the first meeting; the owner only got the new date.
+  const rebooked = rebookedAfterSummary(lead);
   // Added by hand without an assessment: there is no summary email to show.
   if (!result) return null;
   return (
@@ -65,7 +67,7 @@ export function SummaryEmail({ lead }: { lead: LeadWithComputed }) {
             <dt className="text-muted-foreground">{t("entry.email.to")}</dt>
             <dd className="truncate">{lead.contact.email}</dd>
             <dt className="text-muted-foreground">{t("entry.email.subject_label")}</dt>
-            <dd className="font-medium">{t("entry.email.subject", { name: first, date: formatDate(m.starts_at, i18n.language) })}</dd>
+            <dd className="font-medium">{rebooked ? t("entry.email.subject_first", { name: first }) : t("entry.email.subject", { name: first, date: formatDate(m.starts_at, i18n.language) })}</dd>
             <dt className="text-muted-foreground">{t("entry.email.sent_label")}</dt>
             <dd className="tabular-nums">{formatDateTime(lead.summary_sent_at, i18n.language)}</dd>
           </dl>
@@ -81,6 +83,9 @@ export function SummaryEmail({ lead }: { lead: LeadWithComputed }) {
               <p className="text-xs font-medium text-muted-foreground">{t("entry.email.priorities")}</p>
               <ul className="mt-1 list-disc space-y-0.5 pl-4">{emailItems(result.priorities).map((s) => <li key={s}>{s}</li>)}</ul>
             </div>
+            {rebooked ? (
+              <p className="rounded-[4px] border border-border px-3 py-2 text-xs text-muted-foreground">{t("entry.email.first_meeting_note")}</p>
+            ) : (
             <div className="rounded-[4px] border border-border px-3 py-2">
               <p className="text-xs font-medium text-muted-foreground">{t("entry.email.meeting_title")}</p>
               <p className="mt-0.5 font-medium tabular-nums">{t("entry.email.meeting_when", { date: formatDateTime(m.starts_at, i18n.language), minutes: m.duration_minutes })}</p>
@@ -89,8 +94,18 @@ export function SummaryEmail({ lead }: { lead: LeadWithComputed }) {
                 <span className="break-all">{m.meet_url}</span>
               </p>
             </div>
+            )}
           </div>
           <p className="border-t border-border px-4 py-2 text-[11px] text-muted-foreground">{t("entry.email.read_only")}</p>
+        </div>
+      )}
+      {/* The new booking's own message: only the meeting, with its date, time and Meet link. */}
+      {rebooked && m && (
+        <div className="mt-2 rounded-md border border-border px-4 py-3 text-sm">
+          <p className="text-xs font-medium text-muted-foreground">{t("entry.email.update_title")}</p>
+          <p className="mt-0.5">{t("entry.email.update_body", { name: first })}</p>
+          <p className="mt-1 font-medium tabular-nums">{t("entry.email.meeting_when", { date: formatDateTime(m.starts_at, i18n.language), minutes: m.duration_minutes })}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">{t("entry.email.update_sent", { date: formatDateTime(m.booked_at, i18n.language) })}</p>
         </div>
       )}
     </section>

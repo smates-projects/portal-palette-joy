@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { createMockApi } from "./mock";
 import * as seed from "./mock/seed";
 import * as net from "./mock/seed-network";
+import { rebookedAfterSummary } from "@/lib/leads/entry";
 
 async function as(userId: string) {
   const api = createMockApi();
@@ -81,6 +82,10 @@ describe("booking and the meeting outcome", () => {
     const rebooked = await api.leads.simulateBooking(rivera.id);
     expect(rebooked).toMatchObject({ stage: "meeting", meeting: { outcome: null } });
     expect(rebooked.meeting!.id).not.toBe(rivera.meeting!.id);
+    // Only the meeting update goes out: the summary keeps its first send and no second summary_sent is recorded.
+    expect(rebooked.summary_sent_at).toBe(rivera.summary_sent_at);
+    expect(rebookedAfterSummary(rebooked)).toBe(true);
+    expect((await api.leads.get(rivera.id))!.events.filter((e) => e.kind === "summary_sent").length).toBeLessThanOrEqual(1);
     // The NDA of the first booking stays: still one.
     expect((await api.leads.getIntake(rivera.id))!.contracts.filter((c) => c.kind === "nda")).toHaveLength(1);
   });

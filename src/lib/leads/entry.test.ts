@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Lead, LeadMeeting, RoutingRules } from "@/lib/api/types";
-import { entryPhase, entryTimeline, isNewLead, meetingHeld, resolveOffice, unbookedDays, validateZone } from "./entry";
+import { entryPhase, entryTimeline, isNewLead, meetingHeld, rebookedAfterSummary, resolveOffice, unbookedDays, validateZone } from "./entry";
 import { primaryActionFor } from "./pipeline";
 
 const meeting = (starts_at: string, notes_at: string | null = null): LeadMeeting => ({
@@ -54,6 +54,11 @@ describe("entry phase inside the stage", () => {
     expect(entryTimeline(waiting, NOW)[3].state).toBe("current");
     const moved = booked("2026-10-14T15:30:00Z", { meeting: { ...meeting("2026-10-14T15:30:00Z", NOW), outcome: "reschedule" } });
     expect(entryPhase(moved, NOW)).toBe("summary_sent");
+  });
+  it("a booking after the summary is a rebook: the summary preview does not claim the new meeting", () => {
+    expect(rebookedAfterSummary(booked("2026-10-15T14:00:00Z"))).toBe(false);
+    expect(rebookedAfterSummary(booked("2026-10-15T14:00:00Z", { meeting: { ...meeting("2026-10-20T14:00:00Z"), booked_at: "2026-10-14T12:00:00Z" } }))).toBe(true);
+    expect(rebookedAfterSummary(lead({ stage: "meeting" }))).toBe(false);
   });
   it("one primary action at a time in Reunión: join, then the outcome; without a booking, the NDA and then the MOU", () => {
     expect(primaryActionFor({ stage: "meeting", meeting: meeting("2026-10-15T14:00:00Z") }, NOW)).toBe("join_meet");

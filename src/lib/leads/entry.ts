@@ -116,5 +116,15 @@ export function validateZone(rules: RoutingRules, input: { id?: string | undefin
   return dup ? "duplicate" : null;
 }
 
+/**
+ * True when the meeting on file was booked after the summary email went out: a new booking after "Reagendar" or "No
+ * se presentó". That booking sends the owner only the meeting update (date, time, Meet link), never the full
+ * "Tu resultado y tu reunión" again, so the summary preview must not show the new meeting as if it had been in it.
+ */
+export function rebookedAfterSummary(lead: Pick<Lead, "summary_sent_at" | "meeting">): boolean {
+  if (!lead.summary_sent_at || !lead.meeting) return false;
+  return Date.parse(lead.meeting.booked_at) - Date.parse(lead.summary_sent_at) > 60_000;
+}
+
 /** Three items at most, as the summary email shows them. */
 export const emailItems = (items: string[]) => items.slice(0, 3);

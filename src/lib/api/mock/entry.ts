@@ -302,6 +302,8 @@ export function createEntry(d: Deps) {
         return delay(d.withBooking(l));
       }
       l.meeting = bookedMeeting(l, "initial");
+      // A new booking after "Reagendar" / "No se presentó" (rebook) sends the owner only the meeting update: the
+      // summary "Tu resultado y tu reunión" went out once, with the first booking, and summary_sent_at stays as is.
       if (kind === "initial") {
         // Automatic: SM did not contact the owner, so last_contact_at stays as it was.
         l.stage = "meeting";
