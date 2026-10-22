@@ -8,7 +8,7 @@ import { useCalendarEvents, useCurrentUser, useLeadMeetings, useMeetings, useMyM
 import type { PortalMeeting, TaskWithComputed } from "@/lib/api/types";
 import type { LeadMeetingItem } from "@/lib/api/entry-types";
 import {
-  CAL_MODES, buildCalendarItems, localDay, monthGrid, shiftAnchor, visibleRange, weekDays, type CalItem, type CalMode,
+  CAL_MODES, WEEK_END_HOUR, WEEK_HOUR_PX, WEEK_START_HOUR, buildCalendarItems, localDay, monthGrid, placeWeekItems, shiftAnchor, visibleRange, weekDays, type CalItem, type CalMode,
 } from "@/lib/tasks/calendar";
 import { MeetingPanel } from "@/components/calendar/MeetingPanel";
 import { cn } from "@/lib/utils";
