@@ -74,6 +74,12 @@ export const U_JEFFERSON = uuid("0c000000", 40);
 /** More sample Bishops: Laura signed the framework agreement, Diego not yet. */
 export const U_LAURA = uuid("0c000000", 91);
 export const U_DIEGO = uuid("0c000000", 92);
+/**
+ * Bishops seeded for each state of the Bishops screen (SM Global): Andrés is invited and has not accepted, Sofía
+ * signed with Corporate and is active without investing yet. Jefferson and Laura invest; Diego waits for the CEO.
+ */
+export const U_ANDRES = uuid("0c000000", 93);
+export const U_SOFIA = uuid("0c000000", 94);
 export const U_LUISA = uuid("0c000000", 41);
 export const U_MARCO = uuid("0c000000", 42);
 const U_ORL_ESTRATEGIA = uuid("0c000000", 50);
@@ -122,6 +128,8 @@ export const users: User[] = [
   person(U_JEFFERSON, "Jefferson Paula", "jefferson@paulainvestments.com", "bishop", null, null, "Business Bishop"),
   person(U_LAURA, "Laura Ortega", "laura@ortegacapital.com", "bishop", null, null, "Business Bishop"),
   person(U_DIEGO, "Diego Rivas", "diego@rivasholdings.com", "bishop", null, null, "Business Bishop"),
+  { ...person(U_ANDRES, "Andrés Molina", "andres@molinacapital.com", "bishop", null, null, "Business Bishop"), status: "invited", invited_at: "2026-10-18T14:00:00Z", has_password: false },
+  { ...person(U_SOFIA, "Sofía Herrera", "sofia@herreragroup.com", "bishop", null, null, "Business Bishop"), activated_at: "2026-09-18T15:00:00Z" },
   person(U_LUISA, "Luisa Paredes", "luisa@bimboremodelaciones.com", "franchisee", FRANCHISE_ORLANDO_SUR, null, "Dueña de la franquicia", true),
   person(U_MARCO, "Marco Ibáñez", "marco@bimboremodelaciones.com", "franchisee", FRANCHISE_TAMPA, null, "Dueño de la franquicia", true),
   person(U_TAMPA_MANAGER, "Natalia Escobar", "natalia@strategicmates.com", "sm_team", ORG_TAMPA, null, "Consultora y directora de la oficina", true),
@@ -487,6 +495,9 @@ export const frameworkContracts: Contract[] = [
   framework(1, U_JEFFERSON, "Jefferson Paula", "2025-10-30"),
   framework(2, U_LAURA, "Laura Ortega", "2026-03-02"),
   framework(3, U_DIEGO, "Diego Rivas", null),
+  // Created with the invitation: nobody signed yet.
+  framework(4, U_ANDRES, "Andrés Molina", null),
+  framework(5, U_SOFIA, "Sofía Herrera", "2026-09-20"),
 ];
 
 export const agreements: BishopAgreement[] = [

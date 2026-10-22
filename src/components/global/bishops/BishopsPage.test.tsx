@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider, createMemoryHistory, createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { OfficeScopeSelect } from "@/components/layout/OfficeScopeSelect";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import "@/lib/i18n";
 import { api } from "@/lib/api";
@@ -37,6 +38,84 @@ beforeAll(async () => {
   await api.session.setViewAs(seed.U_MARYLIN);
 });
 afterEach(cleanup);
+
+const rowsOnScreen = async () => {
+  await screen.findByText("¿Qué pasa con los Bishops?");
+  return screen.findAllByTestId("bishop-row");
+};
+const counter = (label: string) => screen.getByRole("button", { name: new RegExp(label) });
+
+describe("Bishops list (SM Global)", () => {
+  it("says what happens with the CEO's name, counts every state and puts who waits for her signature first", async () => {
+    renderAt("/bishops");
+    const rows = await rowsOnScreen();
+    expect(screen.getByText("Cada Bishop firma un acuerdo marco con Strategic Mates al entrar. Hasta que Marilyn lo firma, no ve oportunidades.")).toBeInTheDocument();
+    expect(counter("Esperan tu firma")).toHaveTextContent("1");
+    expect(counter("Invitados sin aceptar")).toHaveTextContent("1");
+    expect(counter("Activos")).toHaveTextContent("1");
+    expect(counter("Invirtiendo")).toHaveTextContent("2");
+    expect(rows.map((r) => within(r).getAllByRole("link")[0]!.textContent)).toEqual(["Diego Rivas", "Andrés Molina", "Sofía Herrera", "Jefferson Paula", "Laura Ortega"]);
+    expect(rows.map((r) => within(r).getByText(/^(Falta tu firma|Invitado|Activo|Invirtiendo)$/).textContent)).toEqual(["Falta tu firma", "Invitado", "Activo", "Invirtiendo", "Invirtiendo"]);
+  });
+
+  it("one action per state: Firmar acuerdo marco, Reenviar invitación, Ver", async () => {
+    renderAt("/bishops");
+    const [diego, andres, sofia, jefferson] = await rowsOnScreen();
+    expect(within(diego!).getByRole("button", { name: "Firmar acuerdo marco" })).toBeInTheDocument();
+    expect(within(andres!).getByRole("button", { name: "Reenviar invitación" })).toBeInTheDocument();
+    expect(within(andres!).getByText(/^Invitado el /)).toBeInTheDocument();
+    expect(within(sofia!).getByRole("link", { name: "Ver" })).toHaveAttribute("href", `/bishops/${net.U_SOFIA}`);
+    expect(within(jefferson!).getByRole("link", { name: "Ver" })).toBeInTheDocument();
+    expect(within(jefferson!).queryByRole("button")).toBeNull();
+  });
+
+  it("Firmar acuerdo marco opens the signing dialog; Reenviar invitación keeps the Bishop invited", async () => {
+    renderAt("/bishops");
+    const [diego] = await rowsOnScreen();
+    fireEvent.click(within(diego!).getByRole("button", { name: "Firmar acuerdo marco" }));
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    cleanup();
+    renderAt("/bishops");
+    const again = await rowsOnScreen();
+    fireEvent.click(within(again[1]!).getByRole("button", { name: "Reenviar invitación" }));
+    // The invitation went out again: a fresh date, still invited.
+    await waitFor(async () => {
+      const andres = (await api.users.list()).find((u) => u.id === net.U_ANDRES);
+      expect(andres?.status).toBe("invited");
+      expect(andres?.invited_at).not.toBe("2026-10-18T14:00:00Z");
+    });
+  });
+
+  it("search by name and tapping a counter narrow the one list", async () => {
+    renderAt("/bishops");
+    await rowsOnScreen();
+    fireEvent.change(screen.getByLabelText("Buscar Bishop por nombre"), { target: { value: "sofia" } });
+    expect(screen.getAllByTestId("bishop-row")).toHaveLength(1);
+    fireEvent.change(screen.getByLabelText("Buscar Bishop por nombre"), { target: { value: "" } });
+    fireEvent.click(counter("Invirtiendo"));
+    expect(screen.getAllByTestId("bishop-row")).toHaveLength(2);
+    expect(counter("Invirtiendo")).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
+describe("Viendo in the header", () => {
+  const renderSelectAt = (path: string) => {
+    const rootRoute = createRootRoute({ component: () => <OfficeScopeSelect /> });
+    const router = createRouter({ routeTree: rootRoute, history: createMemoryHistory({ initialEntries: [path] }) });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<QueryClientProvider client={client}><RouterProvider router={router} /></QueryClientProvider>);
+  };
+  it.each(["/", "/embudo", "/oficinas"])("shows on %s", async (path) => {
+    renderSelectAt(path);
+    expect(await screen.findByRole("combobox")).toHaveTextContent("Viendo");
+  });
+  it.each(["/bishops", "/personas", "/reglas", "/perfil", "/catalogo"])("hides on %s", async (path) => {
+    renderSelectAt(path);
+    // Give the session and the offices time to load: the selector would be there by then on an office screen.
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    expect(screen.queryByRole("combobox")).toBeNull();
+  });
+});
 
 describe("Bishop detail (SM Global)", () => {
   it("shows contact, the signed framework agreement with its document and the opportunities taken with their funds", async () => {
