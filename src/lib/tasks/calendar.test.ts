@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildCalendarItems, dedupeMeetings, localDay, monthGrid, shiftAnchor, visibleRange, weekDays } from "./calendar";
+import { WEEK_END_HOUR, WEEK_HOUR_PX, WEEK_START_HOUR, buildCalendarItems, dedupeMeetings, localDay, monthGrid, placeWeekItems, shiftAnchor, visibleRange, weekDays } from "./calendar";
 import type { LeadMeetingItem, Meeting, PortalMeeting, TaskWithComputed } from "@/lib/api/types";
 
 const task = (id: string, code: string, due: string) => ({ id, code, due_date: due }) as TaskWithComputed;
@@ -67,5 +67,52 @@ describe("calendar items", () => {
     const range = visibleRange(["2026-10-12", "2026-10-18"]);
     expect(range.from).toBe(new Date("2026-10-12T00:00:00").toISOString());
     expect(range.to).toBe(new Date("2026-10-19T00:00:00").toISOString());
+  });
+});
+
+describe("week time grid", () => {
+  const portalAt = (id: string, local: string, minutes: number) => {
+    const start = new Date(local);
+    return {
+      id, kind: "business", topic: id, starts_at: start.toISOString(),
+      ends_at: new Date(start.getTime() + minutes * 60_000).toISOString(), status: "confirmed",
+    } as PortalMeeting;
+  };
+
+  it("positions a block by its local start time and length", () => {
+    const m = portalAt("a", "2026-10-15T15:00:00", 30);
+    const { allDay, timed } = placeWeekItems([{ kind: "portal", day: "2026-10-15", at: m.starts_at, meeting: m }]);
+    expect(allDay).toHaveLength(0);
+    expect(timed[0]?.top).toBe((15 - WEEK_START_HOUR) * WEEK_HOUR_PX);
+    expect(timed[0]?.height).toBe((30 / 60) * WEEK_HOUR_PX);
+    expect(timed[0]?.lanes).toBe(1);
+  });
+
+  it("sends due dates to the all-day strip and splits overlaps into lanes", () => {
+    const a = portalAt("a", "2026-10-15T15:00:00", 60);
+    const b = portalAt("b", "2026-10-15T15:30:00", 60);
+    const due = { kind: "due", day: "2026-10-15", task: task("t1", "B1-01", "2026-10-15") } as const;
+    const { allDay, timed } = placeWeekItems([
+      due,
+      { kind: "portal", day: "2026-10-15", at: a.starts_at, meeting: a },
+      { kind: "portal", day: "2026-10-15", at: b.starts_at, meeting: b },
+    ]);
+    expect(allDay).toHaveLength(1);
+    expect(timed.map((p) => p.lane)).toEqual([0, 1]);
+    expect(timed.every((p) => p.lanes === 2)).toBe(true);
+  });
+
+  it("keeps items outside the visible hours inside the grid", () => {
+    const early = portalAt("early", "2026-10-15T05:00:00", 30);
+    const late = portalAt("late", "2026-10-15T23:30:00", 60);
+    const { timed } = placeWeekItems([
+      { kind: "portal", day: "2026-10-15", at: early.starts_at, meeting: early },
+      { kind: "portal", day: "2026-10-15", at: late.starts_at, meeting: late },
+    ]);
+    const grid = (WEEK_END_HOUR - WEEK_START_HOUR) * WEEK_HOUR_PX;
+    for (const p of timed) {
+      expect(p.top).toBeGreaterThanOrEqual(0);
+      expect(p.top + p.height).toBeLessThanOrEqual(grid);
+    }
   });
 });

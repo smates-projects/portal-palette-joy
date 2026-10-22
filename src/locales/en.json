@@ -522,6 +522,7 @@
       "prev": "Previous",
       "next": "Next",
       "due": "Due",
+      "all_day": "Due dates",
       "more": "+{{count}} more",
       "legend_due": "Due date",
       "legend_proposed": "Proposed meeting",

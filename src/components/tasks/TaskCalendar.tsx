@@ -8,7 +8,7 @@ import { useCalendarEvents, useCurrentUser, useLeadMeetings, useMeetings, useMyM
 import type { PortalMeeting, TaskWithComputed } from "@/lib/api/types";
 import type { LeadMeetingItem } from "@/lib/api/entry-types";
 import {
-  CAL_MODES, buildCalendarItems, localDay, monthGrid, shiftAnchor, visibleRange, weekDays, type CalItem, type CalMode,
+  CAL_MODES, WEEK_END_HOUR, WEEK_HOUR_PX, WEEK_START_HOUR, buildCalendarItems, localDay, monthGrid, placeWeekItems, shiftAnchor, visibleRange, weekDays, type CalItem, type CalMode,
 } from "@/lib/tasks/calendar";
 import { MeetingPanel } from "@/components/calendar/MeetingPanel";
 import { cn } from "@/lib/utils";
@@ -88,6 +88,12 @@ export function TaskCalendar(props: {
       ? cap(fmt({ month: "long", year: "numeric" }, anchor))
       : t("tasks.calendar.week_range", { from: fmt({ day: "numeric", month: "short" }, days[0]!), to: fmt({ day: "numeric", month: "short", year: "numeric" }, days[6]!) });
   const time = (iso: string) => fmt({ hour: "2-digit", minute: "2-digit" }, iso);
+  // Week time grid: one row per hour between WEEK_START_HOUR and WEEK_END_HOUR.
+  const hours = Array.from({ length: WEEK_END_HOUR - WEEK_START_HOUR + 1 }, (_, i) => WEEK_START_HOUR + i);
+  const gridHeight = (WEEK_END_HOUR - WEEK_START_HOUR) * WEEK_HOUR_PX;
+  const hourLabel = (h: number) => fmt({ hour: "2-digit", minute: "2-digit" }, `${anchor}T${String(h).padStart(2, "0")}:00:00`);
+  const itemKey = (it: CalItem) =>
+    `${it.kind}-${it.kind === "due" ? it.task.id : it.kind === "meeting" || it.kind === "portal" ? it.meeting.id : it.kind === "lead" ? it.item.lead_id : it.event.id}`;
 
   const Item = ({ it, compact }: { it: CalItem; compact: boolean }) => {
     const base = "flex w-full min-w-0 items-center gap-1.5 rounded-[4px] px-1.5 text-left text-[11px] leading-5";
@@ -166,6 +172,63 @@ export function TaskCalendar(props: {
     );
   };
 
+  /** A timed block of the week grid: fills its slot, hour on top and title below. */
+  const WeekBlock = ({ it }: { it: Exclude<CalItem, { kind: "due" }> }) => {
+    const base = "flex h-full w-full min-w-0 flex-col justify-start overflow-hidden rounded-[4px] border px-1.5 py-0.5 text-left text-[11px] leading-tight";
+    const timeRow = <span className="shrink-0 whitespace-nowrap text-[10px] tabular-nums opacity-80">{time(it.at)}</span>;
+    if (it.kind === "google")
+      return (
+        <div
+          title={`${it.event.title} · ${time(it.at)} · ${t("tasks.calendar.google_readonly")}`}
+          className={cn(base, "cursor-default border-border bg-muted text-muted-foreground")}
+        >
+          <span className="flex items-center gap-1">{timeRow}<Lock className="h-2.5 w-2.5 shrink-0" /></span>
+          <span className="truncate font-medium">{it.event.title}</span>
+        </div>
+      );
+    if (it.kind === "lead")
+      return (
+        <button
+          onClick={() => void navigate({ to: "/embudo", search: { lead: it.item.lead_id } })}
+          title={`${t("entry.calendar.title", { name: it.item.business_name })} · ${time(it.at)} · ${it.item.meeting.meet_url}`}
+          className={cn(base, "border-primary bg-accent/60 text-foreground hover:brightness-95")}
+        >
+          <span className="flex items-center gap-1">{timeRow}<Video className="h-2.5 w-2.5 shrink-0" /></span>
+          <span className="truncate font-medium">{t("entry.calendar.title", { name: it.item.business_name })}</span>
+        </button>
+      );
+    if (it.kind === "portal") {
+      const m = it.meeting;
+      return (
+        <button
+          onClick={() => props.onFocusMeeting(m.id)}
+          title={`${m.topic} · ${time(it.at)} · ${t(`calendar.status.${m.status}`)}${m.google_synced ? ` · ${t("calendar.google_mark")}` : ""}`}
+          className={cn(
+            base,
+            "border-primary bg-surface text-foreground hover:bg-accent",
+            m.status === "proposed" && "border-dashed",
+            m.status === "cancelled" && "border-border text-muted-foreground line-through",
+            props.focusMeetingId === m.id && "ring-2 ring-ring",
+          )}
+        >
+          {timeRow}
+          <span className="truncate font-medium">{m.topic}</span>
+        </button>
+      );
+    }
+    return (
+      <button
+        onClick={() => props.onOpen(it.task.id)}
+        title={`${it.meeting.topic} · ${time(it.at)} · ${t(`tasks.calendar.meeting_${it.meeting.status}`)} · ${it.task.code} ${props.businessName(it.task.business_id)}`}
+        className={cn(base, "border-border text-foreground hover:brightness-95", it.meeting.status === "proposed" && "border-dashed")}
+        style={areaAccentStyle(it.task.area)}
+      >
+        {timeRow}
+        <span className="truncate font-medium">{it.task.code} · {it.meeting.topic}</span>
+      </button>
+    );
+  };
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex flex-wrap items-center justify-between gap-3 pb-2">
@@ -213,9 +276,10 @@ export function TaskCalendar(props: {
       <AreaLegend areas={AREAS} className="pb-2" />
       {scoped && loaded && visibleCount === 0 && scoped.renderEmpty(mode)}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border border-border bg-surface">
-        <div className="grid grid-cols-7 border-b border-border">
+        <div className={cn("grid border-b border-border", mode === "week" ? "grid-cols-[4.25rem_repeat(7,minmax(0,1fr))]" : "grid-cols-7")}>
+          {mode === "week" && <div />}
           {days.slice(0, 7).map((d) => (
-            <div key={d} className="px-2 py-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            <div key={d} className={cn("px-2 py-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground", mode === "week" && "border-l border-border text-center")}>
               {mode === "month" ? fmt({ weekday: "short" }, d) : (
                 <span className={cn(d === todayIso() && "text-primary")}>
                   {fmt({ weekday: "short" }, d)} <span className="font-semibold tabular-nums">{fmt({ day: "numeric" }, d)}</span>
@@ -224,14 +288,50 @@ export function TaskCalendar(props: {
             </div>
           ))}
         </div>
-        <div className={cn("grid min-h-0 flex-1 grid-cols-7 overflow-auto", mode === "month" ? "auto-rows-[minmax(min-content,1fr)]" : "")}>{/* Rows share the height but never shrink below their chips, so "+N más" never spills into the next week. */}
-          {days.map((d) => {
-            const list = items.get(d) ?? [];
-            const outside = mode === "month" && d.slice(0, 7) !== anchor.slice(0, 7);
-            const shown = mode === "month" ? list.slice(0, MONTH_MAX) : list;
-            return (
-              <div key={d} className={cn("flex min-h-24 min-w-0 flex-col gap-0.5 border-b border-r border-border p-1 [&:nth-child(7n)]:border-r-0 [&>*]:shrink-0", outside && "bg-muted/40")}>
-                {mode === "month" && (
+        {mode === "week" ? (
+          <div className="min-h-0 flex-1 overflow-auto">
+            {/* All-day strip: the due dates of the week, which have no hour. */}
+            <div className="grid grid-cols-[4.25rem_repeat(7,minmax(0,1fr))] border-b border-border">
+              <div className="px-1.5 py-1 text-right text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{t("tasks.calendar.all_day")}</div>
+              {days.map((d) => (
+                <div key={d} className={cn("flex min-h-9 min-w-0 flex-col gap-0.5 border-l border-border p-1", d === todayIso() && "bg-accent/40")}>
+                  {(items.get(d) ?? []).filter((i) => i.kind === "due").map((it) => (
+                    <Item key={itemKey(it)} it={it} compact />
+                  ))}
+                </div>
+              ))}
+            </div>
+            {/* Time grid: hour gutter plus one column per day, blocks positioned by their start time. */}
+            <div className="grid grid-cols-[4.25rem_repeat(7,minmax(0,1fr))]">
+              <div className="relative" style={{ height: gridHeight }}>
+                {hours.slice(1).map((h) => (
+                  <span key={h} className="absolute right-1.5 -translate-y-1/2 whitespace-nowrap text-[10px] tabular-nums text-muted-foreground" style={{ top: (h - WEEK_START_HOUR) * WEEK_HOUR_PX }}>
+                    {hourLabel(h)}
+                  </span>
+                ))}
+              </div>
+              {days.map((d) => (
+                <div key={d} className={cn("relative min-w-0 border-l border-border", d === todayIso() && "bg-accent/30")} style={{ height: gridHeight }}>
+                  {hours.slice(1).map((h) => (
+                    <div key={h} className="absolute inset-x-0 border-t border-border/70" style={{ top: (h - WEEK_START_HOUR) * WEEK_HOUR_PX }} />
+                  ))}
+                  {placeWeekItems(items.get(d) ?? []).timed.map((p) => (
+                    <div key={itemKey(p.item)} className="absolute px-0.5" style={{ top: p.top, height: p.height, left: `${(p.lane / p.lanes) * 100}%`, width: `${100 / p.lanes}%` }}>
+                      <WeekBlock it={p.item} />
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="grid min-h-0 flex-1 grid-cols-7 auto-rows-[minmax(min-content,1fr)] overflow-auto">{/* Rows share the height but never shrink below their chips, so "+N más" never spills into the next week. */}
+            {days.map((d) => {
+              const list = items.get(d) ?? [];
+              const outside = d.slice(0, 7) !== anchor.slice(0, 7);
+              const shown = list.slice(0, MONTH_MAX);
+              return (
+                <div key={d} className={cn("flex min-h-24 min-w-0 flex-col gap-0.5 border-b border-r border-border p-1 [&:nth-child(7n)]:border-r-0 [&>*]:shrink-0", outside && "bg-muted/40")}>
                   <span
                     className={cn(
                       "mb-0.5 self-start rounded-[4px] px-1 text-[11px] tabular-nums",
@@ -240,22 +340,22 @@ export function TaskCalendar(props: {
                   >
                     {fmt({ day: "numeric" }, d)}
                   </span>
-                )}
-                {shown.map((it) => (
-                  <Item key={`${it.kind}-${it.kind === "due" ? it.task.id : it.kind === "meeting" || it.kind === "portal" ? it.meeting.id : it.kind === "lead" ? it.item.lead_id : it.event.id}`} it={it} compact={mode === "month"} />
-                ))}
-                {list.length > shown.length && (
-                  <button
-                    onClick={() => { setMode("week"); setAnchor(d); }}
-                    className="self-start px-1 text-[11px] text-link hover:underline"
-                  >
-                    {t("tasks.calendar.more", { count: list.length - shown.length })}
-                  </button>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                  {shown.map((it) => (
+                    <Item key={itemKey(it)} it={it} compact />
+                  ))}
+                  {list.length > shown.length && (
+                    <button
+                      onClick={() => { setMode("week"); setAnchor(d); }}
+                      className="self-start px-1 text-[11px] text-link hover:underline"
+                    >
+                      {t("tasks.calendar.more", { count: list.length - shown.length })}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
       <MeetingPanel meetingId={props.focusMeetingId ?? null} onClose={() => props.onFocusMeeting(null)} />
     </div>
