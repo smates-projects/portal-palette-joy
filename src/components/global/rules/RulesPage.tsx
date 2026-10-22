@@ -99,12 +99,20 @@ export function RulesPage() {
       <IntakeDocsEditor key={`docs-${JSON.stringify(rulesQ.data.intake_documents)}`} rules={rulesQ.data} />
       <IntakeTextsEditor key={`texts-${rulesQ.data.intake_help_text ?? ""}`} rules={rulesQ.data} />
       {/* Who can enter: the declared annual revenue (the year of operation is a hard rule of the assessment). */}
-      <EligibilityRulesSection key={`eligibility-${JSON.stringify(rulesQ.data.eligibility ?? null)}`} rules={rulesQ.data} />
+      <Explained text={t("global.rules.explain.eligibility")}>
+        <EligibilityRulesSection key={`eligibility-${JSON.stringify(rulesQ.data.eligibility ?? null)}`} rules={rulesQ.data} />
+      </Explained>
       {/* Configurable entry contracts: the companies Strategic Mates signs with, then the contracts themselves. */}
-      <SmEntitiesSection key={`entities-${JSON.stringify(rulesQ.data.sm_entities ?? null)}`} rules={rulesQ.data} />
-      <ContractRulesSection />
-      <MeetingHoursRules key={`hours-${JSON.stringify(rulesQ.data.meeting_hours ?? null)}`} rules={rulesQ.data} />
-      <ZonesSection />
+      <Explained text={t("global.rules.explain.contracts")}>
+        <SmEntitiesSection key={`entities-${JSON.stringify(rulesQ.data.sm_entities ?? null)}`} rules={rulesQ.data} />
+        <ContractRulesSection />
+      </Explained>
+      <Explained text={t("global.rules.explain.hours")}>
+        <MeetingHoursRules key={`hours-${JSON.stringify(rulesQ.data.meeting_hours ?? null)}`} rules={rulesQ.data} />
+      </Explained>
+      <Explained text={t("global.rules.explain.zones")}>
+        <ZonesSection />
+      </Explained>
       {/*
         Expert-only blocks, collapsed so Marilyn's everyday rules stay in view: what the business already has (the
         assessment block × area grid) and the fine settings of the entry flow. Each keeps its one-line explanation.
@@ -138,7 +146,7 @@ export function RulesPage() {
 /** One sentence above a block of Reglas, in Marilyn's words: what the block decides. */
 function Explained({ text, children }: { text: string; children: React.ReactNode }) {
   return (
-    <div className="mt-6 [&>section]:mt-2">
+    <div className="mt-6 [&>section:first-of-type]:mt-2">
       <p className="text-sm text-foreground">{text}</p>
       {children}
     </div>
