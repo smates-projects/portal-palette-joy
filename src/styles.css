@@ -328,6 +328,34 @@
   );
 }
 
+/* Brand boot loader (BrandLoader): the isotype spins like a coin while a thin gold line fills left to right.
+   Reduced motion: no spin, just a soft opacity pulse. */
+@keyframes sm-coin-spin {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(360deg); }
+}
+@keyframes sm-gold-fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes sm-loader-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+@utility brand-loader-coin {
+  animation: sm-coin-spin 1.6s ease-in-out infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: sm-loader-pulse 1.6s ease-in-out infinite;
+  }
+}
+@utility brand-loader-line {
+  transform-origin: left;
+  animation: sm-gold-fill 1.6s ease-in-out infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: sm-loader-pulse 1.6s ease-in-out infinite;
+  }
+}
+
 @utility scrollbar-none {
   scrollbar-width: none;
   &::-webkit-scrollbar { display: none; }
