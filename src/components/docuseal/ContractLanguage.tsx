@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { ContractLanguage } from "@/lib/api/types";
-import { CONTRACT_LANGUAGES, contractLanguageOf } from "@/lib/contracts/language";
+import type { Contract, ContractLanguage } from "@/lib/api/types";
+import { CONTRACT_LANGUAGES, contractLanguageOf, governingLanguageOf } from "@/lib/contracts/language";
 import { cn } from "@/lib/utils";
 
 /**
@@ -46,4 +46,16 @@ export function ContractFallbackNote({ show, className }: { show: boolean; class
   const { t } = useTranslation();
   if (!show) return null;
   return <p role="status" className={cn("text-xs text-muted-foreground", className)}>{t("contracts_lang.fallback")}</p>;
+}
+
+/** At the top of the reader: which version prevails if the two differ (the contract's language_governing). */
+export function ContractGoverningNote({ contract, className }: { contract: Pick<Contract, "language_governing">; className?: string }) {
+  const { t } = useTranslation();
+  const governing = governingLanguageOf(contract);
+  if (!governing) return null;
+  return (
+    <p className={cn("rounded-[4px] border border-border bg-muted px-3 py-2 text-xs text-foreground", className)}>
+      {t(`contracts_lang.governing_${governing}`)}
+    </p>
+  );
 }

@@ -7,11 +7,12 @@ import {
 } from "@/lib/api/hooks";
 import {
   CONTRACT_TRIGGER_EVENTS, ENTRY_CONTRACT_KINDS, SM_ENTITIES, type ContractParty, type EntryContractKind, type EntryContractRule,
-  type EntryContractRuleInput, type EntryContractSigner, type PlatformRules, type SmEntity,
+  type ContractLanguage, type EntryContractRuleInput, type EntryContractSigner, type PlatformRules, type SmEntity,
 } from "@/lib/api/types";
 import {
   CONTRACT_TEMPLATE_PLACEHOLDERS, byPosition, contractSignedTrigger, placeholderToken, ruleError, smEntitiesOf,
 } from "@/lib/leads/contract-rules";
+import { CONTRACT_LANGUAGES, DEFAULT_GOVERNING_LANGUAGE, isContractLanguage } from "@/lib/contracts/language";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -460,6 +461,45 @@ export function SmEntitiesSection({ rules }: { rules: PlatformRules }) {
       </div>
       <div className="mt-3 flex justify-end">
         <PrimaryButton onClick={save} disabled={!dirty || empty || update.isPending}>{t("entry_contracts.entities.save")}</PrimaryButton>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * SM Global: which version prevails when the Spanish and the English of a contract differ. It applies to the contracts
+ * sent from now on (each contract keeps the one it was sent with). Saved on change, with undo.
+ */
+export function GoverningLanguageSection({ rules }: { rules: PlatformRules }) {
+  const { t } = useTranslation();
+  const update = useUpdateRules();
+  const saved: ContractLanguage = rules.contracts?.governing_language ?? DEFAULT_GOVERNING_LANGUAGE;
+  const save = (language: ContractLanguage) => {
+    if (language === saved) return;
+    update.mutate({ patch: { contracts: { governing_language: language } } }, {
+      onSuccess: () => toast.success(t("contracts_lang.rules.t_saved", { language: t(`contracts_lang.rules.option_${language}`) }), {
+        action: { label: t("global.undo"), onClick: () => update.mutate({ patch: { contracts: { governing_language: saved } } }) },
+      }),
+      onError: () => toast.error(t("global.t_error")),
+    });
+  };
+  return (
+    <section className="mt-4 rounded-md border border-border bg-surface p-4">
+      <h2 className="text-sm font-semibold">{t("contracts_lang.rules.title")}</h2>
+      <p className="mt-1 text-sm text-muted-foreground">{t("contracts_lang.rules.hint")}</p>
+      <div className="mt-3 max-w-xs">
+        <Field label={t("contracts_lang.rules.label")}>
+          <select
+            value={saved}
+            disabled={update.isPending}
+            onChange={(e) => isContractLanguage(e.target.value) && save(e.target.value)}
+            className={inputCls}
+          >
+            {CONTRACT_LANGUAGES.map((language) => (
+              <option key={language} value={language}>{t(`contracts_lang.rules.option_${language}`)}</option>
+            ))}
+          </select>
+        </Field>
       </div>
     </section>
   );

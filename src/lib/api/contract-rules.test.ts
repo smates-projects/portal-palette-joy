@@ -109,6 +109,18 @@ describe("the rule engine in the demo", () => {
     expect((await api.notifications.list()).map((n) => n.kind)).toEqual(expect.arrayContaining(["binding_ready", "validation_closed"]));
   });
 
+  it("the governing language in Reglas applies to the contracts sent afterwards", async () => {
+    const api = await as(seed.U_MARYLIN);
+    await expect(api.rules.update({ contracts: { governing_language: "fr" as "es" } })).rejects.toThrow("invalid_governing_language");
+    await api.rules.update({ contracts: { governing_language: "es" } }, "Prevalece el español");
+    expect((await api.rules.listHistory())[0]).toMatchObject({ changes: [{ field: "contracts", to: { governing_language: "es" } }] });
+    const { brisa } = await bishopTakesBrisa(api);
+    const binding = (await contractsOf(api, brisa.id)).find((c) => c.kind === "binding")!;
+    expect(binding.language_governing).toBe("es");
+    expect(binding.text?.es).toMatch(/prevalece la versión en español\.$/);
+    expect(binding.text?.en).toMatch(/the Spanish version prevails\.$/);
+  });
+
   it("the provisional split stays for an open validation", async () => {
     const api = await as(net.U_JEFFERSON);
     const sol = (await api.bishop.listOpportunities()).find((o) => o.business_name === "Sol Remodeling")!;

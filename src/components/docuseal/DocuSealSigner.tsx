@@ -11,7 +11,7 @@ import { PrimaryButton, SecondaryButton } from "@/components/tasks/detail/dialog
 import { cn } from "@/lib/utils";
 import { ContractText, SignatureMark } from "./ContractDocument";
 import { SignaturePad } from "./SignaturePad";
-import { ContractFallbackNote, ContractLanguageToggle, useContractLanguage } from "./ContractLanguage";
+import { ContractFallbackNote, ContractGoverningNote, ContractLanguageToggle, useContractLanguage } from "./ContractLanguage";
 
 /**
  * DocuSeal signing. With the API's real DocuSeal driver, opening the contract answers the signer's own form
@@ -122,6 +122,7 @@ export function DocuSealSigner(props: { contract: Contract; party: "owner" | "sm
         ) : (<>
         {/* The contract's full text (scrollable) with the signature field below; a sample only when it has no text.
             Once signed it shows the signature itself. */}
+        {body && <ContractGoverningNote contract={props.contract} />}
         <div className="rounded-md border border-border bg-muted/50 p-2 sm:p-4">
           <div className={cn("mx-auto rounded-md border border-border bg-surface p-5 text-xs leading-relaxed text-muted-foreground sm:p-6", body ? "max-w-none" : "max-w-sm")}>
             <div className="flex items-start justify-between gap-3">

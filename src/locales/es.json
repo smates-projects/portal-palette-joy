@@ -2357,7 +2357,8 @@
         "meeting_hours": "Horario de reuniones",
         "eligibility": "Facturación anual mínima declarada",
         "intake_help_text": "Nota de los documentos de ingreso",
-        "sm_entities": "Entidades de Strategic Mates"
+        "sm_entities": "Entidades de Strategic Mates",
+        "contracts": "Idioma que prevalece"
       },
       "percent": "{{value}}%",
       "days_one": "{{count}} día",
@@ -3982,6 +3983,16 @@
     "toggle_label": "Idioma del contrato",
     "fallback": "Este contrato aún no tiene versión en inglés. Lo ves en español",
     "read": "Leer el contrato",
-    "read_for": "Leer el contrato {{name}}"
+    "read_for": "Leer el contrato {{name}}",
+    "governing_en": "Si hay diferencias, prevalece la versión en inglés",
+    "governing_es": "Si hay diferencias, prevalece la versión en español",
+    "rules": {
+      "title": "Idioma que prevalece",
+      "hint": "Cada contrato se firma en español y en inglés. Elige cuál vale si las dos versiones dicen algo distinto. Aplica a los contratos que se envíen desde ahora",
+      "label": "Idioma que prevalece",
+      "option_es": "Español",
+      "option_en": "Inglés",
+      "t_saved": "Guardaste el idioma que prevalece. {{language}} desde ahora"
+    }
   }
 }

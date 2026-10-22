@@ -2357,7 +2357,8 @@
         "meeting_hours": "Meeting hours",
         "eligibility": "Minimum declared annual revenue",
         "intake_help_text": "Entry documents note",
-        "sm_entities": "Strategic Mates entities"
+        "sm_entities": "Strategic Mates entities",
+        "contracts": "Governing language"
       },
       "percent": "{{value}}%",
       "days_one": "{{count}} day",
@@ -3982,6 +3983,16 @@
     "toggle_label": "Contract language",
     "fallback": "This contract has no English version yet. You are reading it in Spanish",
     "read": "Read the contract",
-    "read_for": "Read the contract {{name}}"
+    "read_for": "Read the contract {{name}}",
+    "governing_en": "If the two versions differ, the English version prevails",
+    "governing_es": "If the two versions differ, the Spanish version prevails",
+    "rules": {
+      "title": "Governing language",
+      "hint": "Every contract is signed in Spanish and in English. Choose which one counts if the two versions say something different. It applies to the contracts sent from now on",
+      "label": "Governing language",
+      "option_es": "Spanish",
+      "option_en": "English",
+      "t_saved": "Governing language saved. {{language}} from now on"
+    }
   }
 }

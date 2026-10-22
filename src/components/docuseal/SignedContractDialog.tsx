@@ -9,7 +9,7 @@ import { formatDate } from "@/lib/format";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PrimaryButton, SecondaryButton } from "@/components/tasks/detail/dialogs";
 import { ContractText, SignatureMark } from "./ContractDocument";
-import { ContractFallbackNote, ContractLanguageToggle, useContractLanguage } from "./ContractLanguage";
+import { ContractFallbackNote, ContractGoverningNote, ContractLanguageToggle, useContractLanguage } from "./ContractLanguage";
 
 /**
  * The contract as a document: its full text in the language of its "ES | EN" toggle (Spanish when the English one is
@@ -52,6 +52,7 @@ export function SignedContractDialog({ contract, language: initial, onClose }: {
           </DialogDescription>
         </DialogHeader>
 
+        <ContractGoverningNote contract={contract} />
         <ContractFallbackNote show={reading.fallback} className="no-print" />
         <div className="print-doc space-y-4">
         <div id="signed-document" className="rounded-md border border-border bg-muted/50 p-2 sm:p-4 print:border-0 print:bg-transparent print:p-0">

@@ -487,6 +487,8 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       if (next.meeting_hours !== undefined && validateMeetingHours(next.meeting_hours)) throw new Error("invalid_meeting_hours");
       // Eligibility: the declared annual revenue is a whole number of dollars (0 = no minimum).
       if (next.eligibility !== undefined && eligibilityError(next.eligibility)) throw new Error(eligibilityError(next.eligibility)!);
+      // Bilingual contracts: the version that prevails is Spanish or English.
+      if (next.contracts !== undefined && next.contracts.governing_language !== "es" && next.contracts.governing_language !== "en") throw new Error("invalid_governing_language");
       const known = new Set(db.catalog.filter((c) => !c.archived).map((c) => c.code));
       if (new Set(next.required_task_codes).size !== next.required_task_codes.length || next.required_task_codes.some((c) => !known.has(c))) throw new Error("unknown_task_code");
       const fields = Object.keys(next) as (keyof PlatformRules)[];

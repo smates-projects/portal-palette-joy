@@ -7,7 +7,7 @@ import type { IntakeDocRule, MeetingHours, PlatformRules } from "@/lib/api/netwo
 import { IntakeDocsEditor, IntakeTextsEditor } from "./IntakeDocsEditor";
 import { MeetingHoursRules, zoneKey } from "./MeetingHoursRules";
 import { AssessmentMapEditor, EligibilityRulesSection, EntryFlowRules, ZonesSection } from "./EntryRules";
-import { ContractRulesSection, SmEntitiesSection } from "./ContractRulesSection";
+import { ContractRulesSection, GoverningLanguageSection, SmEntitiesSection } from "./ContractRulesSection";
 import type { EligibilityRules, SmEntities } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 import { formatUsd } from "@/lib/format";
@@ -68,6 +68,8 @@ export function RulesPage() {
       ? String(value)
       : field === "sm_entities"
       ? t("entry_contracts.entities.value", { corporate: (value as SmEntities).corporate.name, sm_square: (value as SmEntities).sm_square.name })
+      : field === "contracts"
+      ? t(`contracts_lang.rules.option_${(value as { governing_language?: string } | null)?.governing_language === "es" ? "es" : "en"}`)
       : field === "program_amount"
       ? formatUsd(Number(value), i18n.language)
       : field === "intake_documents"
@@ -105,6 +107,7 @@ export function RulesPage() {
       {/* Configurable entry contracts: the companies Strategic Mates signs with, then the contracts themselves. */}
       <Explained text={t("global.rules.explain.contracts")}>
         <SmEntitiesSection key={`entities-${JSON.stringify(rulesQ.data.sm_entities ?? null)}`} rules={rulesQ.data} />
+        <GoverningLanguageSection rules={rulesQ.data} />
         <ContractRulesSection />
       </Explained>
       <Explained text={t("global.rules.explain.hours")}>
