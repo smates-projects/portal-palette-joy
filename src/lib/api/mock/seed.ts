@@ -368,6 +368,9 @@ export const calendarEvents: ExternalCalendarEvent[] = [
   { id: uuid("1e000000", 3), user_id: U_LUCIA, title: "Firma de escritura — cliente particular", starts_at: "2026-10-20T14:00:00Z", duration_minutes: 60 },
   { id: uuid("1e000000", 4), user_id: U_LUCIA, title: "Dentista", starts_at: "2026-10-22T21:00:00Z", duration_minutes: 45 },
   { id: uuid("1e000000", 5), user_id: U_LUCIA, title: "Capacitación Colegio de Abogados", starts_at: "2026-10-28T13:00:00Z", duration_minutes: 180 },
+  // Marilyn (SM Global): her own Google events, read only in her Calendario.
+  { id: uuid("1e000000", 6), user_id: U_MARYLIN, title: "Llamada con Prisma ERP", starts_at: "2026-10-14T15:00:00Z", duration_minutes: 45 },
+  { id: uuid("1e000000", 7), user_id: U_MARYLIN, title: "Almuerzo con inversionistas", starts_at: "2026-10-16T16:30:00Z", duration_minutes: 60 },
 ];
 
 const changesText: Record<string, string> = {

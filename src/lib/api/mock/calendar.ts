@@ -1,7 +1,7 @@
 // Calendar v2 in memory: connections, fake busy time per seeded person, availability computed with the same rules
 // as the API (30-minute grid inside meeting_hours, portal meetings excluded) and the portal meetings themselves.
-// Demo seed: Carla, Lucía, Nicolás and Jefferson have the calendar connected; Mariana does not; Camila's access
-// expired (reconnect required).
+// Demo seed: Carla, Lucía, Nicolás, Jefferson and Marilyn have the calendar connected; Mariana does not; Camila's
+// access expired (reconnect required).
 import { nowIso } from "@/lib/clock";
 import type { CalendarConsent, CalendarRepository } from "../repositories";
 import type {
@@ -59,6 +59,8 @@ const CONNECTED_SEED: Record<string, string> = {
   [seed.U_CARLA]: "carla.mendez@gmail.com",
   [seed.U_NICOLAS]: "nicolas@strategicmates.com",
   [seedNetwork.U_JEFFERSON]: "jefferson@paulainvestments.com",
+  // SM Global holds the first meetings with the owners: her Calendario has something to show in the demo.
+  [seed.U_MARYLIN]: "marilyn@strategicmates.com",
 };
 const RECONNECT_SEED: Record<string, string> = { [seed.U_CAMILA]: "camila@strategicmates.com" };
 
@@ -256,6 +258,9 @@ export function createCalendar(ctx: CalendarContext) {
       ...(vosslerTecno ? [{ kind: "task" as const, task_id: vosslerTecno.id, topic: "Demo del CRM para el equipo de obra", starts_at: "2026-10-19T17:00:00Z", duration: 45, organizerId: seed.U_MARIANA, participantIds: [seed.U_CARLA] }] : []),
       // Jefferson (Bishop) with the consultant of the business he funds.
       { kind: "business" as const, business_id: seed.BIZ_BIMBO, topic: "Resultados del trimestre de las franquicias", starts_at: "2026-10-21T20:00:00Z", duration: 30, organizerId: seedNetwork.U_JEFFERSON, participantIds: [seed.U_NICOLAS] },
+      // Marilyn (SM Global) this week: with Nicolás, confirmed in Google; with Camila, whose access expired, a proposal.
+      { kind: "business" as const, business_id: seed.BIZ_VOSSLER, topic: "Seguimiento del programa de Vossler", starts_at: "2026-10-16T18:00:00Z", duration: 30, organizerId: seed.U_MARYLIN, participantIds: [seed.U_NICOLAS] },
+      { kind: "business" as const, business_id: seed.BIZ_PRIME, topic: "Revisión de Prime 10 con su consultora", starts_at: "2026-10-15T19:00:00Z", duration: 30, organizerId: seed.U_MARYLIN, participantIds: [seed.U_CAMILA] },
     ];
     for (const s of samples) {
       const task = "task_id" in s ? db.tasks.find((t) => t.id === s.task_id) : undefined;
