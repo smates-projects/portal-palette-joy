@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildCalendarItems, dedupeMeetings, localDay, monthGrid, shiftAnchor, visibleRange, weekDays } from "./calendar";
+import { WEEK_END_HOUR, WEEK_HOUR_PX, WEEK_START_HOUR, buildCalendarItems, dedupeMeetings, localDay, monthGrid, placeWeekItems, shiftAnchor, visibleRange, weekDays } from "./calendar";
 import type { LeadMeetingItem, Meeting, PortalMeeting, TaskWithComputed } from "@/lib/api/types";
 
 const task = (id: string, code: string, due: string) => ({ id, code, due_date: due }) as TaskWithComputed;
