@@ -276,9 +276,10 @@ export function TaskCalendar(props: {
       <AreaLegend areas={AREAS} className="pb-2" />
       {scoped && loaded && visibleCount === 0 && scoped.renderEmpty(mode)}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border border-border bg-surface">
-        <div className="grid grid-cols-7 border-b border-border">
+        <div className={cn("grid border-b border-border", mode === "week" ? "grid-cols-[3.25rem_repeat(7,minmax(0,1fr))]" : "grid-cols-7")}>
+          {mode === "week" && <div />}
           {days.slice(0, 7).map((d) => (
-            <div key={d} className="px-2 py-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            <div key={d} className={cn("px-2 py-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground", mode === "week" && "border-l border-border text-center")}>
               {mode === "month" ? fmt({ weekday: "short" }, d) : (
                 <span className={cn(d === todayIso() && "text-primary")}>
                   {fmt({ weekday: "short" }, d)} <span className="font-semibold tabular-nums">{fmt({ day: "numeric" }, d)}</span>
@@ -287,14 +288,50 @@ export function TaskCalendar(props: {
             </div>
           ))}
         </div>
-        <div className={cn("grid min-h-0 flex-1 grid-cols-7 overflow-auto", mode === "month" ? "auto-rows-[minmax(min-content,1fr)]" : "")}>{/* Rows share the height but never shrink below their chips, so "+N más" never spills into the next week. */}
-          {days.map((d) => {
-            const list = items.get(d) ?? [];
-            const outside = mode === "month" && d.slice(0, 7) !== anchor.slice(0, 7);
-            const shown = mode === "month" ? list.slice(0, MONTH_MAX) : list;
-            return (
-              <div key={d} className={cn("flex min-h-24 min-w-0 flex-col gap-0.5 border-b border-r border-border p-1 [&:nth-child(7n)]:border-r-0 [&>*]:shrink-0", outside && "bg-muted/40")}>
-                {mode === "month" && (
+        {mode === "week" ? (
+          <div className="min-h-0 flex-1 overflow-auto">
+            {/* All-day strip: the due dates of the week, which have no hour. */}
+            <div className="grid grid-cols-[3.25rem_repeat(7,minmax(0,1fr))] border-b border-border">
+              <div className="px-1.5 py-1 text-right text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{t("tasks.calendar.all_day")}</div>
+              {days.map((d) => (
+                <div key={d} className={cn("flex min-h-9 min-w-0 flex-col gap-0.5 border-l border-border p-1", d === todayIso() && "bg-accent/40")}>
+                  {(items.get(d) ?? []).filter((i) => i.kind === "due").map((it) => (
+                    <Item key={itemKey(it)} it={it} compact />
+                  ))}
+                </div>
+              ))}
+            </div>
+            {/* Time grid: hour gutter plus one column per day, blocks positioned by their start time. */}
+            <div className="grid grid-cols-[3.25rem_repeat(7,minmax(0,1fr))]">
+              <div className="relative" style={{ height: gridHeight }}>
+                {hours.slice(1).map((h) => (
+                  <span key={h} className="absolute right-1.5 -translate-y-1/2 text-[10px] tabular-nums text-muted-foreground" style={{ top: (h - WEEK_START_HOUR) * WEEK_HOUR_PX }}>
+                    {hourLabel(h)}
+                  </span>
+                ))}
+              </div>
+              {days.map((d) => (
+                <div key={d} className={cn("relative min-w-0 border-l border-border", d === todayIso() && "bg-accent/30")} style={{ height: gridHeight }}>
+                  {hours.slice(1).map((h) => (
+                    <div key={h} className="absolute inset-x-0 border-t border-border/70" style={{ top: (h - WEEK_START_HOUR) * WEEK_HOUR_PX }} />
+                  ))}
+                  {placeWeekItems(items.get(d) ?? []).timed.map((p) => (
+                    <div key={itemKey(p.item)} className="absolute px-0.5" style={{ top: p.top, height: p.height, left: `${(p.lane / p.lanes) * 100}%`, width: `${100 / p.lanes}%` }}>
+                      <WeekBlock it={p.item} />
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="grid min-h-0 flex-1 grid-cols-7 auto-rows-[minmax(min-content,1fr)] overflow-auto">{/* Rows share the height but never shrink below their chips, so "+N más" never spills into the next week. */}
+            {days.map((d) => {
+              const list = items.get(d) ?? [];
+              const outside = d.slice(0, 7) !== anchor.slice(0, 7);
+              const shown = list.slice(0, MONTH_MAX);
+              return (
+                <div key={d} className={cn("flex min-h-24 min-w-0 flex-col gap-0.5 border-b border-r border-border p-1 [&:nth-child(7n)]:border-r-0 [&>*]:shrink-0", outside && "bg-muted/40")}>
                   <span
                     className={cn(
                       "mb-0.5 self-start rounded-[4px] px-1 text-[11px] tabular-nums",
@@ -303,22 +340,22 @@ export function TaskCalendar(props: {
                   >
                     {fmt({ day: "numeric" }, d)}
                   </span>
-                )}
-                {shown.map((it) => (
-                  <Item key={`${it.kind}-${it.kind === "due" ? it.task.id : it.kind === "meeting" || it.kind === "portal" ? it.meeting.id : it.kind === "lead" ? it.item.lead_id : it.event.id}`} it={it} compact={mode === "month"} />
-                ))}
-                {list.length > shown.length && (
-                  <button
-                    onClick={() => { setMode("week"); setAnchor(d); }}
-                    className="self-start px-1 text-[11px] text-link hover:underline"
-                  >
-                    {t("tasks.calendar.more", { count: list.length - shown.length })}
-                  </button>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                  {shown.map((it) => (
+                    <Item key={itemKey(it)} it={it} compact />
+                  ))}
+                  {list.length > shown.length && (
+                    <button
+                      onClick={() => { setMode("week"); setAnchor(d); }}
+                      className="self-start px-1 text-[11px] text-link hover:underline"
+                    >
+                      {t("tasks.calendar.more", { count: list.length - shown.length })}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
       <MeetingPanel meetingId={props.focusMeetingId ?? null} onClose={() => props.onFocusMeeting(null)} />
     </div>
