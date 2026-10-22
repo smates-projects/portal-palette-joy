@@ -83,6 +83,19 @@ describe("http rules", () => {
     expect(calls[1]).toMatchObject({ method: "PATCH", path: "/rules", body: { eligibility: { min_annual_revenue: 300_000 }, note: null } });
   });
 
+  it("bilingual contracts: contracts.governing_language comes through and PATCH /rules carries it; absent stays absent", async () => {
+    const { calls } = stubFetch(
+      dataResponse(apiRules({ contracts: { governing_language: "en" } }), 200, { ETag: '"3"' }),
+      dataResponse(apiRules({ contracts: { governing_language: "es" } }), 200, { ETag: '"4"' }),
+      dataResponse(apiRules()),
+    );
+    const { rules } = setup();
+    expect((await rules.get()).contracts).toEqual({ governing_language: "en" });
+    expect((await rules.update({ contracts: { governing_language: "es" } }, null)).contracts).toEqual({ governing_language: "es" });
+    expect(calls[1]).toMatchObject({ method: "PATCH", path: "/rules", body: { contracts: { governing_language: "es" }, note: null } });
+    expect(await rules.get()).not.toHaveProperty("contracts");
+  });
+
   it("update: reads the rules for the ETag, then PATCH /rules with If-Match, the changes and the note", async () => {
     const { calls } = stubFetch(
       dataResponse(apiRules(), 200, { ETag: '"3"' }),

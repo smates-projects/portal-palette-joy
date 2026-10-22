@@ -83,6 +83,29 @@ describe("http documents", () => {
     });
   });
 
+  it("listContracts: the bilingual texts, the explainers, the governing language and the sealed copies come through as the API sends them", async () => {
+    const explainer = { title: "Qué es el NDA", paragraphs: ["Es un acuerdo."], bullets: [] };
+    const explainerEn = { title: "What the NDA is", paragraphs: ["It is an agreement."], bullets: [] };
+    const sealed = {
+      es: { file_id: IDS.member, download_url: "https://storage.test/sealed/es.pdf?X-Amz-Signature=a" },
+      en: { file_id: IDS.zone, download_url: "https://storage.test/sealed/en.pdf?X-Amz-Signature=b" },
+    };
+    const signed = contractFixture({
+      state: "signed",
+      body: "ACUERDO",
+      explainer,
+      text: { es: "ACUERDO", en: "AGREEMENT" },
+      explainers: { es: explainer, en: explainerEn },
+      language_governing: "en",
+      sealed_files: sealed,
+    });
+    const older = contractFixture({ body: "ACUERDO", text: { es: "ACUERDO", en: null }, explainers: { es: explainer, en: null }, sealed_files: null });
+    stubFetch(dataResponse([signed, older]));
+    const [first, second] = await asOwner().listContracts();
+    expect(first).toMatchObject({ text: { es: "ACUERDO", en: "AGREEMENT" }, explainers: { en: explainerEn }, language_governing: "en", sealed_files: sealed, body: "ACUERDO" });
+    expect(second).toMatchObject({ text: { en: null }, explainers: { en: null }, sealed_files: null });
+  });
+
   it("getIntake: GET /businesses/{id}/intake; null when the business has no checklist", async () => {
     const { calls } = stubFetch(dataResponse(intakeSummaryFixture()), dataResponse(null));
     const documents = asOwner();

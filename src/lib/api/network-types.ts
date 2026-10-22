@@ -180,6 +180,8 @@ export interface PlatformRules {
   intake_help_text?: string | undefined;
   /** Names of the Strategic Mates companies that sign (Corporate and SM Square). Absent = DEFAULT_SM_ENTITIES. */
   sm_entities?: SmEntities | undefined;
+  /** Bilingual contracts: the version that prevails if the Spanish and the English differ. Absent = English. */
+  contracts?: { governing_language: ContractLanguage } | undefined;
 }
 
 /** Eligibility rules of the program (SM Global, Reglas). The year of operation stays a hard rule of the assessment. */
@@ -526,10 +528,18 @@ export interface Contract {
   sent_at: IsoDate | null;
   signed_at: IsoDate | null;
   signers: Signer[];
-  /** What the contract means in plain words, shown above the signer. Absent on older answers. */
+  /** What the contract means in plain words, in Spanish (kept one release; explainers.es replaces it). */
   explainer?: ContractExplainer | null | undefined;
-  /** Full text of the contract (NDA, MOU): the document dialog shows it. Absent = no text yet. */
+  /** Full text in Spanish (kept one release; text.es replaces it). Absent = no text yet. */
   body?: string | null | undefined;
+  /** Full text in both languages. en is null on contracts sent before the English versions. */
+  text?: LocalizedContractText | undefined;
+  /** The plain-words window in both languages; a missing language falls back to Spanish. */
+  explainers?: LocalizedExplainers | undefined;
+  /** The version that prevails if the two differ (the platform rule at the time it was sent). */
+  language_governing?: ContractLanguage | undefined;
+  /** The sealed PDF copies, one per language, once every party signed. null until then. */
+  sealed_files?: SealedFiles | null | undefined;
   /** The entry contract rule that created it (EntryContractRule.code); absent on contracts older than the rules. */
   rule_code?: string | null | undefined;
   /** Last day to sign it (rules with deadline_days); absent = no deadline or not known. */
@@ -550,6 +560,30 @@ export interface ContractExplainer {
   title: string;
   paragraphs: string[];
   bullets: string[];
+}
+
+/** Every contract is written in Spanish and English. */
+export type ContractLanguage = "es" | "en";
+
+export interface LocalizedContractText {
+  es: string;
+  en: string | null;
+}
+
+export interface LocalizedExplainers {
+  es: ContractExplainer | null;
+  en: ContractExplainer | null;
+}
+
+/** One sealed PDF copy: its stored file and a presigned link that expires (it comes fresh with every read). */
+export interface SealedFile {
+  file_id: Uuid;
+  download_url: string;
+}
+
+export interface SealedFiles {
+  es: SealedFile | null;
+  en: SealedFile | null;
 }
 
 export interface FinancialChange {

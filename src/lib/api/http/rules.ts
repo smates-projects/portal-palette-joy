@@ -43,6 +43,8 @@ const toRules = (rules: PlatformRulesResponse): PlatformRules => ({
   ...(rules.eligibility !== undefined ? { eligibility: rules.eligibility } : {}),
   // Configurable entry contracts: the names of Corporate and SM Square (absent = lib/leads/contract-rules defaults).
   ...(rules.sm_entities !== undefined ? { sm_entities: rules.sm_entities } : {}),
+  // Bilingual contracts: which version prevails (absent = lib/contracts/language DEFAULT_GOVERNING_LANGUAGE).
+  ...(rules.contracts !== undefined ? { contracts: rules.contracts } : {}),
 });
 
 export function createHttpRulesRepository(client: HttpClient): RulesRepository {
