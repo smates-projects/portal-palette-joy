@@ -94,13 +94,17 @@ export function placeWeekItems(list: CalItem[]): { allDay: CalItem[]; timed: Wee
     })
     .sort((a, b) => a.startMin - b.startMin || a.endMin - b.endMin);
   const laneEnds: number[] = [];
-  const timed = timedItems.map((x) => {
+  const withLanes = timedItems.map((x) => {
     let lane = laneEnds.findIndex((end) => end <= x.startMin);
     if (lane === -1) lane = laneEnds.push(x.endMin) - 1;
     else laneEnds[lane] = x.endMin;
+    return { ...x, lane };
+  });
+  const laneCount = Math.max(1, laneEnds.length);
+  const timed = withLanes.map((x) => {
     const topMin = Math.min(Math.max(x.startMin - WEEK_START_HOUR * 60, 0), span - 15);
     const heightMin = Math.max(Math.min(x.endMin - x.startMin, span - topMin), 20);
-    return { item: x.item, top: (topMin / 60) * WEEK_HOUR_PX, height: (heightMin / 60) * WEEK_HOUR_PX, lane, lanes: Math.max(1, laneEnds.length) };
+    return { item: x.item, top: (topMin / 60) * WEEK_HOUR_PX, height: (heightMin / 60) * WEEK_HOUR_PX, lane: x.lane, lanes: laneCount };
   });
   return { allDay, timed };
 }
