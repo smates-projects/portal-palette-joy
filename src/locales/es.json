@@ -2304,6 +2304,16 @@
     },
     "rules": {
       "question": "¿Qué reglas usa toda la red?",
+      "explain": {
+        "eligibility": "Aquí decides qué negocios pueden entrar al programa según lo que declaran en el assessment.",
+        "contracts": "Aquí decides qué contratos firma cada negocio al entrar y quién firma por Strategic Mates.",
+        "zones": "Aquí decides a qué oficina llega cada prospecto según dónde está su negocio.",
+        "hours": "Aquí decides en qué horario los dueños pueden reservar su reunión con el consultor.",
+        "areas": "El assessment no da nada por hecho. Cuando un bloque sale sólido, las tareas de estas áreas arrancan marcadas como a validar y la firma aliada del área decide si ya lo tiene o si hay que hacerlo. El programa dura 180 días y cuesta lo mismo.",
+        "flow": "Ajustes finos del ingreso. Si no los tocas, el portal usa los de siempre."
+      },
+      "advanced_title": "Configuración avanzada",
+      "advanced_hint": "Ajustes que casi nunca cambian. Ábrelos solo si sabes qué quieres modificar.",
       "notice": "Los cambios aplican a los programas que empiecen desde ahora",
       "goal_title": "Meta de franquiciabilidad",
       "goal_hint": "Porcentaje de tareas aprobadas que un negocio necesita para estar listo para franquiciar.",

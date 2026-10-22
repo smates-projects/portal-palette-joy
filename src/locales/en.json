@@ -2304,6 +2304,16 @@
     },
     "rules": {
       "question": "What rules does the whole network use?",
+      "explain": {
+        "eligibility": "Here you decide which businesses can enter the program based on what they declare in the assessment.",
+        "contracts": "Here you decide which contracts each business signs when it enters and who signs for Strategic Mates.",
+        "zones": "Here you decide which office each lead goes to based on where the business is.",
+        "hours": "Here you decide the hours when owners can book their meeting with the consultant.",
+        "areas": "The assessment takes nothing for granted. When a block comes out strong, the tasks of these areas start marked as to validate and the area's partner firm decides whether the business already has it or it has to be done. The program lasts 180 days and costs the same.",
+        "flow": "Fine settings of the entry. If you leave them alone, the portal uses the usual ones."
+      },
+      "advanced_title": "Advanced settings",
+      "advanced_hint": "Settings that almost never change. Open them only if you know what you want to change.",
       "notice": "Changes apply to programs that start from now on",
       "goal_title": "Franchisability goal",
       "goal_hint": "Percent of approved tasks a business needs to be ready to franchise.",

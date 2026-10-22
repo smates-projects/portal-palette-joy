@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { ChevronDown } from "lucide-react";
 import { useCatalogAdmin, useRules, useRulesHistory, useUpdateRules, useUsers } from "@/lib/api/hooks";
 import type { IntakeDocRule, MeetingHours, PlatformRules } from "@/lib/api/network-types";
 import { IntakeDocsEditor, IntakeTextsEditor } from "./IntakeDocsEditor";
@@ -102,15 +103,44 @@ export function RulesPage() {
       {/* Configurable entry contracts: the companies Strategic Mates signs with, then the contracts themselves. */}
       <SmEntitiesSection key={`entities-${JSON.stringify(rulesQ.data.sm_entities ?? null)}`} rules={rulesQ.data} />
       <ContractRulesSection />
-      <EntryFlowRules key={`flow-${rulesQ.data.opportunity_visibility}-${rulesQ.data.oa_waiting_days}-${rulesQ.data.require_expansion_meeting}-${rulesQ.data.nda_auto_signed_by_sm}`} rules={rulesQ.data} />
       <MeetingHoursRules key={`hours-${JSON.stringify(rulesQ.data.meeting_hours ?? null)}`} rules={rulesQ.data} />
       <ZonesSection />
-      <AssessmentMapEditor key={`map-${JSON.stringify(rulesQ.data.assessment_area_map)}`} rules={rulesQ.data} />
+      {/*
+        Expert-only blocks, collapsed so Marilyn's everyday rules stay in view: what the business already has (the
+        assessment block × area grid) and the fine settings of the entry flow. Each keeps its one-line explanation.
+      */}
+      <details className="group mt-6 rounded-[4px] border border-border bg-surface">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
+          <span>
+            <span className="block text-sm font-semibold">{t("global.rules.advanced_title")}</span>
+            <span className="mt-0.5 block text-xs text-muted-foreground">{t("global.rules.advanced_hint")}</span>
+          </span>
+          <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden />
+        </summary>
+        <div className="border-t border-border px-4 pb-4">
+          <Explained text={t("global.rules.explain.areas")}>
+            <AssessmentMapEditor key={`map-${JSON.stringify(rulesQ.data.assessment_area_map)}`} rules={rulesQ.data} />
+          </Explained>
+          <Explained text={t("global.rules.explain.flow")}>
+            <EntryFlowRules key={`flow-${rulesQ.data.opportunity_visibility}-${rulesQ.data.oa_waiting_days}-${rulesQ.data.require_expansion_meeting}-${rulesQ.data.nda_auto_signed_by_sm}`} rules={rulesQ.data} />
+          </Explained>
+        </div>
+      </details>
       {historyQ.isError ? (
         <div className="mt-6"><ErrorBox onRetry={() => void historyQ.refetch()} /></div>
       ) : (
         <HistoryList title={t("global.rules.history_heading")} entries={entries} empty={t("global.rules.history_empty")} />
       )}
+    </div>
+  );
+}
+
+/** One sentence above a block of Reglas, in Marilyn's words: what the block decides. */
+function Explained({ text, children }: { text: string; children: React.ReactNode }) {
+  return (
+    <div className="mt-6 [&>section]:mt-2">
+      <p className="text-sm text-foreground">{text}</p>
+      {children}
     </div>
   );
 }
