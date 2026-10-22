@@ -88,6 +88,12 @@ export function TaskCalendar(props: {
       ? cap(fmt({ month: "long", year: "numeric" }, anchor))
       : t("tasks.calendar.week_range", { from: fmt({ day: "numeric", month: "short" }, days[0]!), to: fmt({ day: "numeric", month: "short", year: "numeric" }, days[6]!) });
   const time = (iso: string) => fmt({ hour: "2-digit", minute: "2-digit" }, iso);
+  // Week time grid: one row per hour between WEEK_START_HOUR and WEEK_END_HOUR.
+  const hours = Array.from({ length: WEEK_END_HOUR - WEEK_START_HOUR + 1 }, (_, i) => WEEK_START_HOUR + i);
+  const gridHeight = (WEEK_END_HOUR - WEEK_START_HOUR) * WEEK_HOUR_PX;
+  const hourLabel = (h: number) => fmt({ hour: "2-digit", minute: "2-digit" }, `${anchor}T${String(h).padStart(2, "0")}:00:00`);
+  const itemKey = (it: CalItem) =>
+    `${it.kind}-${it.kind === "due" ? it.task.id : it.kind === "meeting" || it.kind === "portal" ? it.meeting.id : it.kind === "lead" ? it.item.lead_id : it.event.id}`;
 
   const Item = ({ it, compact }: { it: CalItem; compact: boolean }) => {
     const base = "flex w-full min-w-0 items-center gap-1.5 rounded-[4px] px-1.5 text-left text-[11px] leading-5";
@@ -162,6 +168,63 @@ export function TaskCalendar(props: {
       >
         <span className="shrink-0 whitespace-nowrap font-medium tabular-nums">{it.task.code}</span>
         <span className="truncate text-muted-foreground">{compact ? props.businessName(it.task.business_id) : it.task.name}</span>
+      </button>
+    );
+  };
+
+  /** A timed block of the week grid: fills its slot, hour on top and title below. */
+  const WeekBlock = ({ it }: { it: Exclude<CalItem, { kind: "due" }> }) => {
+    const base = "flex h-full w-full min-w-0 flex-col justify-start overflow-hidden rounded-[4px] border px-1.5 py-0.5 text-left text-[11px] leading-tight";
+    const timeRow = <span className="shrink-0 whitespace-nowrap text-[10px] tabular-nums opacity-80">{time(it.at)}</span>;
+    if (it.kind === "google")
+      return (
+        <div
+          title={`${it.event.title} · ${time(it.at)} · ${t("tasks.calendar.google_readonly")}`}
+          className={cn(base, "cursor-default border-border bg-muted text-muted-foreground")}
+        >
+          <span className="flex items-center gap-1">{timeRow}<Lock className="h-2.5 w-2.5 shrink-0" /></span>
+          <span className="truncate font-medium">{it.event.title}</span>
+        </div>
+      );
+    if (it.kind === "lead")
+      return (
+        <button
+          onClick={() => void navigate({ to: "/embudo", search: { lead: it.item.lead_id } })}
+          title={`${t("entry.calendar.title", { name: it.item.business_name })} · ${time(it.at)} · ${it.item.meeting.meet_url}`}
+          className={cn(base, "border-primary bg-accent/60 text-foreground hover:brightness-95")}
+        >
+          <span className="flex items-center gap-1">{timeRow}<Video className="h-2.5 w-2.5 shrink-0" /></span>
+          <span className="truncate font-medium">{t("entry.calendar.title", { name: it.item.business_name })}</span>
+        </button>
+      );
+    if (it.kind === "portal") {
+      const m = it.meeting;
+      return (
+        <button
+          onClick={() => props.onFocusMeeting(m.id)}
+          title={`${m.topic} · ${time(it.at)} · ${t(`calendar.status.${m.status}`)}${m.google_synced ? ` · ${t("calendar.google_mark")}` : ""}`}
+          className={cn(
+            base,
+            "border-primary bg-surface text-foreground hover:bg-accent",
+            m.status === "proposed" && "border-dashed",
+            m.status === "cancelled" && "border-border text-muted-foreground line-through",
+            props.focusMeetingId === m.id && "ring-2 ring-ring",
+          )}
+        >
+          {timeRow}
+          <span className="truncate font-medium">{m.topic}</span>
+        </button>
+      );
+    }
+    return (
+      <button
+        onClick={() => props.onOpen(it.task.id)}
+        title={`${it.meeting.topic} · ${time(it.at)} · ${t(`tasks.calendar.meeting_${it.meeting.status}`)} · ${it.task.code} ${props.businessName(it.task.business_id)}`}
+        className={cn(base, "border-border text-foreground hover:brightness-95", it.meeting.status === "proposed" && "border-dashed")}
+        style={areaAccentStyle(it.task.area)}
+      >
+        {timeRow}
+        <span className="truncate font-medium">{it.task.code} · {it.meeting.topic}</span>
       </button>
     );
   };

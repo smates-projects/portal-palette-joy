@@ -522,6 +522,7 @@
       "prev": "Anterior",
       "next": "Siguiente",
       "due": "Vence",
+      "all_day": "Vencimientos",
       "more": "+{{count}} más",
       "legend_due": "Fecha límite",
       "legend_proposed": "Reunión propuesta",
