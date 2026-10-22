@@ -51,7 +51,7 @@ describe("entry phase inside the stage", () => {
     const held = booked("2026-10-14T15:30:00Z", { meeting: { ...meeting("2026-10-14T15:30:00Z", NOW), outcome: "held" } });
     expect(entryTimeline(held, NOW).map((s) => s.state)).toEqual(["done", "done", "done", "done"]);
     const waiting = booked("2026-10-14T15:30:00Z");
-    expect(entryTimeline(waiting, NOW)[3].state).toBe("current");
+    expect(entryTimeline(waiting, NOW)[3]?.state).toBe("current");
     const moved = booked("2026-10-14T15:30:00Z", { meeting: { ...meeting("2026-10-14T15:30:00Z", NOW), outcome: "reschedule" } });
     expect(entryPhase(moved, NOW)).toBe("summary_sent");
   });

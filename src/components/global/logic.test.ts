@@ -58,7 +58,7 @@ describe("Viendo on the Global home", () => {
     const rows = [row(business("a", "Alfa"), "red", 3)];
     expect(scopeBottlenecks([network], "o1", rows)[0]).toMatchObject({ overdue: 3, red_businesses: 1, open: 2 });
     expect(scopeBottlenecks([network], "o2", rows)[0]).toMatchObject({ overdue: 0, by_office: [] });
-    expect(scopeBottlenecks([network], null, [])[0].red_businesses).toBe(0);
+    expect(scopeBottlenecks([network], null, [])[0]?.red_businesses).toBe(0);
   });
   it("the counters add up the offices in view; conversion only for one office", () => {
     const summary = { offices: 3, programs: 9, leads_this_month: 20, conversion_month: 15, ready_to_franchise: 2 };

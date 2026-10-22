@@ -114,7 +114,7 @@ export function scopeCounters(
     offices: offices.length,
     programs,
     leads_month: sum((o) => o.stats.leads_this_month),
-    conversion: offices.length === 1 ? offices[0].stats.conversion_month : null,
+    conversion: offices.length === 1 ? offices[0]?.stats.conversion_month ?? null : null,
     ready: sum((o) => o.stats.ready_to_franchise),
   };
 }
