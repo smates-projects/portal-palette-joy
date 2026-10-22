@@ -11,8 +11,7 @@ import type {
 } from "../types";
 import type { PlatformRules } from "../network-types";
 import type { EntryContractRule } from "../entry-types";
-import { fillContractTemplate } from "@/lib/leads/contract-rules";
-import { MOU_EXPLAINER, NDA_EXPLAINER, mouBody, ndaBody } from "./contract-texts";
+import { MOU_EXPLAINER, NDA_EXPLAINER, bilingualContract, defaultTemplateOf, governingLanguageOfRules } from "./contract-texts";
 
 export interface IntakeRecord {
   lead_id: Uuid;
@@ -137,8 +136,12 @@ export function createIntake(db: IntakeDb, newId: () => string) {
       id: newId(), business_id: businessId, area: "intake", kind, name: rule?.name ?? (kind === "nda" ? "NDA mutuo" : "MOU"),
       ...(rule ? { rule_code: rule.code } : {}),
       state: "sent", sent_at: sentOn, signed_at: null,
-      explainer: rule ? structuredClone(rule.explainer) : kind === "nda" ? NDA_EXPLAINER : MOU_EXPLAINER,
-      body: rule ? fillContractTemplate(rule.template, values) : (kind === "nda" ? ndaBody : mouBody)(values.business_name, ownerName, values),
+      ...bilingualContract(
+        kind,
+        rule ? { template: rule.template, explainer: rule.explainer } : { template: defaultTemplateOf(kind), explainer: kind === "nda" ? NDA_EXPLAINER : MOU_EXPLAINER },
+        values,
+        governingLanguageOfRules(db.rules),
+      ),
       signers: [
         { ...signer("owner", ownerName, ownerId, sentOn, ownerSteps), ...(kind === "mou" ? { acknowledgments: [] } : {}) },
         { ...(smSteps === "pre_signed" ? preSignedSm(sentOn, ceo()) : signer("sm", ceo()?.full_name ?? "Strategic Mates", ceo()?.id ?? null, sentOn, smSteps)), sm_entity: "corporate" as const },

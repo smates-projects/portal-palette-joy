@@ -4,9 +4,10 @@
 // only tags them with their rule. The real API runs the same engine on its side.
 import { nowIso, todayIso } from "@/lib/clock";
 import {
-  DEFAULT_ENTRY_CONTRACT_RULES, byPosition, dueRules, fillContractTemplate, parseTrigger, ruleError, smEntitiesOf, type EntryFacts,
+  DEFAULT_ENTRY_CONTRACT_RULES, byPosition, dueRules, parseTrigger, ruleError, smEntitiesOf, type EntryFacts,
 } from "@/lib/leads/contract-rules";
 import { typedSignatureDataUrl } from "@/lib/contracts/signature";
+import { bilingualContract, governingLanguageOfRules } from "./contract-texts";
 import type { ContractRulesRepository } from "../repositories";
 import type {
   Contract, EntryContractRule, EntryContractRuleChange, EntryContractRuleInput, EntryContractSigner, Lead, LeadEvent,
@@ -130,15 +131,16 @@ export function createContractRules(d: Deps) {
     const entities = smEntitiesOf(db.rules);
     const c: Contract = {
       id: d.newId(), business_id: businessId, area: "intake", kind: rule.kind, rule_code: rule.code, name: rule.name,
-      state: "sent", sent_at: on, signed_at: null, sign_by, explainer: structuredClone(rule.explainer),
-      body: fillContractTemplate(rule.template, {
+      state: "sent", sent_at: on, signed_at: null, sign_by,
+      // Both languages (English while the rule keeps the default text), as the API sends them.
+      ...bilingualContract(rule.kind, rule, {
         business_name: l.business.name, owner_name: owner?.full_name ?? l.contact.name, owner_email: owner?.email ?? l.contact.email,
         business_activity: l.business.activity, bishop_name: bishop?.full_name, bishop_email: bishop?.email,
         sm_corporate_name: entities.corporate.name, sm_square_name: entities.sm_square.name,
         sm_square_center: l.validation?.sm_square_center, sm_square_holder_name: holder?.full_name,
         equity_owner: l.validation?.equity_owner, equity_bishop: l.validation?.equity_bishop, equity_sm: l.validation?.equity_sm,
         investment_amount: usd(l.validation?.investment_amount ?? db.rules.program_amount), mou_date: mou?.signed_at, date: on,
-      }),
+      }, governingLanguageOfRules(db.rules)),
       signers: signers as Signer[],
     };
     db.contracts.push(c);

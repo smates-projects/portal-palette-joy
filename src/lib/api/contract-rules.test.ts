@@ -35,6 +35,15 @@ describe("the rule engine in the demo", () => {
     expect(binding.signers.find((s) => s.party === "sm")).toMatchObject({ sm_entity: "corporate", user_id: seed.U_MARYLIN });
     expect(binding.body).toContain("Brisa Clean Services");
     expect(binding.body).toContain("Laura Ortega");
+    // Bilingual: the English text and window with the same values, both ending with the governing language clause.
+    expect(binding.text?.es).toBe(binding.body);
+    expect(binding.text?.en).toContain("BINDING AND FORMALIZATION AGREEMENT");
+    expect(binding.text?.en).toContain("Brisa Clean Services");
+    expect(binding.text?.en).toMatch(/the English version prevails\.$/);
+    expect(binding.body).toMatch(/prevalece la versión en inglés\.$/);
+    expect(binding.explainers?.en?.title).toBe("What the Binding Agreement is");
+    expect(binding.explainers?.es).toEqual(binding.explainer);
+    expect(binding.language_governing).toBe("en");
     // Only once: reading again creates nothing new.
     await api.leads.list();
     expect((await contractsOf(api, brisa.id)).filter((c) => c.kind === "binding")).toHaveLength(1);
@@ -144,7 +153,11 @@ describe("rules repository (SM Global edits, SM reads)", () => {
     await api.session.setViewAs(seed.U_CAMILA);
     const brisa = await leadNamed(api, "Brisa Clean Services");
     const annex = (await contractsOf(api, brisa.id)).find((c) => c.rule_code === "anexo_de_marca")!;
-    expect(annex).toMatchObject({ kind: "other", body: "Anexo de Brisa Clean Services" });
+    expect(annex).toMatchObject({ kind: "other" });
+    expect(annex.body).toMatch(/^Anexo de Brisa Clean Services\n\n/);
+    // A text Corporate wrote has no English version yet: the readers show the Spanish one.
+    expect(annex.text).toMatchObject({ en: null });
+    expect(annex.explainers).toMatchObject({ en: null });
     expect(annex.signers.find((s) => s.party === "sm")!.status).toBe("signed");
   });
 });

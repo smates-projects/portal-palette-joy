@@ -7,10 +7,10 @@ import { cn } from "@/lib/utils";
 /** The script style of a typed signature (the same look as the pad's typed mode). */
 export const TYPED_SIGNATURE_STYLE = { fontFamily: '"Segoe Script", "Brush Script MT", cursive' } as const;
 
-/** A contract's full text (Contract.body), section by section: the same reading in the signer and the viewer. */
-export function ContractText({ body, className }: { body: string; className?: string }) {
+/** A contract's full text in one language, section by section: the same reading in the signer and the viewer. */
+export function ContractText({ body, lang, className }: { body: string; lang?: string; className?: string }) {
   return (
-    <div className={cn("space-y-4 text-foreground", className)}>
+    <div lang={lang} className={cn("space-y-4 text-foreground", className)}>
       {contractSections(body).map((s, i) => (
         <section key={i} className="break-inside-avoid">
           {s.heading && <h3 className="text-sm font-semibold">{s.heading}</h3>}

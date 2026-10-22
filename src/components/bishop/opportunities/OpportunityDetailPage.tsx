@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { BlockBadge } from "@/components/pipeline/LeadBadges";
 import { DocuSealSigner } from "@/components/docuseal/DocuSealSigner";
+import { SignedContractDialog } from "@/components/docuseal/SignedContractDialog";
+import { contractExplainerIn, contractLanguageOf, hasContractText } from "@/lib/contracts/language";
 import { DecisionTag, PhaseTag, ReviewDay, useOpportunityTitle } from "./parts";
 
 /** One opportunity: owner's declaration, SM's verified facts, entry checklist, projection and "Aceptar oportunidad". */
@@ -29,6 +31,7 @@ export function OpportunityDetailPage({ opportunityId }: { opportunityId: string
   const title = useOpportunityTitle();
   const [confirming, setConfirming] = useState(false);
   const [signing, setSigning] = useState<Contract | null>(null);
+  const [reading, setReading] = useState<Contract | null>(null);
 
   const back = (
     <Link to="/oportunidades" className="mt-3 inline-flex items-center gap-1 text-sm text-link hover:underline">
@@ -58,6 +61,8 @@ export function OpportunityDetailPage({ opportunityId }: { opportunityId: string
   const pendingForMe = (c: Contract | null | undefined) => !!c?.signers.some((s) => s.party === "bishop" && (s.status === "sent" || s.status === "opened"));
   const toSign = [o.binding ?? null, o.tripartite].find(pendingForMe) ?? null;
   const contractsShown = [o.binding ?? null, o.tripartite].filter((c): c is Contract => !!c);
+  /** The explainer's first paragraph in the app language (Spanish when the English one is missing). */
+  const firstExplainerLine = (c: Contract) => contractExplainerIn(c, contractLanguageOf(lng)).value?.paragraphs[0] ?? null;
 
   const doAccept = () =>
     accept.mutate(o.id, {
@@ -271,7 +276,12 @@ export function OpportunityDetailPage({ opportunityId }: { opportunityId: string
             )}
             {contractsShown.map((c) => (
               <Panel key={c.id} title={c.name} action={c.sign_by && c.state !== "signed" ? <span className="text-xs text-muted-foreground">{t("entry_contracts.checklist.sign_by", { date: formatDate(c.sign_by, lng) })}</span> : undefined}>
-                {c.kind === "binding" && c.explainer && <p className="px-4 pb-2 text-xs text-muted-foreground">{c.explainer.paragraphs[0]}</p>}
+                {c.kind === "binding" && firstExplainerLine(c) && <p className="px-4 pb-2 text-xs text-muted-foreground">{firstExplainerLine(c)}</p>}
+                {hasContractText(c) && (
+                  <div className="px-4 pb-3">
+                    <button onClick={() => setReading(c)} aria-label={t("contracts_lang.read_for", { name: c.name })} className={secondaryButton}><FileText className="mr-1.5 h-3.5 w-3.5" />{t("contracts_lang.read")}</button>
+                  </div>
+                )}
                 <ul className="divide-y divide-border border-t border-border">
                   {c.signers.map((s) => (
                     <li key={s.name + s.party} className="flex items-center justify-between gap-2 px-4 py-2 text-sm">
@@ -301,6 +311,7 @@ export function OpportunityDetailPage({ opportunityId }: { opportunityId: string
         </AlertDialogContent>
       </AlertDialog>
       {signing && <DocuSealSigner contract={signing} party="bishop" signerName={me?.full_name ?? ""} onClose={() => setSigning(null)} />}
+      {reading && <SignedContractDialog contract={reading} onClose={() => setReading(null)} />}
     </Screen>
   );
 }

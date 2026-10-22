@@ -3977,5 +3977,11 @@
       "t_copy_failed": "It could not be copied. Select the link and copy it by hand.",
       "none": "You have no link yet. Ask Strategic Mates Corporate for one."
     }
+  },
+  "contracts_lang": {
+    "toggle_label": "Contract language",
+    "fallback": "This contract has no English version yet. You are reading it in Spanish",
+    "read": "Read the contract",
+    "read_for": "Read the contract {{name}}"
   }
 }

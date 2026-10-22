@@ -56,6 +56,9 @@ export function contractExplainerIn(c: Readable, language: ContractLanguage): Co
 /** The contract has a full text to read, in any language (the "Leer el ... completo" links). */
 export const hasContractText = (c: Readable) => spanishText(c) !== null || filled(c.text?.en) !== null;
 
+/** The contract has a plain-words window in some language (the explainer card shows only then). */
+export const hasContractExplainer = (c: Readable) => !!(c.explainers?.es ?? c.explainers?.en ?? c.explainer);
+
 /** The contract has an English version of its text or of its explainer. */
 export const hasEnglishVersion = (c: Readable) => filled(c.text?.en) !== null || !!c.explainers?.en;
 

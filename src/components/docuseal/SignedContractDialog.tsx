@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Printer, ShieldCheck } from "lucide-react";
-import type { Contract, Signer } from "@/lib/api/types";
+import type { Contract, ContractLanguage, Signer } from "@/lib/api/types";
+import { contractTextIn } from "@/lib/contracts/language";
 import { documentFingerprint } from "@/lib/contracts/signature";
 import { smEntitiesOf } from "@/lib/leads/contract-rules";
 import { useRules } from "@/lib/api/hooks";
@@ -8,16 +9,21 @@ import { formatDate } from "@/lib/format";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PrimaryButton, SecondaryButton } from "@/components/tasks/detail/dialogs";
 import { ContractText, SignatureMark } from "./ContractDocument";
+import { ContractFallbackNote, ContractLanguageToggle, useContractLanguage } from "./ContractLanguage";
 
 /**
- * The contract as a document: its full text (contract.body) or, for older answers, a sample; one signature block per
+ * The contract as a document: its full text in the language of its "ES | EN" toggle (Spanish when the English one is
+ * missing) or, for older answers, a sample; one signature block per
  * party (image, name, date, or "Pendiente de firma") and the audit trail (every event with its date, plus the document
  * fingerprint). Read-only, also before anyone signs ("Leer el MOU completo"); "Descargar PDF" prints it. In production
  * this shows the real PDF and certificate stored by DocuSeal.
  */
-export function SignedContractDialog({ contract, onClose }: { contract: Contract; onClose: () => void }) {
+export function SignedContractDialog({ contract, language: initial, onClose }: { contract: Contract; language?: ContractLanguage; onClose: () => void }) {
   const { t, i18n } = useTranslation();
   const lng = i18n.language;
+  const [language, setLanguage] = useContractLanguage(initial);
+  const reading = contractTextIn(contract, language);
+  const body = reading.value;
   const anySigned = contract.signers.some((s) => s.signed_at);
   const parties = contract.signers.map((s) => s.name).join(", ");
   const fingerprint = documentFingerprint(contract.id);
@@ -35,7 +41,10 @@ export function SignedContractDialog({ contract, onClose }: { contract: Contract
       <DialogContent className="max-h-[92vh] w-[calc(100vw-1.5rem)] overflow-y-auto bg-surface p-4 sm:max-w-2xl sm:p-6">
         <DialogHeader>
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t(anySigned ? "intake.docuseal.signed_title" : "intake.docuseal.document_title")}</p>
-          <DialogTitle>{contract.name}</DialogTitle>
+          <div className="flex items-start justify-between gap-3">
+            <DialogTitle>{contract.name}</DialogTitle>
+            <ContractLanguageToggle value={language} onChange={setLanguage} className="no-print mr-6" />
+          </div>
           <DialogDescription>
             {contract.state === "signed" && contract.signed_at
               ? t("intake.docuseal.signed_all_on", { date: formatDate(contract.signed_at, lng) })
@@ -43,15 +52,16 @@ export function SignedContractDialog({ contract, onClose }: { contract: Contract
           </DialogDescription>
         </DialogHeader>
 
+        <ContractFallbackNote show={reading.fallback} className="no-print" />
         <div className="print-doc space-y-4">
         <div id="signed-document" className="rounded-md border border-border bg-muted/50 p-2 sm:p-4 print:border-0 print:bg-transparent print:p-0">
           <div className="mx-auto max-w-xl rounded-md border border-border bg-surface px-5 py-6 text-[13px] leading-relaxed text-muted-foreground sm:px-10 sm:py-10 print:max-w-none print:border-0 print:shadow-none">
             <p className="text-center text-lg font-semibold tracking-tight text-foreground">{contract.name}</p>
-            {!contract.body && <p className="mt-1 text-center text-[11px] uppercase tracking-wide">{t("intake.docuseal.sample")}</p>}
+            {!body && <p className="mt-1 text-center text-[11px] uppercase tracking-wide">{t("intake.docuseal.sample")}</p>}
             <div className="mx-auto mt-4 h-px w-16 bg-border" />
-            {contract.body ? (
+            {body ? (
               // The full text, section by section (the dialog scrolls).
-              <ContractText body={contract.body} className="mt-5" />
+              <ContractText body={body} lang={reading.language} className="mt-5" />
             ) : (<>
               <p className="mt-5 text-foreground">{t("intake.docuseal.pdf_parties", { parties })}</p>
               <p className="mt-2">{t("intake.docuseal.pdf_body")}</p>

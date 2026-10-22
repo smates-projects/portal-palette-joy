@@ -3977,5 +3977,11 @@
       "t_copy_failed": "No se pudo copiar. Selecciona el link y cópialo a mano.",
       "none": "Todavía no tienes un link. Pídeselo a Strategic Mates Corporate."
     }
+  },
+  "contracts_lang": {
+    "toggle_label": "Idioma del contrato",
+    "fallback": "Este contrato aún no tiene versión en inglés. Lo ves en español",
+    "read": "Leer el contrato",
+    "read_for": "Leer el contrato {{name}}"
   }
 }

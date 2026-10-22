@@ -14,6 +14,8 @@ import { DocuSealSigner } from "@/components/docuseal/DocuSealSigner";
 import { SignedContractDialog } from "@/components/docuseal/SignedContractDialog";
 import { ErrorState, LoadingState, PageHeader, primaryButtonCls } from "../shared";
 import { ContractExplainerCard } from "./ContractExplainer";
+import { useContractLanguage } from "@/components/docuseal/ContractLanguage";
+import { hasContractExplainer, hasContractText } from "@/lib/contracts/language";
 import { MouAcceptance } from "./MouAcceptance";
 
 const linkCls = "text-sm text-link hover:underline";
@@ -35,6 +37,8 @@ export function IntakeHomePage({ focusStep }: { focusStep?: OwnerStepKey | undef
   const rulesQ = useRules();
   const [signing, setSigning] = useState<Contract | null>(null);
   const [reading, setReading] = useState<Contract | null>(null);
+  // One language for every contract window of the page; the reader dialog opens in it.
+  const [contractLanguage, setContractLanguage] = useContractLanguage();
   const queries = [intakeQ, contractsQ, docsQ];
   const ready = !!intakeQ.data && !contractsQ.isLoading;
 
@@ -74,7 +78,7 @@ export function IntakeHomePage({ focusStep }: { focusStep?: OwnerStepKey | undef
   // The API creates the documents at the NDA signature: they say nothing about the meeting (only its outcome does).
   const docsSent = docs.length > 0;
   const readFull = (c: Contract, key: string) =>
-    c.body ? <button className={linkCls} onClick={() => setReading(c)}>{t(key)}</button> : null;
+    hasContractText(c) ? <button className={linkCls} onClick={() => setReading(c)}>{t(key)}</button> : null;
 
   const meetings = entryMeetings(entry);
   /** One meeting step: book it, book again, the booked meeting (date, Meet link), waiting for the outcome, or held. */
@@ -123,8 +127,8 @@ export function IntakeHomePage({ focusStep }: { focusStep?: OwnerStepKey | undef
           );
         return (
           <div className="space-y-3">
-            {nda.explainer ? (
-              <ContractExplainerCard explainer={nda.explainer}>
+            {hasContractExplainer(nda) ? (
+              <ContractExplainerCard contract={nda} language={contractLanguage} onLanguageChange={setContractLanguage}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className="text-sm font-medium">{t(smSigned(nda) ? "intake.owner.nda.sm_signed" : "intake.owner.nda.both_sign")}</p>
                   {readFull(nda, "intake.owner.nda.read_full")}
@@ -152,8 +156,8 @@ export function IntakeHomePage({ focusStep }: { focusStep?: OwnerStepKey | undef
           );
         return (
           <div className="space-y-3">
-            {mou.explainer ? (
-              <ContractExplainerCard explainer={mou.explainer}>
+            {hasContractExplainer(mou) ? (
+              <ContractExplainerCard contract={mou} language={contractLanguage} onLanguageChange={setContractLanguage}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className="text-sm font-medium">{t("intake.owner.mou.when")}</p>
                   {readFull(mou, "intake.owner.mou.read_full")}
@@ -208,8 +212,8 @@ export function IntakeHomePage({ focusStep }: { focusStep?: OwnerStepKey | undef
           );
         return (
           <div className="space-y-3">
-            {binding.explainer && (
-              <ContractExplainerCard explainer={binding.explainer}>
+            {hasContractExplainer(binding) && (
+              <ContractExplainerCard contract={binding} language={contractLanguage} onLanguageChange={setContractLanguage}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className="text-sm font-medium">{t("entry_contracts.owner.binding_when")}</p>
                   {readFull(binding, "entry_contracts.owner.binding_read")}
@@ -233,7 +237,7 @@ export function IntakeHomePage({ focusStep }: { focusStep?: OwnerStepKey | undef
         const deadline = contractDeadline(oa);
         return (
           <div className="space-y-3">
-            {oa.explainer ? <ContractExplainerCard explainer={oa.explainer}>{readFull(oa, "entry_contracts.owner.oa_read")}</ContractExplainerCard> : <p className="text-sm text-muted-foreground">{t("intake.owner.oa.body")}</p>}
+            {hasContractExplainer(oa) ? <ContractExplainerCard contract={oa} language={contractLanguage} onLanguageChange={setContractLanguage}>{readFull(oa, "entry_contracts.owner.oa_read")}</ContractExplainerCard> : <p className="text-sm text-muted-foreground">{t("intake.owner.oa.body")}</p>}
             {splitBlock}
             {deadline.state === "open" && <p className="text-sm font-medium">{t("entry_contracts.owner.oa_deadline", { date: formatDate(deadline.sign_by, lng) })}</p>}
             {deadline.state === "overdue" && <p className="rounded-[4px] border border-status-danger-border bg-status-danger-bg px-3 py-2 text-sm text-status-danger-fg">{t("entry_contracts.owner.oa_overdue", { date: formatDate(deadline.sign_by, lng) })}</p>}
@@ -253,8 +257,8 @@ export function IntakeHomePage({ focusStep }: { focusStep?: OwnerStepKey | undef
           <Step key={st.key} id={`intake-step-${st.key}`} n={i + 1} state={st.state} title={t(`intake.owner.steps.${st.key}`)}>{bodyOf(st.key)}</Step>
         ))}
       </ol>
-      {signing && <DocuSealSigner contract={signing} party="owner" signerName={me?.full_name ?? ""} onClose={() => setSigning(null)} />}
-      {reading && <SignedContractDialog contract={reading} onClose={() => setReading(null)} />}
+      {signing && <DocuSealSigner contract={signing} language={contractLanguage} party="owner" signerName={me?.full_name ?? ""} onClose={() => setSigning(null)} />}
+      {reading && <SignedContractDialog contract={reading} language={contractLanguage} onClose={() => setReading(null)} />}
     </Wrap>
   );
 }

@@ -3,13 +3,15 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Download, PenLine } from "lucide-react";
 import { useContractSigningPoll, useDeclineContract, useOpenContract, useRefreshSigning, useSignContract } from "@/lib/api/hooks";
-import type { Contract, ContractSignature } from "@/lib/api/types";
+import type { Contract, ContractLanguage, ContractSignature } from "@/lib/api/types";
+import { contractTextIn } from "@/lib/contracts/language";
 import { formatDate } from "@/lib/format";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PrimaryButton, SecondaryButton } from "@/components/tasks/detail/dialogs";
 import { cn } from "@/lib/utils";
 import { ContractText, SignatureMark } from "./ContractDocument";
 import { SignaturePad } from "./SignaturePad";
+import { ContractFallbackNote, ContractLanguageToggle, useContractLanguage } from "./ContractLanguage";
 
 /**
  * DocuSeal signing. With the API's real DocuSeal driver, opening the contract answers the signer's own form
@@ -17,7 +19,7 @@ import { SignaturePad } from "./SignaturePad";
  * signature reaches the API by webhook), then closes. Otherwise (the mock, the API's simulated driver) it is the
  * portal's own screen, and every change goes through the repository (openContract, signContract, declineContract).
  */
-export function DocuSealSigner(props: { contract: Contract; party: "owner" | "sm" | "bishop"; signerName: string; onClose: () => void }) {
+export function DocuSealSigner(props: { contract: Contract; party: "owner" | "sm" | "bishop"; signerName: string; language?: ContractLanguage; onClose: () => void }) {
   const { t, i18n } = useTranslation();
   const open = useOpenContract();
   const sign = useSignContract();
@@ -34,7 +36,10 @@ export function DocuSealSigner(props: { contract: Contract; party: "owner" | "sm
   const [embedSrc, setEmbedSrc] = useState<string | null>(null);
   const shown = signed ? (me?.signature ?? signature) : null;
   const others = props.contract.signers.filter((s) => s.party !== props.party).map((s) => s.name);
-  const body = props.contract.body?.trim() ? props.contract.body : null;
+  // The text in the language of the reader's "ES | EN" toggle (Spanish when the English one is missing).
+  const [language, setLanguage] = useContractLanguage(props.language);
+  const reading = contractTextIn(props.contract, language);
+  const body = reading.value;
 
   useEffect(() => {
     // DocuSeal reports "viewed" when the signer opens the document. With the real driver a signer who already opened
@@ -119,10 +124,14 @@ export function DocuSealSigner(props: { contract: Contract; party: "owner" | "sm
             Once signed it shows the signature itself. */}
         <div className="rounded-md border border-border bg-muted/50 p-2 sm:p-4">
           <div className={cn("mx-auto rounded-md border border-border bg-surface p-5 text-xs leading-relaxed text-muted-foreground sm:p-6", body ? "max-w-none" : "max-w-sm")}>
-            <p className="text-sm font-semibold text-foreground">{props.contract.name}</p>
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-sm font-semibold text-foreground">{props.contract.name}</p>
+              {body && <ContractLanguageToggle value={language} onChange={setLanguage} />}
+            </div>
+            <ContractFallbackNote show={reading.fallback} className="mt-1" />
             {body ? (
               <div className="mt-3 max-h-[40vh] overflow-y-auto border-b border-border pb-3 pr-2 text-[13px]" tabIndex={0} aria-label={t("intake.docuseal.text_label", { name: props.contract.name })}>
-                <ContractText body={body} />
+                <ContractText body={body} lang={reading.language} />
               </div>
             ) : (<>
               <p className="mt-1 text-[11px] uppercase tracking-wide">{t("intake.docuseal.sample")}</p>
