@@ -2,7 +2,8 @@
   "app": {
     "name": "SM Platform",
     "company": "Strategic Mates",
-    "no_data": "Sin dato"
+    "no_data": "Sin dato",
+    "loading": "Cargando…"
   },
   "errors": {
     "not_found_title": "Página no encontrada",
@@ -10,7 +11,9 @@
     "go_home": "Ir al inicio",
     "load_title": "Esta página no cargó",
     "load_body": "Algo falló de nuestro lado. Intenta de nuevo o vuelve al inicio.",
-    "retry": "Intentar de nuevo"
+    "retry": "Intentar de nuevo",
+    "connection_body": "No pudimos conectar con el portal. Revisa tu conexión e inténtalo de nuevo.",
+    "connection_retry": "Reintentar"
   },
   "nav": {
     "home": "Inicio",
