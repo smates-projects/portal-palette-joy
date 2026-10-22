@@ -1,13 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { bishopNav, franchiseeNav, franchisorNav, movedPathFor, navFor, ownerNav, showsOfficeScope, smGlobalNav, smNav } from "./nav";
+import { bishopNav, franchiseeNav, franchisorNav, isNavActive, movedPathFor, navFor, ownerNav, showsOfficeScope, smGlobalNav, smNav } from "./nav";
 
 const keys = (items: { key: string }[]) => items.map((i) => i.key);
 
 describe("menu per role", () => {
-  it("SM Global: Inicio, Estructura, Oficinas, Embudo, Catálogo, Reglas, Personas, Bishops (no Acuerdos)", () => {
+  it("SM Global: Inicio, Estructura, Oficinas, Embudo, Calendario, Catálogo, Reglas, Personas, Bishops (no Acuerdos)", () => {
     expect(navFor("sm_global")).toBe(smGlobalNav);
-    expect(keys(smGlobalNav)).toEqual(["home", "structure", "offices", "global_pipeline", "global_catalog", "rules", "people", "bishops"]);
-    expect(smGlobalNav.map((i) => i.to)).toEqual(["/", "/estructura", "/oficinas", "/embudo", "/catalogo", "/reglas", "/personas", "/bishops"]);
+    expect(keys(smGlobalNav)).toEqual(["home", "structure", "offices", "global_pipeline", "calendar", "global_catalog", "rules", "people", "bishops"]);
+    expect(smGlobalNav.map((i) => i.to)).toEqual(["/", "/estructura", "/oficinas", "/embudo", "/calendario", "/catalogo", "/reglas", "/personas", "/bishops"]);
+  });
+  it("SM Global's Calendario is its own screen, not Mis tareas in calendar view", () => {
+    const item = smGlobalNav.find((i) => i.key === "calendar")!;
+    expect(item.view).toBeUndefined();
+    expect(isNavActive(item, smGlobalNav, "/calendario", undefined)).toBe(true);
+    expect(isNavActive(item, smGlobalNav, "/catalogo", undefined)).toBe(false);
   });
   it("SM Global's old /acuerdos redirects to /bishops; the Bishop keeps his own Acuerdos", () => {
     expect(movedPathFor("sm_global", "/acuerdos")).toBe("/bishops");
@@ -40,7 +46,7 @@ describe("menu per role", () => {
 });
 
 describe("Viendo shows only on screens scoped by office", () => {
-  it.each(["/", "/embudo", "/oficinas", "/oficinas/abc", "/negocios", "/tareas", "/tareas/abc", "/reporte"])("visible on %s", (path) => {
+  it.each(["/", "/embudo", "/oficinas", "/oficinas/abc", "/negocios", "/tareas", "/tareas/abc", "/reporte", "/calendario"])("visible on %s", (path) => {
     expect(showsOfficeScope(path)).toBe(true);
   });
   it.each(["/bishops", "/bishops/abc", "/personas", "/reglas", "/perfil", "/catalogo", "/estructura"])("hidden on %s", (path) => {

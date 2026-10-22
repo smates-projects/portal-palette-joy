@@ -1,11 +1,12 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight, Lock, Video } from "lucide-react";
 import { todayIso } from "@/lib/clock";
 import { localeTag } from "@/lib/format";
 import { useCalendarEvents, useCurrentUser, useLeadMeetings, useMeetings, useMyMeetings, usePortalMeeting } from "@/lib/api/hooks";
-import type { TaskWithComputed } from "@/lib/api/types";
+import type { PortalMeeting, TaskWithComputed } from "@/lib/api/types";
+import type { LeadMeetingItem } from "@/lib/api/entry-types";
 import {
   CAL_MODES, buildCalendarItems, localDay, monthGrid, shiftAnchor, visibleRange, weekDays, type CalItem, type CalMode,
 } from "@/lib/tasks/calendar";
@@ -16,6 +17,19 @@ import { AREAS } from "@/lib/tasks/owner";
 
 const MONTH_MAX = 3;
 
+/** What SM Global's Calendario puts on the grid instead of the tasks (see lib/calendar/global). */
+export interface MeetingsOnlyScope {
+  leadMeetings: LeadMeetingItem[];
+  portalFilter: (m: PortalMeeting) => boolean;
+  /** Her Google events, read only: only in her own calendar. */
+  showGoogle: boolean;
+  /** Still reading the leads: the empty state waits. */
+  loading?: boolean | undefined;
+  initialMode?: CalMode | undefined;
+  /** Shown above the grid when the visible weeks have nothing. */
+  renderEmpty: (mode: CalMode) => ReactNode;
+}
+
 export function TaskCalendar(props: {
   rows: TaskWithComputed[];
   businessName: (id: string) => string;
@@ -23,16 +37,20 @@ export function TaskCalendar(props: {
   /** Portal meeting shown in the side panel (?meeting= from the bell). */
   focusMeetingId?: string | undefined;
   onFocusMeeting: (id: string | null) => void;
+  /** SM Global's Calendario: meetings only, scoped by "Viendo" (no tasks, no areas). */
+  meetingsOnly?: MeetingsOnlyScope | undefined;
 }) {
   const { t, i18n } = useTranslation();
   const locale = localeTag(i18n.language);
-  const [mode, setMode] = useState<CalMode>("month");
+  const scoped = props.meetingsOnly;
+  const [mode, setMode] = useState<CalMode>(scoped?.initialMode ?? "month");
   const [anchor, setAnchor] = useState(todayIso());
   const meetingsQ = useMeetings();
   const eventsQ = useCalendarEvents();
   const navigate = useNavigate();
-  // Entry meetings the owners booked with this consultant (SM team only).
-  const leadMeetingsQ = useLeadMeetings(useCurrentUser().data?.role === "sm_team");
+  // Entry meetings the owners booked with this consultant (SM team only; Global brings its own).
+  const role = useCurrentUser().data?.role;
+  const leadMeetingsQ = useLeadMeetings(!scoped && role === "sm_team");
   const days = mode === "month" ? monthGrid(anchor) : weekDays(anchor);
   const range = visibleRange(days);
   // Calendar v2: the portal meetings of every kind in the visible weeks.
@@ -46,9 +64,20 @@ export function TaskCalendar(props: {
   }
 
   const items = useMemo(
-    () => buildCalendarItems(props.rows, meetingsQ.data ?? [], eventsQ.data ?? [], leadMeetingsQ.data ?? [], portalQ.data ?? []),
-    [props.rows, meetingsQ.data, eventsQ.data, leadMeetingsQ.data, portalQ.data],
+    () =>
+      scoped
+        ? buildCalendarItems(
+            [],
+            [],
+            scoped.showGoogle ? eventsQ.data ?? [] : [],
+            scoped.leadMeetings,
+            (portalQ.data ?? []).filter(scoped.portalFilter),
+          )
+        : buildCalendarItems(props.rows, meetingsQ.data ?? [], eventsQ.data ?? [], leadMeetingsQ.data ?? [], portalQ.data ?? []),
+    [scoped, props.rows, meetingsQ.data, eventsQ.data, leadMeetingsQ.data, portalQ.data],
   );
+  const visibleCount = days.reduce((n, d) => n + (items.get(d)?.length ?? 0), 0);
+  const loaded = !portalQ.isLoading && !(scoped?.loading ?? false);
   const fmt = (o: Intl.DateTimeFormatOptions, iso: string) =>
     new Intl.DateTimeFormat(locale, o).format(new Date(iso.length === 10 ? `${iso}T12:00:00` : iso));
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -155,11 +184,17 @@ export function TaskCalendar(props: {
         </div>
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-[2px] border border-border bg-surface" />{t("tasks.calendar.legend_confirmed")}</span>
-            <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-[2px] border border-dashed border-border bg-surface" />{t("tasks.calendar.legend_proposed")}</span>
-            <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-[2px] border border-border bg-muted" />{t("tasks.calendar.legend_google")}</span>
+            {!scoped && (
+              <>
+                <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-[2px] border border-border bg-surface" />{t("tasks.calendar.legend_confirmed")}</span>
+                <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-[2px] border border-dashed border-border bg-surface" />{t("tasks.calendar.legend_proposed")}</span>
+              </>
+            )}
+            {(!scoped || scoped.showGoogle) && (
+              <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-[2px] border border-border bg-muted" />{t("tasks.calendar.legend_google")}</span>
+            )}
             <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-[2px] border border-primary bg-surface" />{t("calendar.legend_portal")}</span>
-            {(leadMeetingsQ.data?.length ?? 0) > 0 && (
+            {((scoped ? scoped.leadMeetings.length : leadMeetingsQ.data?.length) ?? 0) > 0 && (
               <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-[2px] border border-primary bg-accent/60" />{t("entry.calendar.legend")}</span>
             )}
           </div>
@@ -179,7 +214,8 @@ export function TaskCalendar(props: {
         </div>
       </div>
 
-      <AreaLegend areas={AREAS} className="pb-2" />
+      {!scoped && <AreaLegend areas={AREAS} className="pb-2" />}
+      {scoped && loaded && visibleCount === 0 && <div className="pb-2">{scoped.renderEmpty(mode)}</div>}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border border-border bg-surface">
         <div className="grid grid-cols-7 border-b border-border">
           {days.slice(0, 7).map((d) => (

@@ -44,7 +44,7 @@ export interface NavItem {
   to:
     | "/" | "/tareas" | "/clientes" | "/reporte" | "/perfil" | "/manual" | "/documentos" | "/numeros" | "/negocio" | "/red" | "/negocios"
     | "/catalogo" | "/configuracion" | "/embudo"
-    | "/estructura" | "/oficinas" | "/reglas" | "/personas" | "/franquiciadora" | "/franquicias" | "/oportunidades" | "/acuerdos" | "/pagos" | "/bishops";
+    | "/calendario" | "/estructura" | "/oficinas" | "/reglas" | "/personas" | "/franquiciadora" | "/franquicias" | "/oportunidades" | "/acuerdos" | "/pagos" | "/bishops";
   key: NavKey;
   icon: LucideIcon;
   /** Only for "Calendario": Mis tareas opened in the calendar view. */
@@ -96,6 +96,8 @@ export const smGlobalNav: NavItem[] = [
   { to: "/estructura", key: "structure", icon: Network },
   { to: "/oficinas", key: "offices", icon: Landmark },
   { to: "/embudo", key: "global_pipeline", icon: Filter },
+  // Her meetings with the owners and her Google Calendar; with Viendo on one office, that office's entry meetings.
+  { to: "/calendario", key: "calendar", icon: CalendarDays },
   { to: "/catalogo", key: "global_catalog", icon: Library },
   { to: "/reglas", key: "rules", icon: SlidersHorizontal },
   { to: "/personas", key: "people", icon: Users },
@@ -149,10 +151,10 @@ export function movedPathFor(role: UserRole | undefined, pathname: string): "/bi
 }
 
 /** Screens whose content depends on the office in view. "Viendo" shows only there. */
-const OFFICE_SCOPED_PATHS = ["/embudo", "/oficinas", "/negocios", "/tareas", "/reporte"] as const;
+const OFFICE_SCOPED_PATHS = ["/embudo", "/calendario", "/oficinas", "/negocios", "/tareas", "/reporte"] as const;
 
 /**
- * Whether the header "Viendo" selector applies to the screen: Inicio, Embudo, Oficinas, Negocios, Tareas and
+ * Whether the header "Viendo" selector applies to the screen: Inicio, Embudo, Calendario, Oficinas, Negocios, Tareas and
  * Reportes filter by office; Bishops, Personas, Reglas, Perfil, Catálogo and Estructura do not, so it hides there.
  */
 export function showsOfficeScope(pathname: string): boolean {

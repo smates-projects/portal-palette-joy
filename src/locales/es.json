@@ -386,6 +386,10 @@
     "bishops": {
       "title": "Bishops",
       "subtitle": "¿Qué pasa con los Bishops?"
+    },
+    "calendar": {
+      "title": "Calendario",
+      "subtitle": "Tus reuniones con los dueños y tu Google Calendar en un solo lugar."
     }
   },
   "meta": {
@@ -3799,7 +3803,17 @@
         "America_Puerto_Rico": "Puerto Rico"
       }
     },
-    "see_in_calendar": "Ver en el calendario"
+    "see_in_calendar": "Ver en el calendario",
+    "global": {
+      "heading": "Calendario",
+      "subtitle_own": "Tus reuniones con los dueños y tu Google Calendar en un solo lugar. Tus eventos de Google se ven aquí pero no se editan.",
+      "subtitle_office": "Las reuniones de ingreso de {{office}} y las tuyas sobre sus negocios.",
+      "empty_week": "No tienes reuniones esta semana",
+      "empty_month": "No tienes reuniones este mes",
+      "empty_office_week": "{{office}} no tiene reuniones esta semana",
+      "empty_office_month": "{{office}} no tiene reuniones este mes",
+      "empty_link": "Ver el embudo"
+    }
   },
   "entry_contracts": {
     "rules": {

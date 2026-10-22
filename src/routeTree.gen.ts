@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ActivarVerificacionRouteImport } from './routes/activar-verificacion'
 import { Route as AcuerdosRouteImport } from './routes/acuerdos'
+import { Route as CalendarioRouteImport } from './routes/calendario'
 import { Route as CatalogoRouteImport } from './routes/catalogo'
 import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as ConfiguracionRouteImport } from './routes/configuracion'
@@ -61,6 +62,11 @@ const ActivarVerificacionRoute = ActivarVerificacionRouteImport.update({
 const AcuerdosRoute = AcuerdosRouteImport.update({
   id: '/acuerdos',
   path: '/acuerdos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CalendarioRoute = CalendarioRouteImport.update({
+  id: '/calendario',
+  path: '/calendario',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CatalogoRoute = CatalogoRouteImport.update({
@@ -244,6 +250,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/activar-verificacion': typeof ActivarVerificacionRoute
   '/acuerdos': typeof AcuerdosRoute
+  '/calendario': typeof CalendarioRoute
   '/catalogo': typeof CatalogoRoute
   '/clientes': typeof ClientesRoute
   '/configuracion': typeof ConfiguracionRoute
@@ -284,6 +291,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/activar-verificacion': typeof ActivarVerificacionRoute
   '/acuerdos': typeof AcuerdosRoute
+  '/calendario': typeof CalendarioRoute
   '/catalogo': typeof CatalogoRoute
   '/clientes': typeof ClientesRoute
   '/configuracion': typeof ConfiguracionRoute
@@ -325,6 +333,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/activar-verificacion': typeof ActivarVerificacionRoute
   '/acuerdos': typeof AcuerdosRoute
+  '/calendario': typeof CalendarioRoute
   '/catalogo': typeof CatalogoRoute
   '/clientes': typeof ClientesRoute
   '/configuracion': typeof ConfiguracionRoute
@@ -367,6 +376,7 @@ export interface FileRouteTypes {
     | '/'
     | '/activar-verificacion'
     | '/acuerdos'
+    | '/calendario'
     | '/catalogo'
     | '/clientes'
     | '/configuracion'
@@ -407,6 +417,7 @@ export interface FileRouteTypes {
     | '/'
     | '/activar-verificacion'
     | '/acuerdos'
+    | '/calendario'
     | '/catalogo'
     | '/clientes'
     | '/configuracion'
@@ -447,6 +458,7 @@ export interface FileRouteTypes {
     | '/'
     | '/activar-verificacion'
     | '/acuerdos'
+    | '/calendario'
     | '/catalogo'
     | '/clientes'
     | '/configuracion'
@@ -488,6 +500,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ActivarVerificacionRoute: typeof ActivarVerificacionRoute
   AcuerdosRoute: typeof AcuerdosRoute
+  CalendarioRoute: typeof CalendarioRoute
   CatalogoRoute: typeof CatalogoRoute
   ClientesRoute: typeof ClientesRoute
   ConfiguracionRoute: typeof ConfiguracionRoute
@@ -546,6 +559,13 @@ declare module '@tanstack/react-router' {
       path: '/acuerdos'
       fullPath: '/acuerdos'
       preLoaderRoute: typeof AcuerdosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/calendario': {
+      id: '/calendario'
+      path: '/calendario'
+      fullPath: '/calendario'
+      preLoaderRoute: typeof CalendarioRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/catalogo': {
@@ -800,6 +820,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ActivarVerificacionRoute: ActivarVerificacionRoute,
   AcuerdosRoute: AcuerdosRoute,
+  CalendarioRoute: CalendarioRoute,
   CatalogoRoute: CatalogoRoute,
   ClientesRoute: ClientesRoute,
   ConfiguracionRoute: ConfiguracionRoute,
