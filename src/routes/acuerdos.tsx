@@ -1,13 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { AgreementsPage } from "@/components/bishop/agreements/AgreementsPage";
-import { GlobalAgreementsPage } from "@/components/global/agreements/GlobalAgreementsPage";
 import { useCurrentUser } from "@/lib/api/hooks";
 import { tStatic } from "@/lib/i18n";
 
-/** The Bishop's own agreements; for SM Global, every Bishop's framework agreement to countersign. */
+/** The Bishop's own agreements. SM Global's old "Acuerdos" moved to Bishops: the address redirects there. */
 function AgreementsRoute() {
   const me = useCurrentUser().data;
-  return me?.role === "sm_global" ? <GlobalAgreementsPage /> : <AgreementsPage />;
+  return me?.role === "sm_global" ? <Navigate to="/bishops" replace /> : <AgreementsPage />;
 }
 
 export const Route = createFileRoute("/acuerdos")({

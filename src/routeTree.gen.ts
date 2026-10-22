@@ -33,6 +33,7 @@ import { Route as RedRouteImport } from './routes/red'
 import { Route as ReglasRouteImport } from './routes/reglas'
 import { Route as ReporteRouteImport } from './routes/reporte'
 import { Route as VerificacionRouteImport } from './routes/verificacion'
+import { Route as BishopsIndexRouteImport } from './routes/bishops.index'
 import { Route as EnlaceTokenRouteImport } from './routes/enlace.$token'
 import { Route as EntradaTokenRouteImport } from './routes/entrada.$token'
 import { Route as FranquiciasIndexRouteImport } from './routes/franquicias.index'
@@ -166,6 +167,11 @@ const VerificacionRoute = VerificacionRouteImport.update({
   path: '/verificacion',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BishopsIndexRoute = BishopsIndexRouteImport.update({
+  id: '/bishops/',
+  path: '/bishops/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EnlaceTokenRoute = EnlaceTokenRouteImport.update({
   id: '/enlace/$token',
   path: '/enlace/$token',
@@ -261,6 +267,7 @@ export interface FileRoutesByFullPath {
   '/oportunidades/$opportunityId': typeof OportunidadesOpportunityIdRoute
   '/restablecer/$token': typeof RestablecerTokenRoute
   '/tareas/$taskId': typeof TareasTaskIdRoute
+  '/bishops/': typeof BishopsIndexRoute
   '/franquicias/': typeof FranquiciasIndexRoute
   '/oficinas/': typeof OficinasIndexRoute
   '/oportunidades/': typeof OportunidadesIndexRoute
@@ -299,6 +306,7 @@ export interface FileRoutesByTo {
   '/oportunidades/$opportunityId': typeof OportunidadesOpportunityIdRoute
   '/restablecer/$token': typeof RestablecerTokenRoute
   '/tareas/$taskId': typeof TareasTaskIdRoute
+  '/bishops': typeof BishopsIndexRoute
   '/franquicias': typeof FranquiciasIndexRoute
   '/oficinas': typeof OficinasIndexRoute
   '/oportunidades': typeof OportunidadesIndexRoute
@@ -338,6 +346,7 @@ export interface FileRoutesById {
   '/oportunidades/$opportunityId': typeof OportunidadesOpportunityIdRoute
   '/restablecer/$token': typeof RestablecerTokenRoute
   '/tareas/$taskId': typeof TareasTaskIdRoute
+  '/bishops/': typeof BishopsIndexRoute
   '/franquicias/': typeof FranquiciasIndexRoute
   '/oficinas/': typeof OficinasIndexRoute
   '/oportunidades/': typeof OportunidadesIndexRoute
@@ -378,6 +387,7 @@ export interface FileRouteTypes {
     | '/oportunidades/$opportunityId'
     | '/restablecer/$token'
     | '/tareas/$taskId'
+    | '/bishops/'
     | '/franquicias/'
     | '/oficinas/'
     | '/oportunidades/'
@@ -416,6 +426,7 @@ export interface FileRouteTypes {
     | '/oportunidades/$opportunityId'
     | '/restablecer/$token'
     | '/tareas/$taskId'
+    | '/bishops'
     | '/franquicias'
     | '/oficinas'
     | '/oportunidades'
@@ -454,6 +465,7 @@ export interface FileRouteTypes {
     | '/oportunidades/$opportunityId'
     | '/restablecer/$token'
     | '/tareas/$taskId'
+    | '/bishops/'
     | '/franquicias/'
     | '/oficinas/'
     | '/oportunidades/'
@@ -493,6 +505,7 @@ export interface RootRouteChildren {
   OportunidadesOpportunityIdRoute: typeof OportunidadesOpportunityIdRoute
   RestablecerTokenRoute: typeof RestablecerTokenRoute
   TareasTaskIdRoute: typeof TareasTaskIdRoute
+  BishopsIndexRoute: typeof BishopsIndexRoute
   FranquiciasIndexRoute: typeof FranquiciasIndexRoute
   OficinasIndexRoute: typeof OficinasIndexRoute
   OportunidadesIndexRoute: typeof OportunidadesIndexRoute
@@ -669,6 +682,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VerificacionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/bishops/': {
+      id: '/bishops/'
+      path: '/bishops'
+      fullPath: '/bishops/'
+      preLoaderRoute: typeof BishopsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/enlace/$token': {
       id: '/enlace/$token'
       path: '/enlace/$token'
@@ -789,6 +809,7 @@ const rootRouteChildren: RootRouteChildren = {
   OportunidadesOpportunityIdRoute: OportunidadesOpportunityIdRoute,
   RestablecerTokenRoute: RestablecerTokenRoute,
   TareasTaskIdRoute: TareasTaskIdRoute,
+  BishopsIndexRoute: BishopsIndexRoute,
   FranquiciasIndexRoute: FranquiciasIndexRoute,
   OficinasIndexRoute: OficinasIndexRoute,
   OportunidadesIndexRoute: OportunidadesIndexRoute,

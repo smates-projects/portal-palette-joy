@@ -6,7 +6,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { Logo } from "@/components/brand/Logo";
 import { BrandLogo } from "@/components/brand/BrandLogo";
-import { isNavActive, navFor } from "./nav";
+import { isNavActive, movedPathFor, navFor } from "./nav";
 import { firmName } from "@/components/office/shared";
 import { NotificationBell } from "./NotificationBell";
 import { OfficeScopeSelect } from "./OfficeScopeSelect";
@@ -324,6 +324,9 @@ function RouteGuard({ children }: { children: ReactNode }) {
   );
   if (!authenticated) return <Navigate to="/login" search={loginSearchFor(href)} replace />;
   if (!me) return <>{children}</>;
+  // An old address that moved (SM Global's /acuerdos is now /bishops) goes to the new one, not to Inicio.
+  const moved = movedPathFor(me.role, pathname);
+  if (moved) return <Navigate to={moved} replace />;
   const allowed = [...navFor(me.role, { franchisor, onboarding }).map((i) => i.to), "/perfil", "/tareas"];
   const ok = pathname === "/" || allowed.some((p) => p !== "/" && (pathname === p || pathname.startsWith(`${p}/`)));
   return ok ? <>{children}</> : <Navigate to="/" />;

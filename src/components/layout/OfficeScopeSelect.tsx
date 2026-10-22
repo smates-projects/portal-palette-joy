@@ -1,20 +1,23 @@
 import { useTranslation } from "react-i18next";
+import { useRouterState } from "@tanstack/react-router";
 import { Building2 } from "lucide-react";
 import { useCurrentUser, useOrganizations } from "@/lib/api/hooks";
 import { ALL_OFFICES, useOfficeScope } from "@/lib/office-scope";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { showsOfficeScope } from "./nav";
 
 /**
  * "Viendo": SM Global picks the whole network, Corporate or one office. The choice is remembered per browser and
  * filters the Global screens that know the office of what they list (embudo, negocios, tareas, reportes, the bell).
- * Anyone else never sees it.
+ * It shows only on those screens (showsOfficeScope); anyone else never sees it.
  */
 export function OfficeScopeSelect() {
   const { t } = useTranslation();
   const me = useCurrentUser().data;
   const [scope, setScope] = useOfficeScope();
   const orgsQ = useOrganizations();
-  if (me?.role !== "sm_global") return null;
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  if (me?.role !== "sm_global" || !showsOfficeScope(pathname)) return null;
   const orgs = orgsQ.data ?? [];
   const corporate = orgs.find((o) => o.kind === "sm_global");
   const offices = orgs.filter((o) => o.kind === "sm").sort((a, b) => a.name.localeCompare(b.name));

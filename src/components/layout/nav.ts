@@ -6,6 +6,7 @@ import {
   Briefcase,
   FileSignature,
   FileText,
+  Handshake,
   Home,
   Landmark,
   Library,
@@ -31,7 +32,7 @@ export type NavKey =
   | "calendar" | "manual" | "documents" | "numbers" | "business"
   | "network" | "businesses" | "catalog" | "settings" | "pipeline"
   // SM Global
-  | "structure" | "offices" | "global_pipeline" | "global_catalog" | "rules" | "people"
+  | "structure" | "offices" | "global_pipeline" | "global_catalog" | "rules" | "people" | "bishops"
   // Franchisor (business owner whose business is a franchisor)
   | "franchisor" | "franchises"
   // Business Bishop
@@ -43,7 +44,7 @@ export interface NavItem {
   to:
     | "/" | "/tareas" | "/clientes" | "/reporte" | "/perfil" | "/manual" | "/documentos" | "/numeros" | "/negocio" | "/red" | "/negocios"
     | "/catalogo" | "/configuracion" | "/embudo"
-    | "/estructura" | "/oficinas" | "/reglas" | "/personas" | "/franquiciadora" | "/franquicias" | "/oportunidades" | "/acuerdos" | "/pagos";
+    | "/estructura" | "/oficinas" | "/reglas" | "/personas" | "/franquiciadora" | "/franquicias" | "/oportunidades" | "/acuerdos" | "/pagos" | "/bishops";
   key: NavKey;
   icon: LucideIcon;
   /** Only for "Calendario": Mis tareas opened in the calendar view. */
@@ -98,8 +99,8 @@ export const smGlobalNav: NavItem[] = [
   { to: "/catalogo", key: "global_catalog", icon: Library },
   { to: "/reglas", key: "rules", icon: SlidersHorizontal },
   { to: "/personas", key: "people", icon: Users },
-  // The Bishops' framework agreements: Corporate countersigns them here.
-  { to: "/acuerdos", key: "agreements", icon: FileSignature },
+  // Every Bishop with the state of the framework agreement: the CEO countersigns it here.
+  { to: "/bishops", key: "bishops", icon: Handshake },
 ];
 
 // Menu for a business owner whose business is a franchisor (finished the program).
@@ -138,6 +139,26 @@ export const navFor = (role: UserRole | undefined, opts: { franchisor?: boolean;
     default: return partnerFirmNav;
   }
 };
+
+/**
+ * Old addresses that moved: SM Global's "Acuerdos" became "Bishops". The Bishop keeps his own /acuerdos. Null when
+ * the path did not move for that role.
+ */
+export function movedPathFor(role: UserRole | undefined, pathname: string): "/bishops" | null {
+  return role === "sm_global" && (pathname === "/acuerdos" || pathname.startsWith("/acuerdos/")) ? "/bishops" : null;
+}
+
+/** Screens whose content depends on the office in view. "Viendo" shows only there. */
+const OFFICE_SCOPED_PATHS = ["/embudo", "/oficinas", "/negocios", "/tareas", "/reporte"] as const;
+
+/**
+ * Whether the header "Viendo" selector applies to the screen: Inicio, Embudo, Oficinas, Negocios, Tareas and
+ * Reportes filter by office; Bishops, Personas, Reglas, Perfil, Catálogo and Estructura do not, so it hides there.
+ */
+export function showsOfficeScope(pathname: string): boolean {
+  if (pathname === "/") return true;
+  return OFFICE_SCOPED_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
 
 /** "Calendario" is active on Mis tareas in calendar view; "Mis tareas" on any other view. */
 export function isNavActive(item: NavItem, items: NavItem[], pathname: string, view: unknown) {

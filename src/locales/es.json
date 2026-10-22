@@ -44,7 +44,8 @@
     "franchisee_manual": "Manual",
     "payments": "Pagos y reportes",
     "franchisee_business": "Mi negocio",
-    "people": "Personas"
+    "people": "Personas",
+    "bishops": "Bishops"
   },
   "topbar": {
     "search_placeholder": "Buscar tareas o clientes",
@@ -385,6 +386,10 @@
     "people": {
       "title": "Personas",
       "subtitle": "¿Quién tiene cuenta en la red de SM?"
+    },
+    "bishops": {
+      "title": "Bishops",
+      "subtitle": "¿Qué pasa con los Bishops?"
     }
   },
   "meta": {
