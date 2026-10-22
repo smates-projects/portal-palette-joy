@@ -3780,7 +3780,8 @@
       "disconnect": "Disconnect",
       "reconnect_note": "Google stopped accepting the access to your calendar. Connect it again so the portal can find your free times and create your meetings.",
       "reconnect": "Connect again",
-      "consent_note": "When you connect it, Google asks your permission to read your calendar and create events. You can disconnect it at any time."
+      "consent_note": "When you connect it, Google asks your permission to read your calendar and create events. You can disconnect it at any time.",
+      "see_calendar": "See my calendar"
     },
     "rules": {
       "title": "Hours to schedule meetings",

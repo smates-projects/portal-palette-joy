@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { CalendarDays } from "lucide-react";
@@ -77,6 +78,10 @@ export function GoogleCalendarCard({ me, returnStatus, onDismissReturn }: {
             <h2 className="text-sm font-semibold">{t("calendar.profile.title")}</h2>
             <p className="mt-0.5 max-w-xl text-sm text-muted-foreground">{t("calendar.profile.body")}</p>
             <p className="mt-1 text-sm">{connected && email ? t("calendar.profile.on", { email }) : !reconnect ? t("calendar.profile.off") : null}</p>
+            {/* SM Global has its own Calendario: once connected, the way there. */}
+            {connected && me.role === "sm_global" && (
+              <Link to="/calendario" className="mt-1 inline-block text-sm text-link hover:underline">{t("calendar.profile.see_calendar")}</Link>
+            )}
           </div>
         </div>
         {connected ? (

@@ -3780,7 +3780,8 @@
       "disconnect": "Desconectar",
       "reconnect_note": "Google dejó de aceptar el acceso a tu calendario. Vuelve a conectarlo para que el portal encuentre tus horarios libres y cree tus reuniones.",
       "reconnect": "Volver a conectar",
-      "consent_note": "Al conectarlo, Google te pide permiso para leer tu agenda y crear eventos. Puedes desconectarlo cuando quieras."
+      "consent_note": "Al conectarlo, Google te pide permiso para leer tu agenda y crear eventos. Puedes desconectarlo cuando quieras.",
+      "see_calendar": "Ver mi calendario"
     },
     "rules": {
       "title": "Horario para agendar reuniones",
