@@ -17,7 +17,10 @@ import { AREAS } from "@/lib/tasks/owner";
 
 const MONTH_MAX = 3;
 
-/** What SM Global's Calendario puts on the grid instead of the tasks (see lib/calendar/global). */
+/**
+ * SM Global's data source (see lib/calendar/use-global-calendar): the same calendar, fed with her meetings instead
+ * of the team's tasks. Only the data changes; the toolbar, grid, chips, legend and panel stay the same.
+ */
 export interface MeetingsOnlyScope {
   leadMeetings: LeadMeetingItem[];
   portalFilter: (m: PortalMeeting) => boolean;
@@ -25,7 +28,6 @@ export interface MeetingsOnlyScope {
   showGoogle: boolean;
   /** Still reading the leads: the empty state waits. */
   loading?: boolean | undefined;
-  initialMode?: CalMode | undefined;
   /** Shown above the grid when the visible weeks have nothing. */
   renderEmpty: (mode: CalMode) => ReactNode;
 }
@@ -37,13 +39,13 @@ export function TaskCalendar(props: {
   /** Portal meeting shown in the side panel (?meeting= from the bell). */
   focusMeetingId?: string | undefined;
   onFocusMeeting: (id: string | null) => void;
-  /** SM Global's Calendario: meetings only, scoped by "Viendo" (no tasks, no areas). */
+  /** SM Global's Calendario: its meetings scoped by "Viendo" instead of the tasks. */
   meetingsOnly?: MeetingsOnlyScope | undefined;
 }) {
   const { t, i18n } = useTranslation();
   const locale = localeTag(i18n.language);
   const scoped = props.meetingsOnly;
-  const [mode, setMode] = useState<CalMode>(scoped?.initialMode ?? "month");
+  const [mode, setMode] = useState<CalMode>("month");
   const [anchor, setAnchor] = useState(todayIso());
   const meetingsQ = useMeetings();
   const eventsQ = useCalendarEvents();
@@ -184,15 +186,9 @@ export function TaskCalendar(props: {
         </div>
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
-            {!scoped && (
-              <>
-                <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-[2px] border border-border bg-surface" />{t("tasks.calendar.legend_confirmed")}</span>
-                <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-[2px] border border-dashed border-border bg-surface" />{t("tasks.calendar.legend_proposed")}</span>
-              </>
-            )}
-            {(!scoped || scoped.showGoogle) && (
-              <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-[2px] border border-border bg-muted" />{t("tasks.calendar.legend_google")}</span>
-            )}
+            <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-[2px] border border-border bg-surface" />{t("tasks.calendar.legend_confirmed")}</span>
+            <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-[2px] border border-dashed border-border bg-surface" />{t("tasks.calendar.legend_proposed")}</span>
+            <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-[2px] border border-border bg-muted" />{t("tasks.calendar.legend_google")}</span>
             <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-[2px] border border-primary bg-surface" />{t("calendar.legend_portal")}</span>
             {((scoped ? scoped.leadMeetings.length : leadMeetingsQ.data?.length) ?? 0) > 0 && (
               <span className="inline-flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-[2px] border border-primary bg-accent/60" />{t("entry.calendar.legend")}</span>
@@ -214,8 +210,8 @@ export function TaskCalendar(props: {
         </div>
       </div>
 
-      {!scoped && <AreaLegend areas={AREAS} className="pb-2" />}
-      {scoped && loaded && visibleCount === 0 && <div className="pb-2">{scoped.renderEmpty(mode)}</div>}
+      <AreaLegend areas={AREAS} className="pb-2" />
+      {scoped && loaded && visibleCount === 0 && scoped.renderEmpty(mode)}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border border-border bg-surface">
         <div className="grid grid-cols-7 border-b border-border">
           {days.slice(0, 7).map((d) => (

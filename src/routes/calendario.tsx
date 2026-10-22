@@ -1,10 +1,12 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
-import { GlobalCalendarPage, type GlobalCalendarSearch } from "@/components/global/calendar/GlobalCalendarPage";
+import { MyTasksPage } from "@/components/tasks/MyTasksPage";
 import { useCurrentUser } from "@/lib/api/hooks";
 import { tStatic } from "@/lib/i18n";
+import type { TasksSearch } from "@/lib/tasks/table";
 
 export const Route = createFileRoute("/calendario")({
-  validateSearch: (search: Record<string, unknown>): GlobalCalendarSearch =>
+  // Only the meeting in the side panel travels in the address; the view is always the calendar.
+  validateSearch: (search: Record<string, unknown>): Pick<TasksSearch, "meeting"> =>
     typeof search.meeting === "string" && search.meeting ? { meeting: search.meeting } : {},
   head: () => ({
     meta: [
@@ -16,11 +18,13 @@ export const Route = createFileRoute("/calendario")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: function CalendarRoute() {
-    const search = Route.useSearch();
-    const role = useCurrentUser().data?.role;
-    // SM Global's own screen; everyone else keeps the calendar view of Mis tareas.
-    if (role && role !== "sm_global") return <Navigate to="/" />;
-    return <GlobalCalendarPage search={search} />;
-  },
+  component: CalendarRoute,
 });
+
+/** SM Global's Calendario: the same page as /tareas?view=calendar, with Global's data and the "Viendo" scope. */
+function CalendarRoute() {
+  const search = Route.useSearch();
+  const role = useCurrentUser().data?.role;
+  if (role && role !== "sm_global") return <Navigate to="/" />;
+  return <MyTasksPage search={{ view: "calendar", meeting: search.meeting }} calendarRoute />;
+}

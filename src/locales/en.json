@@ -3806,9 +3806,6 @@
     },
     "see_in_calendar": "See it in the calendar",
     "global": {
-      "heading": "Calendar",
-      "subtitle_own": "Your meetings with the owners and your Google Calendar in one place. Your Google events show here but cannot be edited.",
-      "subtitle_office": "The entry meetings of {{office}} and yours about its businesses.",
       "empty_week": "You have no meetings this week",
       "empty_month": "You have no meetings this month",
       "empty_office_week": "{{office}} has no meetings this week",

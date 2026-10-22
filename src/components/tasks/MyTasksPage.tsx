@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { ArrowDown, ArrowUp, ArrowUpDown, CalendarDays, Columns3, GanttChart, Search, Table2, X } from "lucide-react";
 import { todayIso } from "@/lib/clock";
@@ -27,7 +27,9 @@ import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/
 import { TaskDetail } from "@/components/tasks/detail/TaskDetail";
 import { TaskBoard } from "@/components/tasks/TaskBoard";
 import { TaskRoadmap } from "@/components/tasks/TaskRoadmap";
-import { TaskCalendar } from "@/components/tasks/TaskCalendar";
+import { TaskCalendar, type MeetingsOnlyScope } from "@/components/tasks/TaskCalendar";
+import { GlobalCalendarActions } from "@/components/global/calendar/GlobalCalendarActions";
+import { useGlobalCalendar } from "@/lib/calendar/use-global-calendar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const ALL = "__all";
@@ -35,12 +37,18 @@ const AREAS: AreaCode[] = ["B1", "B2", "B3", "B4", "B5", "B6"];
 const COLUMNS: SortKey[] = ["code", "name", "business", "area", "step", "due", "status"];
 const VIEW_ICONS = { table: Table2, board: Columns3, roadmap: GanttChart, calendar: CalendarDays } as const;
 
-export function MyTasksPage({ search }: { search: TasksSearch }) {
+/**
+ * Mis tareas, and the calendar of every role. `calendarRoute` is SM Global's /calendario: the same page in its
+ * calendar view, fed with Global's meetings (useGlobalCalendar) and scoped by "Viendo"; only the data changes.
+ */
+export function MyTasksPage({ search, calendarRoute = false }: { search: TasksSearch; calendarRoute?: boolean }) {
   const { t, i18n } = useTranslation();
-  const navigate = useNavigate({ from: "/tareas/" });
+  const tasksNavigate = useNavigate({ from: "/tareas/" });
+  const plainNavigate = useNavigate();
   const me = useCurrentUser().data;
   const isOwner = me?.role === "business_owner";
   const isSm = me?.role === "sm_team";
+  const isGlobal = me?.role === "sm_global";
   const activeQ = useTasks();
   const withCancelledQ = useTasksWithCancelled(isSm && search.status === "cancelled");
   const tasksQ = isSm && search.status === "cancelled" ? withCancelledQ : activeQ;
@@ -52,8 +60,12 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
   const [submitFor, setSubmitFor] = useState<string | null>(null);
   const [changesFor, setChangesFor] = useState<string | null>(null);
 
-  const setSearch = (patch: Partial<TasksSearch>, replace = false) =>
-    navigate({ search: (prev: TasksSearch) => ({ ...prev, ...patch }), replace });
+  const setSearch = (patch: Partial<TasksSearch>, replace = false) => {
+    if (!calendarRoute) return tasksNavigate({ search: (prev: TasksSearch) => ({ ...prev, ...patch }), replace });
+    // On /calendario a view tab goes to Mis tareas; the meeting panel stays here.
+    if ("view" in patch) return plainNavigate({ to: "/tareas", search: { view: patch.view } });
+    return plainNavigate({ to: "/calendario", search: { meeting: patch.meeting ?? undefined }, replace });
+  };
 
   const businessName = (id: string) => bizQ.data?.find((b) => b.id === id)?.name ?? "";
   // SM opens on the tasks they supervise; sup=all shows every task of their office.
@@ -63,7 +75,27 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
     supervisorId: isSm && search.sup !== "all" ? me?.id : undefined,
     all: activeQ.data,
   };
-  const view: TasksView = (VIEWS as readonly string[]).includes(search.view ?? "") ? (search.view as TasksView) : "table";
+  const view: TasksView = calendarRoute ? "calendar" : (VIEWS as readonly string[]).includes(search.view ?? "") ? (search.view as TasksView) : "table";
+  // SM Global's calendar: her meetings (or an office's, with Viendo) instead of the tasks.
+  const globalCalendar = isGlobal && view === "calendar";
+  const globalSource = useGlobalCalendar(globalCalendar);
+  const noteCls = "mb-2 rounded-md border border-status-info-border bg-status-info-bg px-3 py-2 text-sm text-status-info-fg";
+  const meetingsOnly: MeetingsOnlyScope | undefined = globalCalendar
+    ? {
+        leadMeetings: globalSource.leadMeetings,
+        portalFilter: globalSource.portalFilter,
+        showGoogle: globalSource.showGoogle,
+        loading: globalSource.loading,
+        renderEmpty: (mode) => (
+          <p role="status" className={noteCls}>
+            {globalSource.view.kind === "office"
+              ? t(`calendar.global.empty_office_${mode}`, { office: globalSource.officeName })
+              : t(`calendar.global.empty_${mode}`)}{" "}
+            <Link to="/embudo" className="font-medium underline underline-offset-2">{t("calendar.global.empty_link")}</Link>
+          </p>
+        ),
+      }
+    : undefined;
 
   const rows = useMemo(
     () => (tasksQ.data ? sortTasks(filterTasks(tasksQ.data, search, ctx), search, ctx) : []),
@@ -103,7 +135,7 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
     <div className="mx-auto flex h-full max-w-7xl flex-col px-6 py-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t(isOwner ? "owner.for_role" : isSm ? "sm.for_role" : "tasks.for_role")}</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t(isOwner ? "owner.for_role" : isSm ? "sm.for_role" : isGlobal ? "global.for_role" : "tasks.for_role")}</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight">{t(view === "calendar" ? "tasks.calendar_heading" : isOwner ? "owner.tasks_heading" : isSm ? "sm.tasks_heading" : "tasks.heading")}</h1>
         </div>
         <div role="tablist" aria-label={t("tasks.views.label")} className="flex max-w-full overflow-x-auto rounded-md border border-border bg-surface p-0.5">
@@ -130,7 +162,20 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
 
       {(
         <>
-          {/* Filters */}
+          {/* Filters; on SM Global's calendar the row holds its two actions instead (no task to filter there). */}
+          {globalCalendar ? (
+            <>
+              <div className="mt-6 flex flex-wrap items-center gap-2">
+                <GlobalCalendarActions leads={globalSource.leads} />
+              </div>
+              {!globalSource.connected && (
+                <p role="note" className={cn(noteCls, "mb-0 mt-3")}>
+                  {t("calendar.global.not_connected")}{" "}
+                  <Link to="/perfil" hash="google-calendar" className="font-medium underline underline-offset-2">{t("calendar.global.not_connected_link")}</Link>
+                </p>
+              )}
+            </>
+          ) : (
           <div className="mt-6 flex flex-wrap items-center gap-2">
             <label className="relative w-64">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -220,9 +265,10 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
               {t("tasks.filters.group_by_business")}
             </label>}
           </div>
+          )}
 
           {/* Totals */}
-          {tasksQ.data && (
+          {tasksQ.data && !globalCalendar && (
             <p className="mt-4 text-sm text-muted-foreground">
               <span className="font-display font-semibold tabular-nums text-foreground">
                 {t("tasks.count", { count: rows.length })}
@@ -283,6 +329,7 @@ export function MyTasksPage({ search }: { search: TasksSearch }) {
                 }}
                 focusMeetingId={search.meeting}
                 onFocusMeeting={(id) => void setSearch({ meeting: id ?? undefined })}
+                meetingsOnly={meetingsOnly}
               />
             ) : tasksQ.data?.length === 0 ? (
               <EmptyState inline title={t("tasks.empty_title")} body={t("tasks.empty_body")} />
