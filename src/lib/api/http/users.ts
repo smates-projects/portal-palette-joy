@@ -57,6 +57,8 @@ export function createHttpUsersRepository(client: HttpClient): UsersRepository {
      */
     simulateAcceptance: (userId) => client.post<User>(`${userPath(userId)}/resend-invitation`),
 
+    resendInvitation: (userId) => client.post<User>(`${userPath(userId)}/resend-invitation`),
+
     deactivate: (userId, reason) => client.post<User>(`${userPath(userId)}/deactivate`, { reason }),
 
     reactivate: (userId) => client.post<User>(`${userPath(userId)}/reactivate`),

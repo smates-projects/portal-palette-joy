@@ -60,6 +60,12 @@ describe("http users", () => {
     });
   });
 
+  it("resendInvitation: POST /users/{id}/resend-invitation, the person stays invited", async () => {
+    const { calls } = stubFetch(dataResponse(userFixture({ status: "invited" })));
+    expect((await setup().users.resendInvitation(IDS.lucia)).status).toBe("invited");
+    expect(calls[0]).toMatchObject({ method: "POST", path: `/users/${IDS.lucia}/resend-invitation` });
+  });
+
   it("deactivate: POST /users/{id}/deactivate with the reason", async () => {
     const { calls } = stubFetch(
       dataResponse(userFixture({ status: "inactive", deactivation_reason: "Dejó la firma" })),

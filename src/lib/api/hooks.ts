@@ -510,7 +510,11 @@ export const useAccountEvents = (userId?: string) =>
 export const useInviteUser = () => useNetworkMutation((input: InviteUserInput) => api.users.invite(input), ACCOUNT_ROOTS);
 /** Demo: the invited person accepts and becomes active. */
 export const useSimulateAcceptance = () => useNetworkMutation((userId: string) => api.users.simulateAcceptance(userId), ACCOUNT_ROOTS);
-export const useDeactivateUser = () => useNetworkMutation((v: { userId: string; reason: string }) => api.users.deactivate(v.userId, v.reason), ACCOUNT_ROOTS);
+/** POST /users/{id}/resend-invitation: the person stays invited, with a fresh invitation date. */
+export const useResendInvitation = () => useNetworkMutation((userId: string) => api.users.resendInvitation(userId), ACCOUNT_ROOTS);
+/** SM Global: the framework agreement of an older Bishop that has none (idempotent). */
+export const useCreateFrameworkAgreement = () => useNetworkMutation((userId: string) => api.users.createFrameworkAgreement(userId), ["documents", ...ACCOUNT_ROOTS]);
+export const useDeactivateUser =() => useNetworkMutation((v: { userId: string; reason: string }) => api.users.deactivate(v.userId, v.reason), ACCOUNT_ROOTS);
 export const useReactivateUser = () => useNetworkMutation((userId: string) => api.users.reactivate(userId), ACCOUNT_ROOTS);
 export const useSetUserAdmin = () => useNetworkMutation((v: { userId: string; isAdmin: boolean }) => api.users.setAdmin(v.userId, v.isAdmin), ACCOUNT_ROOTS);
 /** FirmEvent[] of one firm (or every firm in scope), newest first. */

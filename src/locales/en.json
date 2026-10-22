@@ -2207,16 +2207,71 @@
         "error_upload": "We could not upload the file. Check your connection and try again."
       }
     },
-    "agreements": {
-      "question": "Which framework agreements are still to sign?",
-      "hint": "Each Bishop's framework agreement is created with the invitation. Sign here as Strategic Mates so businesses can be presented to them.",
-      "empty_title": "No framework agreements yet",
-      "empty_body": "They appear when you invite a Bishop from People.",
-      "sent_on": "Created on {{date}}",
-      "bishop_part": "{{name}} (Bishop)",
+    "bishops": {
+      "question": "What is going on with the Bishops?",
+      "hint": "Every Bishop signs a framework agreement with Strategic Mates on joining. Until {{ceo}} signs it, they see no opportunities.",
       "corporate": "Strategic Mates Corporate",
-      "state_signed": "Signed by both parties",
-      "state_pending": "Waiting for {{parties}}"
+      "count_awaiting_sm": "Waiting for your signature",
+      "count_invited": "Invited, not accepted",
+      "count_active": "Active",
+      "count_investing": "Investing",
+      "filter_hint": "Tap a number to see only those Bishops.",
+      "filter_clear": "See all Bishops",
+      "search_label": "Search a Bishop by name",
+      "search_placeholder": "Search by name",
+      "col_bishop": "Bishop",
+      "col_state": "Status",
+      "col_date": "Date",
+      "col_action": "What to do",
+      "state": {
+        "awaiting_sm": "Needs your signature",
+        "invited": "Invited",
+        "awaiting_bishop": "Needs their signature",
+        "no_agreement": "No framework agreement",
+        "active": "Active",
+        "investing": "Investing"
+      },
+      "date": {
+        "invited": "Invited on {{date}}",
+        "awaiting_sm": "Waiting since {{date}}",
+        "awaiting_bishop": "Sent on {{date}}",
+        "no_agreement": "Active since {{date}}",
+        "active": "Active since {{date}}",
+        "investing": "Investing since {{date}}"
+      },
+      "bishop_signed": "The Bishop already signed",
+      "bishop_not_signed": "The Bishop has not signed either",
+      "action": {
+        "resend": "Resend invitation",
+        "sign": "Sign framework agreement",
+        "create": "Create framework agreement",
+        "view": "View"
+      },
+      "t_resent": "We sent the invitation to {{name}} again.",
+      "t_created": "We created the framework agreement of {{name}}.",
+      "empty_title": "No Bishops yet",
+      "empty_body": "Invite a Bishop from People and they will show up here with their status.",
+      "empty_filtered_title": "No Bishop matches",
+      "empty_filtered_body": "Check the name or see all Bishops.",
+      "back": "Back to Bishops",
+      "not_found": "We could not find this Bishop. They may no longer be active.",
+      "contact_title": "Contact",
+      "email": "Email",
+      "agreement_title": "Framework agreement",
+      "agreement_none": "This Bishop has no framework agreement. Create it so they can sign it.",
+      "signer_signed": "{{name}} signed on {{date}}",
+      "signer_pending": "{{name}} has not signed yet",
+      "opportunities_title": "Opportunities taken",
+      "opportunities_empty": "No opportunity taken yet.",
+      "taken_on": "Taken on {{date}}",
+      "funds": {
+        "pending": "Funds pending",
+        "partial": "Funds partly received",
+        "received": "Funds received"
+      },
+      "funds_none": "No funds yet",
+      "view_business": "View business",
+      "no_business": "The business has not started the program yet"
     },
     "funnel": {
       "question": "How many businesses enter the network?",

@@ -125,7 +125,7 @@ export function createAccounts(ctx: AccountsContext) {
     }
   };
 
-  const users: Pick<UsersRepository, "list" | "invite" | "simulateAcceptance" | "deactivate" | "reactivate" | "setAdmin" | "listAccountEvents"> = {
+  const users: Pick<UsersRepository, "list" | "invite" | "simulateAcceptance" | "resendInvitation" | "deactivate" | "reactivate" | "setAdmin" | "listAccountEvents"> = {
     list: async (opts) => delay(visibleUsers().filter((x) => opts?.include_inactive || isActiveUser(x))),
     invite: async (input) => {
       const actor = me();
@@ -145,6 +145,15 @@ export function createAccounts(ctx: AccountsContext) {
       logAccount(target.id, "accepted", null, null);
       const m = memberOf(target.id);
       if (m) m.state = "active";
+      return delay({ ...target });
+    },
+    resendInvitation: async (userId) => {
+      const target = findUser(userId);
+      const p = canManage(me(), target, account);
+      if (!p.ok) throw new Error("forbidden");
+      if (target.status !== "invited") throw new Error("not_invited");
+      // The mail is simulated; the new date is what the screens show ("Invitado el").
+      target.invited_at = nowIso();
       return delay({ ...target });
     },
     deactivate: async (userId, reason) => {

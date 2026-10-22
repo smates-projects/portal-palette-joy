@@ -1,5 +1,5 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
-import { GlobalAgreementsPage } from "@/components/global/agreements/GlobalAgreementsPage";
+import { BishopsPage } from "@/components/global/bishops/BishopsPage";
 import { useCurrentUser } from "@/lib/api/hooks";
 import { tStatic } from "@/lib/i18n";
 
@@ -18,6 +18,6 @@ export const Route = createFileRoute("/bishops/")({
     const role = useCurrentUser().data?.role;
     // Only SM Global manages the Bishops: they talk to headquarters, never to an office.
     if (role && role !== "sm_global") return <Navigate to="/" />;
-    return <GlobalAgreementsPage />;
+    return <BishopsPage />;
   },
 });

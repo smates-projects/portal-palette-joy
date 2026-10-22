@@ -2207,16 +2207,71 @@
         "error_upload": "No pudimos subir el archivo. Revisa tu conexión e intenta de nuevo."
       }
     },
-    "agreements": {
-      "question": "¿Qué acuerdos marco faltan firmar?",
-      "hint": "El acuerdo marco de cada Bishop se crea al invitarlo. Firma aquí como Strategic Mates para que se le puedan presentar negocios.",
-      "empty_title": "Todavía no hay acuerdos marco",
-      "empty_body": "Aparecen cuando invitas a un Bishop desde Personas.",
-      "sent_on": "Creado el {{date}}",
-      "bishop_part": "{{name}} (Bishop)",
+    "bishops": {
+      "question": "¿Qué pasa con los Bishops?",
+      "hint": "Cada Bishop firma un acuerdo marco con Strategic Mates al entrar. Hasta que {{ceo}} lo firma, no ve oportunidades.",
       "corporate": "Strategic Mates Corporate",
-      "state_signed": "Firmado por ambas partes",
-      "state_pending": "Falta {{parties}}"
+      "count_awaiting_sm": "Esperan tu firma",
+      "count_invited": "Invitados sin aceptar",
+      "count_active": "Activos",
+      "count_investing": "Invirtiendo",
+      "filter_hint": "Toca un número para ver solo esos Bishops.",
+      "filter_clear": "Ver todos los Bishops",
+      "search_label": "Buscar Bishop por nombre",
+      "search_placeholder": "Buscar por nombre",
+      "col_bishop": "Bishop",
+      "col_state": "Estado",
+      "col_date": "Fecha",
+      "col_action": "Qué hacer",
+      "state": {
+        "awaiting_sm": "Falta tu firma",
+        "invited": "Invitado",
+        "awaiting_bishop": "Falta su firma",
+        "no_agreement": "Sin acuerdo marco",
+        "active": "Activo",
+        "investing": "Invirtiendo"
+      },
+      "date": {
+        "invited": "Invitado el {{date}}",
+        "awaiting_sm": "Esperando desde el {{date}}",
+        "awaiting_bishop": "Enviado el {{date}}",
+        "no_agreement": "Activo desde el {{date}}",
+        "active": "Activo desde el {{date}}",
+        "investing": "Invierte desde el {{date}}"
+      },
+      "bishop_signed": "El Bishop ya firmó",
+      "bishop_not_signed": "El Bishop tampoco firmó todavía",
+      "action": {
+        "resend": "Reenviar invitación",
+        "sign": "Firmar acuerdo marco",
+        "create": "Crear acuerdo marco",
+        "view": "Ver"
+      },
+      "t_resent": "Reenviamos la invitación a {{name}}.",
+      "t_created": "Creamos el acuerdo marco de {{name}}.",
+      "empty_title": "Todavía no hay Bishops",
+      "empty_body": "Invita a un Bishop desde Personas y aparecerá aquí con su estado.",
+      "empty_filtered_title": "Ningún Bishop coincide",
+      "empty_filtered_body": "Revisa el nombre o mira todos los Bishops.",
+      "back": "Volver a Bishops",
+      "not_found": "No encontramos a este Bishop. Puede que ya no esté activo.",
+      "contact_title": "Contacto",
+      "email": "Correo",
+      "agreement_title": "Acuerdo marco",
+      "agreement_none": "Este Bishop no tiene acuerdo marco. Créalo para que pueda firmarlo.",
+      "signer_signed": "{{name}} firmó el {{date}}",
+      "signer_pending": "{{name}} todavía no firma",
+      "opportunities_title": "Oportunidades que tomó",
+      "opportunities_empty": "Todavía no tomó ninguna oportunidad.",
+      "taken_on": "La tomó el {{date}}",
+      "funds": {
+        "pending": "Fondos pendientes",
+        "partial": "Fondos parciales",
+        "received": "Fondos recibidos"
+      },
+      "funds_none": "Sin fondos todavía",
+      "view_business": "Ver negocio",
+      "no_business": "El negocio todavía no empezó el programa"
     },
     "funnel": {
       "question": "¿Cuántos negocios entran a la red?",

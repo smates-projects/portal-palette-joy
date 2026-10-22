@@ -268,6 +268,11 @@ export interface UsersRepository {
   invite(input: InviteUserInput): Promise<User>;
   /** Demo only: the person accepts the invitation and becomes active. Anyone who manages the account may trigger it. */
   simulateAcceptance(userId: Uuid): Promise<User>;
+  /**
+   * POST /users/{id}/resend-invitation: the invitation mail goes out again; the person stays "invited" (invited_at
+   * moves to now). "not_invited" once the person accepted.
+   */
+  resendInvitation(userId: Uuid): Promise<User>;
   /** Deactivates with a required reason. Nobody is deleted; the history keeps it. Never yourself. */
   deactivate(userId: Uuid, reason: string): Promise<User>;
   reactivate(userId: Uuid): Promise<User>;
