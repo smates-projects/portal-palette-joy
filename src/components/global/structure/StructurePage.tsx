@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, ChevronRight, Search } from "lucide-react";
-import { useStructure } from "@/lib/api/hooks";
+import { useProgramDays, useStructure } from "@/lib/api/hooks";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { buildDiagramTree, buildStructureView, collapsibleIds, diagramSearch, expandableIds, filterTree, type DiagramNode, type TreeNode } from "../logic";
@@ -31,7 +31,8 @@ export function StructurePage({ search }: { search: StructureSearch }) {
   const [businessId, setBusinessId] = useState<string | null>(null);
   const mode: "list" | "diagram" = search.view === "diagram" ? "diagram" : "list";
 
-  const view: TreeNode | null = structureQ.data ? buildStructureView(structureQ.data, (key, options) => String(t(key, options ?? {}))) : null;
+  const programDays = useProgramDays();
+  const view: TreeNode | null = structureQ.data ? buildStructureView(structureQ.data, (key, options) => String(t(key, options ?? {})), programDays) : null;
   const diagram: DiagramNode | null = structureQ.data ? buildDiagramTree(structureQ.data, (key, options) => String(t(key, options ?? {}))) : null;
 
   const header = <GlobalHeader question={t("global.structure.question")} />;

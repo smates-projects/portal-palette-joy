@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { Mail } from "lucide-react";
 import { Trans, useTranslation } from "react-i18next";
 import { buttonVariants } from "@/components/ui/button";
+import { useLinkLifetimes } from "@/lib/api/hooks";
 import { cn } from "@/lib/utils";
 import { AuthHeading, AuthLayout } from "./AuthLayout";
 
@@ -12,6 +13,8 @@ import { AuthHeading, AuthLayout } from "./AuthLayout";
 export function MagicLinkSentPage() {
   const { t } = useTranslation();
   const email = useRouterState({ select: (s) => s.location.state.authEmail });
+  // How long the link lasts, as the API says (GET /auth/link-lifetimes); the line waits for it.
+  const ttl = useLinkLifetimes().data;
   return (
     <AuthLayout>
       <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-[4px] border border-border text-primary">
@@ -30,7 +33,7 @@ export function MagicLinkSentPage() {
             t("auth.sent.body_no_email")
           )}
         </p>
-        <p className="text-muted-foreground">{t("auth.sent.rules")}</p>
+        {ttl && <p className="text-muted-foreground">{t("auth.sent.rules", { minutes: ttl.magic_link_minutes })}</p>}
         <p className="text-muted-foreground">{t("auth.sent.spam")}</p>
       </div>
       <div className="mt-6 flex flex-col gap-3 border-t border-border pt-5 sm:flex-row">

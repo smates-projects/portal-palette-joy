@@ -2,7 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { todayIso } from "@/lib/clock";
-import { useBusinesses, useTasks, useUsers } from "@/lib/api/hooks";
+import { useBusinesses, useProgramDays, useTasks, useUsers } from "@/lib/api/hooks";
 import { firstName, formatDate } from "@/lib/format";
 import { buildClientSummary, type StuckLine } from "@/lib/tasks/clients";
 import { daysBetween } from "@/lib/tasks/table";
@@ -17,6 +17,7 @@ export function ClientsPage() {
   const tasksQ = useTasks();
   const bizQ = useBusinesses();
   const usersQ = useUsers();
+  const programDays = useProgramDays();
   const loading = tasksQ.isLoading || bizQ.isLoading;
   const tasks = tasksQ.data ?? [];
 
@@ -58,6 +59,7 @@ export function ClientsPage() {
           {bizQ.data!.map((b) => {
             const s = buildClientSummary(b.id, tasks);
             const owner = firstName(usersQ.data?.find((u) => u.id === b.owner_user_id)?.full_name ?? "");
+            const length = b.program_length_days ?? programDays;
             return (
               <Link
                 key={b.id}
@@ -74,11 +76,11 @@ export function ClientsPage() {
                       </p>
                     </div>
                     <span className="shrink-0 font-display text-xs tabular-nums text-muted-foreground">
-                      {t("home.progress_day", { day: b.program_day })}
+                      {t("home.progress_day", { day: b.program_day, total: length })}
                     </span>
                   </div>
                   <div className="mt-3 h-1 overflow-hidden rounded-[2px] bg-muted">
-                    <span className="block h-full bg-gold" style={{ width: `${(b.program_day / 180) * 100}%` }} />
+                    {typeof length === "number" && <span className="block h-full bg-gold" style={{ width: `${Math.min(100, (b.program_day / length) * 100)}%` }} />}
                   </div>
                 </div>
 

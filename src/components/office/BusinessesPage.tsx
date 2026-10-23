@@ -3,7 +3,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 import { toast } from "sonner";
-import { useBusinesses, useCurrentUser, useFranchisabilityMany, useOrganizations, useSetBusinessConsultant, useTasks, useTransferBusiness, useUsers, useVersions } from "@/lib/api/hooks";
+import { useBusinesses, useCurrentUser, useFranchisabilityMany, useOrganizations, useRules, useSetBusinessConsultant, useTasks, useTransferBusiness, useUsers, useVersions } from "@/lib/api/hooks";
 import { TransferDialog, canFollowOffice, canTransfer } from "@/components/pipeline/TransferDialog";
 import { buildBusinessRows, filterBusinessRows, type BusinessRow, type BusinessesSearch } from "@/lib/tasks/office";
 import type { Health } from "@/lib/tasks/owner";
@@ -29,7 +29,9 @@ export function BusinessesPage({ search }: { search: BusinessesSearch }) {
   const usersQ = useUsers();
   const orgsQ = useOrganizations();
   const versionsQ = useVersions();
-  const franchiseQ = useFranchisabilityMany((bizQ.data ?? []).map((b) => b.id));
+  const rules = useRules().data;
+  // GET /businesses sends each business's franchisability inline: only the demo (field absent) reads it apart.
+  const franchiseQ = useFranchisabilityMany((bizQ.data ?? []).filter((b) => b.franchisability === undefined).map((b) => b.id));
 
   const set = (patch: Partial<BusinessesSearch>) =>
     void navigate({ to: "/negocios", search: (prev: BusinessesSearch) => ({ ...prev, ...patch }), replace: true });
@@ -58,7 +60,7 @@ export function BusinessesPage({ search }: { search: BusinessesSearch }) {
     );
 
   const tasks = tasksQ.data ?? [];
-  const rows = buildBusinessRows(bizQ.data ?? [], tasks, versionsQ.data ?? [], usersQ.data ?? [], franchiseQ.data);
+  const rows = buildBusinessRows(bizQ.data ?? [], tasks, versionsQ.data ?? [], usersQ.data ?? [], franchiseQ.data, undefined, rules ?? {});
   const visible = filterBusinessRows(rows, search);
   const consultants = [...new Map(rows.flatMap((r) => (r.consultant ? [[r.consultant.id, r.consultant] as const] : []))).values()];
   // The filter keeps the industry key; the option shows its readable name.
@@ -149,7 +151,7 @@ export function BusinessesPage({ search }: { search: BusinessesSearch }) {
                       className={cn("cursor-pointer hover:bg-muted/60 focus-visible:bg-accent/40 focus-visible:outline-none", search.biz === r.business.id && "bg-accent/60")}
                     >
                       <td className="px-4 py-3"><BusinessCell row={r} /></td>
-                      <td className="px-3 py-3"><ProgramBar day={r.business.program_day} /></td>
+                      <td className="px-3 py-3"><ProgramBar day={r.business.program_day} length={r.business.program_length_days ?? rules?.program_length_days} /></td>
                       <td className="px-3 py-3">
                         <span className="font-display font-semibold tabular-nums">{r.accepted_pct}%</span>
                         <span className="block text-xs text-muted-foreground">{t("office.biz.approved_of", { accepted: r.accepted, total: r.total })}</span>
@@ -190,24 +192,28 @@ function BusinessCell({ row }: { row: BusinessRow }) {
   );
 }
 
-function ProgramBar({ day }: { day: number }) {
+/** Day of the program over its length (the business's program_length_days, else the rules'). */
+function ProgramBar({ day, length }: { day: number; length: number | undefined }) {
   const { t } = useTranslation();
   return (
     <div className="w-32">
-      <span className="text-xs tabular-nums">{t("sm.program_day", { day })}</span>
-      <div className="mt-1 h-1.5 rounded-[2px] border border-border bg-muted" role="progressbar" aria-valuemin={0} aria-valuemax={180} aria-valuenow={day}>
-        <div className="h-full bg-gold" style={{ width: `${Math.min(100, (day / 180) * 100)}%` }} />
-      </div>
+      <span className="text-xs tabular-nums">{t("sm.program_day", { day, total: length ?? "…" })}</span>
+      {length && (
+        <div className="mt-1 h-1.5 rounded-[2px] border border-border bg-muted" role="progressbar" aria-valuemin={0} aria-valuemax={length} aria-valuenow={day}>
+          <div className="h-full bg-gold" style={{ width: `${Math.min(100, (day / length) * 100)}%` }} />
+        </div>
+      )}
     </div>
   );
 }
 
 function FranchiseCell({ row }: { row: BusinessRow }) {
   const { t } = useTranslation();
+  const tolerance = useRules().data?.franchisability_amber_tolerance;
   const f = row.franchise;
   if (!f || !row.franchise_health || row.franchise_expected === null) return <span className="text-xs text-muted-foreground">{t("app.no_data")}</span>;
   return (
-    <div title={t(`office.biz.franchise_health.${row.franchise_health}`)}>
+    <div title={t(`office.biz.franchise_health.${row.franchise_health}`, { points: tolerance ?? "…" })}>
       <span className="flex flex-wrap items-center gap-1.5">
         <span className={cn("h-2 w-2 rounded-full", DOT[row.franchise_health])} />
         <span className="font-display font-semibold tabular-nums">{t("office.biz.franchise_value", { pct: f.franchisability_pct, expected: row.franchise_expected })}</span>

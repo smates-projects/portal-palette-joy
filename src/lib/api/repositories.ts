@@ -126,6 +126,8 @@ import type { RecoveryCodes, SignInResult, TwoFactorSetup, TwoFactorVerifyInput 
 export interface SessionRepository {
   /** Rejects with "unauthenticated" when nobody is signed in. */
   getCurrentUser(): Promise<User>;
+  /** GET /auth/link-lifetimes (public): how long the magic link, invitation, reset and entry links last. */
+  getLinkLifetimes(): Promise<AuthLinkLifetimes>;
   getViewAsOptions(): Promise<ViewAsOption[]>;
   setViewAs(userId: Uuid): Promise<User>;
   /** Synchronous read for the route guard: is there a session right now? */

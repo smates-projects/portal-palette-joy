@@ -172,7 +172,7 @@ export interface PlatformRules {
   franchisability_amber_tolerance: number;
   /** Days SM has to review the entry documents, counted from the full upload. */
   document_review_days: number;
-  /** Entry documents every owner uploads (to validate with Melany). */
+  /** Entry documents every owner uploads. */
   intake_documents: IntakeDocRule[];
   /**
    * USD the Bishop pays SM for one program (paid outside the app). Money is visible only to SM and Bishops:

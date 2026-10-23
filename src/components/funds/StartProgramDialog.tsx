@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatDate } from "@/lib/format";
+import { useProgramDays } from "@/lib/api/hooks";
 import { programDayOn, validDay1 } from "@/lib/leads/funds";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PrimaryButton, SecondaryButton } from "@/components/tasks/detail/dialogs";
@@ -16,6 +17,7 @@ export function StartProgramDialog(props: { name: string; proposed: string; pend
   const [day1, setDay1] = useState(props.proposed);
   const valid = validDay1(day1, props.proposed);
   const day = valid ? programDayOn(day1) : 0;
+  const programDays = useProgramDays();
   return (
     <Dialog open onOpenChange={(o) => !o && props.onClose()}>
       <DialogContent className="bg-surface sm:max-w-md">
@@ -29,7 +31,7 @@ export function StartProgramDialog(props: { name: string; proposed: string; pend
         </label>
         <p className="text-xs text-muted-foreground">{t("funds.start.proposed", { date: formatDate(props.proposed, lng) })}</p>
         {!valid && <p className="text-xs text-status-danger-fg">{t("funds.start.too_early", { date: formatDate(props.proposed, lng) })}</p>}
-        {valid && <p className="text-sm">{day > 0 ? t("funds.start.today_day", { day }) : t("funds.start.future", { date: formatDate(day1, lng) })}</p>}
+        {valid && <p className="text-sm">{day > 0 ? t("funds.start.today_day", { day, total: programDays }) : t("funds.start.future", { date: formatDate(day1, lng) })}</p>}
         <p className="text-xs text-muted-foreground">{t("funds.start.what_happens")}</p>
         <DialogFooter>
           <SecondaryButton onClick={props.onClose}>{t("funds.cancel")}</SecondaryButton>

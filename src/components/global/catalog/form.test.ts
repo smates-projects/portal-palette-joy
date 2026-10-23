@@ -16,9 +16,10 @@ describe("validateForm", () => {
     expect(validateForm(form)).toEqual({});
     expect(validateForm({ ...form, start_day: "1", due_day: "180" })).toEqual({});
   });
-  it("rejects days outside 1 to 180 or with decimals", () => {
+  it("rejects days outside 1 to the rules' program length or with decimals", () => {
     expect(validateForm({ ...formFromItem(item), start_day: "0" }).start_day).toBe("invalid_day");
-    expect(validateForm({ ...formFromItem(item), due_day: "181" }).due_day).toBe("invalid_day");
+    expect(validateForm({ ...formFromItem(item), due_day: "181" }, 180).due_day).toBe("invalid_day");
+    expect(validateForm({ ...formFromItem(item), due_day: "181" }, 200).due_day).toBeUndefined();
     expect(validateForm({ ...formFromItem(item), due_day: "12.5" }).due_day).toBe("invalid_day");
   });
   it("rejects a due day before the start day", () => {

@@ -173,7 +173,7 @@ export interface SessionContext {
   setUserId: (id: Uuid) => void;
 }
 
-type AuthMethods = Omit<SessionRepository, "getCurrentUser" | "getViewAsOptions" | "setViewAs">;
+type AuthMethods = Omit<SessionRepository, "getCurrentUser" | "getLinkLifetimes" | "getViewAsOptions" | "setViewAs">;
 
 const sameEmail = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 

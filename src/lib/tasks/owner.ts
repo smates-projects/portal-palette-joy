@@ -1,5 +1,5 @@
 import { todayIso } from "@/lib/clock";
-import type { AreaCode, Meeting, OwnerRequest, TaskVersion, TaskWithComputed } from "@/lib/api/types";
+import type { AreaCode, Meeting, OwnerRequest, ProgramTimeline, TaskVersion, TaskWithComputed } from "@/lib/api/types";
 import { DEFAULT_AREA_AMBER_DAYS } from "@/lib/api/franchisability";
 import { daysBetween } from "./table";
 
@@ -71,8 +71,12 @@ export function buildAreaProgress(tasks: TaskWithComputed[], versions: TaskVersi
   });
 }
 
-/** Opening gate days 1-15, closing gate days 150-180. */
-export function gateState(programDay: number, gate: "diagnosis" | "closing"): "done" | "current" | "upcoming" {
-  const [from, to] = gate === "diagnosis" ? [1, 15] : [150, 180];
+/** The diagnosis and closing spans of the program (rules.program); the demo's own when absent. */
+export type GateSpans = Pick<ProgramTimeline, "diagnosis" | "closing">;
+const DEMO_GATES: GateSpans = { diagnosis: { start_day: 1, end_day: 15 }, closing: { start_day: 150, end_day: 180 } };
+
+/** Where the program day stands against the opening gate (diagnosis) or the closing gate, from the rules' spans. */
+export function gateState(programDay: number, gate: "diagnosis" | "closing", spans: GateSpans = DEMO_GATES): "done" | "current" | "upcoming" {
+  const { start_day: from, end_day: to } = spans[gate];
   return programDay > to ? "done" : programDay >= from ? "current" : "upcoming";
 }

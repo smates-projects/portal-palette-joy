@@ -256,10 +256,14 @@ export function OfficeDetailPage({ officeId }: { officeId: string }) {
                     >
                       <td className="px-4 py-2.5 font-medium">{b.name}</td>
                       <td className="whitespace-nowrap px-4 py-2.5 text-muted-foreground">
-                        {program ? t("global.structure.day", { day: b.program_day }) : t("global.structure.franchises_count", { count: b.franchises })}
+                        {program ? t("global.structure.day", { day: b.program_day, total: rulesQ.data?.program_length_days ?? "…" }) : t("global.structure.franchises_count", { count: b.franchises })}
                       </td>
                       <td className="whitespace-nowrap px-4 py-2.5 font-display tabular-nums">
-                        {program ? t("global.structure.franchisability", { pct: b.franchisability_pct, expected: expectedFranchisePct(b.program_day, goal) }) : t("global.office.franchisor")}
+                        {/* The expected % is the API's (expected_pct); with no goal there is nothing to expect, never "esperado 0 %". */}
+                        {!program ? t("global.office.franchisor")
+                          : b.expected_pct != null ? t("global.structure.franchisability", { pct: b.franchisability_pct, expected: b.expected_pct })
+                          : goal ? t("global.structure.franchisability", { pct: b.franchisability_pct, expected: expectedFranchisePct(b.program_day, goal, rulesQ.data?.program_length_days) })
+                          : `${b.franchisability_pct}%`}
                       </td>
                       <td className="px-4 py-2.5">{program ? <HealthBadge health={b.health} /> : null}</td>
                     </tr>

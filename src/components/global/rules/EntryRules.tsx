@@ -154,6 +154,7 @@ export function AssessmentMapEditor({ rules }: { rules: PlatformRules }) {
   const { t } = useTranslation();
   const update = useUpdateRules();
   const saved = rules.assessment_area_map ?? DEFAULT_ASSESSMENT_AREA_MAP;
+  const programDays = rules.program_length_days ?? "…";
   const [map, setMap] = useState<AssessmentAreaMap>(saved);
   const dirty = JSON.stringify(map) !== JSON.stringify(saved);
   const toggle = (block: keyof AssessmentAreaMap, area: AreaCode) =>
@@ -166,7 +167,7 @@ export function AssessmentMapEditor({ rules }: { rules: PlatformRules }) {
       onError: () => toast.error(t("global.t_error")),
     });
   return (
-    <Box title={t("entry.rules.map_title")} hint={t("entry.rules.map_hint")}>
+    <Box title={t("entry.rules.map_title")} hint={t("entry.rules.map_hint", { days: programDays })}>
       <div className="overflow-x-auto rounded-md border border-border">
         <table className="w-full text-sm">
           <thead className="border-b border-border bg-muted text-xs text-muted-foreground">
@@ -207,7 +208,9 @@ export function EntryFlowRules({ rules }: { rules: PlatformRules }) {
   const saved = entryRules(rules);
   const [form, setForm] = useState({ ...saved, oa_waiting_days: String(saved.oa_waiting_days) });
   const days = Number(form.oa_waiting_days);
-  const daysOk = form.oa_waiting_days.trim() !== "" && Number.isInteger(days) && days >= 0 && days <= 60;
+  // The upper end is the API's read-only limit (limits.oa_waiting_days_max).
+  const maxDays = rules.limits?.oa_waiting_days_max;
+  const daysOk = form.oa_waiting_days.trim() !== "" && Number.isInteger(days) && days >= 0 && (maxDays === undefined || days <= maxDays);
   const patch: Partial<PlatformRules> = {};
   if (form.opportunity_visibility !== saved.opportunity_visibility) patch.opportunity_visibility = form.opportunity_visibility;
   if (daysOk && days !== saved.oa_waiting_days) patch.oa_waiting_days = days;
@@ -243,7 +246,7 @@ export function EntryFlowRules({ rules }: { rules: PlatformRules }) {
         <input inputMode="numeric" value={form.oa_waiting_days} onChange={(e) => setForm((f) => ({ ...f, oa_waiting_days: e.target.value }))}
           className={cn(inputCls, "w-24", !daysOk && "border-status-danger-fg")} aria-invalid={!daysOk} />
         <span className="block text-xs text-muted-foreground">{t("entry.rules.flow.waiting_days_hint")}</span>
-        {!daysOk && <span className="block text-xs text-status-danger-fg">{t("entry.rules.flow.waiting_days_error")}</span>}
+        {!daysOk && <span className="block text-xs text-status-danger-fg">{t("entry.rules.flow.waiting_days_error", { max: maxDays ?? "…" })}</span>}
       </label>
       {(["require_expansion_meeting", "nda_auto_signed_by_sm"] as const).map((k) => (
         <label key={k} className="mt-3 flex cursor-pointer items-start gap-3 text-sm">
@@ -262,20 +265,25 @@ export function EntryFlowRules({ rules }: { rules: PlatformRules }) {
 }
 
 /**
- * SM Global: who can enter the program. The declared annual revenue of the assessment ("Facturación anual mínima
- * declarada", USD 250,000 by default). The year of operation stays a hard rule of the assessment itself.
+ * SM Global: who can enter the program. The three fields of the rule travel together (the API requires them): the
+ * least years operating, whether the owner must be Hispanic, and the declared annual revenue of the assessment.
  */
 export function EligibilityRulesSection({ rules }: { rules: PlatformRules }) {
   const { t, i18n } = useTranslation();
   const update = useUpdateRules();
   const saved = eligibilityRules(rules);
   const [amount, setAmount] = useState(String(saved.min_annual_revenue));
+  const [years, setYears] = useState(String(saved.min_years_operating));
+  const [hispanic, setHispanic] = useState(saved.require_hispanic_owner);
   const parsed = Number(amount.replace(/[,\s]/g, ""));
+  const parsedYears = Number(years);
   const ok = amount.trim() !== "" && Number.isInteger(parsed) && parsed >= 0;
-  const dirty = ok && parsed !== saved.min_annual_revenue;
+  const yearsOk = years.trim() !== "" && Number.isInteger(parsedYears) && parsedYears >= 0 && parsedYears <= 50;
+  const next = { min_years_operating: parsedYears, require_hispanic_owner: hispanic, min_annual_revenue: parsed };
+  const dirty = ok && yearsOk && (parsed !== saved.min_annual_revenue || parsedYears !== saved.min_years_operating || hispanic !== saved.require_hispanic_owner);
   const save = () => {
     if (!dirty) return;
-    update.mutate({ patch: { eligibility: { min_annual_revenue: parsed } } }, {
+    update.mutate({ patch: { eligibility: next } }, {
       onSuccess: () => toast.success(t("entry.rules.eligibility.t_saved", { amount: formatUsd(parsed, i18n.language) }), {
         action: { label: t("global.undo"), onClick: () => update.mutate({ patch: { eligibility: saved } }) },
       }),
@@ -284,11 +292,21 @@ export function EligibilityRulesSection({ rules }: { rules: PlatformRules }) {
   };
   return (
     <Box title={t("entry.rules.eligibility.title")} hint={t("entry.rules.eligibility.hint")}>
-      <p className="text-sm">{t("entry.rules.eligibility.years_fixed")}</p>
+      {rules.defaults?.includes("eligibility") && <p className="text-xs text-muted-foreground">{t("global.rules.default_value")}</p>}
+      <label className="mt-2 block space-y-1 text-sm">
+        <span className="block font-medium">{t("entry.rules.eligibility.min_years")}</span>
+        <input inputMode="numeric" value={years} onChange={(e) => setYears(e.target.value)} aria-label={t("entry.rules.eligibility.min_years")}
+          className={cn(inputCls, "w-24 font-display tabular-nums", !yearsOk && "border-status-danger-fg")} aria-invalid={!yearsOk} />
+        {!yearsOk && <span className="block text-xs text-status-danger-fg">{t("entry.rules.eligibility.min_years_error")}</span>}
+      </label>
+      <label className="mt-3 flex cursor-pointer items-start gap-3 text-sm">
+        <input type="checkbox" className="mt-0.5 h-4 w-4 accent-primary" checked={hispanic} onChange={(e) => setHispanic(e.target.checked)} />
+        <span className="block font-medium">{t("entry.rules.eligibility.hispanic")}</span>
+      </label>
       <label className="mt-3 block space-y-1 text-sm">
         <span className="block font-medium">{t("entry.rules.eligibility.min_revenue")}</span>
         <span className="flex items-center gap-2">
-          <span className="font-display">USD</span>
+          <span className="font-display">{t("global.rules.currency")}</span>
           <input inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value)} aria-label={t("entry.rules.eligibility.min_revenue")}
             className={cn(inputCls, "w-40 font-display tabular-nums", !ok && "border-status-danger-fg")} aria-invalid={!ok} />
         </span>

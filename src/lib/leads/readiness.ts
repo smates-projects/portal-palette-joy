@@ -2,16 +2,23 @@
 // computes it and sends it by webhook; the mock uses these pure rules to simulate an assessment.
 import type { EligibilityGap, EligibilityRules, Lead, LeadBand, LeadResult, PlatformRules } from "@/lib/api/types";
 
-/** What applies while SM Global never set the eligibility rule in Reglas. */
-export const DEFAULT_ELIGIBILITY: EligibilityRules = { min_annual_revenue: 250_000 };
+/** Demo seed of the eligibility rule (the API always sends its own in GET /rules). */
+export const DEFAULT_ELIGIBILITY: Required<EligibilityRules> = { min_annual_revenue: 250_000, min_years_operating: 1, require_hispanic_owner: true };
 
-export const eligibilityRules = (rules: Partial<PlatformRules> | null | undefined): EligibilityRules => ({
+export const eligibilityRules = (rules: Partial<PlatformRules> | null | undefined): Required<EligibilityRules> => ({
   min_annual_revenue: rules?.eligibility?.min_annual_revenue ?? DEFAULT_ELIGIBILITY.min_annual_revenue,
+  min_years_operating: rules?.eligibility?.min_years_operating ?? DEFAULT_ELIGIBILITY.min_years_operating,
+  require_hispanic_owner: rules?.eligibility?.require_hispanic_owner ?? DEFAULT_ELIGIBILITY.require_hispanic_owner,
 });
 
-/** invalid_min_revenue when the amount is not a whole number of dollars at least 0, else null. */
-export const eligibilityError = (rules: Partial<EligibilityRules> | null | undefined): "invalid_min_revenue" | null =>
-  rules?.min_annual_revenue !== undefined && (!Number.isInteger(rules.min_annual_revenue) || rules.min_annual_revenue < 0) ? "invalid_min_revenue" : null;
+/**
+ * invalid_min_revenue when the amount is not a whole number of dollars at least 0; invalid_eligibility when the
+ * years are not a whole number from 0 to 50 (as the API); null otherwise.
+ */
+export const eligibilityError = (rules: Partial<EligibilityRules> | null | undefined): "invalid_min_revenue" | "invalid_eligibility" | null =>
+  rules?.min_annual_revenue !== undefined && (!Number.isInteger(rules.min_annual_revenue) || rules.min_annual_revenue < 0) ? "invalid_min_revenue"
+    : rules?.min_years_operating !== undefined && (!Number.isInteger(rules.min_years_operating) || rules.min_years_operating < 0 || rules.min_years_operating > 50) ? "invalid_eligibility"
+      : null;
 
 /** Minimum shown score of each band for an eligible business (config result_bands: 70 / 55 / 0). */
 export const BAND_MINIMUMS: readonly [LeadBand, number][] = [["high", 70], ["mid", 55], ["low", 0]];

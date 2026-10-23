@@ -1,6 +1,5 @@
 import { useTranslation } from "react-i18next";
 import { useCurrentUser, useOrganizations, useRules } from "@/lib/api/hooks";
-import { DEFAULT_FRANCHISABILITY_RULES } from "@/lib/api/franchisability";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DOT } from "./shared";
@@ -12,9 +11,9 @@ export function SettingsPage() {
   const me = useCurrentUser().data;
   const orgsQ = useOrganizations();
   const office = orgsQ.data?.find((o) => o.kind === "sm" && o.id === me?.organization_id);
-  // Live rules from the platform (SM Global edits them); the defaults only fill in while they load.
-  const live = useRules().data;
-  const rules = live ? { goal: live.franchisability_goal, required_task_codes: live.required_task_codes } : DEFAULT_FRANCHISABILITY_RULES;
+  // Live rules from the platform (SM Global edits them): loading and error states, never front defaults.
+  const rulesQ = useRules();
+  const live = rulesQ.data;
   const Row = ({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) => (
     <div className="grid gap-1 px-4 py-3 sm:grid-cols-[220px_1fr]">
       <dt className="text-sm text-muted-foreground">{label}</dt>
@@ -54,25 +53,34 @@ export function SettingsPage() {
           <h2 className="text-sm font-semibold">{t("office.cfg.rules_title")}</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">{t("office.cfg.rules_note")}</p>
         </div>
+        {rulesQ.isError ? (
+          <div className="p-4 text-sm">
+            <p className="font-medium">{t("tasks.error_title")}</p>
+            <button onClick={() => void rulesQ.refetch()} className="mt-2 text-link hover:underline">{t("tasks.retry")}</button>
+          </div>
+        ) : !live ? (
+          <div className="space-y-3 p-4">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-6 w-full" />)}</div>
+        ) : (
         <dl className="divide-y divide-border">
           <Row label={t("office.cfg.goal")} hint={t("office.cfg.goal_hint")}>
-            <span className="font-display text-lg font-semibold tabular-nums">{rules.goal}%</span>
+            <span className="font-display text-lg font-semibold tabular-nums">{live.franchisability_goal}%</span>
           </Row>
           <Row label={t("office.cfg.required")} hint={t("office.cfg.required_hint")}>
-            {rules.required_task_codes.length ? (
+            {live.required_task_codes.length ? (
               <span className="flex flex-wrap gap-1.5">
-                {rules.required_task_codes.map((c) => <span key={c} className="rounded-[4px] border border-border px-1.5 py-0.5 font-display text-xs font-semibold tabular-nums">{c}</span>)}
+                {live.required_task_codes.map((c) => <span key={c} className="rounded-[4px] border border-border px-1.5 py-0.5 font-display text-xs font-semibold tabular-nums">{c}</span>)}
               </span>
             ) : t("office.cfg.required_empty")}
           </Row>
           <Row label={t("office.cfg.health_rule")} hint={t("office.cfg.health_hint")}>
             <ul className="space-y-1">
               {(["red", "amber", "green", "grey"] as const).map((h) => (
-                <li key={h} className="flex items-start gap-2"><span className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", DOT[h])} />{t(`office.cfg.health.${h}`)}</li>
+                <li key={h} className="flex items-start gap-2"><span className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", DOT[h])} />{t(`office.cfg.health.${h}`, { days: live.area_amber_days })}</li>
               ))}
             </ul>
           </Row>
         </dl>
+        )}
       </section>
       {/* Which leads reach this office (SM Global sets the zones). */}
       <ZonesSection readOnly officeId={me?.organization_id ?? undefined} />

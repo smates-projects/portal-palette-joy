@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { ChevronDown } from "lucide-react";
 import { useCatalogAdmin, useRules, useRulesHistory, useUpdateRules, useUsers } from "@/lib/api/hooks";
-import type { IntakeDocRule, MeetingHours, PlatformRules } from "@/lib/api/network-types";
+import type { IntakeDocRule, MeetingHours, PlatformRules, RulesField } from "@/lib/api/network-types";
 import { IntakeDocsEditor, IntakeTextsEditor } from "./IntakeDocsEditor";
 import { MeetingHoursRules, zoneKey } from "./MeetingHoursRules";
 import { AssessmentMapEditor, EligibilityRulesSection, EntryFlowRules, ZonesSection } from "./EntryRules";
@@ -129,7 +129,7 @@ export function RulesPage() {
           <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden />
         </summary>
         <div className="border-t border-border px-4 pb-4">
-          <Explained text={t("global.rules.explain.areas")}>
+          <Explained text={t("global.rules.explain.areas", { days: rulesQ.data.program_length_days ?? "…" })}>
             <AssessmentMapEditor key={`map-${JSON.stringify(rulesQ.data.assessment_area_map)}`} rules={rulesQ.data} />
           </Explained>
           <Explained text={t("global.rules.explain.flow")}>
@@ -144,6 +144,12 @@ export function RulesPage() {
       )}
     </div>
   );
+}
+
+/** Tag of a rule still at its default value (GET /rules `defaults`). */
+export function DefaultTag() {
+  const { t } = useTranslation();
+  return <span className="rounded-[4px] border border-border px-1.5 py-0.5 text-[11px] font-normal text-muted-foreground">{t("global.rules.default_value")}</span>;
 }
 
 /** One sentence above a block of Reglas, in Marilyn's words: what the block decides. */
@@ -173,6 +179,8 @@ function RulesEditor({ rules, catalog }: { rules: PlatformRules; catalog: { code
   const needle = search.trim().toLowerCase();
   const choices = catalog.filter((c) => !c.archived && (!needle || c.code.toLowerCase().includes(needle) || c.name.toLowerCase().includes(needle)));
   const nameOf = (code: string) => catalog.find((c) => c.code === code);
+  /** "Valor por defecto" next to a rule SM Global never changed (the API's `defaults`). */
+  const def = (field: RulesField) => (rules.defaults?.includes(field) ? <DefaultTag /> : null);
 
   const save = () => {
     setTried(true);
@@ -192,10 +200,10 @@ function RulesEditor({ rules, catalog }: { rules: PlatformRules; catalog: { code
     <div className="mt-4 space-y-4">
       {/* Program amount the Bishop pays SM (applies to tripartite contracts signed from now on) */}
       <section className="rounded-md border border-border bg-surface p-4">
-        <h2 className="text-sm font-semibold">{t("global.rules.amount_title")}</h2>
+        <h2 className="flex items-center gap-2 text-sm font-semibold">{t("global.rules.amount_title")}{def("program_amount")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{t("global.rules.amount_hint")}</p>
         <label className="mt-3 flex items-center gap-2 text-sm">
-          <span className="font-display">USD</span>
+          <span className="font-display">{t("global.rules.currency")}</span>
           <input inputMode="numeric" value={form.program_amount} onChange={(e) => setField("program_amount", e.target.value)} aria-label={t("global.rules.amount_title")} className={cn(inputCls, "w-40 font-display tabular-nums", errors.program_amount && "border-status-danger-fg")} />
         </label>
         {err("program_amount") && <p className="mt-1 text-xs text-status-danger-fg">{err("program_amount")}</p>}
@@ -203,29 +211,29 @@ function RulesEditor({ rules, catalog }: { rules: PlatformRules; catalog: { code
 
       {/* Document review deadline */}
       <section className="rounded-md border border-border bg-surface p-4">
-        <h2 className="text-sm font-semibold">{t("intake.rules.days_title")}</h2>
+        <h2 className="flex items-center gap-2 text-sm font-semibold">{t("intake.rules.days_title")}{def("document_review_days")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{t("intake.rules.days_hint")}</p>
         <label className="mt-3 flex items-center gap-2 text-sm">
           <input type="number" min={1} value={form.document_review_days} onChange={(e) => setField("document_review_days", e.target.value)} aria-label={t("intake.rules.days_title")} className={cn(inputCls, errors.document_review_days && "border-status-danger-fg")} />
-          <span>{t("global.rules.days", { count: Number(form.document_review_days) || 0 }).replace(/^\S+\s/, "")}</span>
+          <span>{t("global.rules.days_unit", { count: Number(form.document_review_days) || 0 })}</span>
         </label>
         {err("document_review_days") && <p className="mt-1 text-xs text-status-danger-fg">{err("document_review_days")}</p>}
       </section>
 
       {/* Franchisability goal */}
       <section className="rounded-md border border-border bg-surface p-4">
-        <h2 className="text-sm font-semibold">{t("global.rules.goal_title")}</h2>
+        <h2 className="flex items-center gap-2 text-sm font-semibold">{t("global.rules.goal_title")}{def("franchisability_goal")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{t("global.rules.goal_hint")}</p>
         <label className="mt-3 flex items-center gap-2 text-sm">
           <input type="number" min={1} max={100} value={form.franchisability_goal} onChange={(e) => setField("franchisability_goal", e.target.value)} aria-label={t("global.rules.goal_title")} className={cn(inputCls, errors.franchisability_goal && "border-status-danger-fg")} />
-          <span>%</span>
+          <span>{t("global.rules.percent_unit")}</span>
         </label>
         {err("franchisability_goal") && <p className="mt-1 text-xs text-status-danger-fg">{err("franchisability_goal")}</p>}
       </section>
 
       {/* Required tasks, picked from the catalog (may be empty) */}
       <section className="rounded-md border border-border bg-surface p-4">
-        <h2 className="text-sm font-semibold">{t("global.rules.required_title")}</h2>
+        <h2 className="flex items-center gap-2 text-sm font-semibold">{t("global.rules.required_title")}{def("required_task_codes")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{t("global.rules.required_hint")}</p>
         {form.required_task_codes.length === 0 ? (
           <p className="mt-3 rounded-[4px] border border-dashed border-border px-3 py-2 text-sm text-muted-foreground">{t("global.rules.required_none_hint")}</p>
@@ -268,13 +276,13 @@ function RulesEditor({ rules, catalog }: { rules: PlatformRules; catalog: { code
         <h2 className="text-sm font-semibold">{t("global.rules.lights_title")}</h2>
         <div className="mt-3 grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="block text-sm font-medium" htmlFor="rules-days">{t("global.rules.days_title")}</label>
+            <label className="flex items-center gap-2 text-sm font-medium" htmlFor="rules-days">{t("global.rules.days_title")}{def("area_amber_days")}</label>
             <p className="mt-1 text-xs text-muted-foreground">{t("global.rules.days_hint")}</p>
             <input id="rules-days" type="number" min={1} value={form.area_amber_days} onChange={(e) => setField("area_amber_days", e.target.value)} className={cn(inputCls, "mt-2", errors.area_amber_days && "border-status-danger-fg")} />
             {err("area_amber_days") && <p className="mt-1 text-xs text-status-danger-fg">{err("area_amber_days")}</p>}
           </div>
           <div>
-            <label className="block text-sm font-medium" htmlFor="rules-tolerance">{t("global.rules.tolerance_title")}</label>
+            <label className="flex items-center gap-2 text-sm font-medium" htmlFor="rules-tolerance">{t("global.rules.tolerance_title")}{def("franchisability_amber_tolerance")}</label>
             <p className="mt-1 text-xs text-muted-foreground">{t("global.rules.tolerance_hint")}</p>
             <input id="rules-tolerance" type="number" min={0} max={100} value={form.franchisability_amber_tolerance} onChange={(e) => setField("franchisability_amber_tolerance", e.target.value)} className={cn(inputCls, "mt-2", errors.franchisability_amber_tolerance && "border-status-danger-fg")} />
             {err("franchisability_amber_tolerance") && <p className="mt-1 text-xs text-status-danger-fg">{err("franchisability_amber_tolerance")}</p>}

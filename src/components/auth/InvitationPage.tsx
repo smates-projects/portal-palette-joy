@@ -3,7 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Trans, useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useAcceptInvitation, useExchangeInvitation } from "@/lib/api/hooks";
+import { useAcceptInvitation, useExchangeInvitation, useLinkLifetimes } from "@/lib/api/hooks";
 import type { InvitationPreview } from "@/lib/api/types";
 import { MIN_PASSWORD_LENGTH } from "@/lib/api/types";
 import {
@@ -50,10 +50,11 @@ export function InvitationPage({ token }: { token: string }) {
 /** Expired, used or unknown invitation: plain words and the next step. */
 function InvitationProblem({ code, onRetry }: { code: string; onRetry: () => void }) {
   const { t } = useTranslation();
+  const invitationDays = useLinkLifetimes().data?.invitation_days;
   const [asked, setAsked] = useState(false);
   const content =
     code === "token_expired"
-      ? { title: t("auth.invitation.expired_title"), body: t("auth.invitation.expired_body") }
+      ? { title: t("auth.invitation.expired_title"), body: t("auth.invitation.expired_body", { days: invitationDays ?? "…" }) }
       : code === "token_used"
         ? { title: t("auth.invitation.used_title"), body: t("auth.invitation.used_body") }
         : code === "token_invalid"

@@ -6,6 +6,7 @@ import type { IntakeDocRule, IntakeDocumentHelp, PlatformRules } from "@/lib/api
 import { cleanDocumentHelp } from "@/lib/leads/entry-flow";
 import { cn } from "@/lib/utils";
 import { PrimaryButton } from "@/components/tasks/detail/dialogs";
+import { DefaultTag } from "./RulesPage";
 
 const inputCls = "h-9 w-full rounded-md border border-input bg-surface px-3 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30";
 const areaCls = "w-full resize-y rounded-md border border-input bg-surface px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30";
@@ -38,7 +39,7 @@ export function IntakeDocsEditor({ rules }: { rules: PlatformRules }) {
     <section className="mt-4 rounded-md border border-border bg-surface p-4">
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="text-sm font-semibold">{t("intake.rules.docs_title")}</h2>
-        <span className="rounded-[4px] border border-status-warning-border bg-status-warning-bg px-1.5 py-0.5 text-[11px] font-medium text-status-warning-fg">{t("intake.rules.docs_badge")}</span>
+        {rules.defaults?.includes("intake_documents") && <DefaultTag />}
       </div>
       <p className="mt-1 text-sm text-muted-foreground">{t("intake.rules.docs_hint")}</p>
       <ul className="mt-3 divide-y divide-border rounded-md border border-border">

@@ -4,7 +4,9 @@ import type { AreaCode, Business, Franchisability, Organization, TaskVersion, Ta
 import { AREAS, areaHealth, type Health } from "./owner";
 
 export const SEVERITY: Record<Health, number> = { grey: 0, green: 1, amber: 2, red: 3 };
-const PROGRAM_LENGTH = 180;
+/** Demo values only: over the API the program length and the tolerance come from the rules and the pace from the API. */
+const DEMO_PROGRAM_LENGTH = 180;
+const DEMO_AMBER_MARGIN = 10;
 
 const mostFrequent = (ids: string[]) => {
   const counts = new Map<string, number>();
@@ -12,22 +14,25 @@ const mostFrequent = (ids: string[]) => {
   return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0] ?? null;
 };
 
-/** Points below the expected pace that still count as amber. */
-export const FRANCHISE_AMBER_MARGIN = 10;
+/**
+ * Expected approved % today = program day / program length x goal (rounded). Screens prefer the API's expected_pct
+ * (franchisability, business rows); this is the demo's way to the same number.
+ */
+export const expectedFranchisePct = (programDay: number, goal: number, programLength = DEMO_PROGRAM_LENGTH) =>
+  Math.round((Math.min(Math.max(programDay, 0), programLength) / programLength) * goal);
 
-/** Expected approved % today = program day / 180 x goal (rounded). */
-export const expectedFranchisePct = (programDay: number, goal: number) =>
-  Math.round((Math.min(Math.max(programDay, 0), PROGRAM_LENGTH) / PROGRAM_LENGTH) * goal);
-
-/** Franchisability light measures pace: green at or above expected, amber up to 10 points below, red beyond. */
-export function franchiseHealth(f: Franchisability, programDay: number): Exclude<Health, "grey"> {
-  const gap = expectedFranchisePct(programDay, f.franchisability_goal) - f.franchisability_pct;
-  return gap <= 0 ? "green" : gap <= FRANCHISE_AMBER_MARGIN ? "amber" : "red";
+/**
+ * Franchisability light measures pace: green at or above expected, amber up to the rule's tolerance below
+ * (franchisability_amber_tolerance), red beyond. Screens prefer the API's health.
+ */
+export function franchiseHealth(f: Franchisability, programDay: number, tolerance = DEMO_AMBER_MARGIN, programLength = DEMO_PROGRAM_LENGTH): Exclude<Health, "grey"> {
+  const gap = (f.expected_pct ?? expectedFranchisePct(programDay, f.franchisability_goal, programLength)) - f.franchisability_pct;
+  return gap <= 0 ? "green" : gap <= tolerance ? "amber" : "red";
 }
 
 /** Area light for Negocios: an area with no tasks yet has nothing overdue, so it is green. Grey only when it does not apply. */
-export const businessAreaHealth = (tasks: TaskWithComputed[], versions: TaskVersion[], today = todayIso()): Health =>
-  tasks.length === 0 ? "green" : areaHealth(tasks, versions, today);
+export const businessAreaHealth = (tasks: TaskWithComputed[], versions: TaskVersion[], today = todayIso(), amberDays?: number): Health =>
+  tasks.length === 0 ? "green" : areaHealth(tasks, versions, today, amberDays);
 
 export interface BusinessRow {
   business: Business;
@@ -44,6 +49,20 @@ export interface BusinessRow {
   franchise_expected: number | null;
 }
 
+/** The rules a screen passes to the lights: area_amber_days, franchisability_amber_tolerance, program length. */
+export interface LightRules {
+  area_amber_days?: number | undefined;
+  franchisability_amber_tolerance?: number | undefined;
+  program_length_days?: number | undefined;
+}
+
+/** The business's franchisability: the one GET /businesses sends inline, else the list read apart (demo). */
+const franchisabilityOf = (business: Business, franchise: Franchisability[]): Franchisability | null => {
+  const inline = business.franchisability;
+  if (inline) return { business_id: business.id, required_task_codes: [], program_day: business.program_day, ...inline };
+  return franchise.find((x) => x.business_id === business.id) ?? null;
+};
+
 /** Negocios: one row per business, worst health first, then name. */
 export function buildBusinessRows(
   businesses: Business[],
@@ -52,15 +71,17 @@ export function buildBusinessRows(
   users: User[],
   franchise: Franchisability[],
   today = todayIso(),
+  rules: LightRules = {},
 ): BusinessRow[] {
   const user = (id: string | null) => (id ? users.find((u) => u.id === id) ?? null : null);
   return businesses
     .map((business) => {
       const mine = tasks.filter((t) => t.business_id === business.id);
-      const areas = AREAS.map((area) => ({ area, health: businessAreaHealth(mine.filter((t) => t.area === area), versions, today) }));
+      const areas = AREAS.map((area) => ({ area, health: businessAreaHealth(mine.filter((t) => t.area === area), versions, today, rules.area_amber_days) }));
       const health = areas.reduce<Health>((w, c) => (SEVERITY[c.health] > SEVERITY[w] ? c.health : w), "grey");
       const accepted = mine.filter((t) => t.status === "accepted").length;
-      const f = franchise.find((x) => x.business_id === business.id) ?? null;
+      const f = franchisabilityOf(business, franchise);
+      const length = business.program_length_days ?? rules.program_length_days;
       return {
         business,
         owner: user(business.owner_user_id),
@@ -71,8 +92,9 @@ export function buildBusinessRows(
         accepted,
         accepted_pct: mine.length ? Math.round((accepted / mine.length) * 100) : 0,
         franchise: f,
-        franchise_health: f ? franchiseHealth(f, business.program_day) : null,
-        franchise_expected: f ? expectedFranchisePct(business.program_day, f.franchisability_goal) : null,
+        // The API's light and expected % when it sends them; the demo derives them with the same rules.
+        franchise_health: f ? f.health ?? franchiseHealth(f, business.program_day, rules.franchisability_amber_tolerance, length) : null,
+        franchise_expected: f ? f.expected_pct ?? expectedFranchisePct(business.program_day, f.franchisability_goal, length) : null,
       };
     })
     .sort((a, b) => SEVERITY[b.health] - SEVERITY[a.health] || a.business.name.localeCompare(b.business.name));
@@ -130,14 +152,14 @@ export interface AreaCard {
 }
 
 /** Ficha del negocio: the six areas with their firm and counts. */
-export function buildAreaCards(businessId: string, tasks: TaskWithComputed[], versions: TaskVersion[], orgs: Organization[], today = todayIso()): AreaCard[] {
+export function buildAreaCards(businessId: string, tasks: TaskWithComputed[], versions: TaskVersion[], orgs: Organization[], today = todayIso(), amberDays?: number): AreaCard[] {
   const mine = tasks.filter((t) => t.business_id === businessId);
   return AREAS.map((area) => {
     const inArea = mine.filter((t) => t.area === area);
     const orgId = mostFrequent(inArea.map((t) => t.organization_id));
     return {
       area,
-      health: businessAreaHealth(inArea, versions, today),
+      health: businessAreaHealth(inArea, versions, today, amberDays),
       firm: (orgId ? orgs.find((o) => o.id === orgId) : null) ?? firmForArea(area, orgs),
       open: inArea.filter((t) => t.status !== "accepted").length,
       overdue: inArea.filter((t) => t.is_overdue).length,

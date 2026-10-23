@@ -6,7 +6,8 @@ import { AREAS } from "@/lib/tasks/owner";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PrimaryButton, SecondaryButton } from "@/components/tasks/detail/dialogs";
-import { PRIORITIES, PROGRAM_DAYS, emptyForm, formFromItem, validateForm, type CatalogForm, type CatalogFormErrors } from "./form";
+import { PRIORITIES, emptyForm, formFromItem, validateForm, type CatalogForm, type CatalogFormErrors } from "./form";
+import { useRules } from "@/lib/api/hooks";
 
 const inputCls =
   "h-9 w-full rounded-md border border-input bg-surface px-3 text-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30 disabled:opacity-60";
@@ -36,13 +37,15 @@ export function CatalogItemDialog(props: {
   const [form, setForm] = useState<CatalogForm>(props.item ? formFromItem(props.item) : emptyForm(props.defaultArea));
   const [note, setNote] = useState("");
   const [tried, setTried] = useState(false);
-  const errors: CatalogFormErrors = tried ? validateForm(form) : {};
+  // A task window fits inside the program (rules.program_length_days).
+  const programDays = useRules().data?.program_length_days;
+  const errors: CatalogFormErrors = tried ? validateForm(form, programDays) : {};
   const set = <K extends keyof CatalogForm>(key: K, value: CatalogForm[K]) => setForm((f) => ({ ...f, [key]: value }));
   const submit = () => {
     setTried(true);
-    if (Object.keys(validateForm(form)).length === 0) props.onSave(form, note.trim());
+    if (Object.keys(validateForm(form, programDays)).length === 0) props.onSave(form, note.trim());
   };
-  const err = (key: keyof CatalogFormErrors) => (errors[key] ? t(`global.catalog.form.error_${errors[key]}`, { max: PROGRAM_DAYS }) : undefined);
+  const err = (key: keyof CatalogFormErrors) => (errors[key] ? t(`global.catalog.form.error_${errors[key]}`, { max: programDays ?? "…" }) : undefined);
 
   return (
     <Dialog open onOpenChange={(o) => !o && props.onClose()}>
@@ -82,13 +85,13 @@ export function CatalogItemDialog(props: {
               </select>
             </Field>
             <Field label={t("global.catalog.form.start_day")} error={err("start_day")}>
-              <input type="number" min={1} max={PROGRAM_DAYS} value={form.start_day} onChange={(e) => set("start_day", e.target.value)} className={cn(inputCls, errors.start_day && "border-status-danger-fg")} />
+              <input type="number" min={1} max={programDays} value={form.start_day} onChange={(e) => set("start_day", e.target.value)} className={cn(inputCls, errors.start_day && "border-status-danger-fg")} />
             </Field>
             <Field label={t("global.catalog.form.due_day")} error={err("due_day")}>
-              <input type="number" min={1} max={PROGRAM_DAYS} value={form.due_day} onChange={(e) => set("due_day", e.target.value)} className={cn(inputCls, errors.due_day && "border-status-danger-fg")} />
+              <input type="number" min={1} max={programDays} value={form.due_day} onChange={(e) => set("due_day", e.target.value)} className={cn(inputCls, errors.due_day && "border-status-danger-fg")} />
             </Field>
           </div>
-          <p className="text-xs text-muted-foreground">{t("global.catalog.form.days_hint")}</p>
+          <p className="text-xs text-muted-foreground">{t("global.catalog.form.days_hint", { max: programDays ?? "…" })}</p>
           {editing && (
             <Field label={t("global.catalog.form.note")} hint={t("global.catalog.form.note_hint")}>
               <input value={note} onChange={(e) => setNote(e.target.value)} className={inputCls} />

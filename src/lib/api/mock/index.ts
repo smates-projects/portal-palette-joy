@@ -32,6 +32,7 @@ import { createContractRules } from "./contract-rules";
 import { seedAdvisors, seedSigningPeople, seedTechosBinding } from "./seed-entry-contracts";
 import { smSignBlock } from "@/lib/leads/contract-rules";
 import { DEMO_EQUITY_RANGES, closeBlock, splitError } from "@/lib/leads/validation";
+import { MOCK_LIMITS } from "./economics";
 import { isDocsAdmin } from "@/lib/leads/onboarding";
 import { ENTRY_PARTY_NOTIFICATION_KINDS, type Contract, type EntryContractRule, type EntryContractRuleChange } from "../types";
 
@@ -672,6 +673,10 @@ export function createMockApi(): MockApi {
       ...auth,
       resetUser: () => { currentUserId = seed.U_LUCIA; },
       getCurrentUser: async () => delay(me()),
+      getLinkLifetimes: async () => delay({
+        magic_link_minutes: MOCK_LIMITS.magic_link_minutes, invitation_days: MOCK_LIMITS.invitation_days,
+        password_reset_minutes: MOCK_LIMITS.password_reset_minutes, entry_link_days: MOCK_LIMITS.entry_link_days,
+      }),
       getViewAsOptions: () =>
         delay([
           ...[seed.U_LUCIA, seed.U_TOMAS].map((id) => {

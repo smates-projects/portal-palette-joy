@@ -630,9 +630,14 @@ export const useSetOfficeSignature = () =>
 // ---------- SM Global: rules and catalog admin ----------
 /** PlatformRules: franchisability goal, required task codes, area amber days, amber tolerance. Readable by everyone. */
 export const useRules = () => useQuery({ queryKey: ["rules"], queryFn: api.rules.get });
+/** GET /auth/link-lifetimes (public): how long each email link lasts, for the auth screens' copy. */
+export const useLinkLifetimes = () =>
+  useQuery({ queryKey: [AUTH_KEY, "link-lifetimes"], queryFn: () => api.session.getLinkLifetimes(), staleTime: Infinity, retry: false });
 /** The read-only part of the rules: platform limits and the program's days (undefined while they load). */
 export const useLimits = () => useRules().data?.limits;
 export const useProgram = () => useRules().data?.program;
+/** Days of the program (what program_day counts up to); "…" stands in while the rules load. */
+export const useProgramDays = (): number | string => useRules().data?.program_length_days ?? "…";
 /** RulesChange[]: history of rule changes, newest first (SM Global). */
 export const useRulesHistory = () => useQuery({ queryKey: ["rules", "history"], queryFn: api.rules.listHistory });
 export const useUpdateRules = () =>

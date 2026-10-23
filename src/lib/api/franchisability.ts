@@ -70,7 +70,7 @@ export const DEFAULT_PLATFORM_RULES: PlatformRules = {
   // "Indicaciones para preparar la entrega" of the same document.
   intake_help_text: DEFAULT_INTAKE_HELP_TEXT,
   // Who can enter: the declared annual revenue (the year of operation is a hard rule of the assessment itself).
-  eligibility: { min_annual_revenue: 250_000 },
+  eligibility: { min_annual_revenue: 250_000, min_years_operating: 1, require_hispanic_owner: true },
   // Validation: owner 50-75 %, Bishop 15-40 %, SM Square 10 % fixed (the API's defaults).
   equity_ranges: { owner: { min: 50, max: 75 }, bishop: { min: 15, max: 40 }, sm: { min: 10, max: 10 } },
 };

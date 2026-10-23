@@ -257,15 +257,17 @@ describe("rules (SM Global)", () => {
     expect(rules.intake_documents.find((d) => d.name === "Cuentas bancarias")!.help!.what).toContain("últimos seis meses");
     expect(rules.intake_documents.find((d) => d.name === "Documentación adicional según la actividad")).toMatchObject({ required: false });
     expect(rules.intake_help_text).toContain("No envíe contraseñas ni credenciales de acceso.");
-    expect(rules.eligibility).toEqual({ min_annual_revenue: 250_000 });
+    expect(rules.eligibility).toEqual({ min_annual_revenue: 250_000, min_years_operating: 1, require_hispanic_owner: true });
     expect(rules).not.toHaveProperty("owner_nda_template");
   });
-  it("the minimum declared revenue is a whole number of dollars, and its change is logged", async () => {
+  it("the eligibility travels whole (years, Hispanic owner, revenue), is validated and its change is logged", async () => {
     const api = await asGlobal();
-    await expect(api.rules.update({ eligibility: { min_annual_revenue: -1 } })).rejects.toThrow("invalid_min_revenue");
-    await expect(api.rules.update({ eligibility: { min_annual_revenue: 1.5 } })).rejects.toThrow("invalid_min_revenue");
-    expect((await api.rules.update({ eligibility: { min_annual_revenue: 300_000 } })).eligibility).toEqual({ min_annual_revenue: 300_000 });
-    expect((await api.rules.listHistory())[0]!.changes).toEqual([{ field: "eligibility", from: { min_annual_revenue: 250_000 }, to: { min_annual_revenue: 300_000 } }]);
+    const base = { min_years_operating: 1, require_hispanic_owner: true };
+    await expect(api.rules.update({ eligibility: { ...base, min_annual_revenue: -1 } })).rejects.toThrow("invalid_min_revenue");
+    await expect(api.rules.update({ eligibility: { ...base, min_annual_revenue: 1.5 } })).rejects.toThrow("invalid_min_revenue");
+    await expect(api.rules.update({ eligibility: { ...base, min_years_operating: 51, min_annual_revenue: 1 } })).rejects.toThrow("invalid_eligibility");
+    expect((await api.rules.update({ eligibility: { ...base, min_annual_revenue: 300_000 } })).eligibility).toEqual({ ...base, min_annual_revenue: 300_000 });
+    expect((await api.rules.listHistory())[0]!.changes).toEqual([{ field: "eligibility", from: { ...base, min_annual_revenue: 250_000 }, to: { ...base, min_annual_revenue: 300_000 } }]);
   });
   it("changes are logged, validated and reach franchisability", async () => {
     const api = await asGlobal();

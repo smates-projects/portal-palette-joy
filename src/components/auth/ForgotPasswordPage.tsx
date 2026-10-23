@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { Trans, useTranslation } from "react-i18next";
-import { useForgotPassword } from "@/lib/api/hooks";
+import { useForgotPassword, useLinkLifetimes } from "@/lib/api/hooks";
 import { emailProblem, focusFirstError } from "@/lib/auth/form";
 import { AuthHeading, AuthLayout } from "./AuthLayout";
 import { AuthField, BackToLogin, FormAlert, SubmitButton, TextButton } from "./AuthFields";
@@ -11,6 +11,7 @@ export function ForgotPasswordPage() {
   const { t } = useTranslation();
   const rememberedEmail = useRouterState({ select: (s) => s.location.state.authEmail });
   const forgot = useForgotPassword();
+  const resetMinutes = useLinkLifetimes().data?.password_reset_minutes;
   const [email, setEmail] = useState(rememberedEmail ?? "");
   const [error, setError] = useState<string | null>(null);
   const [generic, setGeneric] = useState(false);
@@ -49,7 +50,7 @@ export function ForgotPasswordPage() {
         <div role="status" className="text-sm text-foreground">
           <Trans
             i18nKey="auth.forgot.done_body"
-            values={{ email: sentTo }}
+            values={{ email: sentTo, minutes: resetMinutes ?? "…" }}
             components={{ email: <strong className="break-all font-semibold" /> }}
           />
         </div>

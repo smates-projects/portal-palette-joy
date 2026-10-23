@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { buttonVariants } from "@/components/ui/button";
-import { useResetPassword } from "@/lib/api/hooks";
+import { useLinkLifetimes, useResetPassword } from "@/lib/api/hooks";
 import { MIN_PASSWORD_LENGTH } from "@/lib/api/types";
 import {
   authErrorCode,
@@ -20,6 +20,7 @@ export function ResetPasswordPage({ token }: { token: string }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const reset = useResetPassword();
+  const resetMinutes = useLinkLifetimes().data?.password_reset_minutes;
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [errors, setErrors] = useState<{ password: string | null; confirm: string | null }>({
@@ -70,7 +71,7 @@ export function ResetPasswordPage({ token }: { token: string }) {
       <AuthLayout>
         <AuthHeading title={t("auth.reset.title")} />
         <FormAlert tone="error" title={t(`auth.token.${tokenError}`)}>
-          {tokenError === "token_invalid" ? t("auth.token.invalid_help") : t("auth.reset.help")}
+          {tokenError === "token_invalid" ? t("auth.token.invalid_help") : t("auth.reset.help", { minutes: resetMinutes ?? "…" })}
         </FormAlert>
         <div className="mt-6 flex flex-col items-start gap-4 border-t border-border pt-5">
           <Link to="/recuperar" className={cn(buttonVariants(), "h-10 w-full rounded-[4px]")}>

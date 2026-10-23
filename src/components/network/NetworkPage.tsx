@@ -83,7 +83,8 @@ export function NetworkPage({ businessId, officeId, readOnly = false, onOpenBusi
 
   // "Ver programa" from the pipeline: only that business.
   const focus = businessId ? (bizQ.data ?? []).find((b) => b.id === businessId) : undefined;
-  const businesses = (bizQ.data ?? []).filter((b) => (!focus || b.id === focus.id) && (!officeId || (b.office_id === officeId && b.status === "in_program")));
+  // Only businesses in the program count (as the API's network counters); "Ver programa" shows the one asked for.
+  const businesses = (bizQ.data ?? []).filter((b) => (focus ? b.id === focus.id : b.status === "in_program") && (!officeId || b.office_id === officeId));
   const businessIds = new Set(businesses.map((b) => b.id));
   const tasks = (tasksQ.data ?? []).filter((x) => businessIds.has(x.business_id));
   const counters = buildNetworkCounters(tasks, businesses);
@@ -157,7 +158,7 @@ export function NetworkPage({ businessId, officeId, readOnly = false, onOpenBusi
                       <span className={cn("h-2 w-2 shrink-0 rounded-full", DOT[row.health])} />
                       <span>
                         <span className="block font-medium">{row.business.name}</span>
-                        <span className="block text-xs text-muted-foreground">{t("sm.program_day", { day: row.business.program_day })}</span>
+                        <span className="block text-xs text-muted-foreground">{t("sm.program_day", { day: row.business.program_day, total: row.business.program_length_days ?? rulesQ.data?.program_length_days ?? "…" })}</span>
                       </span>
                     </>
                   );

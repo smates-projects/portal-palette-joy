@@ -2,8 +2,6 @@ import type { CatalogAdminItem, CatalogItemInput } from "@/lib/api/network-types
 import type { AreaCode } from "@/lib/api/types";
 
 export const PRIORITIES = ["minimo", "alto_valor", "opcional", "tercero", "fuera"] as const;
-/** The program lasts 180 days: a task window has to fit inside it. */
-export const PROGRAM_DAYS = 180;
 
 /** Catalog form as typed: the two day fields stay text until they are validated. */
 export interface CatalogForm {
@@ -36,19 +34,22 @@ export const formFromItem = (item: CatalogAdminItem): CatalogForm => ({
   due_day: item.due_day === null ? "" : String(item.due_day),
 });
 
-/** "" means the task has no window of its own (the general rule applies); anything else must be a day of the program. */
-const parseDay = (value: string): number | null | "invalid" => {
+/**
+ * "" means the task has no window of its own (the general rule applies); anything else must be a day of the program,
+ * 1 to programDays (rules.program_length_days; unknown = only the API checks the upper end).
+ */
+const parseDay = (value: string, programDays?: number): number | null | "invalid" => {
   if (value.trim() === "") return null;
   const n = Number(value);
-  return Number.isInteger(n) && n >= 1 && n <= PROGRAM_DAYS ? n : "invalid";
+  return Number.isInteger(n) && n >= 1 && (programDays === undefined || n <= programDays) ? n : "invalid";
 };
 
-export function validateForm(form: CatalogForm): CatalogFormErrors {
+export function validateForm(form: CatalogForm, programDays?: number): CatalogFormErrors {
   const errors: CatalogFormErrors = {};
   if (!form.name.trim()) errors.name = "required";
   if (!form.acceptance.trim()) errors.acceptance = "required";
-  const start = parseDay(form.start_day);
-  const due = parseDay(form.due_day);
+  const start = parseDay(form.start_day, programDays);
+  const due = parseDay(form.due_day, programDays);
   if (start === "invalid") errors.start_day = "invalid_day";
   if (due === "invalid") errors.due_day = "invalid_day";
   if (typeof start === "number" && typeof due === "number" && due < start) errors.due_day = "invalid_window";

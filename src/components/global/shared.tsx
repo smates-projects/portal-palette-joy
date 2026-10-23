@@ -118,7 +118,7 @@ export function BusinessSheet({ businessId, onClose }: { businessId: string | nu
             <div>
               <h2 className="text-lg font-semibold leading-snug">{business.name}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                {inProgram ? t("global.structure.day", { day: business.program_day }) : t("global.business.franchisor")}
+                {inProgram ? t("global.structure.day", { day: business.program_day, total: business.program_length_days ?? rulesQ.data?.program_length_days ?? "…" }) : t("global.business.franchisor")}
               </p>
             </div>
             <button onClick={onClose} aria-label={t("global.close")} className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground">

@@ -90,7 +90,8 @@ describe("rule checks and texts", () => {
       .toBe("Vossler · Carla · 60 % · {{unknown}}");
   });
   it("names Corporate and SM Square from the rules, or the defaults", () => {
-    expect(smEntitiesOf(null)).toEqual({ corporate: { name: "Strategic Mates Corporate" }, sm_square: { name: "SM Square" } });
+    expect(smEntitiesOf(null)).toEqual({ corporate: { name: "Strategic Mates Corporate", signer_user_id: null }, sm_square: { name: "SM Square" } });
+    expect(smEntitiesOf({ sm_entities: { corporate: { name: "SM LLC", signer_user_id: "ceo" }, sm_square: { name: "SQ" } } }).corporate.signer_user_id).toBe("ceo");
     expect(smEntitiesOf({ sm_entities: { corporate: { name: "SM LLC" }, sm_square: { name: " " } } }).sm_square.name).toBe("SM Square");
   });
 });

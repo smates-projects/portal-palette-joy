@@ -1,5 +1,6 @@
 // SessionRepository over the real API: cookie session, email links, and "Ver como" as real impersonation.
 import type { SessionRepository } from "../repositories";
+import type { AuthLinkLifetimes } from "../types";
 import {
   isSignedInUser,
   type Business,
@@ -142,6 +143,9 @@ export function createHttpSessionRepository(client: HttpClient): SessionReposito
 
   return {
     getCurrentUser: () => fetchMe(client),
+
+    /** Public: the auth screens say how long each email link lasts. */
+    getLinkLifetimes: () => client.get<AuthLinkLifetimes>("/auth/link-lifetimes"),
 
     /**
      * SM Global only (the API answers 403 to anyone else): an empty list for other roles, so the selector hides.

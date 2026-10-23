@@ -147,7 +147,7 @@ export interface TreeNode {
  * Builds the displayed tree from the structure the data layer returns (health, franchisability and facts of every
  * node are already computed there). Offices hold three groups: businesses in the program, franchises and partner firms.
  */
-export function buildStructureView(tree: StructureTree, t: Translate): TreeNode {
+export function buildStructureView(tree: StructureTree, t: Translate, programDays: number | string = "…"): TreeNode {
   const businessStatus = (node: StructureNode) => (node.detail?.kind === "business" ? node.detail.status : null);
 
   const businessNode = (node: StructureNode): TreeNode => {
@@ -155,7 +155,7 @@ export function buildStructureView(tree: StructureTree, t: Translate): TreeNode 
     const franchises = node.children.filter((c) => c.kind === "franchise");
     const parts: string[] = [];
     if (detail?.status === "in_program") {
-      if (detail.program_day !== null) parts.push(t("global.structure.day", { day: detail.program_day }));
+      if (detail.program_day !== null) parts.push(t("global.structure.day", { day: detail.program_day, total: programDays }));
       if (node.franchisability) parts.push(t("global.structure.franchisability", { pct: node.franchisability.value, expected: node.franchisability.expected }));
       parts.push(detail.consultant_name ?? t("global.structure.no_consultant"));
     } else if (detail) {

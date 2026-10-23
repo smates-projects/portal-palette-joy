@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { CalendarDays, Maximize2, ChevronDown, Plus, ChevronLeft, ChevronRight, ChevronUp, ClipboardList, Lock, Target } from "lucide-react";
 import { todayIso } from "@/lib/clock";
-import { useBusinesses, useMyMeetings, useStartTask, useTasks, useUpcomingMeetings } from "@/lib/api/hooks";
+import { useBusinesses, useMyMeetings, useProgramDays, useStartTask, useTasks, useUpcomingMeetings } from "@/lib/api/hooks";
 import { localDay, visibleRange } from "@/lib/tasks/calendar";
 import { GoogleMark, MeetingStatusChip } from "@/components/calendar/parts";
 import type { TaskWithComputed, VisibleTaskStatus } from "@/lib/api/types";
@@ -39,6 +39,7 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
   const navigate = useNavigate();
   const tasksQ = useTasks();
   const bizQ = useBusinesses();
+  const programDays = useProgramDays();
   const meetingsQ = useUpcomingMeetings();
   const start = useStartTask();
   const [submitFor, setSubmitFor] = useState<string | null>(null);
@@ -126,7 +127,8 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
   const summary = buildSummary(tasks);
   const today = buildToday(tasks);
   const next = nextDue(tasks);
-  const progress = buildProgress(tasks, (id) => bizQ.data?.find((b) => b.id === id)?.program_day ?? 0);
+  // The share of the program elapsed uses the rules' program length (GET /rules program_length_days).
+  const progress = buildProgress(tasks, (id) => bizQ.data?.find((b) => b.id === id)?.program_day ?? 0, typeof programDays === "number" ? programDays : undefined);
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-8">
@@ -402,7 +404,7 @@ export function HomePage({ taskId }: { taskId?: string | undefined }) {
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-medium">{biz?.name}</p>
                             <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                              {t("home.progress_day", { day: biz?.program_day ?? 0 })} ·{" "}
+                              {t("home.progress_day", { day: biz?.program_day ?? 0, total: biz?.program_length_days ?? programDays })} ·{" "}
                               <span className={tone}>{p.gap >= -5 ? t("home.progress_on_track") : t("home.progress_behind", { count: Math.abs(p.gap) })}</span>
                             </p>
                           </div>

@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Paperclip } from "lucide-react";
 import { toast } from "sonner";
-import { useResolvePreValidation } from "@/lib/api/hooks";
+import { useProgram, useResolvePreValidation } from "@/lib/api/hooks";
 import type { PreValidation, TaskWithComputed } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -28,6 +28,8 @@ export function PreValidationBadge({ value, className }: { value: PreValidation;
 export function PreValidationBlock({ task, canResolve }: { task: TaskWithComputed; canResolve: boolean }) {
   const { t } = useTranslation();
   const resolve = useResolvePreValidation();
+  // The Diagnóstico's days as the rules set them (GET /rules program.diagnosis).
+  const diagnosis = useProgram()?.diagnosis;
   const [open, setOpen] = useState(false);
   const value = task.pre_validation;
   // Not flagged by the assessment: SM can still mark it "Ya lo tenía" while it has not started.
@@ -59,7 +61,7 @@ export function PreValidationBlock({ task, canResolve }: { task: TaskWithCompute
       <PreValidationBadge value={value} />
       {value === "pending" && (
         <>
-          <p className="text-xs text-muted-foreground">{t(canResolve ? "entry.pre.hint_sm" : "entry.pre.hint")}</p>
+          <p className="text-xs text-muted-foreground">{t(canResolve ? "entry.pre.hint_sm" : "entry.pre.hint", { start: diagnosis?.start_day ?? "…", end: diagnosis?.end_day ?? "…" })}</p>
           {canResolve && (
             <div className="flex flex-wrap gap-2">
               <SecondaryButton onClick={() => setOpen(true)}>{t("entry.pre.have")}</SecondaryButton>

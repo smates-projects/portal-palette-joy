@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp, Maximize, Minus, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatUsd } from "@/lib/format";
 import type { AreaCode } from "@/lib/api/types";
+import { useProgramDays } from "@/lib/api/hooks";
 import { AreaTag } from "@/components/AreaTag";
 import { DOT } from "@/components/office/shared";
 import { descendantCount, initialsOf, type DiagramNode } from "../logic";
@@ -53,6 +54,7 @@ function AreaEyebrow({ area }: { area: AreaCode }) {
 
 function CardBody({ node }: { node: DiagramNode }) {
   const { t, i18n } = useTranslation();
+  const programDays = useProgramDays();
   const detail = node.detail;
   const datum = "mt-1 block text-xs text-muted-foreground";
 
@@ -105,7 +107,7 @@ function CardBody({ node }: { node: DiagramNode }) {
           {business.owner_name && <Person name={business.owner_name} />}
           {business.status === "in_program" ? (
             <>
-              {business.program_day !== null && <span className={datum}>{t("global.structure.day", { day: business.program_day })}</span>}
+              {business.program_day !== null && <span className={datum}>{t("global.structure.day", { day: business.program_day, total: programDays })}</span>}
               {node.franchisability && <span className={datum}>{t("global.structure.franchisability", { pct: node.franchisability.value, expected: node.franchisability.expected })}</span>}
             </>
           ) : (

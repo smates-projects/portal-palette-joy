@@ -3,11 +3,10 @@ import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { CalendarCheck, CheckCircle2, FileUp, Flag, PackageCheck } from "lucide-react";
-import { PROGRAM_LENGTH_DAYS } from "@/config/app";
 import { todayIso } from "@/lib/clock";
 import {
   useAnswerOwnerRequest, useApproveTask, useBusinesses, useConfirmMeeting, useCurrentUser, useFranchisability, useMeetings,
-  useOpenOwnerRequests, useOrganizations, useTasks, useUsers, useVersions,
+  useOpenOwnerRequests, useOrganizations, useRules, useTasks, useUsers, useVersions,
 } from "@/lib/api/hooks";
 import type { OwnerRequest } from "@/lib/api/types";
 import { firstName, formatDate, formatDateTime } from "@/lib/format";
@@ -67,8 +66,15 @@ export function OwnerHomePage({ taskId }: { taskId?: string | undefined }) {
   const error = tasksQ.isError || bizQ.isError || reqQ.isError || meetQ.isError;
   const inbox = me.data ? buildOwnerInbox(tasks, reqQ.data ?? [], meetQ.data ?? [], me.data.id) : [];
   const shown = expanded ? inbox : inbox.slice(0, MAX_ITEMS);
-  const areas = buildAreaProgress(tasks, versionsQ.data ?? []);
+  const rules = useRules().data;
+  const areas = buildAreaProgress(tasks, versionsQ.data ?? [], undefined, rules?.area_amber_days);
   const day = business?.program_day ?? 0;
+  // Length and gates of the program as the rules say (GET /rules program); nothing drawn until they arrive.
+  const programLength = business?.program_length_days ?? rules?.program_length_days;
+  const program = rules?.program;
+  const gate = (g: "diagnosis" | "closing") => (program ? gateState(day, g, program) : "upcoming");
+  const gateSub = (g: "diagnosis" | "closing") =>
+    program ? t(`owner.gate_${g}_${gate(g)}`, { start: program[g].start_day, end: program[g].end_day }) : "";
 
   const when = (iso: string) => {
     const d = daysBetween(todayIso(), iso);
@@ -169,14 +175,14 @@ export function OwnerHomePage({ taskId }: { taskId?: string | undefined }) {
             <section className="rounded-md border border-border bg-surface p-4">
               <div className="flex items-baseline justify-between">
                 <h2 className="text-sm font-semibold">{t("owner.program")}</h2>
-                <span className="font-display text-sm tabular-nums">{t("owner.day_of", { day, total: PROGRAM_LENGTH_DAYS })}</span>
+                <span className="font-display text-sm tabular-nums">{t("owner.day_of", { day, total: programLength ?? "…" })}</span>
               </div>
               <div className="mt-2 h-1 overflow-hidden rounded-full bg-muted">
-                <div className="h-full bg-gold" style={{ width: `${Math.min(100, (day / PROGRAM_LENGTH_DAYS) * 100)}%` }} />
+                {programLength && <div className="h-full bg-gold" style={{ width: `${Math.min(100, (day / programLength) * 100)}%` }} />}
               </div>
               {/* 1px gaps over the border color draw the cell borders, so the strip can wrap on narrow screens. */}
               <div className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-md border border-border bg-border sm:grid-cols-4 lg:grid-cols-[minmax(92px,0.9fr)_repeat(6,minmax(0,1fr))_minmax(92px,0.9fr)]">
-                <Gate state={gateState(day, "diagnosis")} title={t("owner.gate_diagnosis")} sub={t(`owner.gate_diagnosis_${gateState(day, "diagnosis")}`)} />
+                <Gate state={gate("diagnosis")} title={t("owner.gate_diagnosis")} sub={gateSub("diagnosis")} />
                 {areas.map((a) => (
                   <button
                     key={a.area}
@@ -202,7 +208,7 @@ export function OwnerHomePage({ taskId }: { taskId?: string | undefined }) {
                     )}
                   </button>
                 ))}
-                <Gate state={gateState(day, "closing")} title={t("owner.gate_closing")} sub={t(`owner.gate_closing_${gateState(day, "closing")}`)} />
+                <Gate state={gate("closing")} title={t("owner.gate_closing")} sub={gateSub("closing")} />
               </div>
               <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
                 {(["green", "amber", "red", "grey"] as const).map((h) => (

@@ -3,9 +3,10 @@ import { useTranslation } from "react-i18next";
 import { todayIso } from "@/lib/clock";
 import type { AreaCode, Business, TaskWithComputed, VisibleTaskStatus } from "@/lib/api/types";
 import { blockingCodes } from "@/lib/api/computed";
+import { useProgram } from "@/lib/api/hooks";
 import { formatDate, localeTag } from "@/lib/format";
 import {
-  MILESTONE_DAYS,
+  milestoneDays,
   PX_PER_DAY,
   ZOOMS,
   addDays,
@@ -45,7 +46,10 @@ export function TaskRoadmap(props: {
   const [pad, setPad] = useState({ before: 0, after: 0 });
   const pendingScroll = useRef<number | null>(null);
   const ppd = PX_PER_DAY[zoom] * scale;
-  const base = useMemo(() => zoomRange(zoom, props.businesses, props.allTasks), [zoom, props.businesses, props.allTasks]);
+  // The program's length and milestones come from the rules (GET /rules program).
+  const program = useProgram();
+  const milestones = milestoneDays(program);
+  const base = useMemo(() => zoomRange(zoom, props.businesses, props.allTasks, undefined, program?.length_days), [zoom, props.businesses, props.allTasks, program?.length_days]);
   const range = useMemo(() => ({ start: addDays(base.start, -pad.before), end: addDays(base.end, pad.after) }), [base, pad]);
   // Pan limits: two weeks before the first task, two weeks after the last one.
   const bounds = useMemo(() => {
@@ -254,11 +258,11 @@ export function TaskRoadmap(props: {
                   <div className="sticky left-0 z-10 flex items-center gap-2 border-r border-border bg-muted px-4 text-sm font-semibold" style={{ width: LABEL_W, minWidth: LABEL_W }}>
                     <span className="truncate">{b.name}</span>
                     <span className="ml-auto shrink-0 font-display text-[11px] font-normal tabular-nums text-muted-foreground">
-                      {t("home.progress_day", { day: b.program_day })}
+                      {t("home.progress_day", { day: b.program_day, total: b.program_length_days ?? program?.length_days ?? "…" })}
                     </span>
                   </div>
                   <div className="relative" style={{ width }}>
-                    {MILESTONE_DAYS.map((m) => {
+                    {milestones.map((m) => {
                       const d = programDay(b, m.day);
                       if (d < range.start || d > range.end) return null;
                       const label = t(`tasks.roadmap.m_${m.key}`, { day: m.day, date: formatDate(d, lng) });

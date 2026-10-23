@@ -80,14 +80,14 @@ export function BusinessFile({ businessId, variant }: { businessId: string; vari
   function WhoItIs(p: { business: Business; snapshot: AssessmentSnapshot | null; tasks: TaskWithComputed[]; owner: boolean }) {
     const user = (id: string | null) => (id ? usersQ.data?.find((u) => u.id === id) : undefined);
     const s = p.snapshot;
-    const cards = buildAreaCards(p.business.id, p.tasks, versionsQ.data ?? [], orgsQ.data ?? []);
+    const cards = buildAreaCards(p.business.id, p.tasks, versionsQ.data ?? [], orgsQ.data ?? [], undefined, rulesQ.data?.area_amber_days);
     const none = t("business_file.no_data");
     return (
       <Part title={t(p.owner ? "business_file.who_title_owner" : "business_file.who_title")}>
         <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
           <Fact label={t("business_file.owner")} value={user(p.business.owner_user_id)?.full_name ?? s?.contact.name ?? none} />
           <Fact label={t("business_file.contact")} value={s ? <><span className="block truncate">{s.contact.email}</span><span className="block tabular-nums">{s.contact.phone}</span></> : none} />
-          <Fact label={t("business_file.industry")} value={s ? `${t(`pipeline.industries.${s.business.industry}`)} · ${s.business.activity}` : p.business.industry} />
+          <Fact label={t("business_file.industry")} value={s ? `${t(`pipeline.industries.${s.business.industry}`, { defaultValue: p.business.industry_label ?? "" })} · ${s.business.activity}` : (i18n.language === "en" ? p.business.industry_label_en : undefined) ?? p.business.industry_label ?? none} />
           <Fact label={t("business_file.place")} value={t("office.biz.location", { city: p.business.city, state: p.business.state })} />
           <Fact label={t("business_file.years")} value={s ? t(`pipeline.years_ranges.${s.business.years_range}`) : none} />
           <Fact label={t("business_file.team")} value={s ? t(`pipeline.team_ranges.${s.business.team_range}`) : none} />
@@ -137,27 +137,31 @@ export function BusinessFile({ businessId, variant }: { businessId: string; vari
   // ---------- 3. Cómo va hoy ----------
   function HowItIsDoing(p: { business: Business; tasks: TaskWithComputed[]; owner: boolean }) {
     const f = fQ.data;
-    const cards = buildAreaCards(p.business.id, p.tasks, versionsQ.data ?? [], orgsQ.data ?? []);
+    const cards = buildAreaCards(p.business.id, p.tasks, versionsQ.data ?? [], orgsQ.data ?? [], undefined, rulesQ.data?.area_amber_days);
     const accepted = p.tasks.filter((x) => x.status === "accepted").length;
     const ex = existingSummary(p.tasks);
     const toValidate = p.tasks.filter((x) => x.pre_validation === "pending").length;
-    const health = f ? franchiseHealth(f, p.business.program_day) : null;
+    // The light and the program length as the API computes them (franchisability and business); the demo derives them.
+    const health = f ? f.health ?? franchiseHealth(f, p.business.program_day, rulesQ.data?.franchisability_amber_tolerance, rulesQ.data?.program_length_days) : null;
+    const programLength = f?.program_length_days ?? p.business.program_length_days ?? rulesQ.data?.program_length_days;
     return (
       <Part title={t(p.owner ? "business_file.today_title_owner" : "business_file.today_title")}>
         <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
           <div>
             <p className="text-xs text-muted-foreground">{t("business_file.program")}</p>
-            <p className="mt-0.5 font-display font-semibold tabular-nums">{t("business_file.day", { day: p.business.program_day })}</p>
-            <div className="mt-1 h-1.5 rounded-[2px] border border-border bg-muted" role="progressbar" aria-valuemin={0} aria-valuemax={180} aria-valuenow={p.business.program_day}>
-              <div className="h-full bg-gold" style={{ width: `${Math.min(100, (p.business.program_day / 180) * 100)}%` }} />
-            </div>
+            <p className="mt-0.5 font-display font-semibold tabular-nums">{t("business_file.day", { day: p.business.program_day, total: programLength ?? "…" })}</p>
+            {programLength && (
+              <div className="mt-1 h-1.5 rounded-[2px] border border-border bg-muted" role="progressbar" aria-valuemin={0} aria-valuemax={programLength} aria-valuenow={p.business.program_day}>
+                <div className="h-full bg-gold" style={{ width: `${Math.min(100, (p.business.program_day / programLength) * 100)}%` }} />
+              </div>
+            )}
           </div>
           <div className="col-span-1">
             <p className="text-xs text-muted-foreground">{t("business_file.progress")}</p>
             {f && health ? (
-              <p className="mt-0.5 flex items-center gap-1.5" title={t(`office.biz.franchise_health.${health}`)}>
+              <p className="mt-0.5 flex items-center gap-1.5" title={t(`office.biz.franchise_health.${health}`, { points: rulesQ.data?.franchisability_amber_tolerance ?? "…" })}>
                 <span className={cn("h-2 w-2 rounded-full", DOT[health])} />
-                <span className="font-display font-semibold tabular-nums">{t("business_file.progress_value", { pct: f.franchisability_pct, expected: expectedFranchisePct(p.business.program_day, f.franchisability_goal) })}</span>
+                <span className="font-display font-semibold tabular-nums">{t("business_file.progress_value", { pct: f.franchisability_pct, expected: f.expected_pct ?? expectedFranchisePct(p.business.program_day, f.franchisability_goal, programLength) })}</span>
               </p>
             ) : <p className="mt-0.5 text-muted-foreground">{t("business_file.no_data")}</p>}
           </div>
