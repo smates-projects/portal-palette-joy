@@ -23,7 +23,7 @@ export interface SignedDocument {
     name: string;
     status: SignerStatus;
     signed_at: IsoDateTime | null;
-    signature: { kind: "drawn" | "typed" | "uploaded"; image_url: string } | null;
+    signature: { kind: "drawn" | "typed" | "uploaded" | "saved"; image_url: string } | null;
   }[];
   audit_trail: {
     party: Party;
