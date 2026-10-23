@@ -10,13 +10,14 @@ import type { AvailabilityInput, PortalMeeting, PortalMeetingKind } from "@/lib/
 import { isActiveUser } from "@/lib/accounts/permissions";
 import {
   AVAILABILITY_DAYS, MAX_MEETING_PARTICIPANTS, MEETING_DURATIONS, addPerson, availabilityWindow, canSearchSlots, durationOf,
-  isCalendarConnected, joinNames, scheduleOutcome, unavailableKind, type SchedulingPerson,
+   isCalendarConnected, joinNames, scheduleOutcome, type SchedulingPerson,
 } from "@/lib/calendar/scheduling";
 import { groupSlotsByDay } from "@/lib/calendar/slots";
 import { formatDateTime, localeTag } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PrimaryButton, SecondaryButton } from "@/components/tasks/detail/dialogs";
+import { Button } from "@/components/ui/button";
 
 /** What the meeting is about. The id of the kind is required by the API. */
 export interface ScheduleContext {
@@ -62,8 +63,8 @@ export function ScheduleMeetingDialog(props: ScheduleMeetingDialogProps) {
   const { t } = useTranslation();
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto bg-surface sm:max-w-lg">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[85dvh] w-[calc(100%-2rem)] flex-col overflow-hidden bg-surface p-4 sm:max-w-lg sm:p-6">
+        <DialogHeader className="shrink-0 pr-6 text-left">
           <DialogTitle>{t(props.reschedule ? "calendar.title_reschedule" : "calendar.title")}</DialogTitle>
           <DialogDescription className="sr-only">{t("calendar.participants_hint")}</DialogDescription>
         </DialogHeader>
@@ -96,6 +97,7 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
   const [step, setStep] = useState<Step>(moving ? "slots" : "details");
   const [range, setRange] = useState(() => availabilityWindow(Date.parse(nowIso())));
   const [picked, setPicked] = useState<string | null>(null);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<PortalMeeting | null>(null);
 
@@ -119,6 +121,14 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
   const days = useMemo(() => groupSlotsByDay(availabilityQ.data?.slots ?? [], zone), [availabilityQ.data, zone]);
   const unavailable = (availabilityQ.data?.unavailable_participants ?? []).filter((u) => u.user_id !== me?.id);
   const meUnreadable = !meConnected || (availabilityQ.data?.unavailable_participants ?? []).some((u) => u.user_id === me?.id);
+  const activeDay = days.find((d) => d.day === selectedDay) ?? days[0];
+  const validPicked = activeDay?.slots.some((s) => s.starts_at === picked) ? picked : null;
+  const proposal = meUnreadable || unavailable.length > 0;
+  const hourOf = (iso: string) => Number(new Intl.DateTimeFormat("en-US", { hour: "numeric", hourCycle: "h23", timeZone: zone }).format(new Date(iso)));
+  const slotGroups = [
+    { key: "morning", slots: activeDay?.slots.filter((s) => hourOf(s.starts_at) < 12) ?? [] },
+    { key: "afternoon", slots: activeDay?.slots.filter((s) => hourOf(s.starts_at) >= 12) ?? [] },
+  ];
 
   const pickTask = (id: string) => {
     setTaskId(id);
@@ -128,6 +138,7 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
   const openSlots = () => {
     setRange(availabilityWindow(Date.parse(nowIso())));
     setPicked(null);
+    setSelectedDay(null);
     setError(null);
     setStep("slots");
   };
@@ -140,10 +151,10 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
     setError(i18n.exists(`calendar.errors.${code}`) ? code : "generic");
   };
   const confirm = () => {
-    if (!picked) return;
+    if (!validPicked) return;
     setError(null);
     if (moving) {
-      move.mutate({ id: moving.id, input: { starts_at: picked, duration_minutes: duration } }, {
+      move.mutate({ id: moving.id, input: { starts_at: validPicked, duration_minutes: duration } }, {
         onSuccess: (m) => { setResult(m); setStep("done"); props.onDone?.(m); },
         onError: fail,
       });
@@ -151,14 +162,14 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
     }
     if (!context) return;
     schedule.mutate({
-      ...context, participant_user_ids: people.map((p) => p.user_id), starts_at: picked, duration_minutes: duration, topic: topic.trim(),
+      ...context, participant_user_ids: people.map((p) => p.user_id), starts_at: validPicked, duration_minutes: duration, topic: topic.trim(),
       note: note.trim() || null,
     }, {
       onSuccess: (m) => { setResult(m); setStep("done"); props.onDone?.(m); },
       onError: fail,
     });
   };
-  const time = (iso: string) => new Intl.DateTimeFormat(localeTag(lng), { hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
+  const time = (iso: string) => new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: zone }).format(new Date(iso));
   const dayLabel = (day: string) => {
     const text = new Intl.DateTimeFormat(localeTag(lng), { weekday: "long", day: "numeric", month: "long" }).format(new Date(`${day}T12:00:00`));
     return text.charAt(0).toUpperCase() + text.slice(1);
@@ -199,23 +210,19 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
     const pending = schedule.isPending || move.isPending;
     return (
       <>
-        <div className="space-y-3">
-          <div>
+        <div className="flex min-h-0 flex-1 flex-col gap-3">
+          <div className="shrink-0">
             <h3 className="text-sm font-semibold">{t("calendar.slots_title")}</h3>
             <p className="mt-0.5 text-xs text-muted-foreground">{t("calendar.slots_hint", { count: AVAILABILITY_DAYS })}</p>
           </div>
-          {meUnreadable && !moving && (
-            <p className={cn("rounded-[4px] border px-3 py-2 text-sm", NOTE_TONE.warning)}>
-              {t("calendar.me_not_connected")}{" "}
-              <Link to="/perfil" className="font-medium underline underline-offset-2">{t("calendar.connect_link")}</Link>
-            </p>
-          )}
-          {unavailable.length > 0 && (
-            <ul className={cn("space-y-1 rounded-[4px] border px-3 py-2 text-sm", NOTE_TONE.info)}>
-              {unavailable.map((u) => (
-                <li key={u.user_id}>{t(`calendar.unavailable_${unavailableKind(u.reason)}`, { name: nameOf(u.user_id) })}</li>
-              ))}
-            </ul>
+          {((meUnreadable && !moving) || unavailable.length > 0) && (
+            <div role="note" className="shrink-0 space-y-1 rounded-[4px] border border-input bg-surface px-3 py-2 text-xs leading-relaxed text-muted-foreground">
+              {meUnreadable && !moving && <p>
+                {t("calendar.me_not_connected")}{" "}
+                <Link to="/perfil" className="font-medium text-link underline underline-offset-2">{t("calendar.connect_link")}</Link>
+              </p>}
+              {unavailable.map((u) => <p key={u.user_id}>{t("calendar.guest_proposal", { name: nameOf(u.user_id) })}</p>)}
+            </div>
           )}
           {error && <p role="alert" className={cn("rounded-[4px] border px-3 py-2 text-sm", NOTE_TONE.danger)}>{t(`calendar.errors.${error}`)}</p>}
           {availabilityQ.isLoading ? (
@@ -223,57 +230,78 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
           ) : availabilityQ.isError ? (
             <div className="rounded-[4px] border border-border px-3 py-3 text-sm">
               <p>{t("calendar.slots_error")}</p>
-              <button onClick={() => void availabilityQ.refetch()} className="mt-1 text-link hover:underline">{t("calendar.slots_retry")}</button>
+              <Button variant="link" onClick={() => void availabilityQ.refetch()} className="mt-1 h-auto p-0 text-link">{t("calendar.slots_retry")}</Button>
             </div>
           ) : days.length === 0 ? (
             <p className="rounded-[4px] border border-border px-3 py-4 text-sm text-muted-foreground">{t("calendar.slots_empty", { count: AVAILABILITY_DAYS })}</p>
           ) : (
-            <div className="max-h-[45vh] space-y-3 overflow-y-auto pr-1">
-              {days.map((d) => (
-                <section key={d.day} aria-label={dayLabel(d.day)}>
-                  <h4 className="mb-1.5 text-xs font-medium text-muted-foreground">{dayLabel(d.day)}</h4>
-                  <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-6">
-                    {d.slots.map((s) => {
+            <>
+              <div role="group" aria-label={t("calendar.choose_day")} className="flex shrink-0 gap-2 overflow-x-auto pb-2">
+                {days.map((d) => {
+                  const date = new Date(`${d.day}T12:00:00`);
+                  const weekday = new Intl.DateTimeFormat(localeTag(lng), { weekday: "short" }).format(date).replace(/\.$/, "");
+                  const selected = activeDay?.day === d.day;
+                  return <Button key={d.day} variant={selected ? "default" : "outline"} aria-pressed={selected} aria-label={dayLabel(d.day)}
+                    onClick={() => { setSelectedDay(d.day); setPicked(null); }}
+                    className="h-16 w-16 shrink-0 flex-col gap-0.5 rounded-[4px] border border-input px-2 py-2">
+                    <span className="text-xs capitalize">{weekday}</span>
+                    <span className="text-lg tabular-nums">{date.getDate()}</span>
+                  </Button>;
+                })}
+              </div>
+              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1" role="group" aria-label={activeDay ? dayLabel(activeDay.day) : t("calendar.slots_title")}>
+                {slotGroups.filter((g) => g.slots.length > 0).map((g) => (
+                <section key={g.key} aria-label={t(`calendar.${g.key}`)}>
+                  <h4 className="mb-2 text-xs font-medium text-muted-foreground">{t(`calendar.${g.key}`)}</h4>
+                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                    {g.slots.map((s) => {
                       const selected = picked === s.starts_at;
                       return (
-                        <button
+                        <Button
+                          variant={selected ? "default" : "outline"}
                           key={s.starts_at}
                           type="button"
                           aria-pressed={selected}
                           onClick={() => setPicked(s.starts_at)}
                           className={cn(
-                            "h-8 rounded-[4px] border text-sm tabular-nums transition-colors",
-                            selected ? "border-primary bg-primary font-medium text-primary-foreground" : "border-border bg-surface hover:border-primary",
+                            "h-9 w-full min-w-0 whitespace-nowrap rounded-[4px] border px-1 text-xs tabular-nums sm:text-sm",
+                            selected ? "border-primary" : "border-input hover:border-primary",
                           )}
                         >
                           {time(s.starts_at)}
-                        </button>
+                        </Button>
                       );
                     })}
                   </div>
                 </section>
-              ))}
-            </div>
+                ))}
+              </div>
+            </>
           )}
-          {picked && <p className="text-sm">{t("calendar.selected", { when: formatDateTime(picked, lng) })}</p>}
         </div>
-        <DialogFooter className="gap-2">
+        <div className="shrink-0 space-y-3 border-t border-border pt-3">
+          {validPicked && <p role="status" className="text-xs leading-relaxed sm:text-sm">{t("calendar.selection_summary", {
+            day: dayLabel(activeDay?.day ?? ""), time: time(validPicked), duration,
+            names: joinNames(people.map((p) => p.name), t("calendar.and")),
+          })}</p>}
+        <DialogFooter className="flex-row justify-end gap-2">
           {moving ? (
             <SecondaryButton onClick={() => props.onOpenChange(false)}>{t("calendar.cancel")}</SecondaryButton>
           ) : (
             <SecondaryButton onClick={() => setStep("details")}>{t("calendar.back")}</SecondaryButton>
           )}
-          <PrimaryButton onClick={confirm} disabled={!picked || pending}>
-            {t(moving ? "calendar.confirm_move" : meUnreadable ? "calendar.confirm_proposal" : "calendar.confirm")}
-          </PrimaryButton>
+          <Button onClick={confirm} disabled={!validPicked || pending}>
+            {t(moving ? "calendar.confirm_move" : proposal ? "calendar.confirm_proposal" : "calendar.confirm")}
+          </Button>
         </DialogFooter>
+        </div>
       </>
     );
   }
 
   return (
     <>
-      <div className="space-y-4">
+      <div className="min-h-0 space-y-4 overflow-y-auto">
         {props.taskChoices && (
           <label className="block space-y-1.5">
             <span className="text-sm font-medium">{t("calendar.about_task")}</span>
@@ -358,7 +386,7 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
           </>
         )}
       </div>
-      <DialogFooter className="gap-2">
+      <DialogFooter className="shrink-0 gap-2">
         <SecondaryButton onClick={() => props.onOpenChange(false)}>{t("calendar.cancel")}</SecondaryButton>
         <PrimaryButton onClick={openSlots} disabled={!ready}>{t("calendar.see_slots")}</PrimaryButton>
       </DialogFooter>
