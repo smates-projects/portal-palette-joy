@@ -119,6 +119,8 @@ export function IntakeHomePage({ focusStep }: { focusStep?: OwnerStepKey | undef
     switch (key) {
       case "nda": {
         if (!nda) return <p className="text-sm text-muted-foreground">{t("intake.owner.nda.not_sent")}</p>;
+        if (nda.awaiting_sm_signature || s.nda_awaiting_sm)
+          return <p className="text-sm">{t("intake.owner.awaiting_sm")}</p>;
         if (ndaStatus(nda) === "signed")
           return (
             <div className="flex flex-wrap items-center gap-4">
@@ -149,6 +151,8 @@ export function IntakeHomePage({ focusStep }: { focusStep?: OwnerStepKey | undef
       case "mou": {
         // The MOU exists as soon as the owner signs the NDA.
         if (!mou) return <p className="text-sm text-muted-foreground">{t("intake.owner.mou.not_sent")}</p>;
+        if (mou.awaiting_sm_signature || s.mou_awaiting_sm)
+          return <p className="text-sm">{t("intake.owner.awaiting_sm")}</p>;
         if (!ownerPending(mou))
           return (
             <div className="flex flex-wrap items-center gap-4">

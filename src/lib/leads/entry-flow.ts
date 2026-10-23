@@ -210,7 +210,7 @@ export type OwnerStepKey = (typeof OWNER_STEPS)[number];
 export type OwnerStepState = "done" | "current" | "upcoming";
 
 export interface OwnerStepsInput {
-  summary: Pick<IntakeSummary, "approved_at"> & Partial<Pick<IntakeSummary, "entry" | "required_total">>;
+  summary: Pick<IntakeSummary, "approved_at"> & Partial<Pick<IntakeSummary, "entry" | "required_total" | "nda_signed_by_owner">>;
   nda: Contract | null;
   mou: Contract | null;
   operatingAgreement: Contract | null;
@@ -234,7 +234,8 @@ export function ownerSteps(input: OwnerStepsInput): { key: OwnerStepKey; state: 
   const meetings = entryMeetings(entry);
   const approved = !!input.summary.approved_at;
   const done: Record<OwnerStepKey, boolean> = {
-    nda: ndaStatus(input.nda) === "signed",
+    // The owner's own signature enables the next step; Strategic Mates' may still be missing.
+    nda: !!input.summary.nda_signed_by_owner || ndaStatus(input.nda) === "signed",
     // Only the outcome says the meeting was held: the API creates the documents at the NDA signature, so a documents
     // list (or the list being open after the MOU) says nothing about the meeting. The approval comes after it.
     meeting: meetings.initial?.outcome === "held" || approved,

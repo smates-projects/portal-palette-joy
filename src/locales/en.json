@@ -292,7 +292,7 @@
     },
     "calendar": {
       "title": "Calendar",
-      "subtitle": "What's coming in my program?"
+      "subtitle": "Your meetings with the owners and your Google Calendar in one place."
     },
     "manual": {
       "title": "My manual",
@@ -389,10 +389,6 @@
     "bishops": {
       "title": "Bishops",
       "subtitle": "What is going on with the Bishops?"
-    },
-    "calendar": {
-      "title": "Calendar",
-      "subtitle": "Your meetings with the owners and your Google Calendar in one place."
     }
   },
   "meta": {
@@ -1480,7 +1476,8 @@
       "assessment": "Assessment completed",
       "meeting_scheduled": "Meeting booked",
       "summary_sent": "Summary sent",
-      "meeting_held": "Meeting held"
+      "meeting_held": "Meeting held",
+      "outcome_missing": "Outcome not recorded yet"
     },
     "phase_hints": {
       "summary_sent": "with the date, time and link of the meeting"
@@ -1544,7 +1541,9 @@
         "invalid_transition": "This business already has its meeting or is not in a stage where one can be registered.",
         "invalid_url": "The video call link is not valid.",
         "invalid_date": "The date and time are not valid."
-      }
+      },
+      "how_did_it_go": "How did it go?",
+      "body_expansion": "Record the expansion meeting. It can be one that already happened."
     },
     "note": {
       "title": "Meeting note with {{name}}",
@@ -3234,7 +3233,7 @@
         "book": "We approved your documents. Book the expansion meeting. It is longer and the investor joins."
       },
       "mou": {
-        "not_sent": "It opens as soon as you sign the NDA.",
+        "not_sent": "It opens as soon as you sign the NDA. You don't need to wait for Strategic Mates to sign.",
         "body": "The MOU explains how we will work together. Read each point and tick \"I understand\". Once you tick the four, you can sign.",
         "understood": "I understand",
         "ready": "You ticked the four points. You can sign now.",
@@ -3278,7 +3277,8 @@
         "waiting": "Take a few days to read it calmly. You can sign from {{date}}.",
         "sign": "Sign the Operating Agreement",
         "signed": "You signed the Operating Agreement. We will let you know when the others sign."
-      }
+      },
+      "awaiting_sm": "You signed. Strategic Mates still needs to sign."
     },
     "owner_docs": {
       "locked": "You can upload your documents once you sign the MOU.",
@@ -3828,7 +3828,11 @@
       "pick_hint_register": "Choose the business. Evaluated ones and those with a meeting to rebook show here.",
       "pick_empty": "There are no businesses to choose in this view. Change the office in Viewing or check the pipeline.",
       "pick_continue": "Continue"
-    }
+    },
+    "lead_guest": "We invite {{email}} with the Meet link.",
+    "not_connected_body": "Your Google Calendar is not connected. Connect it or record the meeting by hand.",
+    "connect_google": "Connect Google Calendar",
+    "register_manually": "Record meeting by hand"
   },
   "entry_contracts": {
     "rules": {

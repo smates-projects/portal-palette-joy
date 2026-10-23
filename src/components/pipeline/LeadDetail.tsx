@@ -11,7 +11,9 @@ import { MouUnsignedDialog } from "./LeadDialogs";
 import { RegisterMeetingDialog } from "./RegisterMeetingDialog";
 import { TransferDialog, canTransfer } from "./TransferDialog";
 import { meetingIdOf } from "@/lib/leads/meetings";
+import { nowIso } from "@/lib/clock";
 import { leadOwnerOf, scheduleRoute } from "@/lib/leads/scheduling";
+import { isCalendarConnected } from "@/lib/calendar/scheduling";
 import type { LeadMeeting, MeetingOutcome } from "@/lib/api/types";
 import { validateFundPayment } from "@/lib/leads/funds";
 import { FundsPanel } from "@/components/funds/FundsPanel";
@@ -94,13 +96,12 @@ export function LeadDetail(props: {
   const action = primaryActionFor(lead);
   // The owner's account exists from the booking (or "Enviar NDA") on.
   const leadOwner = leadOwnerOf(lead, usersQ.data);
-  const scheduleGuests = [leadOwner, usersQ.data?.find((u) => u.id === lead.consultant_user_id)]
-    .filter((u): u is NonNullable<typeof u> => !!u && u.id !== meQ.data?.id)
-    .map((u) => ({ user_id: u.id, name: u.full_name }));
+  // With the SM user's Google Calendar connected, the portal schedules it and invites the lead's email.
+  const smConnected = isCalendarConnected(meQ.data);
   const admin = isDocsAdmin(meQ.data, lead.office_id);
   const approval = lead.intake?.approval;
   // "Agendar reunión" / "Reagendar" through the booking link needs a link: without one the button waits for it.
-  const bookingRoute = scheduleRoute(action, !!leadOwner);
+  const bookingRoute = scheduleRoute(action, !!leadOwner, smConnected);
   const noBookingUrl = bookingRoute === "booking_link" && !lead.booking_url;
   // Why the primary action is disabled (shown under it), or null when it can be used.
   const blockedHint =
@@ -156,12 +157,17 @@ export function LeadDetail(props: {
     });
   // "Registrar reunión": the consultant (office) or SM Global, on an evaluated lead or after a reschedule.
   const registerKind = bookingKind(lead);
-  const canRegister = (registerKind === "initial" || registerKind === "rebook") && (globalReader || (meQ.data?.role === "sm_team" && !props.readOnly));
+  const canRegister = (registerKind === "initial" || registerKind === "rebook" || registerKind === "expansion") && (globalReader || (meQ.data?.role === "sm_team" && !props.readOnly));
   const onRegister = (input: import("@/lib/api/types").RegisterMeetingInput) =>
     register.mutate({ id: lead.id, input }, {
       onSuccess: (after) => {
         setRegistering(false);
-        toast.success(t("entry.register.t_done", { name: lead.business.name, date: after.meeting ? formatDateTime(after.meeting.starts_at, lng) : "" }));
+        const m = registerKind === "expansion" ? after.expansion_meeting : after.meeting;
+        const past = Date.parse(input.starts_at) <= Date.parse(nowIso());
+        toast.success(t("entry.register.t_done", { name: lead.business.name, date: m ? formatDateTime(m.starts_at, lng) : "" }), past ? {
+          // A meeting that already happened: mark how it went right away.
+          action: { label: t("entry.register.how_did_it_go"), onClick: () => document.getElementById("lead-meeting")?.scrollIntoView({ behavior: "smooth", block: "center" }) },
+        } : undefined);
       },
       onError: (e) => toast.error(e instanceof Error && ["invalid_transition", "invalid_url", "invalid_date"].includes(e.message) ? t(`entry.register.errors.${e.message}`) : t("pipeline.t_error")),
     });
@@ -320,15 +326,15 @@ export function LeadDetail(props: {
           </>
         )}
       </header>
-      {leadOwner && (
-        <ScheduleMeetingDialog
-          open={scheduling}
-          onOpenChange={setScheduling}
-          context={{ kind: "lead", lead_id: lead.id }}
-          participants={scheduleGuests}
-          defaultTopic={lead.business.name}
-        />
-      )}
+      <ScheduleMeetingDialog
+        open={scheduling}
+        onOpenChange={setScheduling}
+        context={{ kind: "lead", lead_id: lead.id }}
+        participants={[]}
+        guestEmail={lead.contact.email}
+        defaultTopic={lead.business.name}
+        onRegisterManually={canRegister ? () => { setScheduling(false); setRegistering(true); } : undefined}
+      />
 
       <div className="flex-1 space-y-6 px-6 py-5">
         {/* 1a. Automatic entry: the four phases, the booked meeting and the summary email */}
@@ -445,7 +451,7 @@ export function LeadDetail(props: {
         />
       )}
       {registering && (
-        <RegisterMeetingDialog name={lead.business.name} rebook={registerKind === "rebook"} pending={register.isPending} onClose={() => setRegistering(false)} onConfirm={onRegister} />
+        <RegisterMeetingDialog name={lead.business.name} rebook={registerKind === "rebook"} expansion={registerKind === "expansion"} pending={register.isPending} onClose={() => setRegistering(false)} onConfirm={onRegister} />
       )}
       {warning && (
         <MouUnsignedDialog

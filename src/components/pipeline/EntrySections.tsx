@@ -34,7 +34,10 @@ export function EntryTimeline({ lead }: { lead: LeadWithComputed }) {
             </span>
             {i < 3 && s.state !== "pending" && <span>{t("entry.auto")}</span>}
           </span>
-          <span className={cn("mt-1 block text-xs", s.state === "current" ? "font-semibold text-foreground" : "font-medium")}>{t(`entry.phases.${s.phase}`)}</span>
+          <span className={cn("mt-1 block text-xs", s.state === "current" ? "font-semibold text-foreground" : "font-medium")}>
+            {/* "Reunión hecha" only with an outcome; past and unanswered reads as missing. */}
+            {s.phase === "meeting_held" && s.state === "current" && lead.meeting && !lead.meeting.outcome ? t("entry.phases.outcome_missing") : t(`entry.phases.${s.phase}`)}
+          </span>
           {s.phase === "summary_sent" && <span className="block text-[11px] leading-snug text-muted-foreground">{t("entry.phase_hints.summary_sent")}</span>}
           <span className="mt-0.5 block text-[11px] tabular-nums text-muted-foreground">{s.at ? formatDate(s.at, i18n.language) : t("entry.phase_pending")}</span>
         </li>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useLeads, useOrganizations, useUsers } from "@/lib/api/hooks";
+import { useCurrentUser, useLeads, useOrganizations, useUsers } from "@/lib/api/hooks";
 import { LEAD_STAGES } from "@/lib/api/types";
 import { ALL_OFFICES, officeIdForQuery, useOfficeScope } from "@/lib/office-scope";
 import { cn } from "@/lib/utils";
@@ -24,6 +24,7 @@ export function GlobalFunnelPage({ initialLeadId }: { initialLeadId?: string | u
   const leadsQ = useLeads(officeIdForQuery(scope));
   const orgsQ = useOrganizations();
   const usersQ = useUsers();
+  const meId = useCurrentUser().data?.id;
   const header = <GlobalHeader question={t("global.funnel.question")} />;
   const queries = [leadsQ, orgsQ, usersQ];
 
@@ -84,7 +85,8 @@ export function GlobalFunnelPage({ initialLeadId }: { initialLeadId?: string | u
         <SheetContent className="w-full overflow-y-auto bg-surface p-0 sm:max-w-xl [&>button]:hidden">
           <SheetTitle className="sr-only">{selected?.business.name ?? t("pipeline.detail.open_full")}</SheetTitle>
           <SheetDescription className="sr-only">{selected?.contact.name ?? ""}</SheetDescription>
-          {leadId && <LeadDetail readOnly leadId={leadId} onClose={() => setLeadId(undefined)} />}
+          {/* Read only unless the current user is the lead's consultant. */}
+          {leadId && <LeadDetail readOnly={selected?.consultant_user_id !== meId} leadId={leadId} onClose={() => setLeadId(undefined)} />}
         </SheetContent>
       </Sheet>
     </div>

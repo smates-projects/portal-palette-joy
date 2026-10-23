@@ -26,7 +26,7 @@ function Field({ label, hint, error, children }: { label: string; hint?: string 
  * "Registrar reunión": a meeting SM agreed with the owner outside the booking calendar. Date, time, how long and an
  * optional Meet link; the lead moves to Reunión (or gets its new meeting after a reschedule).
  */
-export function RegisterMeetingDialog(props: { name: string; rebook: boolean; pending: boolean; onClose: () => void; onConfirm: (input: RegisterMeetingInput) => void }) {
+export function RegisterMeetingDialog(props: { name: string; rebook: boolean; expansion?: boolean; pending: boolean; onClose: () => void; onConfirm: (input: RegisterMeetingInput) => void }) {
   const { t } = useTranslation();
   const [form, setForm] = useState<RegisterMeetingForm>(emptyRegisterMeetingForm());
   const [tried, setTried] = useState(false);
@@ -42,7 +42,7 @@ export function RegisterMeetingDialog(props: { name: string; rebook: boolean; pe
       <DialogContent className="bg-surface sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{t("entry.register.title", { name: props.name })}</DialogTitle>
-          <DialogDescription>{t(props.rebook ? "entry.register.body_rebook" : "entry.register.body")}</DialogDescription>
+          <DialogDescription>{t(props.expansion ? "entry.register.body_expansion" : props.rebook ? "entry.register.body_rebook" : "entry.register.body")}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
