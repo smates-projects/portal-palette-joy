@@ -205,16 +205,19 @@ export function createEntry(d: Deps) {
       if (!l) throw new Error("not_found");
       if (!(u.role === "sm_global" || (u.role === "sm_team" && u.organization_id === l.office_id))) throw new Error("forbidden");
       const kind = bookingKind(l);
-      if (kind !== "initial" && kind !== "rebook") throw new Error("invalid_transition");
+      if (kind !== "initial" && kind !== "rebook" && kind !== "expansion") throw new Error("invalid_transition");
       if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(input.starts_at) || Number.isNaN(Date.parse(input.starts_at))) throw new Error("invalid_date");
       if (!Number.isInteger(input.duration_minutes) || input.duration_minutes <= 0) throw new Error("invalid_duration");
       const meetUrl = input.meet_url?.trim() ?? "";
       if (meetUrl && !/^https?:\/\/\S+/.test(meetUrl)) throw new Error("invalid_url");
       const now = nowIso();
-      l.meeting = {
-        id: newId(), kind: "initial", starts_at: new Date(input.starts_at).toISOString(), duration_minutes: input.duration_minutes, meet_url: meetUrl,
+      const meeting = {
+        id: newId(), kind: kind === "expansion" ? "expansion" as const : "initial" as const, starts_at: new Date(input.starts_at).toISOString(), duration_minutes: input.duration_minutes, meet_url: meetUrl,
         consultant_user_id: l.consultant_user_id, booked_at: now, notes_at: null, outcome: null, outcome_prompted_at: null,
       };
+      // The expansion meeting of an accepted lead may already have happened (a past date).
+      if (kind === "expansion") l.expansion_meeting = meeting;
+      else l.meeting = meeting;
       l.last_contact_at = now;
       if (kind === "initial") {
         l.stage = "meeting";
