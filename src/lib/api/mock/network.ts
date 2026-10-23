@@ -763,22 +763,26 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       return delay(db.financials.find((f) => f.business_id === b.id) ?? null);
     },
   };
+  // As the API: past onboarding SM checked the legal data against the entry documents, so those fields are verified.
+  const verifiedFieldsOf = (b: Business) => (b.status !== "onboarding" ? [...VERIFIED_PROFILE_FIELDS] : []);
   const businessProfile: BusinessProfileRepository = {
     get: async (businessId) => {
       const b = pickBusiness(businessId);
-      return delay(db.profiles.find((p) => p.business_id === b.id) ?? null);
+      const p = db.profiles.find((x) => x.business_id === b.id);
+      return delay(p ? { ...p, verified_fields: verifiedFieldsOf(b) } : null);
     },
     update: async (patch) => {
       const b = ownOwnerBusiness();
       const p = db.profiles.find((x) => x.business_id === b.id);
       if (!p) throw new Error("not_found");
-      // Past onboarding the verified fields are frozen: SM checked them against the entry documents.
-      if (b.status !== "onboarding" && VERIFIED_PROFILE_FIELDS.some((f) => patch[f] !== undefined && patch[f] !== p[f])) throw new Error("locked_field");
+      // Verified fields are frozen: the owner asks SM for a change.
+      const verified = verifiedFieldsOf(b);
+      if (verified.some((f) => patch[f] !== undefined && patch[f] !== p[f])) throw new Error("locked_field");
       if (patch.email !== undefined && !validEmail(patch.email)) throw new Error("invalid_email");
       if (patch.legal_name !== undefined && !patch.legal_name.trim()) throw new Error("name_required");
       if (patch.employees !== undefined && (!Number.isInteger(patch.employees) || patch.employees < 0)) throw new Error("invalid_employees");
       Object.assign(p, patch);
-      return delay(p);
+      return delay({ ...p, verified_fields: verified });
     },
     requestChange: async (input) => {
       const b = ownOwnerBusiness();

@@ -16,12 +16,13 @@ import { DOT, TEXT } from "./shared";
 import { FundsAndDistribution } from "@/components/funds/FundsAndDistribution";
 import { BrandPanel } from "@/components/brand/BrandPanel";
 import { BusinessFile } from "@/components/business/BusinessFile";
+import { industryLabel } from "@/lib/business/industry";
 
 const ALL = "__all";
 
 /** Negocios (SM): every business of the office in the program, worst health first. */
 export function BusinessesPage({ search }: { search: BusinessesSearch }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const tasksQ = useTasks();
   const bizQ = useBusinesses();
@@ -60,7 +61,8 @@ export function BusinessesPage({ search }: { search: BusinessesSearch }) {
   const rows = buildBusinessRows(bizQ.data ?? [], tasks, versionsQ.data ?? [], usersQ.data ?? [], franchiseQ.data);
   const visible = filterBusinessRows(rows, search);
   const consultants = [...new Map(rows.flatMap((r) => (r.consultant ? [[r.consultant.id, r.consultant] as const] : []))).values()];
-  const industries = [...new Set(rows.map((r) => r.business.industry))].sort();
+  // The filter keeps the industry key; the option shows its readable name.
+  const industries = [...new Map(rows.map((r) => [r.business.industry, industryLabel(r.business, i18n)] as const)).entries()].sort((a, b) => a[1].localeCompare(b[1]));
   const selected = rows.find((r) => r.business.id === search.biz);
   const hasFilters = !!(search.consultant || search.health || search.industry);
 
@@ -110,7 +112,7 @@ export function BusinessesPage({ search }: { search: BusinessesSearch }) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={ALL}>{t("office.biz.all_industries")}</SelectItem>
-                {industries.map((i) => <SelectItem key={i} value={i}>{i}</SelectItem>)}
+                {industries.map(([key, label]) => <SelectItem key={key} value={key}>{label}</SelectItem>)}
               </SelectContent>
             </Select>
             {hasFilters && (
@@ -174,14 +176,14 @@ export function BusinessesPage({ search }: { search: BusinessesSearch }) {
 }
 
 function BusinessCell({ row }: { row: BusinessRow }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   return (
     <div className="flex items-start gap-2">
       <span className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", DOT[row.health])} title={t(`sm.health.${row.health}`)} />
       <span className="min-w-0">
         <span className="block font-medium">{row.business.name}</span>
         <span className="block text-xs text-muted-foreground">
-          {row.owner ? t("office.biz.owner", { name: row.owner.full_name }) : ""} · {row.business.industry} · {row.business.city}
+          {row.owner ? t("office.biz.owner", { name: row.owner.full_name }) : ""} · {industryLabel(row.business, i18n)} · {row.business.city}
         </span>
       </span>
     </div>
@@ -237,7 +239,7 @@ function AreaDots({ row }: { row: BusinessRow }) {
 }
 
 function BusinessProfile({ row }: { row: BusinessRow }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const me = useCurrentUser().data;
   const b = row.business;
   return (
@@ -248,7 +250,7 @@ function BusinessProfile({ row }: { row: BusinessRow }) {
           {b.name}
         </SheetTitle>
         <SheetDescription className="mt-1 text-sm text-muted-foreground">
-          {row.owner ? t("office.biz.owner", { name: row.owner.full_name }) : ""} · {b.industry} · {t("office.biz.location", { city: b.city, state: b.state })}
+          {row.owner ? t("office.biz.owner", { name: row.owner.full_name }) : ""} · {industryLabel(b, i18n)} · {t("office.biz.location", { city: b.city, state: b.state })}
         </SheetDescription>
         {/* Day, progress and areas live in "Cómo va hoy" below; here only what SM changes. */}
         <div className="mt-4 text-sm">

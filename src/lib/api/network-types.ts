@@ -646,6 +646,11 @@ export interface BusinessProfile {
   website: string | null;
   years_operating: number;
   employees: number;
+  /** Readable name of the industry (Spanish / English). Absent in older rows: fall back to industry. */
+  industry_label?: string | undefined;
+  industry_label_en?: string | undefined;
+  /** Fields SM already checked against the entry documents: only these are locked for the owner. */
+  verified_fields?: VerifiedProfileField[] | undefined;
 }
 
 export type BusinessProfilePatch = Partial<Pick<BusinessProfile, "legal_name" | "address" | "city" | "state" | "phone" | "email" | "website" | "employees">>;

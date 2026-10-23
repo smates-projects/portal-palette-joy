@@ -6,6 +6,7 @@ import { useBusinesses, useTasks, useUsers } from "@/lib/api/hooks";
 import { firstName, formatDate } from "@/lib/format";
 import { buildClientSummary, type StuckLine } from "@/lib/tasks/clients";
 import { daysBetween } from "@/lib/tasks/table";
+import { industryLabel } from "@/lib/business/industry";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -69,7 +70,7 @@ export function ClientsPage() {
                     <div className="min-w-0">
                       <h2 className="truncate text-base font-semibold">{b.name}</h2>
                       <p className="truncate text-xs text-muted-foreground">
-                        {b.industry} · {b.city}, {b.state}
+                        {industryLabel(b, i18n)} · {b.city}, {b.state}
                       </p>
                     </div>
                     <span className="shrink-0 font-display text-xs tabular-nums text-muted-foreground">

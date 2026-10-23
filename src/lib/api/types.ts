@@ -151,6 +151,10 @@ export interface User {
    * dialog). Absent = no.
    */
   password_setup_required?: boolean | undefined;
+  /** GET /users: office of the person (SM team) or of their business (owners). Lets Personas place someone whose business is out of scope. */
+  office_id?: Uuid | null | undefined;
+  /** GET /users: name of the owner's business, for when the business is not in the visible list. */
+  business_name?: string | null | undefined;
 }
 
 /** PATCH /users/{id}/signing-entities. */
@@ -199,6 +203,9 @@ export interface Business {
   office_id: Uuid;
   /** SM consultant assigned to this business (inherited from the lead when the contract is signed). */
   consultant_id: Uuid | null;
+  /** Readable name of the industry (Spanish / English). Absent in older rows: fall back to industry. */
+  industry_label?: string | undefined;
+  industry_label_en?: string | undefined;
 }
 
 /** Business activity: changes made by the SM team (phase 1: consultant reassignment). */
@@ -249,6 +256,8 @@ export interface Task {
   pre_validation?: PreValidation | null;
   /** How it got approved: a deliverable the owner approved, or "Ya existía" (evidence shown in the Diagnóstico). */
   approval_source?: ApprovalSource | null;
+  /** Whole days past due_date, computed by the API on its clock. Absent: computed on the client. */
+  overdue_days?: number | undefined;
 }
 
 export interface TaskFile {

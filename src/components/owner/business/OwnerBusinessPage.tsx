@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { formatDateTime } from "@/lib/format";
 import { EmptyState, ErrorState, Field, inputCls, LoadingState, PageHeader, Panel, primaryButtonCls, secondaryButtonCls, textareaCls, ToneBadge } from "../shared";
 import { OwnerBusinessFile } from "@/components/business/BusinessFile";
+import { industryLabel } from "@/lib/business/industry";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -44,13 +45,14 @@ export function OwnerBusinessPage() {
 
 type ProfileField = keyof BusinessProfilePatch;
 
-/** Profile of the business. Past onboarding the verified fields are read-only: the owner asks SM for a change. */
+/** Profile of the business. A field SM verified (profile.verified_fields) is read-only: the owner asks SM for a change. */
 function ProfileForm({ profile }: { profile: BusinessProfile }) {
   const { t, i18n } = useTranslation();
   const update = useUpdateBusinessProfile();
-  const me = useCurrentUser().data;
-  const business = useBusinesses().data?.find((b) => b.id === me?.business_id);
-  const verified = !!business && business.status !== "onboarding";
+  // Only the fields SM checked against the documents lock; the rest stays editable, even past onboarding.
+  const verifiedFields: readonly string[] = profile.verified_fields ?? [];
+  const isLocked = (name: ProfileField) => verifiedFields.includes(name);
+  const verified = verifiedFields.length > 0;
   const requestsQ = useProfileChangeRequests();
   const [requesting, setRequesting] = useState<VerifiedProfileField | null>(null);
   const pendingFor = (f: VerifiedProfileField) => requestsQ.data?.find((r) => r.field === f && r.status === "pending");
@@ -90,10 +92,9 @@ function ProfileForm({ profile }: { profile: BusinessProfile }) {
       website: values.website.trim() || null,
       employees: Number(values.employees),
     };
-    // Only while entering can the owner still fix the legal data; afterwards SM changes it through a request.
-    const patch: BusinessProfilePatch = verified
-      ? editable
-      : { ...editable, legal_name: values.legal_name.trim(), address: values.address.trim(), city: values.city.trim(), state: values.state.trim() };
+    // A verified field is not sent: SM changes it through a request.
+    const patch: BusinessProfilePatch = { ...editable };
+    for (const f of VERIFIED_PROFILE_FIELDS) if (!isLocked(f)) patch[f] = values[f].trim();
     update.mutate(patch, {
       onSuccess: () => toast.success(t("owner_extra.business.t_saved")),
       onError: (e) => toast.error(t(e instanceof Error && e.message === "locked_field" ? "owner_extra.business.t_locked" : "owner_extra.common.t_error")),
@@ -101,7 +102,7 @@ function ProfileForm({ profile }: { profile: BusinessProfile }) {
   };
 
   const field = (name: ProfileField, label: string, extra?: { type?: string; inputMode?: "numeric" | "tel" | "email"; autoComplete?: string }) => {
-    const locked = verified && (VERIFIED_PROFILE_FIELDS as readonly string[]).includes(name);
+    const locked = isLocked(name);
     if (locked) {
       const f = name as VerifiedProfileField;
       const pending = pendingFor(f);
@@ -142,7 +143,7 @@ function ProfileForm({ profile }: { profile: BusinessProfile }) {
         <dl className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <dt className="text-xs text-muted-foreground">{t("owner_extra.business.industry")}</dt>
-            <dd className="mt-0.5">{profile.industry}</dd>
+            <dd className="mt-0.5">{industryLabel(profile, i18n)}</dd>
           </div>
           <div>
             <dt className="text-xs text-muted-foreground">{t("owner_extra.business.years")}</dt>
