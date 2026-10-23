@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PrimaryButton, SecondaryButton } from "@/components/tasks/detail/dialogs";
 import { Button } from "@/components/ui/button";
+import { schedulingDays } from "./scheduling-days";
 
 /** What the meeting is about. The id of the kind is required by the API. */
 export interface ScheduleContext {
@@ -118,7 +119,7 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
     : null;
   const availabilityQ = useAvailability(availabilityInput);
   const zone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, []);
-  const days = useMemo(() => groupSlotsByDay(availabilityQ.data?.slots ?? [], zone), [availabilityQ.data, zone]);
+  const days = useMemo(() => schedulingDays(groupSlotsByDay(availabilityQ.data?.slots ?? [], zone)), [availabilityQ.data, zone]);
   const unavailable = (availabilityQ.data?.unavailable_participants ?? []).filter((u) => u.user_id !== me?.id);
   const meUnreadable = !meConnected || (availabilityQ.data?.unavailable_participants ?? []).some((u) => u.user_id === me?.id);
   const activeDay = days.find((d) => d.day === selectedDay) ?? days[0];
