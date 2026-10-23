@@ -9,6 +9,8 @@ import { entryRules, ndaStatus, oaWaitingUntil, ownerMeetingView, ownerSteps, ty
 import { entryMeetings } from "@/lib/leads/meetings";
 import { contractDeadline } from "@/lib/leads/contract-rules";
 import { isSplitFinal } from "@/lib/leads/validation";
+import { missingRequiredDocuments, ownerDocumentsInOrder } from "@/lib/business/owner-documents";
+import { ReviewNoteAlert } from "@/components/pipeline/ReviewNoteAlert";
 import { cn } from "@/lib/utils";
 import { DocuSealSigner } from "@/components/docuseal/DocuSealSigner";
 import { SignedContractDialog } from "@/components/docuseal/SignedContractDialog";
@@ -61,8 +63,9 @@ export function IntakeHomePage({ focusStep }: { focusStep?: OwnerStepKey | undef
   // The Acuerdo de Vinculación: with the rules, every business entering has the step (null until a Bishop accepts).
   const binding = contracts.find((c) => c.kind === "binding") ?? null;
   const usesBinding = !!binding || !oa;
-  const docs = (docsQ.data ?? []).filter((d) => d.area === "intake");
-  const missing = docs.filter((d) => d.state === "requested" || d.state === "rejected").length;
+  // What SM asked again first, with its reason, as in Documentos; the count names only the required ones (QA M1, B5).
+  const docs = ownerDocumentsInOrder((docsQ.data ?? []).filter((d) => d.area === "intake"));
+  const missing = missingRequiredDocuments(docs);
   const entry = s.entry ?? null;
   const steps = ownerSteps({ summary: s, nda, mou, operatingAgreement: oa, rules, ...(usesBinding ? { binding } : {}) });
   const validation = entry?.validation ?? null;
@@ -196,9 +199,14 @@ export function IntakeHomePage({ focusStep }: { focusStep?: OwnerStepKey | undef
             </p>
             <ul className="divide-y divide-border rounded-[4px] border border-border text-sm">
               {docs.map((d) => (
-                <li key={d.id} className="flex items-center justify-between gap-3 px-3 py-2">
-                  <span className="min-w-0">{d.name}</span>
-                  <span className="shrink-0 text-xs text-muted-foreground">{t(`owner_extra.documents.state_${d.state}`)}</span>
+                <li key={d.id} className="px-3 py-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="min-w-0">{d.name}</span>
+                    <span className={cn("shrink-0 text-xs", d.state === "rejected" ? "font-medium text-status-danger-fg" : "text-muted-foreground")}>
+                      {t(`owner_extra.documents.state_${d.state}`)}
+                    </span>
+                  </div>
+                  {d.state === "rejected" && d.review_comment && <ReviewNoteAlert comment={d.review_comment} className="mt-2" />}
                 </li>
               ))}
             </ul>
