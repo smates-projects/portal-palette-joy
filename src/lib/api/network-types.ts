@@ -2,7 +2,6 @@
 // Same conventions as types.ts: snake_case, UUID string ids, ISO dates.
 import type { AreaCode, BusinessStatus, IsoDate, IsoDateTime, Lead, LeadBand, LeadIndustry, LeadResult, LeadStage, OfficeStatus, Organization, ReviewClock, User, Uuid } from "./types";
 import type { AssessmentAreaMap, MouAcknowledgmentPoint, OpportunityVisibility, SmEntities, SmEntity } from "./entry-types";
-
 /** Month as YYYY-MM. */
 export type IsoMonth = string;
 
@@ -68,6 +67,10 @@ export interface OfficeBusinessRow {
   health: "red" | "amber" | "green" | "grey";
   franchisability_pct: number;
   franchises: number;
+  /** In the program: approved % expected on program_day, how far below it is, and the light (API). */
+  expected_pct?: number | null | undefined;
+  behind_points?: number | null | undefined;
+  franchisability_health?: "green" | "amber" | "red" | null | undefined;
 }
 
 export interface OfficeDetail extends OfficeSummary {
@@ -86,7 +89,7 @@ export type StructureDetail =
   | { kind: "business"; status: BusinessStatus; program_day: number | null; consultant_name: string | null; owner_name: string | null }
   | { kind: "franchise"; status: FranchiseStatus; city: string; franchisee_name: string | null }
   | { kind: "firm"; area: AreaCode | null; overdue_tasks: number; specialty: string | null; contact_name: string | null }
-  | { kind: "investor"; invested: number; share_pct: number };
+  | { kind: "investor"; invested: number; share_pct: number; split_final?: boolean | undefined; split?: EquitySplit | undefined };
 
 export interface StructureNode {
   id: Uuid;
@@ -116,7 +119,7 @@ export interface AreaBottleneck {
   waiting_owner: number;
   /** Businesses with this area in red. */
   red_businesses: number;
-  by_office: { office_id: Uuid; office_name: string; open: number; overdue: number }[];
+  by_office: { office_id: Uuid; office_name: string; open: number; overdue: number; red_businesses?: number | undefined }[];
 }
 
 export interface NetworkSummary {
@@ -135,6 +138,21 @@ export interface NetworkSummary {
   last_month: IsoMonth;
   franchise_sales_last_month: number;
   royalties_last_month: number;
+}
+
+/** GET /leads/counters?office_id=&cohort_month=YYYY-MM: the board's counters, computed by the API on its clock. */
+export interface LeadCounters {
+  today: number;
+  week: number;
+  uncontacted: number;
+  /** Days without contact after which an evaluated lead counts as uncontacted (limits.uncontacted_lead_days). */
+  uncontacted_days: number;
+  in_review: number;
+  review_overdue: number;
+  accepted_no_investor: number;
+  signed_month: number;
+  /** Of the leads submitted in cohort_month, how many reached the program. pct null with none submitted. */
+  conversion: { cohort_month: IsoMonth; submitted: number; reached_program: number; pct: number | null };
 }
 
 export interface NetworkFunnel {
@@ -182,12 +200,81 @@ export interface PlatformRules {
   sm_entities?: SmEntities | undefined;
   /** Bilingual contracts: the version that prevails if the Spanish and the English differ. Absent = English. */
   contracts?: { governing_language: ContractLanguage } | undefined;
+  /** The owner's own NDA template (SM Global edits it in Reglas). */
+  owner_nda_template?: string | undefined;
+  /** Equity ranges SM validates for owner, Bishop and SM (Validación). */
+  equity_ranges?: EquityRanges | undefined;
+  /** Read only: days of the program and its phases. */
+  program_length_days?: number | undefined;
+  program?: ProgramTimeline | undefined;
+  /** Read only: fixed limits of the platform (stale days, link lifetimes, meeting sizes...). */
+  limits?: PlatformLimits | undefined;
+  /** Editable fields still at their default value ("valor por defecto" in Reglas). */
+  defaults?: RulesField[] | undefined;
+}
+
+export interface EquityRange {
+  min: number;
+  max: number;
+}
+
+export interface EquityRanges {
+  owner: EquityRange;
+  bishop: EquityRange;
+  sm: EquityRange;
+}
+
+export type RulesField =
+  | "franchisability_goal" | "required_task_codes" | "area_amber_days" | "franchisability_amber_tolerance"
+  | "document_review_days" | "intake_documents" | "program_amount" | "assessment_area_map"
+  | "program_start_requires_full_funds" | "opportunity_visibility" | "oa_waiting_days" | "require_expansion_meeting"
+  | "nda_auto_signed_by_sm" | "meeting_hours" | "intake_help_text" | "owner_nda_template" | "eligibility"
+  | "sm_entities" | "contracts" | "equity_ranges";
+
+export interface PlatformLimits {
+  stale_task_days: number;
+  uncontacted_lead_days: number;
+  magic_link_minutes: number;
+  invitation_days: number;
+  password_reset_minutes: number;
+  entry_link_days: number;
+  meeting_slot_minutes: number;
+  meeting_durations: number[];
+  max_meeting_participants: number;
+  availability_days: number;
+  oa_waiting_days_max: number;
+  max_monthly_sales: number;
+}
+
+/** GET /auth/link-lifetimes (public): how long each email link lasts. */
+export interface AuthLinkLifetimes {
+  magic_link_minutes: number;
+  invitation_days: number;
+  password_reset_minutes: number;
+  entry_link_days: number;
+}
+
+/** A span of program days, both ends included (day 1 is the program start). */
+export interface ProgramDaySpan {
+  start_day: number;
+  end_day: number;
+}
+
+export interface ProgramTimeline {
+  length_days: number;
+  diagnosis: ProgramDaySpan;
+  areas: ProgramDaySpan;
+  closing: ProgramDaySpan;
+  milestone_days: number[];
 }
 
 /** Eligibility rules of the program (SM Global, Reglas). The year of operation stays a hard rule of the assessment. */
 export interface EligibilityRules {
-  /** Lowest annual revenue the owner declares in the assessment, in USD. Default 250,000. */
+  /** Lowest annual revenue the owner declares in the assessment, in USD. */
   min_annual_revenue: number;
+  /** API: least years the business operates, and the Hispanic owner rule (read with the eligibility). */
+  min_years_operating?: number | undefined;
+  require_hispanic_owner?: boolean | undefined;
 }
 
 /** Help of one entry document: what it is, what counts as that document, and a tip. */
@@ -203,6 +290,8 @@ export interface MeetingHours {
   start: string;
   end: string;
   timezone: string;
+  /** Days of the week with meetings (0 = Sunday). Absent = Monday to Friday. */
+  weekdays?: number[] | undefined;
 }
 
 export interface IntakeDocRule {
@@ -294,6 +383,28 @@ export interface FranchiseSummary extends Franchise {
   last_report: FranchiseReport | null;
   /** Sales of the last submitted month, null if none yet. */
   last_sales: number | null;
+  /** Fees of this franchise's agreement: rates (0.05) and the same in percent (5). */
+  royalty_rate?: number | undefined;
+  marketing_fund_rate?: number | undefined;
+  royalty_pct?: number | undefined;
+  marketing_fund_pct?: number | undefined;
+}
+
+export interface ReportPreviewInput {
+  gross_sales: number;
+}
+
+/** POST /franchises/{id}/reports/preview: what a month of sales would bill, computed by the API. */
+export interface ReportPreview {
+  gross_sales: number;
+  royalty_amount: number;
+  marketing_fund_amount: number;
+  total_due: number;
+  royalty_rate: number;
+  marketing_fund_rate: number;
+  royalty_pct: number;
+  marketing_fund_pct: number;
+  max_monthly_sales: number;
 }
 
 export type ReportStatus = "due" | "submitted" | "paid";
@@ -407,6 +518,8 @@ export interface ManualSection {
   catalog_codes: string[];
   /** What the section says: purpose and key steps, paragraphs separated by a blank line. Empty until the section is started. */
   body: string;
+  /** The current person may approve it now (API). */
+  can_approve?: boolean | undefined;
 }
 
 export interface ManualEvent {
@@ -583,6 +696,51 @@ export interface Contract {
   my_signature?: "signed" | "pending" | null | undefined;
   /** Names of the parties that have not signed yet ("Strategic Mates Corporate"); from the signers when absent. */
   pending_parties?: string[] | undefined;
+  /** The current person may send it again now. */
+  can_resend?: boolean | undefined;
+  /** MOU: the points the owner confirms with "Entendí", in both languages (codes = /acknowledge). */
+  acknowledgment_points?: { es: MouAcknowledgmentPointText[]; en: MouAcknowledgmentPointText[] } | null | undefined;
+}
+
+type SignedDocumentParty = "owner" | "sm" | "bishop";
+
+/** GET /contracts/{id}/signed-document: the sealed text, its seal, the hashes of the stored copies and the audit trail. */
+export interface SignedDocument {
+  contract_id: Uuid;
+  kind: "nda" | "mou" | "tripartite" | "framework" | "binding" | "owner_nda" | "other";
+  name: string;
+  text: string;
+  /** The seal fingerprint printed inside the sealed copies (not the hash of a PDF). Null until every party signed. */
+  fingerprint: string | null;
+  /** SHA-256 of each stored sealed copy (es, en); null before they are stored. */
+  sealed_files_sha256?: { es: string | null; en: string | null } | null | undefined;
+  /** SHA-256 of DocuSeal's sealed PDF as stored; null without it. */
+  sealed_pdf_sha256?: string | null | undefined;
+  signers: {
+    party: SignedDocumentParty;
+    name: string;
+    status: SignerStatus;
+    signed_at: IsoDateTime | null;
+    signature: { kind: "drawn" | "typed" | "uploaded" | "saved"; image_url: string } | null;
+  }[];
+  audit_trail: {
+    party: SignedDocumentParty;
+    name: string;
+    status: SignerStatus;
+    at: IsoDateTime;
+    reason: string | null;
+    email?: string | null | undefined;
+    ip?: string | null | undefined;
+  }[];
+  /** DocuSeal only: the sealed PDF and its audit log once stored; null otherwise. */
+  sealed_pdf_url?: string | null | undefined;
+  audit_log_url?: string | null | undefined;
+}
+
+export interface MouAcknowledgmentPointText {
+  code: MouAcknowledgmentPoint;
+  title: string;
+  body: string;
 }
 
 /** binding: the Acuerdo de Vinculación y Formalización (owner, Bishop and Strategic Mates). other: any other rule. */
@@ -729,11 +887,33 @@ export interface BishopInvestment {
    * not see the office's people). Absent when the API does not send it: the portfolio then hides the action.
    */
   consultant?: { user_id: Uuid; name: string } | null | undefined;
+  /** The validated split once final; absent while provisional. */
+  split?: EquitySplit | undefined;
+  /** no_reports_yet: no real month reported yet, so there is nothing recovered to show. */
+  recovery_status?: RecoveryStatus | undefined;
+}
+
+export type RecoveryStatus = "no_reports_yet" | "reporting";
+
+export interface EquitySplit {
+  owner_pct: number;
+  bishop_pct: number;
+  sm_pct: number;
 }
 
 export interface BishopPortfolio {
   investments: BishopInvestment[];
-  totals: { invested: number; recovered: number; recovered_pct: number };
+  totals: {
+    invested: number;
+    recovered: number;
+    recovered_pct: number;
+    recovery?: RecoveryPoint[] | undefined;
+    recovery_gap?: number | null | undefined;
+    estimated_payback_month?: IsoMonth | null | undefined;
+    recovery_status?: RecoveryStatus | undefined;
+    /** Months of the trailing window the payback estimate uses. */
+    payback_window_months?: number | undefined;
+  };
 }
 
 export type OpportunityDecision = "none" | "passed";
@@ -803,8 +983,13 @@ export interface OpportunityDetail extends BishopOpportunity {
   verified: OpportunityVerifiedItem[];
   checklist: { nda_signed: boolean; mou_signed: boolean; required_total: number; uploaded: number; accepted: number; approved: boolean };
   projection: ProjectionYear[];
-  /** After accepting: billing and tax files, read only. */
-  files: { id: Uuid; name: string; file_name: string }[];
+  /** After accepting: billing and tax files, read only. url = the download link (API). */
+  files: { id: Uuid; name: string; file_name: string; url?: string | undefined }[];
+  /** SM's share of the franchisor result and the projection period and totals (API). */
+  sm_share_pct?: number | undefined;
+  projection_years?: number | undefined;
+  projection_total_bishop?: number | undefined;
+  projection_total_sm?: number | undefined;
   /** Tripartite contract once SM sent it. */
   tripartite: Contract | null;
   /** The Acuerdo de Vinculación once it exists (only for the Bishop who took the business). */
@@ -840,6 +1025,9 @@ export interface BishopAgreement {
   /** The agreement document exists and can be opened. */
   has_file: boolean;
   file_name: string | null;
+  /** The stored document and its download link (API). */
+  file_id?: Uuid | null | undefined;
+  file_url?: string | null | undefined;
   /** The Bishop's own part, and who still has to sign ("Strategic Mates Corporate"). From the contract when absent. */
   my_signature?: "signed" | "pending" | null | undefined;
   pending_parties?: string[] | undefined;
@@ -874,6 +1062,9 @@ export interface FundPayment {
   method: PaymentMethod;
   reference: string | null;
   receipt: Receipt | null;
+  /** The stored receipt and its download link (API; SM office and the Bishop only). */
+  receipt_file_id?: Uuid | null | undefined;
+  receipt_url?: string | null | undefined;
   status: "reported" | "confirmed";
   reported_by: "sm" | "bishop";
   created_at: IsoDateTime;
@@ -893,6 +1084,10 @@ export interface BishopFunds {
   received: number;
   /** Sum of the payments the Bishop reported and SM still has to confirm. */
   to_confirm: number;
+  /** API: still missing, what can still be reported, and the confirmed share in percent. */
+  remaining?: number | undefined;
+  reportable?: number | undefined;
+  received_pct?: number | undefined;
   status: FundsStatus;
   /** Day the confirmed payments reached the total; null while they do not. */
   completed_on: IsoDate | null;
@@ -990,4 +1185,10 @@ export interface FranchiseeHome {
   open_tickets: number;
   /** Open tasks, soonest first. */
   tasks: FranchiseTask[];
+  /** Fees of this franchise (API), and the highest monthly sales a report accepts. */
+  royalty_rate?: number | undefined;
+  marketing_fund_rate?: number | undefined;
+  royalty_pct?: number | undefined;
+  marketing_fund_pct?: number | undefined;
+  max_monthly_sales?: number | undefined;
 }

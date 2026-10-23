@@ -206,6 +206,23 @@ export interface Business {
   /** Readable name of the industry (Spanish / English). Absent in older rows: fall back to industry. */
   industry_label?: string | undefined;
   industry_label_en?: string | undefined;
+  /** Days of the program (what program_day counts up to). */
+  program_length_days?: number | undefined;
+  /** GET /businesses, in the program only: its franchisability and pace, computed by the API (null otherwise). */
+  franchisability?: BusinessFranchisability | null | undefined;
+}
+
+/** Franchisability light: green at or above the expected line, amber within the tolerance, red beyond. */
+export type FranchisabilityHealth = "green" | "amber" | "red";
+
+export interface BusinessFranchisability {
+  franchisability_pct: number;
+  franchisability_goal: number;
+  missing_required: string[];
+  is_ready: boolean;
+  expected_pct: number;
+  behind_points: number;
+  health: FranchisabilityHealth;
 }
 
 /** Business activity: changes made by the SM team (phase 1: consultant reassignment). */
@@ -227,6 +244,12 @@ export interface Franchisability {
   required_task_codes: string[];
   missing_required: string[];
   is_ready: boolean;
+  /** GET /businesses/{id}/franchisability: program length and day, the expected % today and the light. */
+  program_length_days?: number | undefined;
+  program_day?: number | undefined;
+  expected_pct?: number | undefined;
+  behind_points?: number | undefined;
+  health?: FranchisabilityHealth | undefined;
 }
 
 export interface Task {
@@ -606,6 +629,8 @@ export interface AppNotification {
   /** The API renders the text itself (Spanish); shown as is when present, the locale texts are the fallback and the English. */
   title?: string | null | undefined;
   body?: string | null | undefined;
+  /** The SM office the notification belongs to (API). */
+  office_id?: Uuid | null | undefined;
 }
 
 export interface NotificationPreference {
@@ -620,6 +645,11 @@ export interface TaskWithComputed extends Task {
   is_overdue: boolean;
   /** When the latest deliverable version was sent (null if never). Set by the data layer. */
   last_submitted_at?: IsoDateTime | null;
+  /** API: due today, waiting with no movement past limits.stale_task_days, and what blocks it. */
+  is_due_today?: boolean | undefined;
+  is_stale?: boolean | undefined;
+  blocked_by_task_ids?: Uuid[] | undefined;
+  blocked_by_codes?: string[] | undefined;
 }
 
 /** What SM can edit on a task (never name or criteria: those come from the catalog). */

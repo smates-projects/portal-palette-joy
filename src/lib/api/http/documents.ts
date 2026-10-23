@@ -3,38 +3,14 @@
 // runs the real driver). Files travel through the files module
 // (./files.ts): the adapter uploads the bytes first and then attaches the returned file_id.
 import type { DocumentUpload, DocumentsRepository, SigningSession } from "../repositories";
-import type { BusinessDocument, Contract, IntakeSummary, IsoDateTime, SavedSignature, Uuid } from "../types";
+import type { BusinessDocument, Contract, IntakeSummary, SavedSignature, SignedDocument, Uuid } from "../types";
 import { ApiError, getOrNull, type HttpClient } from "./client";
 import { signatureToPng, uploadFile } from "./files";
 import { ensureCurrentUser } from "./session";
 
-type Party = "owner" | "sm" | "bishop";
-type SignerStatus = "sent" | "opened" | "signed" | "declined";
+export type { SignedDocument };
 
-/** GET /contracts/{id}/signed-document: the sealed text, its fingerprint and the audit trail. */
-export interface SignedDocument {
-  contract_id: Uuid;
-  kind: "nda" | "mou" | "tripartite" | "framework" | "other";
-  name: string;
-  text: string;
-  fingerprint: string | null;
-  signers: {
-    party: Party;
-    name: string;
-    status: SignerStatus;
-    signed_at: IsoDateTime | null;
-    signature: { kind: "drawn" | "typed" | "uploaded" | "saved"; image_url: string } | null;
-  }[];
-  audit_trail: {
-    party: Party;
-    name: string;
-    status: SignerStatus;
-    at: IsoDateTime;
-    reason: string | null;
-  }[];
-}
-
-/** The API's signed document has no place in the front's contract yet (the dialog draws it from the Contract). */
+/** Over the API the signed document always exists: the dialog shows its seal and audit trail. */
 export interface HttpDocumentsRepository extends DocumentsRepository {
   getSignedDocument(contractId: Uuid): Promise<SignedDocument>;
 }

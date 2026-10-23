@@ -53,7 +53,7 @@ describe("http leads", () => {
     ]);
   });
 
-  it("get: GET /leads/{id}, only { lead, events }, and the ETag kept", async () => {
+  it("get: GET /leads/{id}, { lead, events, summary_email }, and the ETag kept", async () => {
     const { calls } = stubFetch(dataResponse(detailFixture(), 200, { ETag: '"7"' }));
     const { leads, client } = setup();
     // The meeting comes back normalized by the one selector (kind and outcome explicit, no expansion meeting yet).
@@ -61,6 +61,8 @@ describe("http leads", () => {
     expect(await leads.get(LEAD)).toEqual({
       lead: { ...lead, meeting: { ...lead.meeting, kind: "initial", outcome: null, outcome_prompted_at: null }, expansion_meeting: null },
       events: [leadEventFixture()],
+      // No stored copy in the fixture: the screen says so instead of composing one.
+      summary_email: null,
     });
     expect(calls[0]).toMatchObject({ method: "GET", path: LEAD_PATH });
     expect(client.etags.get(LEAD_PATH)).toBe('"7"');

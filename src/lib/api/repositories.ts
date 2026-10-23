@@ -111,6 +111,10 @@ import type {
   EntryContractRuleInput,
   SigningEntitiesInput,
   ValidationInput,
+  SignedDocument,
+  LeadCounters,
+  ReportPreview,
+  AuthLinkLifetimes,
 } from "./types";
 
 import type { RecoveryCodes, SignInResult, TwoFactorSetup, TwoFactorVerifyInput } from "./auth-types";
@@ -314,6 +318,19 @@ export interface LeadIntake {
 export interface LeadDetail {
   lead: LeadWithComputed;
   events: LeadEvent[];
+  /** The summary email exactly as it went out; null when there is no stored copy. Absent = not known. */
+  summary_email?: SummaryEmailCopy | null | undefined;
+  /** Days after which the entry contracts can be sent again. */
+  resend_after_days?: number | undefined;
+}
+
+/** GET /leads/{id}: the stored copy of the summary email the owner received. */
+export interface SummaryEmailCopy {
+  subject: string;
+  html: string;
+  text: string;
+  to: string;
+  sent_at: IsoDateTime;
 }
 
 /**
@@ -322,6 +339,8 @@ export interface LeadDetail {
  */
 export interface LeadsRepository {
   list(opts?: { office_id?: Uuid }): Promise<LeadWithComputed[]>;
+  /** GET /leads/counters: the board's counters and the conversion of one cohort month (default: this month). */
+  counters(opts?: { office_id?: Uuid; cohort_month?: string }): Promise<LeadCounters>;
   get(id: Uuid): Promise<LeadDetail | null>;
   /** One step back, or Evaluado → Reunión (see resolveLeadMove). A discarded lead is refused: only reactivate brings it back. */
   move(id: Uuid, to: Exclude<LeadStage, "discarded" | "in_program">): Promise<LeadWithComputed>;
@@ -709,6 +728,11 @@ export interface DocumentsRepository {
   declineContract(contractId: Uuid, reason: string): Promise<Contract>;
   /** Owner, MOU: the four points confirmed with "Entendí" (POST /contracts/{id}/acknowledge). All four, or invalid_points. */
   acknowledge(contractId: Uuid, points: MouAcknowledgmentPoint[]): Promise<Contract>;
+  /**
+   * GET /contracts/{id}/signed-document: the seal, the hashes of the stored copies and the audit trail with email and
+   * IP. Absent in the demo, which has no sealed copies: the dialog then reads only the Contract.
+   */
+  getSignedDocument?(contractId: Uuid): Promise<SignedDocument>;
   /**
    * SM Global: every Bishop's framework agreement (GET /contracts?kind=framework), with can_sign for the one reading.
    * Created by itself when a Bishop is invited; Corporate countersigns it from Bishops. forbidden for anyone else.

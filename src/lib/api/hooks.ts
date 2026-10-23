@@ -344,6 +344,22 @@ export const useLeads = (officeId?: string, enabled = true) =>
   });
 export const useLeadDetail = (id: string | undefined) =>
   useQuery({ queryKey: ["leads", "detail", id], queryFn: () => api.leads.get(id!), enabled: !!id });
+/** GET /leads/counters: the board's counters and the cohort conversion, computed by the API. */
+export const useLeadCounters = (officeId?: string, enabled = true) =>
+  useQuery({
+    queryKey: ["leads", "counters", officeId ?? "all"],
+    queryFn: () => api.leads.counters(officeId ? { office_id: officeId } : undefined),
+    placeholderData: keepPreviousData,
+    enabled: whenSignedIn(enabled),
+  });
+/** GET /contracts/{id}/signed-document (absent in the demo: data stays undefined). */
+export const useSignedDocument = (contractId: string | undefined) =>
+  useQuery({
+    queryKey: ["documents", "signed", contractId],
+    queryFn: () => api.documents.getSignedDocument!(contractId!),
+    enabled: !!contractId && !!api.documents.getSignedDocument,
+    retry: false,
+  });
 function useLeadMutation<V, R>(fn: (v: V) => Promise<R>) {
   const qc = useQueryClient();
   return useMutation({ mutationFn: fn, onSuccess: () => qc.invalidateQueries({ queryKey: ["leads"] }) });

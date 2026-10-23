@@ -366,7 +366,7 @@ export function LeadDetail(props: {
         </section>}
 
         {/* 2b. The summary email the person got */}
-        <SummaryEmail lead={lead} />
+        <SummaryEmail lead={lead} copy={q.data.summary_email} />
 
         {/* 3. Know-how */}
         {lead.know_how_example && <KnowHow text={lead.know_how_example} />}

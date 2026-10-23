@@ -6,6 +6,7 @@ import type {
   BusinessDocument,
   Contract,
   IsoDateTime,
+  LeadCounters,
   LeadEvent,
   LeadInvestors,
   LeadMeetingItem,
@@ -154,9 +155,21 @@ export function createHttpLeadsRepository(client: HttpClient): HttpLeadsReposito
         })
       ).map(withBoardMeetings),
 
+    counters: (opts) =>
+      client.get<LeadCounters>("/leads/counters", {
+        query: { office_id: opts?.office_id, cohort_month: opts?.cohort_month },
+      }),
+
     get: async (id) => {
       const detail = await getOrNull<LeadDetailResponse>(client, leadPath(id));
-      return detail ? { lead: withDetailMeetings(detail.lead, detail.meetings), events: detail.events } : null;
+      if (!detail) return null;
+      return {
+        lead: withDetailMeetings(detail.lead, detail.meetings),
+        events: detail.events,
+        // The stored copy of the summary email (null = none kept) and the resend wait, as the API computes them.
+        summary_email: detail.summary_email ?? null,
+        ...(detail.resend_after_days !== undefined ? { resend_after_days: detail.resend_after_days } : {}),
+      };
     },
 
     move: (id, to) => guardedWrite(id, "move", { to }),

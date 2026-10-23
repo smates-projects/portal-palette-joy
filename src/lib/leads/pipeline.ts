@@ -96,12 +96,12 @@ export type LeadQuick = "week" | "uncontacted" | "signed_month" | "in_review" | 
 
 type WithIntake = Lead & { intake?: IntakeSummary | null };
 
-export function matchesQuick(lead: WithIntake, quick: LeadQuick, today: string = todayIso()) {
+export function matchesQuick(lead: WithIntake, quick: LeadQuick, today: string = todayIso(), uncontactedDays = UNCONTACTED_DAYS) {
   if (quick === "in_review") return lead.stage === "documents";
   if (quick === "review_overdue") return lead.stage === "documents" && lead.intake?.clock.tone === "red";
   if (quick === "no_investor") return lead.stage === "accepted" && !lead.bishop_user_id;
   if (quick === "week") return day(lead.submitted_at) >= mondayOf(today) && day(lead.submitted_at) <= today;
-  if (quick === "uncontacted") return lead.stage === "evaluated" && !lead.last_contact_at && daysSince(lead.submitted_at, today) > UNCONTACTED_DAYS;
+  if (quick === "uncontacted") return lead.stage === "evaluated" && !lead.last_contact_at && daysSince(lead.submitted_at, today) > uncontactedDays;
   return lead.stage === "in_program" && sameMonth(lead.stage_entered_at, today);
 }
 
@@ -179,7 +179,8 @@ export function validateLeadsSearch(raw: Record<string, unknown>): LeadsSearch {
   return out;
 }
 
-export function filterLeads<T extends WithIntake>(leads: T[], s: LeadsSearch, today: string = todayIso()): T[] {
+/** uncontactedDays: the API's limits.uncontacted_lead_days (GET /leads/counters uncontacted_days) when known. */
+export function filterLeads<T extends WithIntake>(leads: T[], s: LeadsSearch, today: string = todayIso(), uncontactedDays = UNCONTACTED_DAYS): T[] {
   return leads.filter(
     (l) =>
       (!s.stage || l.stage === s.stage) &&
@@ -187,7 +188,7 @@ export function filterLeads<T extends WithIntake>(leads: T[], s: LeadsSearch, to
       (!s.band || l.result?.band === s.band) &&
       (!s.industry || l.business.industry === s.industry) &&
       (!s.revenue || l.business.revenue_range === s.revenue) &&
-      (!s.quick || matchesQuick(l, s.quick, today)),
+      (!s.quick || matchesQuick(l, s.quick, today, uncontactedDays)),
   );
 }
 

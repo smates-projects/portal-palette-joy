@@ -2,10 +2,11 @@ import { useTranslation } from "react-i18next";
 import { Printer, ShieldCheck } from "lucide-react";
 import type { Contract, ContractLanguage, Signer } from "@/lib/api/types";
 import { contractTextIn } from "@/lib/contracts/language";
-import { documentFingerprint } from "@/lib/contracts/signature";
 import { smEntitiesOf, smSignerEntityName } from "@/lib/leads/contract-rules";
-import { useRules } from "@/lib/api/hooks";
-import { formatDate } from "@/lib/format";
+import { useRules, useSignedDocument } from "@/lib/api/hooks";
+import { isMockRepository } from "@/lib/api/mode";
+import { formatDate, formatDateTime } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PrimaryButton, SecondaryButton } from "@/components/tasks/detail/dialogs";
 import { ContractText, SignatureMark } from "./ContractDocument";
@@ -14,10 +15,10 @@ import { ContractFallbackNote, ContractGoverningNote, ContractLanguageToggle, us
 
 /**
  * The contract as a document: its full text in the language of its "ES | EN" toggle (Spanish when the English one is
- * missing) or, for older answers, a sample; one signature block per
- * party (image, name, date, or "Pendiente de firma") and the audit trail (every event with its date, plus the document
- * fingerprint). Read-only, also before anyone signs ("Leer el MOU completo"); "Descargar PDF" prints it. In production
- * this shows the real PDF and certificate stored by DocuSeal.
+ * missing); one signature block per party (image, name, date, or "Pendiente de firma") and the audit trail. Over the
+ * API the trail, the seal and the SHA-256 of the stored copy come from GET /contracts/{id}/signed-document (with the
+ * email and IP of every step); nothing is computed here. Read-only, also before anyone signs ("Leer el MOU completo");
+ * "Descargar PDF" prints it. "DocuSeal" is named only when DocuSeal really sealed it.
  */
 export function SignedContractDialog({ contract, language: initial, onClose }: { contract: Contract; language?: ContractLanguage; onClose: () => void }) {
   const { t, i18n } = useTranslation();
@@ -27,15 +28,22 @@ export function SignedContractDialog({ contract, language: initial, onClose }: {
   const body = reading.value;
   const anySigned = contract.signers.some((s) => s.signed_at);
   const parties = contract.signers.map((s) => s.name).join(", ");
-  const fingerprint = documentFingerprint(contract.id);
+  const signed = useSignedDocument(contract.id).data;
+  // The SHA-256 of the stored sealed copy (DocuSeal's PDF, else the portal's copy in the language shown).
+  const sha256 = signed?.sealed_pdf_sha256 ?? signed?.sealed_files_sha256?.[reading.language] ?? null;
+  const byDocuSeal = !!signed?.sealed_pdf_url;
+  // The demo has no stored text for older contracts: only there a sample stands in for it.
+  const demoSample = isMockRepository("documents");
   const entities = smEntitiesOf(useRules().data);
   const partyLabel = (s: Signer) => (s.party ? t(`intake.party.${s.party}`) : s.role);
   // The SM part is signed by a person on behalf of the company (the CEO for Corporate).
   const onBehalf = (s: Signer) => (s.party === "sm" && s.signed_at && s.user_id ? t("intake.signed_on_behalf_by", { name: s.name, entity: smSignerEntityName(s, entities) }) : null);
-  // Older contracts only keep signed_at: show that as the one audit event.
-  const events = contract.signers
-    .flatMap((s) => (s.history?.length ? s.history : s.signed_at ? [{ status: "signed" as const, at: s.signed_at }] : []).map((h) => ({ ...h, signer: s.name })))
-    .sort((a, b) => a.at.localeCompare(b.at));
+  // The API's audit trail (with email and IP); without it, the signers' history (older contracts: signed_at only).
+  const events: { status: string; at: string; signer: string; email?: string | null | undefined; ip?: string | null | undefined }[] = signed
+    ? signed.audit_trail.map((e) => ({ status: e.status, at: e.at, signer: e.name, email: e.email, ip: e.ip }))
+    : contract.signers
+        .flatMap((s) => (s.history?.length ? s.history : s.signed_at ? [{ status: "signed" as const, at: s.signed_at }] : []).map((h) => ({ ...h, signer: s.name })))
+        .sort((a, b) => a.at.localeCompare(b.at));
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -48,7 +56,7 @@ export function SignedContractDialog({ contract, language: initial, onClose }: {
           </div>
           <DialogDescription>
             {contract.state === "signed" && contract.signed_at
-              ? t("intake.docuseal.signed_all_on", { date: formatDate(contract.signed_at, lng) })
+              ? `${t("intake.docuseal.signed_all_on", { date: formatDate(contract.signed_at, lng) })}${byDocuSeal ? ` ${t("intake.docuseal.sealed_by_docuseal")}` : ""}`
               : anySigned ? t("intake.docuseal.signed_partial") : t("intake.docuseal.not_signed_yet")}
           </DialogDescription>
         </DialogHeader>
@@ -59,11 +67,13 @@ export function SignedContractDialog({ contract, language: initial, onClose }: {
         <div id="signed-document" className="rounded-md border border-border bg-muted/50 p-2 sm:p-4 print:border-0 print:bg-transparent print:p-0">
           <div className="mx-auto max-w-xl rounded-md border border-border bg-surface px-5 py-6 text-[13px] leading-relaxed text-muted-foreground sm:px-10 sm:py-10 print:max-w-none print:border-0 print:shadow-none">
             <p className="text-center text-lg font-semibold tracking-tight text-foreground">{contract.name}</p>
-            {!body && <p className="mt-1 text-center text-[11px] uppercase tracking-wide">{t("intake.docuseal.sample")}</p>}
+            {!body && demoSample && <p className="mt-1 text-center text-[11px] uppercase tracking-wide">{t("intake.docuseal.sample")}</p>}
             <div className="mx-auto mt-4 h-px w-16 bg-border" />
             {body ? (
               // The full text, section by section (the dialog scrolls).
               <ContractText body={body} lang={reading.language} className="mt-5" />
+            ) : !demoSample ? (
+              <p className="mt-5 text-center">{t("intake.docuseal.text_missing")}</p>
             ) : (<>
               <p className="mt-5 text-foreground">{t("intake.docuseal.pdf_parties", { parties })}</p>
               <p className="mt-2">{t("intake.docuseal.pdf_body")}</p>
@@ -100,15 +110,28 @@ export function SignedContractDialog({ contract, language: initial, onClose }: {
             )}
             {events.map((e, i) => (
               <li key={i} className="flex gap-3">
-                <span className="w-24 shrink-0 tabular-nums text-muted-foreground">{formatDate(e.at, lng)}</span>
-                <span>{t(`intake.docuseal.audit_${e.status}`, { name: e.signer })}</span>
+                <span className="w-24 shrink-0 tabular-nums text-muted-foreground">{signed ? formatDateTime(e.at, lng) : formatDate(e.at, lng)}</span>
+                <span>
+                  {t(`intake.docuseal.audit_${e.status}`, { name: e.signer, defaultValue: `${e.signer} · ${e.status}` })}
+                  {(e.email || e.ip) && <span className="block text-muted-foreground">{[e.email, e.ip ? t("intake.docuseal.audit_ip", { ip: e.ip }) : null].filter(Boolean).join(" · ")}</span>}
+                </span>
               </li>
             ))}
           </ol>
           <dl className="mt-3 border-t border-border pt-3 text-xs">
-            <dt className="text-muted-foreground">{t("intake.docuseal.hash")}</dt>
-            <dd className="mt-0.5 break-all font-mono text-[11px]">{fingerprint}</dd>
-            <dd className="mt-1 text-muted-foreground">{t("intake.docuseal.certificate")}</dd>
+            {signed?.fingerprint && (<>
+              <dt className="text-muted-foreground">{t("intake.docuseal.seal")}</dt>
+              <dd className="mt-0.5 break-all font-mono text-[11px]">{signed.fingerprint}</dd>
+            </>)}
+            <dt className={cn("text-muted-foreground", signed?.fingerprint && "mt-2")}>{t("intake.docuseal.hash")}</dt>
+            <dd className="mt-0.5 break-all font-mono text-[11px]">{sha256 ?? <span className="font-sans text-muted-foreground">{t("intake.docuseal.hash_pending")}</span>}</dd>
+            {byDocuSeal && <dd className="mt-1 text-muted-foreground">{t("intake.docuseal.certificate")}</dd>}
+            {byDocuSeal && (
+              <dd className="no-print mt-1 flex flex-wrap gap-3">
+                <a href={signed!.sealed_pdf_url!} target="_blank" rel="noopener noreferrer" className="text-link hover:underline">{t("intake.docuseal.sealed_pdf")}</a>
+                {signed?.audit_log_url && <a href={signed.audit_log_url} target="_blank" rel="noopener noreferrer" className="text-link hover:underline">{t("intake.docuseal.audit_log")}</a>}
+              </dd>
+            )}
           </dl>
         </section>
         </div>

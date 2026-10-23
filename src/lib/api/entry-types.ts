@@ -1,6 +1,6 @@
 // Automatic entry of leads (assessment of the landing → summary email → meeting booked), zone routing, tasks the
 // business already had, and the assessment snapshot kept by the business. Same shapes as the Laravel API.
-import type { AreaCode, AssessmentBlock, IsoDateTime, Lead, LeadBand, LeadResult, Uuid } from "./types";
+import type { AreaCode, AssessmentBlock, EquityRanges, IsoDateTime, Lead, LeadBand, LeadResult, Uuid } from "./types";
 
 /** initial: the first meeting (presentación integral). expansion: the "reunión de ampliación" after the approval. */
 export type MeetingKind = "initial" | "expansion";
@@ -182,7 +182,8 @@ export interface EntryContractRuleChange {
 
 /** Names of the two Strategic Mates companies that sign (PlatformRules.sm_entities). */
 export interface SmEntities {
-  corporate: { name: string };
+  /** signer_user_id: the SM person who signs for Corporate (the CEO). */
+  corporate: { name: string; signer_user_id?: Uuid | null | undefined };
   sm_square: { name: string };
 }
 
@@ -191,9 +192,9 @@ export interface SmEntities {
 export type ValidationStatus = "open" | "closed";
 
 /**
- * Lead.validation. Small business 50-75 %, Bishop 15-40 %, SM Square 10 % fixed, summing 100 (invalid_split).
- * The SM Square center and its holder (an SM person who can sign for SM Square) are required to close it: the
- * holder signs the Operating Agreement.
+ * Lead.validation. Owner, Bishop and SM Square percentages inside the rule's equity_ranges, summing 100
+ * (invalid_split). The SM Square center and its holder (an SM person who can sign for SM Square) are required to
+ * close it: the holder signs the Operating Agreement.
  */
 export interface LeadValidation {
   status: ValidationStatus;
@@ -206,6 +207,8 @@ export interface LeadValidation {
   sm_square_holder_user_id?: Uuid | null | undefined;
   closed_at: IsoDateTime | null;
   closed_by: Uuid | null;
+  /** The ranges the API validates against (PlatformRules.equity_ranges). */
+  equity_ranges?: EquityRanges | undefined;
 }
 
 /** PUT /leads/{id}/validation. */

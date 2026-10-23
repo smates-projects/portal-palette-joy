@@ -3,12 +3,11 @@ import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { localeTag } from "@/lib/format";
-import { useDiscardLead, useLeads, useMoveLead, useSendMou, useSendNda, useUsers } from "@/lib/api/hooks";
+import { useDiscardLead, useLeadCounters, useLeads, useMoveLead, useSendMou, useSendNda, useUsers } from "@/lib/api/hooks";
 import { LEAD_STAGES, type LeadStage, type LeadWithComputed } from "@/lib/api/types";
 import {
   INDUSTRIES,
   REVENUES,
-  buildPipelineCounters,
   filterLeads,
   primaryActionFor,
   resolveLeadMove,
@@ -33,6 +32,7 @@ export function PipelinePage({ search }: { search: LeadsSearch }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const leadsQ = useLeads();
+  const countersQ = useLeadCounters();
   const usersQ = useUsers();
   const move = useMoveLead();
   const discard = useDiscardLead();
@@ -89,9 +89,10 @@ export function PipelinePage({ search }: { search: LeadsSearch }) {
     if (action === "schedule") {
       // Without a booking link there is nothing to open and the lead stays put (the detail disables the button).
       if (!lead.booking_url) return;
-      // Open synchronously from the click so the browser does not block the new tab.
+      // Open synchronously from the click so the browser does not block the new tab. Opening the link moves
+      // nothing: the lead goes to Reunión when the person really books (the API registers the booking).
       window.open(lead.booking_url, "_blank", "noopener,noreferrer");
-      return doMove(lead, "meeting", t("pipeline.t_scheduled", { name: lead.business.name }));
+      toast.message(t("pipeline.t_booking_opened", { name: lead.business.name }));
     }
   };
 
@@ -128,15 +129,18 @@ export function PipelinePage({ search }: { search: LeadsSearch }) {
     );
 
   const all = leadsQ.data ?? [];
-  const counters = buildPipelineCounters(all);
-  const rows = filterLeads(all, search);
+  // The counters and the cohort conversion come from the API (GET /leads/counters); zeros only while they load.
+  const counters = countersQ.data;
+  const uncontactedDays = counters?.uncontacted_days;
+  const rows = filterLeads(all, search, undefined, uncontactedDays);
   const view = search.view ?? "board";
   const hasFilters = !!(search.stage || search.consultant || search.band || search.industry || search.revenue || search.quick);
   const selected = all.find((l) => l.id === search.lead);
   const nf = new Intl.NumberFormat(localeTag(i18n.language));
 
-  const counter = (key: "week" | "uncontacted" | "in_review" | "review_overdue" | "accepted_no_investor" | "signed_month", value: number, patch: SearchPatch, danger = false) => {
+  const counter = (key: "week" | "uncontacted" | "in_review" | "review_overdue" | "accepted_no_investor" | "signed_month", value: number | undefined, patch: SearchPatch, danger = false) => {
     const active = search.quick === patch.quick;
+    if (value === undefined) return <div key={key} className="px-4 py-3"><Skeleton className="h-7 w-24" /></div>;
     return (
       <button
         key={key}
@@ -146,7 +150,7 @@ export function PipelinePage({ search }: { search: LeadsSearch }) {
       >
         <div className="flex items-baseline gap-2">
           <span className={cn("font-display text-2xl font-semibold tabular-nums", value === 0 ? "text-muted-foreground/40" : danger ? "text-status-danger-fg" : "text-foreground")}>{nf.format(value)}</span>
-          <span className="text-xs font-medium">{t(`pipeline.counters.${key}`)}</span>
+          <span className="text-xs font-medium">{t(`pipeline.counters.${key}`, { days: uncontactedDays })}</span>
         </div>
       </button>
     );
@@ -157,18 +161,18 @@ export function PipelinePage({ search }: { search: LeadsSearch }) {
       {header}
 
       <div className="mt-6 grid grid-cols-2 overflow-hidden rounded-md border border-border bg-surface sm:grid-cols-4 lg:grid-cols-7 sm:divide-x sm:divide-border">
-        {counter("week", counters.week, { quick: "week" as LeadQuick })}
-        {counter("uncontacted", counters.uncontacted, { quick: "uncontacted" as LeadQuick }, true)}
-        {counter("in_review", counters.in_review, { quick: "in_review" as LeadQuick })}
-        {counter("review_overdue", counters.review_overdue, { quick: "review_overdue" as LeadQuick }, true)}
-        {counter("accepted_no_investor", counters.accepted_no_investor, { quick: "no_investor" as LeadQuick })}
-        {counter("signed_month", counters.signed_month, { quick: "signed_month" as LeadQuick })}
+        {counter("week", counters?.week, { quick: "week" as LeadQuick })}
+        {counter("uncontacted", counters?.uncontacted, { quick: "uncontacted" as LeadQuick }, true)}
+        {counter("in_review", counters?.in_review, { quick: "in_review" as LeadQuick })}
+        {counter("review_overdue", counters?.review_overdue, { quick: "review_overdue" as LeadQuick }, true)}
+        {counter("accepted_no_investor", counters?.accepted_no_investor, { quick: "no_investor" as LeadQuick })}
+        {counter("signed_month", counters?.signed_month, { quick: "signed_month" as LeadQuick })}
         <div className="px-4 py-3">
           <p className="text-xs font-medium text-muted-foreground">{t("pipeline.counters.conversion")}</p>
           <p className="mt-0.5 font-display text-sm font-semibold tabular-nums">
-            {counters.conversion_pct === null
+            {!counters ? "" : counters.conversion.pct === null
               ? t("pipeline.counters.conversion_none")
-              : t("pipeline.counters.conversion_value", { pct: counters.conversion_pct, signed: counters.signed_month, total: counters.month_assessments })}
+              : t("pipeline.counters.conversion_value", { pct: counters.conversion.pct, reached: counters.conversion.reached_program, total: counters.conversion.submitted })}
           </p>
         </div>
       </div>
@@ -194,7 +198,7 @@ export function PipelinePage({ search }: { search: LeadsSearch }) {
         <Filter label={t("pipeline.revenue")} value={search.revenue} all={t("pipeline.filters.all_revenues")} onChange={(v) => setSearch({ revenue: v as LeadsSearch["revenue"] })}
           options={REVENUES.map((r) => ({ value: r, label: t(`pipeline.revenue_ranges.${r}`) }))} />
         {search.quick && (
-          <span className="inline-flex h-8 items-center rounded-md border border-ring bg-accent/60 px-2.5 text-sm">{t(`pipeline.filters.quick.${search.quick}`)}</span>
+          <span className="inline-flex h-8 items-center rounded-md border border-ring bg-accent/60 px-2.5 text-sm">{t(`pipeline.filters.quick.${search.quick}`, { days: uncontactedDays ?? "" })}</span>
         )}
         {hasFilters && (
           <button onClick={() => setSearch({ stage: undefined, consultant: undefined, band: undefined, industry: undefined, revenue: undefined, quick: undefined })} className="text-sm text-link hover:underline">
