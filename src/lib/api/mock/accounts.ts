@@ -98,6 +98,12 @@ export function createAccounts(ctx: AccountsContext) {
   };
 
   // ---------- People ----------
+  /** As GET /users: the person's office and, for an owner, the business name (its business may be out of the caller's list). */
+  const withPlacement = (x: User): User => ({
+    ...x,
+    office_id: officeOfUser(x, account),
+    business_name: x.role === "business_owner" ? (db.businesses.find((b) => b.id === x.business_id)?.name ?? null) : null,
+  });
   const createInvited = (input: InviteUserInput): User => {
     if (!input.full_name.trim()) throw new Error("name_required");
     if (!validEmail(input.email)) throw new Error("invalid_email");
@@ -126,7 +132,7 @@ export function createAccounts(ctx: AccountsContext) {
   };
 
   const users: Pick<UsersRepository, "list" | "invite" | "simulateAcceptance" | "resendInvitation" | "deactivate" | "reactivate" | "setAdmin" | "listAccountEvents"> = {
-    list: async (opts) => delay(visibleUsers().filter((x) => opts?.include_inactive || isActiveUser(x))),
+    list: async (opts) => delay(visibleUsers().filter((x) => opts?.include_inactive || isActiveUser(x)).map(withPlacement)),
     invite: async (input) => {
       const actor = me();
       const target = { role: input.role, organization_id: input.organization_id, business_id: input.business_id, is_admin: input.is_admin };

@@ -57,7 +57,8 @@ export function Field({ label, children, hint }: { label: string; children: Reac
 
 /** Where a person belongs: the firm, the office, the business or the franchise. */
 export function placeOf(u: User, orgs: Organization[], businesses: Business[], t: TFunction): string {
-  if (u.role === "business_owner") return businesses.find((b) => b.id === u.business_id)?.name ?? "";
+  // The business may be out of the visible list (another office): GET /users also sends its name.
+  if (u.role === "business_owner") return businesses.find((b) => b.id === u.business_id)?.name ?? u.business_name ?? "";
   const org = orgs.find((o) => o.id === u.organization_id);
   if (!org) return u.role === "bishop" ? t("roles.bishop") : "";
   // A firm always shows what it does: "Estudio Pérez (abogados)".
@@ -74,13 +75,14 @@ export function officeNameOf(u: User, orgs: Organization[], businesses: Business
     return orgs.find((o) => o.id === firm?.parent_id)?.name ?? "";
   }
   if (u.role === "business_owner") {
-    const b = businesses.find((x) => x.id === u.business_id);
-    return orgs.find((o) => o.id === b?.office_id)?.name ?? "";
+    // Without the business in the list, the office GET /users sends for the person.
+    const officeId = businesses.find((x) => x.id === u.business_id)?.office_id ?? u.office_id;
+    return orgs.find((o) => o.id === officeId)?.name ?? "";
   }
   if (u.role === "franchisee") {
     const unit = orgs.find((o) => o.id === u.organization_id);
     const b = businesses.find((x) => x.id === unit?.franchisor_business_id);
-    return orgs.find((o) => o.id === b?.office_id)?.name ?? "";
+    return orgs.find((o) => o.id === (b?.office_id ?? u.office_id))?.name ?? "";
   }
   return "";
 }
