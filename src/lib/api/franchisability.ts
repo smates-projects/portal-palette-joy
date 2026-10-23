@@ -71,6 +71,8 @@ export const DEFAULT_PLATFORM_RULES: PlatformRules = {
   intake_help_text: DEFAULT_INTAKE_HELP_TEXT,
   // Who can enter: the declared annual revenue (the year of operation is a hard rule of the assessment itself).
   eligibility: { min_annual_revenue: 250_000 },
+  // Validation: owner 50-75 %, Bishop 15-40 %, SM Square 10 % fixed (the API's defaults).
+  equity_ranges: { owner: { min: 50, max: 75 }, bishop: { min: 15, max: 40 }, sm: { min: 10, max: 10 } },
 };
 /** Statuses that don't count toward the program total. */
 const EXCLUDED = new Set(["cancelled", "with_third_party", "excluded"]);

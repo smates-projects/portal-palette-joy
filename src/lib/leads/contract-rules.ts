@@ -22,9 +22,15 @@ export const DEFAULT_SM_ENTITIES: SmEntities = {
   sm_square: { name: "SM Square" },
 };
 
-/** The names SM Global set, or the defaults. */
+/**
+ * The names SM Global set (the API always sends them); the defaults only while the rules load or in the demo.
+ * corporate.signer_user_id is the SM person who signs for Corporate (null when SM Global has not named one).
+ */
 export const smEntitiesOf = (rules: { sm_entities?: SmEntities | undefined } | null | undefined): SmEntities => ({
-  corporate: { name: rules?.sm_entities?.corporate.name?.trim() || DEFAULT_SM_ENTITIES.corporate.name },
+  corporate: {
+    name: rules?.sm_entities?.corporate.name?.trim() || DEFAULT_SM_ENTITIES.corporate.name,
+    signer_user_id: rules?.sm_entities?.corporate.signer_user_id ?? null,
+  },
   sm_square: { name: rules?.sm_entities?.sm_square.name?.trim() || DEFAULT_SM_ENTITIES.sm_square.name },
 });
 

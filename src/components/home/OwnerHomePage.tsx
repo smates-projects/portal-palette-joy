@@ -59,7 +59,7 @@ export function OwnerHomePage({ taskId }: { taskId?: string | undefined }) {
   /** Firm name always with what it does: "Delta Contadores (finanzas y fiscal)". */
   const firmLabel = (id: string) => {
     const o = orgsQ.data?.find((x) => x.id === id);
-    return o ? t("owner.firm_label", { name: o.name, what: t(`firmWhat.${o.area ?? "B1"}`) }) : "";
+    return o ? t("owner.firm_label", { name: o.name, what: t(`firmWhat.${o.area ?? "none"}`) }) : "";
   };
   const fail = () => toast.error(t("taskDetail.t_error"));
 

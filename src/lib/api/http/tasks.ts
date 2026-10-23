@@ -27,7 +27,6 @@ import { invalidFile, isBlob, logoBlob, uploadFile, type FileContext } from "./f
 /** TaskApiSchema: the front's task plus what only the HTTP layer needs. */
 export interface TaskApi extends TaskWithComputed {
   version: number;
-  blocked_by_codes: string[];
   collaborator_user_ids: Uuid[];
   business_name: string;
 }
@@ -48,11 +47,13 @@ export function versionOfEtag(etag: string | undefined): number | null {
   return match?.[1] ? Number(match[1]) : null;
 }
 
-/** The front's shape: the API-only fields are left out. */
+/**
+ * The front's shape: the API-only fields are left out. What blocks the task (blocked_by_codes, blocked_by_task_ids),
+ * is_due_today, is_stale and last_submitted_at stay: the screens show them as the API computed them.
+ */
 export function toFrontTask(task: TaskApi): TaskWithComputed {
   const {
     version: _version,
-    blocked_by_codes: _blockedBy,
     collaborator_user_ids: _collaborators,
     business_name: _businessName,
     ...front

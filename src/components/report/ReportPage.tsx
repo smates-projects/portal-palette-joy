@@ -41,7 +41,7 @@ export function ReportPage() {
             <SelectContent>
               <SelectItem value="__all">{t("sm.all_firms")}</SelectItem>
               {firms.map((o) => (
-                <SelectItem key={o.id} value={o.id}>{t("owner.firm_label", { name: o.name, what: t(`firmWhat.${o.area ?? "B1"}`) })}</SelectItem>
+                <SelectItem key={o.id} value={o.id}>{t("owner.firm_label", { name: o.name, what: t(`firmWhat.${o.area ?? "none"}`) })}</SelectItem>
               ))}
             </SelectContent>
           </Select>

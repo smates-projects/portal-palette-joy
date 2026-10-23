@@ -14,9 +14,24 @@ export function isOverdue(task: Task, today: string = todayIso()): boolean {
   return task.status !== "accepted" && task.status !== "cancelled" && task.due_date < today;
 }
 
+/** Demo (the API sends the same): every field the screens read about a task, computed from the program. */
 export function withComputed(task: Task, all: Task[], today: string = todayIso()): TaskWithComputed {
-  return { ...task, is_blocked: isBlocked(task, all), is_overdue: isOverdue(task, today) };
+  const blockers = task.depends_on_task_ids.flatMap((id) => {
+    const dep = all.find((t) => t.id === id);
+    return dep && dep.status !== "accepted" ? [dep] : [];
+  });
+  return {
+    ...task,
+    is_blocked: isBlocked(task, all),
+    is_overdue: isOverdue(task, today),
+    blocked_by_task_ids: blockers.map((d) => d.id),
+    blocked_by_codes: blockers.map((d) => d.code),
+  };
 }
+
+/** "B2-03, B6-01": the codes of what blocks the task, as the API names them (never blanks for unseen tasks). */
+export const blockingCodes = (task: Pick<TaskWithComputed, "blocked_by_codes">): string =>
+  (task.blocked_by_codes ?? []).filter((c) => c.trim() !== "").join(", ");
 
 const TRANSITIONS: Record<UserRole, Partial<Record<TaskStatus, TaskStatus[]>>> = {
   partner_firm: {

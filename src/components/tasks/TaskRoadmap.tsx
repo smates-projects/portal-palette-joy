@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { todayIso } from "@/lib/clock";
 import type { AreaCode, Business, TaskWithComputed, VisibleTaskStatus } from "@/lib/api/types";
+import { blockingCodes } from "@/lib/api/computed";
 import { formatDate, localeTag } from "@/lib/format";
 import {
   MILESTONE_DAYS,
@@ -290,7 +291,7 @@ export function TaskRoadmap(props: {
               `${task.code} · ${task.name}`,
               `${formatDate(task.start_date, lng)} → ${formatDate(task.due_date, lng)}`,
               t(`status.${task.status}`),
-              blocked ? t("tasks.blocked_by", { codes: task.depends_on_task_ids.map(codeById).join(", ") }) : "",
+              blocked ? t("tasks.blocked_by", { codes: blockingCodes(task) }) : "",
             ].filter(Boolean).join("\n");
             return (
               <div key={task.id} className={cn("absolute flex border-b border-border/60", props.selectedId === task.id && "bg-accent/40")} style={{ top, height: ROW_H, width: LABEL_W + width }}>

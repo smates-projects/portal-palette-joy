@@ -2,9 +2,10 @@ import { useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { ArrowDown, ArrowUp, ArrowUpDown, CalendarDays, Columns3, GanttChart, Search, Table2, X } from "lucide-react";
-import { useBusinesses, useCurrentUser, useOrganizations, useTasks, useTasksWithCancelled } from "@/lib/api/hooks";
+import { useBusinesses, useCurrentUser, useLimits, useOrganizations, useTasks, useTasksWithCancelled } from "@/lib/api/hooks";
 import { CancelTasksDialog, EditTasksDialog, type EditMode } from "@/components/tasks/sm/SmTaskActions";
 import type { AreaCode, TaskWithComputed, VisibleTaskStatus } from "@/lib/api/types";
+import { blockingCodes } from "@/lib/api/computed";
 import { formatDate, formatRelativeDate } from "@/lib/format";
 import {
   DUE_FILTERS,
@@ -102,6 +103,7 @@ export function MyTasksPage({ search, calendarRoute = false }: { search: TasksSe
     [tasksQ.data, bizQ.data, search, isSm, me?.id],
   );
   const codeById = (id: string) => tasksQ.data?.find((x) => x.id === id)?.code ?? "";
+  const staleDays = useLimits()?.stale_task_days;
   const overdueCount = rows.filter((r) => r.is_overdue).length;
   const selected = tasksQ.data?.find((x) => x.id === search.task);
   const hasFilters = !!(search.business || search.area || search.status || search.due || search.blocked || search.q || search.firm || search.stale || search.attention);
@@ -204,7 +206,7 @@ export function MyTasksPage({ search, calendarRoute = false }: { search: TasksSe
                 label={t("sm.filter_firm")}
                 value={search.firm}
                 allLabel={t("sm.all_firms")}
-                options={firms.map((o) => ({ value: o.id, label: t("owner.firm_label", { name: o.name, what: t(`firmWhat.${o.area ?? "B1"}`) }) }))}
+                options={firms.map((o) => ({ value: o.id, label: t("owner.firm_label", { name: o.name, what: t(`firmWhat.${o.area ?? "none"}`) }) }))}
                 onChange={(v) => setSearch({ firm: v })}
               />
             )}
@@ -241,7 +243,7 @@ export function MyTasksPage({ search, calendarRoute = false }: { search: TasksSe
             {(["stale", "attention"] as const).map((k) =>
               search[k] === "1" ? (
                 <button key={k} onClick={() => setSearch({ [k]: undefined })} className="flex h-8 items-center gap-1 rounded-md border border-ring bg-surface px-2 text-sm">
-                  {t(`sm.chip_${k}`)}
+                  {t(`sm.chip_${k}`, { days: staleDays ?? "" })}
                   <X className="h-3.5 w-3.5" />
                 </button>
               ) : null,
@@ -469,7 +471,7 @@ export function MyTasksPage({ search, calendarRoute = false }: { search: TasksSe
                             <StatusBadge status={task.status === "cancelled" ? "cancelled" : (task.status as VisibleTaskStatus)} />
                             {task.is_blocked && (
                               <Indicator>
-                                {t("tasks.blocked_by", { codes: task.depends_on_task_ids.map(codeById).join(", ") })}
+                                {t("tasks.blocked_by", { codes: blockingCodes(task) })}
                               </Indicator>
                             )}
                             {task.is_overdue && (

@@ -45,7 +45,21 @@ const toRules = (rules: PlatformRulesResponse): PlatformRules => ({
   ...(rules.sm_entities !== undefined ? { sm_entities: rules.sm_entities } : {}),
   // Bilingual contracts: which version prevails (absent = lib/contracts/language DEFAULT_GOVERNING_LANGUAGE).
   ...(rules.contracts !== undefined ? { contracts: rules.contracts } : {}),
+  // The owner's own NDA template and the validation's equity ranges (editable).
+  ...(rules.owner_nda_template !== undefined ? { owner_nda_template: rules.owner_nda_template } : {}),
+  ...(rules.equity_ranges !== undefined ? { equity_ranges: rules.equity_ranges } : {}),
+  // Read only: the program's days and phases, the platform limits, and the fields still at their default.
+  ...(rules.program_length_days !== undefined ? { program_length_days: rules.program_length_days } : {}),
+  ...(rules.program !== undefined ? { program: rules.program } : {}),
+  ...(rules.limits !== undefined ? { limits: rules.limits } : {}),
+  ...(rules.defaults !== undefined ? { defaults: rules.defaults } : {}),
 });
+
+/** PATCH /rules takes only the editable fields: the read-only ones never travel back. */
+const editableOf = (patch: Partial<PlatformRules>): Partial<PlatformRules> => {
+  const { program: _program, program_length_days: _length, limits: _limits, defaults: _defaults, ...editable } = patch;
+  return editable;
+};
 
 export function createHttpRulesRepository(client: HttpClient): RulesRepository {
   return {
@@ -55,7 +69,7 @@ export function createHttpRulesRepository(client: HttpClient): RulesRepository {
     update: async (patch, note) => {
       if (!client.etags.has(RULES_PATH)) await client.get<PlatformRulesResponse>(RULES_PATH);
       return toRules(
-        await client.patch<PlatformRulesResponse>(RULES_PATH, { ...patch, note: note ?? null }),
+        await client.patch<PlatformRulesResponse>(RULES_PATH, { ...editableOf(patch), note: note ?? null }),
       );
     },
 

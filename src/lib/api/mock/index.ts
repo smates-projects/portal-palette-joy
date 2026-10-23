@@ -31,7 +31,7 @@ import { createCalendar } from "./calendar";
 import { createContractRules } from "./contract-rules";
 import { seedAdvisors, seedSigningPeople, seedTechosBinding } from "./seed-entry-contracts";
 import { smSignBlock } from "@/lib/leads/contract-rules";
-import { closeBlock, splitError } from "@/lib/leads/validation";
+import { DEMO_EQUITY_RANGES, closeBlock, splitError } from "@/lib/leads/validation";
 import { isDocsAdmin } from "@/lib/leads/onboarding";
 import { ENTRY_PARTY_NOTIFICATION_KINDS, type Contract, type EntryContractRule, type EntryContractRuleChange } from "../types";
 
@@ -292,6 +292,8 @@ export function createMockApi(): MockApi {
     if (!l) throw new Error("not_found");
     return l;
   };
+  /** The equity ranges of the rules (editable by SM Global), as the API validates against them. */
+  const equityRanges = () => db.rules.equity_ranges ?? DEMO_EQUITY_RANGES;
   const withBooking = (l: Lead): LeadWithComputed => {
     const consultant = db.users.find((u) => u.id === l.consultant_user_id);
     const office = db.orgs.find((o) => o.id === l.office_id);
@@ -300,6 +302,8 @@ export function createMockApi(): MockApi {
     return {
       ...l, booking_url: bookingUrl ?? officeUrl, booking_url_source: bookingUrl ? "consultant" : officeUrl ? "office" : null, intake: intake.summaryFor(l),
       tripartite: tripartiteState(opps.tripartiteOf(l)), funds: fundsMod.leadFunds(l),
+      // As the API: the validation carries the ranges it is checked against.
+      ...(l.validation ? { validation: { ...l.validation, equity_ranges: equityRanges() } } : {}),
     };
   };
   /** Lead events with the actor's name: the office cannot list SM Global's people, yet reads "Marilyn lo reactivó". */
@@ -1072,7 +1076,7 @@ export function createMockApi(): MockApi {
       saveValidation: async (id, input) => {
         const l = findLead(id);
         if (l.stage !== "accepted" || l.validation?.status === "closed") throw new Error("invalid_state");
-        if (splitError(input)) throw new Error("invalid_split");
+        if (splitError(input, equityRanges())) throw new Error("invalid_split");
         if (input.investment_amount !== null && (!Number.isFinite(input.investment_amount) || input.investment_amount < 0)) throw new Error("invalid_amount");
         const holder = input.sm_square_holder_user_id ? db.users.find((u) => u.id === input.sm_square_holder_user_id) : null;
         if (input.sm_square_holder_user_id && (!holder || !holder.can_sign_sm_square)) throw new Error("sm_square_signer_required");
@@ -1091,7 +1095,7 @@ export function createMockApi(): MockApi {
         if (!l) throw new Error("not_found");
         if (!isDocsAdmin(u, l.office_id)) throw new Error("admin_only");
         if (l.stage !== "accepted" || !l.validation || l.validation.status === "closed") throw new Error("invalid_state");
-        const block = closeBlock({ ...l.validation, sm_square_center: l.validation.sm_square_center ?? null, sm_square_holder_user_id: l.validation.sm_square_holder_user_id ?? null });
+        const block = closeBlock({ ...l.validation, sm_square_center: l.validation.sm_square_center ?? null, sm_square_holder_user_id: l.validation.sm_square_holder_user_id ?? null }, equityRanges());
         if (block) throw new Error(block === "invalid_split" ? "invalid_split" : "validation_incomplete");
         const holder = db.users.find((x) => x.id === l.validation!.sm_square_holder_user_id);
         if (!holder?.can_sign_sm_square) throw new Error("sm_square_signer_required");

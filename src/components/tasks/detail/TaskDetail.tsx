@@ -164,10 +164,13 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
   const people = users.filter(
     (u) => u.id === owner?.id || u.role === "sm_team" || u.organization_id === task.organization_id,
   );
-  const deps = task.depends_on_task_ids
+  // What blocks it, as the API names it (also tasks of other firms this person does not see); the first visible
+  // blocker gets the "open" link.
+  const blockerCode = task.blocked_by_codes?.find((c) => c.trim() !== "") ?? null;
+  const firstDep = (task.blocked_by_task_ids ?? task.depends_on_task_ids)
     .map((id) => tasksQ.data?.find((x) => x.id === id))
-    .filter((x): x is NonNullable<typeof x> => !!x && x.status !== "accepted");
-  const firstDep = deps[0];
+    .find((x): x is NonNullable<typeof x> => !!x && x.status !== "accepted");
+  const blockedCode = blockerCode ?? firstDep?.code ?? null;
   const openRequests = owner_requests.filter((r) => r.status === "open");
   const sortedVersions = [...versions].sort((a, b) => b.version - a.version);
   const latestChanges = [...comments]
@@ -180,7 +183,7 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
 
   const fail = () => toast.error(t("taskDetail.t_error"));
   const org = orgsQ.data?.find((o) => o.id === task.organization_id);
-  const firmName = org ? t("owner.firm_label", { name: org.name, what: t(`firmWhat.${org.area ?? "B1"}`) }) : "";
+  const firmName = org ? t("owner.firm_label", { name: org.name, what: t(`firmWhat.${org.area ?? "none"}`) }) : "";
   /** The empty state of a section, worded for whoever looks (firm, owner, Strategic Mates). */
   const emptyCopy = (section: TaskEmptySection) => {
     const copy = taskEmptyState(me.data?.role, section, { ownerFirst, firmName: org?.name ?? "" });
@@ -241,21 +244,24 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
         </StateNote>
       ) : (
         <StateNote icon={task.is_blocked ? <Lock className="h-4 w-4" /> : <CalendarClock className="h-4 w-4" />}>
-          {task.is_blocked && firstDep
-            ? t("owner.note_blocked", { code: firstDep.code })
-            : t(`owner.note_${status}`, { firm: org?.name ?? "" })}
+          {task.is_blocked && blockedCode
+            ? t("owner.note_blocked", { code: blockedCode })
+            : t(`owner.note_${status}`, { firm: org?.name ?? "", defaultValue: "" })}
         </StateNote>
       );
-  } else if (task.is_blocked && firstDep && (status === "pending" || status === "in_progress")) {
+  } else if (task.is_blocked && (status === "pending" || status === "in_progress")) {
+    // Blocked: "Empezar" never shows, even when the blocking task belongs to a firm this person cannot open.
     primary = (
       <div className="flex flex-wrap items-center gap-3">
         <PrimaryButton disabled>
           <Lock className="h-3.5 w-3.5" />
-          {t("taskDetail.blocked_by", { code: firstDep.code })}
+          {blockedCode ? t("taskDetail.blocked_by", { code: blockedCode }) : t("taskDetail.blocked")}
         </PrimaryButton>
-        <button onClick={() => openTask(firstDep.id)} className="text-sm text-link hover:underline">
-          {t("taskDetail.open_dep", { code: firstDep.code })}
-        </button>
+        {firstDep && (
+          <button onClick={() => openTask(firstDep.id)} className="text-sm text-link hover:underline">
+            {t("taskDetail.open_dep", { code: firstDep.code })}
+          </button>
+        )}
       </div>
     );
   } else if (status === "pending") {
@@ -296,8 +302,8 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
       : status === "accepted"
         ? t("taskDetail.next_accepted")
         : t("owner.next_other", { date: dueDate })
-    : task.is_blocked && firstDep && (status === "pending" || status === "in_progress")
-      ? t("taskDetail.next_blocked", { name: ownerFirst, code: firstDep.code })
+    : task.is_blocked && blockedCode && (status === "pending" || status === "in_progress")
+      ? t("taskDetail.next_blocked", { name: ownerFirst, code: blockedCode })
       : status === "pending"
         ? t("taskDetail.next_pending", { date: dueDate })
         : status === "in_progress"
@@ -733,8 +739,9 @@ function EventLine({ event, comments, userName, lng }: { event: TaskEvent; comme
       </div>
     );
   }
-  const keys: Record<string, string> = { assigned: "e_assigned", started: "e_started", submitted: "e_submitted", changes_requested: "e_changes", approved: "e_approved" };
-  const key = keys[event.kind];
+  const keys: Record<string, string> = { assigned: "e_assigned", started: "e_started", submitted: "e_submitted", changes_requested: "e_changes", approved: "e_approved", unstarted: "e_unstarted" };
+  // A kind the screen does not know yet reads as a generic change, never as "taskDetail.undefined".
+  const key = keys[event.kind] ?? "e_other";
   const quote = event.comment_id ? comments.find((c) => c.id === event.comment_id) : null;
   return (
     <div>

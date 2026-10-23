@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useApproveTask, useCurrentUser, useStartTask, useUnstartTask } from "@/lib/api/hooks";
 import type { TaskWithComputed, VisibleTaskStatus } from "@/lib/api/types";
+import { blockingCodes } from "@/lib/api/computed";
 import { formatDate, formatRelativeDate } from "@/lib/format";
 import { BOARD_COLUMNS, resolveBoardMove } from "@/lib/tasks/board";
 import { overdueDays, overdueLabel } from "@/lib/tasks/table";
@@ -42,7 +43,7 @@ export function TaskBoard(props: {
           t(`tasks.board.no_${move.reason}`, {
             code: task.code,
             to: t(`status.${to}`),
-            by: task.depends_on_task_ids.map(props.codeById).join(", "),
+            by: blockingCodes(task),
           }),
         );
       return;
@@ -159,7 +160,7 @@ export function TaskBoard(props: {
                     {task.is_blocked && task.status !== "accepted" && (
                       <span className="inline-flex shrink-0 items-center gap-1.5 text-status-danger-fg">
                         <StatusBadge status="blocked" className="text-[10px]" />
-                        {task.depends_on_task_ids.map(props.codeById).join(", ")}
+                        {blockingCodes(task)}
                       </span>
                     )}
                   </div>

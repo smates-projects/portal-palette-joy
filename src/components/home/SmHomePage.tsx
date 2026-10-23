@@ -1,11 +1,10 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { useBusinesses, useCurrentUser, useLeads, useOrganizations, useTasks } from "@/lib/api/hooks";
+import { useBusinesses, useCurrentUser, useLeads, useLimits, useOrganizations, useTasks } from "@/lib/api/hooks";
 import { ClockLabel } from "@/components/pipeline/IntakeChecklist";
 import type { TaskWithComputed } from "@/lib/api/types";
-import { buildAttention, buildSmSummary, type SmSummary } from "@/lib/tasks/sm";
+import { buildAttention, buildSmSummary, isDueToday, type SmSummary } from "@/lib/tasks/sm";
 import { isStaleSubmission, overdueLabel } from "@/lib/tasks/table";
-import { todayIso } from "@/lib/clock";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
@@ -14,7 +13,7 @@ import { LeadMeetingsToday } from "./LeadMeetingsToday";
 import type { TasksSearch } from "@/lib/tasks/table";
 
 const CARDS: { key: keyof SmSummary; search: TasksSearch; match: (t: TaskWithComputed) => boolean }[] = [
-  { key: "due_today", search: { due: "today" }, match: (t) => t.status !== "accepted" && t.due_date === todayIso() },
+  { key: "due_today", search: { due: "today" }, match: (t) => isDueToday(t) },
   { key: "overdue", search: { due: "overdue" }, match: (t) => t.is_overdue },
   { key: "stale", search: { stale: "1" }, match: (t) => isStaleSubmission(t) },
   { key: "blocked", search: { blocked: "1" }, match: (t) => t.is_blocked && t.status !== "accepted" },
@@ -29,6 +28,7 @@ export function SmHomePage({ taskId }: { taskId?: string | undefined }) {
   const tasksQ = useTasks();
   const bizQ = useBusinesses();
   const orgsQ = useOrganizations();
+  const staleDays = useLimits()?.stale_task_days;
 
   const all = tasksQ.data ?? [];
   const mine = all.filter((x) => x.supervisor_user_id === me?.id);
@@ -37,7 +37,7 @@ export function SmHomePage({ taskId }: { taskId?: string | undefined }) {
   const bizName = (id: string) => bizQ.data?.find((b) => b.id === id)?.name ?? "";
   const firmLabel = (id: string) => {
     const o = orgsQ.data?.find((x) => x.id === id);
-    return o ? t("owner.firm_label", { name: o.name, what: t(`firmWhat.${o.area ?? "B1"}`) }) : "";
+    return o ? t("owner.firm_label", { name: o.name, what: t(`firmWhat.${o.area ?? "none"}`) }) : "";
   };
   const openTask = (id: string | undefined) => void navigate({ to: "/", search: id ? { task: id } : {}, replace: true });
   const selected = all.find((x) => x.id === taskId);
@@ -94,7 +94,7 @@ export function SmHomePage({ taskId }: { taskId?: string | undefined }) {
                       <span className={cn("font-display text-2xl font-semibold tabular-nums", off ? "text-muted-foreground/40" : alert ? "text-status-danger-fg" : "text-foreground")}>
                         {count}
                       </span>
-                      <span className={cn("text-xs font-medium", off ? "text-muted-foreground/60" : "text-foreground")}>{t(`sm.cards.${c.key}`)}</span>
+                      <span className={cn("text-xs font-medium", off ? "text-muted-foreground/60" : "text-foreground")}>{t(`sm.cards.${c.key}`, { days: staleDays ?? "" })}</span>
                     </div>
                     <p className="mt-0.5 truncate text-xs text-muted-foreground">{off ? t("sm.cards.none") : context(mine.filter(c.match))}</p>
                   </Link>

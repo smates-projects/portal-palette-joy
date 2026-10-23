@@ -73,9 +73,13 @@ export interface TableContext {
   all?: TaskWithComputed[] | undefined;
 }
 
-/** SM rule: a deliverable is stale when it waits for the owner's approval more than 3 days. */
+/**
+ * A deliverable is stale when it waits for the owner's approval more than limits.stale_task_days. Over the API the
+ * task says so itself (is_stale, on the API's clock); STALE_DAYS is only the demo's value of that limit.
+ */
 export const STALE_DAYS = 3;
 export function isStaleSubmission(t: TaskWithComputed, today: string = todayIso()) {
+  if (t.is_stale !== undefined) return t.status === "submitted" && t.is_stale;
   return t.status === "submitted" && !!t.last_submitted_at && daysBetween(t.last_submitted_at.slice(0, 10), today) > STALE_DAYS;
 }
 

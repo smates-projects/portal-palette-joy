@@ -62,7 +62,7 @@ export function placeOf(u: User, orgs: Organization[], businesses: Business[], t
   const org = orgs.find((o) => o.id === u.organization_id);
   if (!org) return u.role === "bishop" ? t("roles.bishop") : "";
   // A firm always shows what it does: "Estudio Pérez (abogados)".
-  if (org.kind === "partner_firm") return t("owner.firm_label", { name: org.name, what: t(`firmWhat.${org.area ?? "B1"}`) });
+  if (org.kind === "partner_firm") return t("owner.firm_label", { name: org.name, what: t(`firmWhat.${org.area ?? "none"}`) });
   return org.name;
 }
 

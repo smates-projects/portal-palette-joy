@@ -10,10 +10,14 @@ export interface SmSummary {
   blocked: number;
 }
 
+/** Due today on the API's clock (is_due_today); the demo, without it, compares with its own day. */
+export const isDueToday = (t: TaskWithComputed, today = todayIso()) =>
+  t.status !== "accepted" && (t.is_due_today ?? t.due_date === today);
+
 /** Inicio SM cards. Approved tasks never count as due. */
 export function buildSmSummary(tasks: TaskWithComputed[], today = todayIso()): SmSummary {
   return {
-    due_today: tasks.filter((t) => t.status !== "accepted" && t.due_date === today).length,
+    due_today: tasks.filter((t) => isDueToday(t, today)).length,
     overdue: tasks.filter((t) => t.is_overdue).length,
     stale: tasks.filter((t) => isStaleSubmission(t, today)).length,
     blocked: tasks.filter((t) => t.is_blocked && t.status !== "accepted").length,

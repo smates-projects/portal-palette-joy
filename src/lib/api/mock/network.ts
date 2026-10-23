@@ -1,7 +1,9 @@
 // In-memory implementation of the network repositories (SM Global, franchises, manual, owner data, Bishop,
 // franchisee). Like the rest of the mock layer it filters by the current user to simulate API authorization.
 import { todayIso, nowIso } from "@/lib/clock";
-import { FEE_FIELDS, MOCK_MAX_MONTHLY_SALES, PROFIT_SPLIT } from "./economics";
+import { FEE_FIELDS, MOCK_LIMITS, MOCK_MAX_MONTHLY_SALES, MOCK_PROGRAM, PROFIT_SPLIT } from "./economics";
+import { DEFAULT_PLATFORM_RULES } from "../franchisability";
+import { equityRangesError } from "@/lib/leads/validation";
 import { isActiveFirm, isActiveUser } from "@/lib/accounts/permissions";
 import { bishopShareAt, estimatePaybackMonth } from "@/lib/bishop/split";
 import { computeReportAmounts, nextMonth, previousMonth } from "@/lib/franchise/fees";
@@ -34,6 +36,7 @@ import {
   LEAD_STAGES,
   type AreaBottleneck,
   type AreaCode,
+  type RulesField,
   type BishopAgreement,
   type BishopInvestment,
   type BishopOpportunity,
@@ -472,11 +475,28 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
   };
 
   // ---------- Rules ----------
+  /** As GET /rules: the editable rules plus the read-only program and limits, and which fields are at their default. */
+  const RULES_FIELDS: Exclude<RulesField, "program_start_requires_full_funds">[] = [
+    "franchisability_goal", "required_task_codes", "area_amber_days", "franchisability_amber_tolerance", "document_review_days",
+    "intake_documents", "program_amount", "assessment_area_map", "opportunity_visibility", "oa_waiting_days",
+    "require_expansion_meeting", "nda_auto_signed_by_sm", "meeting_hours", "intake_help_text", "owner_nda_template",
+    "eligibility", "sm_entities", "contracts", "equity_ranges",
+  ];
+  const readRules = (): PlatformRules => ({
+    ...db.rules,
+    program_length_days: MOCK_PROGRAM.length_days,
+    program: structuredClone(MOCK_PROGRAM),
+    limits: { ...MOCK_LIMITS, meeting_durations: [...MOCK_LIMITS.meeting_durations] },
+    defaults: RULES_FIELDS.filter((f) => db.rules[f] === undefined || sameJson(db.rules[f], DEFAULT_PLATFORM_RULES[f])),
+  });
   const rules: RulesRepository = {
-    get: async () => delay(db.rules),
+    get: async () => delay(readRules()),
     update: async (patch, note = null) => {
       globalOnly();
-      const next: PlatformRules = { ...db.rules, ...patch };
+      // The program, the limits and the defaults list are read only: never stored from a patch.
+      const { program: _program, program_length_days: _length, limits: _limits, defaults: _defaults, ...editable } = patch;
+      const next: PlatformRules = { ...db.rules, ...editable };
+      if (next.equity_ranges !== undefined && equityRangesError(next.equity_ranges)) throw new Error("invalid_equity_ranges");
       if (!Number.isInteger(next.franchisability_goal) || next.franchisability_goal < 1 || next.franchisability_goal > 100) throw new Error("invalid_goal");
       if (!Number.isInteger(next.area_amber_days) || next.area_amber_days < 1) throw new Error("invalid_amber_days");
       if (!Number.isInteger(next.franchisability_amber_tolerance) || next.franchisability_amber_tolerance < 0 || next.franchisability_amber_tolerance > 100) throw new Error("invalid_tolerance");
@@ -484,7 +504,7 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       if (next.intake_documents.some((d) => !d.name.trim())) throw new Error("name_required");
       if (!Number.isInteger(next.program_amount) || (next.program_amount ?? 0) < 1) throw new Error("invalid_program_amount");
       if (next.opportunity_visibility !== undefined && next.opportunity_visibility !== "presented" && next.opportunity_visibility !== "all") throw new Error("invalid_visibility");
-      if (next.oa_waiting_days !== undefined && (!Number.isInteger(next.oa_waiting_days) || next.oa_waiting_days < 0 || next.oa_waiting_days > 60)) throw new Error("invalid_waiting_days");
+      if (next.oa_waiting_days !== undefined && (!Number.isInteger(next.oa_waiting_days) || next.oa_waiting_days < 0 || next.oa_waiting_days > MOCK_LIMITS.oa_waiting_days_max)) throw new Error("invalid_waiting_days");
       if (next.meeting_hours !== undefined && validateMeetingHours(next.meeting_hours)) throw new Error("invalid_meeting_hours");
       // Eligibility: the declared annual revenue is a whole number of dollars (0 = no minimum).
       if (next.eligibility !== undefined && eligibilityError(next.eligibility)) throw new Error(eligibilityError(next.eligibility)!);
@@ -498,7 +518,7 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
         db.rulesHistory.push({ id: newId(), actor_user_id: me().id, created_at: nowIso(), changes, note: note?.trim() || null });
         db.rules = next;
       }
-      return delay(db.rules);
+      return delay(readRules());
     },
     listHistory: async () => {
       globalOnly();

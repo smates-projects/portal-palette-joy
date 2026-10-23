@@ -630,6 +630,9 @@ export const useSetOfficeSignature = () =>
 // ---------- SM Global: rules and catalog admin ----------
 /** PlatformRules: franchisability goal, required task codes, area amber days, amber tolerance. Readable by everyone. */
 export const useRules = () => useQuery({ queryKey: ["rules"], queryFn: api.rules.get });
+/** The read-only part of the rules: platform limits and the program's days (undefined while they load). */
+export const useLimits = () => useRules().data?.limits;
+export const useProgram = () => useRules().data?.program;
 /** RulesChange[]: history of rule changes, newest first (SM Global). */
 export const useRulesHistory = () => useQuery({ queryKey: ["rules", "history"], queryFn: api.rules.listHistory });
 export const useUpdateRules = () =>

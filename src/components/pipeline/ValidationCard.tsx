@@ -1,30 +1,34 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { useCloseValidation, useSaveValidation, useUsers } from "@/lib/api/hooks";
-import type { LeadWithComputed, ValidationInput } from "@/lib/api/types";
-import { formatDate, formatUsd } from "@/lib/format";
-import { EQUITY_RANGES, SM_SQUARE_EQUITY, closeBlock, parsePct, splitErrors, validationInputOf, type SplitErrors } from "@/lib/leads/validation";
+import { useCloseValidation, useRules, useSaveValidation, useUsers } from "@/lib/api/hooks";
+import type { EquityRanges, LeadWithComputed, ValidationInput } from "@/lib/api/types";
+import { formatDate, formatNumber, formatUsd } from "@/lib/format";
+import { closeBlock, isFixed, parsePct, rangeOf, splitErrors, validationInputOf, type SplitErrors } from "@/lib/leads/validation";
+import { smEntitiesOf } from "@/lib/leads/contract-rules";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PrimaryButton } from "@/components/tasks/detail/dialogs";
 
 const inputCls = "h-9 w-full rounded-md border border-input bg-surface px-3 text-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30 disabled:bg-muted disabled:text-muted-foreground";
 const sectionTitle = "text-xs font-medium uppercase tracking-wide text-muted-foreground";
 
-type Text = { equity_owner: string; equity_bishop: string; investment_amount: string; notes: string; sm_square_center: string; sm_square_holder_user_id: string };
+type Text = { equity_owner: string; equity_bishop: string; equity_sm: string; investment_amount: string; notes: string; sm_square_center: string; sm_square_holder_user_id: string };
 
 const textOf = (v: ValidationInput): Text => ({
   equity_owner: v.equity_owner === null ? "" : String(v.equity_owner),
   equity_bishop: v.equity_bishop === null ? "" : String(v.equity_bishop),
+  equity_sm: v.equity_sm === null ? "" : String(v.equity_sm),
   investment_amount: v.investment_amount === null ? "" : String(v.investment_amount),
   notes: v.notes ?? "",
   sm_square_center: v.sm_square_center ?? "",
   sm_square_holder_user_id: v.sm_square_holder_user_id ?? "",
 });
-const inputOfText = (x: Text): ValidationInput => ({
+const inputOfText = (x: Text, ranges: EquityRanges): ValidationInput => ({
   equity_owner: parsePct(x.equity_owner),
   equity_bishop: parsePct(x.equity_bishop),
-  equity_sm: SM_SQUARE_EQUITY,
+  // A single-value range (SM Square's fixed share) is not typed: it is the rule's value.
+  equity_sm: isFixed(ranges, "equity_sm") ? ranges.sm.min : parsePct(x.equity_sm),
   investment_amount: x.investment_amount.trim() === "" ? null : Number(x.investment_amount.replace(/[.,\s]/g, "")),
   notes: x.notes.trim() || null,
   sm_square_center: x.sm_square_center.trim() || null,
@@ -32,19 +36,27 @@ const inputOfText = (x: Text): ValidationInput => ({
 });
 
 /**
- * "Validación" of an accepted lead: the definitive percentages of the new franchisor (owner 50-75 %, Bishop 15-40 %,
- * SM Square 10 % fixed, 100 in all, checked inline), the investment, notes, and the SM Square center with its holder
- * (who signs the Operating Agreement). "Guardar" keeps a draft; "Cerrar validación" (office admin) makes it
- * definitive. Closed, it reads only, with who closed it and when.
+ * "Validación" of an accepted lead: the definitive percentages of the new franchisor inside the rule's equity ranges
+ * (lead.validation.equity_ranges, else the rules), 100 in all, checked inline; the investment, notes, and the SM
+ * Square center with its holder (who signs the Operating Agreement). "Guardar" keeps a draft; "Cerrar validación"
+ * (office admin) makes it definitive. Closed, it reads only, with who closed it and when.
  */
 export function ValidationCard({ lead, readOnly, canClose }: { lead: LeadWithComputed; readOnly: boolean; canClose: boolean }) {
+  const rulesQ = useRules();
+  const ranges = lead.validation?.equity_ranges ?? rulesQ.data?.equity_ranges;
+  if (!ranges) return rulesQ.isLoading ? <Skeleton className="h-40 rounded-md" /> : null;
+  return <ValidationForm lead={lead} readOnly={readOnly} canClose={canClose} ranges={ranges} programAmount={rulesQ.data?.program_amount} corporateName={smEntitiesOf(rulesQ.data).corporate.name} />;
+}
+
+function ValidationForm({ lead, readOnly, canClose, ranges, programAmount, corporateName }: { lead: LeadWithComputed; readOnly: boolean; canClose: boolean; ranges: EquityRanges; programAmount: number | undefined; corporateName: string }) {
   const { t, i18n } = useTranslation();
   const lng = i18n.language;
   const usersQ = useUsers();
   const save = useSaveValidation();
   const close = useCloseValidation();
   const v = lead.validation ?? null;
-  const [text, setText] = useState<Text>(() => textOf(validationInputOf(v)));
+  const smFixed = isFixed(ranges, "equity_sm");
+  const [text, setText] = useState<Text>(() => textOf(validationInputOf(v, ranges)));
   const [tried, setTried] = useState(false);
   const users = usersQ.data ?? [];
   const nameOf = (id: string | null | undefined) => (id ? users.find((u) => u.id === id)?.full_name ?? "" : "");
@@ -65,24 +77,25 @@ export function ValidationCard({ lead, readOnly, canClose }: { lead: LeadWithCom
             <div><dt className="text-muted-foreground">{t("entry_contracts.validation.center")}</dt><dd className="mt-0.5">{[v.sm_square_center, nameOf(v.sm_square_holder_user_id)].filter(Boolean).join(" · ") || t("app.no_data")}</dd></div>
           </dl>
           {v.notes && <p className="mt-3 rounded-[4px] border border-border bg-muted/50 px-3 py-2 text-xs">{v.notes}</p>}
-          <p className="mt-3 text-xs text-muted-foreground">{t("entry_contracts.validation.closed", { name: nameOf(v.closed_by) || "Strategic Mates", date: v.closed_at ? formatDate(v.closed_at, lng) : "" })}</p>
+          <p className="mt-3 text-xs text-muted-foreground">{t("entry_contracts.validation.closed", { name: nameOf(v.closed_by) || corporateName, date: v.closed_at ? formatDate(v.closed_at, lng) : "" })}</p>
         </div>
       </section>
     );
 
-  const input = inputOfText(text);
-  const errors: SplitErrors = splitErrors(input);
+  const input = inputOfText(text, ranges);
+  const errors: SplitErrors = splitErrors(input, ranges);
   const sum = [input.equity_owner, input.equity_bishop, input.equity_sm].reduce<number>((a, b) => a + (typeof b === "number" && Number.isFinite(b) ? b : 0), 0);
   const amountBad = input.investment_amount !== null && (!Number.isFinite(input.investment_amount) || input.investment_amount < 0);
-  const block = closeBlock(input);
-  const dirty = JSON.stringify(input) !== JSON.stringify(validationInputOf(v));
+  const block = closeBlock(input, ranges);
+  const dirty = JSON.stringify(input) !== JSON.stringify(validationInputOf(v, ranges));
   const set = (key: keyof Text, value: string) => setText((x) => ({ ...x, [key]: value }));
-  const fieldError = (field: "equity_owner" | "equity_bishop") => {
+  const fieldError = (field: "equity_owner" | "equity_bishop" | "equity_sm") => {
     const e = errors[field];
     if (!e) return null;
-    const { min, max } = EQUITY_RANGES[field];
+    const { min, max } = rangeOf(ranges, field);
     return e === "required" ? t("entry_contracts.validation.err_required") : t("entry_contracts.validation.err_range", { min, max });
   };
+  const smText = smFixed ? t("entry_contracts.validation.sm_fixed_short", { pct: ranges.sm.min }) : t("entry_contracts.validation.sm_range", { min: ranges.sm.min, max: ranges.sm.max });
   const fail = (e: unknown) => {
     const code = e instanceof Error ? e.message : "";
     toast.error(["invalid_split", "sm_square_signer_required", "admin_only", "validation_incomplete"].includes(code) ? t(`entry_contracts.validation.err_${code}`) : t("pipeline.t_error"));
@@ -105,11 +118,15 @@ export function ValidationCard({ lead, readOnly, canClose }: { lead: LeadWithCom
     <section className="space-y-2">
       <h3 className={sectionTitle}>{t("entry_contracts.validation.title")}</h3>
       <div className="space-y-4 rounded-md border border-border p-4 text-sm">
-        <p className="text-muted-foreground">{t("entry_contracts.validation.hint")}</p>
+        <p className="text-muted-foreground">{t("entry_contracts.validation.hint", { owner_min: ranges.owner.min, owner_max: ranges.owner.max, bishop_min: ranges.bishop.min, bishop_max: ranges.bishop.max, sm: smText })}</p>
         <div className="grid gap-3 sm:grid-cols-3">
           <PctInput id="v-owner" label={t("entry_contracts.validation.owner")} value={text.equity_owner} disabled={disabled} error={fieldError("equity_owner")} onChange={(x) => set("equity_owner", x)} />
           <PctInput id="v-bishop" label={t("entry_contracts.validation.bishop")} value={text.equity_bishop} disabled={disabled} error={fieldError("equity_bishop")} onChange={(x) => set("equity_bishop", x)} />
-          <PctInput id="v-sm" label={t("entry_contracts.validation.sm")} value={String(SM_SQUARE_EQUITY)} disabled hint={t("entry_contracts.validation.sm_fixed")} onChange={() => undefined} />
+          {smFixed ? (
+            <PctInput id="v-sm" label={t("entry_contracts.validation.sm")} value={String(ranges.sm.min)} disabled hint={t("entry_contracts.validation.sm_fixed", { pct: ranges.sm.min })} onChange={() => undefined} />
+          ) : (
+            <PctInput id="v-sm" label={t("entry_contracts.validation.sm")} value={text.equity_sm} disabled={disabled} error={fieldError("equity_sm")} onChange={(x) => set("equity_sm", x)} />
+          )}
         </div>
         <p className={cn("text-xs", errors.sum ? "text-status-danger-fg" : "text-muted-foreground")} role={errors.sum ? "alert" : undefined}>
           {errors.sum ? t("entry_contracts.validation.err_sum", { sum }) : t("entry_contracts.validation.sum", { sum })}
@@ -117,7 +134,7 @@ export function ValidationCard({ lead, readOnly, canClose }: { lead: LeadWithCom
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block space-y-1.5">
             <span className="text-sm font-medium">{t("entry_contracts.validation.investment")}</span>
-            <input inputMode="numeric" value={text.investment_amount} disabled={disabled} onChange={(e) => set("investment_amount", e.target.value)} placeholder="150000" className={cn(inputCls, "font-display tabular-nums", amountBad && "border-status-danger-fg")} />
+            <input inputMode="numeric" value={text.investment_amount} disabled={disabled} onChange={(e) => set("investment_amount", e.target.value)} placeholder={programAmount !== undefined ? formatNumber(programAmount, lng) : undefined} className={cn(inputCls, "font-display tabular-nums", amountBad && "border-status-danger-fg")} />
             {amountBad && <span className="block text-xs text-status-danger-fg">{t("entry_contracts.validation.err_amount")}</span>}
           </label>
           <label className="block space-y-1.5">
