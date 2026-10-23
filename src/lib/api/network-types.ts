@@ -546,6 +546,8 @@ export interface Contract {
   sign_by?: IsoDate | null | undefined;
   /** The current person may sign it now (their part is pending and they are the right signer). Absent = unknown. */
   can_sign?: boolean | undefined;
+  /** The owner signed and only Strategic Mates' signature is missing. */
+  awaiting_sm_signature?: boolean | undefined;
   /** The current person's own part, when they are a party: signed or still pending. */
   my_signature?: "signed" | "pending" | null | undefined;
   /** Names of the parties that have not signed yet ("Strategic Mates Corporate"); from the signers when absent. */

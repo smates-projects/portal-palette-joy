@@ -868,6 +868,9 @@ export interface IntakeSummary {
   mou_sent?: boolean | undefined;
   /** Signed by the owner: unlocks the documents (locked_until_mou). */
   mou_signed_by_owner?: boolean | undefined;
+  /** The owner signed the NDA / MOU and only Strategic Mates' signature is missing. */
+  nda_awaiting_sm?: boolean | undefined;
+  mou_awaiting_sm?: boolean | undefined;
   /** Meetings and booking link for the owner's "Tu ingreso" (the owner never reads the lead). */
   entry?: OwnerEntry | null | undefined;
 }
