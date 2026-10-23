@@ -135,6 +135,20 @@ export function buildPipelineCounters(leads: WithIntake[], today: string = today
   };
 }
 
+/**
+ * The one "conversión del mes" (QA M7 of 23 Oct 2026), as the API computes GET /leads/counters (conversion) and now
+ * also /network/summary and the office stats: of the assessments submitted in the month (YYYY-MM of `cohortMonth`),
+ * how many reached En programa. pct null when the cohort is empty.
+ */
+export function monthCohortConversion(
+  leads: readonly Pick<Lead, "submitted_at" | "stage">[],
+  cohortMonth: string = todayIso().slice(0, 7),
+): { cohort_month: string; submitted: number; reached_program: number; pct: number | null } {
+  const cohort = leads.filter((l) => l.submitted_at.slice(0, 7) === cohortMonth);
+  const reached = cohort.filter((l) => l.stage === "in_program").length;
+  return { cohort_month: cohortMonth, submitted: cohort.length, reached_program: reached, pct: cohort.length ? Math.round((reached / cohort.length) * 100) : null };
+}
+
 // ---------- URL filters ----------
 
 export interface LeadsSearch {

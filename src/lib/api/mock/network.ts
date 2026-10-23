@@ -7,7 +7,7 @@ import { equityRangesError } from "@/lib/leads/validation";
 import { isActiveFirm, isActiveUser } from "@/lib/accounts/permissions";
 import { bishopShareAt, estimatePaybackMonth } from "@/lib/bishop/split";
 import { computeReportAmounts, nextMonth, previousMonth } from "@/lib/franchise/fees";
-import { buildPipelineCounters } from "@/lib/leads/pipeline";
+import { monthCohortConversion } from "@/lib/leads/pipeline";
 import { validateMeetingHours } from "@/lib/calendar/scheduling";
 import { eligibilityError } from "@/lib/leads/readiness";
 import { expectedFranchisePct } from "@/lib/tasks/office";
@@ -223,11 +223,12 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
     const ids = new Set(biz.map((b) => b.id));
     const tasks = all.filter((t) => ids.has(t.business_id) && t.status !== "cancelled");
     const matrix = buildNetworkMatrix(tasks, db.versions, programs, todayIso(), db.rules.area_amber_days);
-    const month = buildPipelineCounters(db.leads.filter((l) => l.office_id === office.id));
+    // The month's cohort, as GET /leads/counters: the same conversion on every screen (QA M7).
+    const month = monthCohortConversion(db.leads.filter((l) => l.office_id === office.id));
     return {
       programs: programs.length,
-      leads_this_month: month.month_assessments,
-      conversion_month: month.conversion_pct,
+      leads_this_month: month.submitted,
+      conversion_month: month.pct,
       ready_to_franchise: programs.filter((b) => franchisabilityOf(b).is_ready).length,
       franchisors: biz.length - programs.length,
       franchises: db.franchises.filter((f) => ids.has(f.franchisor_business_id)).length,
@@ -261,7 +262,7 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       const sum = (pick: (s: OfficeStats) => number) => sums.reduce((a, s) => a + pick(s), 0);
       const reports = reportedIn(month);
       // The conversion of the network is its own ratio, not the average of the offices.
-      const leadsMonth = buildPipelineCounters(db.leads);
+      const leadsMonth = monthCohortConversion(db.leads);
       return delay({
         offices: offices.length,
         programs: sum((s) => s.programs),
@@ -269,8 +270,8 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
         franchises: sum((s) => s.franchises),
         partner_firms: sum((s) => s.partner_firms),
         open_leads: sum((s) => s.open_leads),
-        leads_this_month: leadsMonth.month_assessments,
-        conversion_month: leadsMonth.conversion_pct,
+        leads_this_month: leadsMonth.submitted,
+        conversion_month: leadsMonth.pct,
         ready_to_franchise: sum((s) => s.ready_to_franchise),
         overdue_tasks: sum((s) => s.overdue_tasks),
         last_month: month,

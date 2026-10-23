@@ -242,8 +242,11 @@ describe("office and network numbers", () => {
   it("each office has leads this month, conversion of the month and businesses ready to franchise", async () => {
     const offices = await (await asGlobal()).network.listOffices();
     const stats = (id: string) => offices.find((o) => o.office.id === id)!.stats;
-    // Miami: 7 assessments in October and Enyermy signed on Oct 9, so 1 of 7.
-    expect(stats(seed.ORG_SM)).toMatchObject({ leads_this_month: 6, conversion_month: 17, ready_to_franchise: 0 });
+    // Miami: 6 assessments in October, none of them in the program yet (Enyermy entered on Oct 9 but was submitted in
+    // September): the cohort of GET /leads/counters, the same number as the office Embudo (QA M7).
+    expect(stats(seed.ORG_SM)).toMatchObject({ leads_this_month: 6, conversion_month: 0, ready_to_franchise: 0 });
+    const api = await asGlobal();
+    expect((await api.leads.counters({ office_id: seed.ORG_SM })).conversion).toMatchObject({ submitted: 6, pct: 0 });
     expect(stats(net.ORG_ORLANDO)).toMatchObject({ leads_this_month: 2, conversion_month: 0 });
     // Tampa received one assessment and signed none: 0%. An office with no assessments has no conversion.
     expect(stats(net.ORG_TAMPA)).toMatchObject({ leads_this_month: 1, conversion_month: 0 });
@@ -254,7 +257,8 @@ describe("office and network numbers", () => {
     const summary = await api.network.getSummary();
     const offices = await api.network.listOffices();
     expect(summary.leads_this_month).toBe(offices.reduce((a, o) => a + o.stats.leads_this_month, 0));
-    expect(summary).toMatchObject({ leads_this_month: 9, conversion_month: 11, ready_to_franchise: 0 });
+    expect(summary).toMatchObject({ leads_this_month: 9, conversion_month: 0, ready_to_franchise: 0 });
+    expect((await api.leads.counters()).conversion.pct).toBe(summary.conversion_month);
   });
 
   it("ready to franchise follows the rules: with a low goal the businesses that have approved work count", async () => {
@@ -278,7 +282,7 @@ describe("office and network numbers", () => {
     const miami = await as(seed.U_NICOLAS);
     const [only] = await miami.network.listOffices();
     expect(only!.office.id).toBe(seed.ORG_SM);
-    expect(only!.stats).toMatchObject({ leads_this_month: 6, conversion_month: 17 });
+    expect(only!.stats).toMatchObject({ leads_this_month: 6, conversion_month: 0 });
     await expect(miami.network.getSummary()).rejects.toThrow("global_only");
   });
 });

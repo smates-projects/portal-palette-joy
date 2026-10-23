@@ -1175,7 +1175,7 @@
       "week": "assessments this week",
       "uncontacted": "not contacted for over {{days}} days",
       "signed_month": "joined the program this month",
-      "conversion": "Conversion of this month's assessments",
+      "conversion": "Conversion this month: of this month's assessments, how many entered the program",
       "conversion_value": "{{pct}}% · {{reached}} of {{total}} already joined the program",
       "conversion_none": "No assessments this month",
       "in_review": "in document review",
@@ -2039,7 +2039,7 @@
         "ready_other": "ready to franchise",
         "leads_month_one": "lead this month",
         "leads_month_other": "leads this month",
-        "conversion": "conversion this month"
+        "conversion": "conversion this month (of this month's assessments, how many entered the program)"
       },
       "offices_title": "Offices",
       "offices_empty_title": "There are no offices yet",
@@ -2166,7 +2166,8 @@
         "error_invalid_date": "Pick a date from today on.",
         "api_office_exists": "There is already an office in that city.",
         "api_email_taken": "That email already has an account."
-      }
+      },
+      "col_conversion_hint": "Of this month's assessments, how many entered the program"
     },
     "office": {
       "question": "How is this office doing?",

@@ -61,7 +61,9 @@ export function OfficesPage() {
                 <tr>
                   <th className="whitespace-nowrap px-3 py-2 text-left font-medium">{t("global.offices.col_office")}</th>
                   {COLUMNS.map((c) => (
-                    <th key={c} className="whitespace-nowrap px-3 py-2 text-left font-medium">{t(`global.offices.col_${c}`)}</th>
+                    <th key={c} className="whitespace-nowrap px-3 py-2 text-left font-medium" title={c === "conversion" ? t("global.offices.col_conversion_hint") : undefined}>
+                      {t(`global.offices.col_${c}`)}
+                    </th>
                   ))}
                 </tr>
               </thead>

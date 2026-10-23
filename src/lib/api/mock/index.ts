@@ -23,7 +23,7 @@ import { API_ONLY_NOTIFICATION_KINDS, BISHOP_NOTIFICATION_KINDS, LEAD_NOTIFICATI
 import catalogJson from "@/data/catalogo_metodo180.json";
 import { DEFAULT_PLATFORM_RULES } from "../franchisability";
 import { AREA_BY_KEY, generateProgramTasks, type CatalogEntry } from "../program";
-import { UNCONTACTED_DAYS, buildPipelineCounters, resolveLeadMove } from "@/lib/leads/pipeline";
+import { UNCONTACTED_DAYS, buildPipelineCounters, monthCohortConversion, resolveLeadMove } from "@/lib/leads/pipeline";
 import { DEFAULT_ASSESSMENT_AREA_MAP } from "@/lib/leads/prevalidation";
 import { createEntry } from "./entry";
 import { createSession, type MockSessionControls } from "./session";
@@ -905,14 +905,11 @@ export function createMockApi(): MockApi {
         const today = todayIso();
         const c = buildPipelineCounters(leads, today);
         // Conversion of one cohort: of the leads submitted that month, how many reached the program.
-        const cohortMonth = opts?.cohort_month ?? today.slice(0, 7);
-        const cohort = leads.filter((l) => l.submitted_at.slice(0, 7) === cohortMonth);
-        const reached = cohort.filter((l) => l.stage === "in_program").length;
         return delay({
           today: leads.filter((l) => l.submitted_at.slice(0, 10) === today).length,
           week: c.week, uncontacted: c.uncontacted, uncontacted_days: UNCONTACTED_DAYS, in_review: c.in_review,
           review_overdue: c.review_overdue, accepted_no_investor: c.accepted_no_investor, signed_month: c.signed_month,
-          conversion: { cohort_month: cohortMonth, submitted: cohort.length, reached_program: reached, pct: cohort.length ? Math.round((reached / cohort.length) * 100) : null },
+          conversion: monthCohortConversion(leads, opts?.cohort_month ?? today.slice(0, 7)),
         });
       },
       get: async (id) => {
