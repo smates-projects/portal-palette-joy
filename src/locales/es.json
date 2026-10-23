@@ -216,21 +216,20 @@
     }
   },
   "brand": {
-    "with_sm": "by Strategic Mates",
+    "with_sm": "con Strategic Mates",
     "preview_label": "Vista previa del portal con tu marca",
     "preview_card": "Así se ven tus tarjetas y tus listas.",
     "capture_title": "Marca del negocio",
-    "capture_hint": "Sube el manual de marca en PDF y el logo. La app lee el manual y precarga los colores y la tipografía; corrígelos si hace falta. Cuando el dueño apruebe esta entrega, su portal tomará la marca.",
+    "capture_hint": "Sube el manual de marca en PDF y el logo, y escribe los colores y la tipografía tal como están en el manual. Todos los campos son obligatorios. Cuando el dueño apruebe esta entrega, su portal tomará la marca.",
     "manual_title": "Marca del negocio",
-    "manual_hint": "Elige los colores, la tipografía y el logo. Se aplican al portal del dueño, su equipo y sus franquicias.",
+    "manual_hint": "Escribe los colores y la tipografía y sube el logo. Se aplican al portal del dueño, su equipo y sus franquicias.",
     "manual_file": "Manual de marca (PDF)",
+    "manual_file_optional": "Manual de marca (PDF, opcional)",
     "logo_file": "Logo",
     "attach_manual": "Adjuntar manual de marca",
     "attach_logo": "Adjuntar logo",
     "logo_hint": "PNG, SVG o JPG. Si tiene fondo transparente, usa la versión para fondos oscuros.",
-    "reading": "Leyendo tu manual de marca…",
-    "detected_hint": "Esto es lo que leímos del manual. Puedes corregirlo antes de enviar.",
-    "palette_hint": "Puedes corregir los colores y ver cómo queda el portal.",
+    "palette_hint": "Escribe los colores en formato #rrggbb. La vista previa muestra cómo queda el portal.",
     "primary": "Color principal",
     "primary_hint": "Va en el menú lateral y en los botones principales, con texto blanco.",
     "accent": "Color de acento",
@@ -243,7 +242,7 @@
     "err_hex": "Escribe un color en formato #rrggbb.",
     "contrast_ok": "Contraste {{ratio}} a 1. Cumple AA.",
     "contrast_low": "Contraste {{ratio}} a 1, se necesita {{required}} a 1 para cumplir AA.",
-    "required_hint": "Adjunta el manual de marca para poder enviar la entrega.",
+    "required_hint": "Adjunta el manual de marca y el logo, y escribe los colores y la tipografía para poder enviar la entrega.",
     "panel_title_owner": "Tu marca",
     "panel_title_sm": "Marca del negocio",
     "source_b5_13": "Tomada del manual de marca (B5-13, versión {{version}}), aplicada el {{date}}",
@@ -3100,7 +3099,8 @@
       "sent": "Enviado por mail",
       "opened": "Visto",
       "signed": "Firmado",
-      "declined": "Rechazado"
+      "declined": "Rechazado",
+      "pending_review": "Firma en revisión"
     },
     "resend": "Reenviar",
     "t_resent": "Reenviamos {{name}}.",
@@ -3272,10 +3272,11 @@
       },
       "mou": {
         "not_sent": "Se abre apenas firmes el NDA. No hace falta esperar la firma de Strategic Mates.",
-        "body": "El MOU explica cómo vamos a trabajar juntos. Lee cada punto y marca \"Entendí\". Cuando marques los cuatro, podrás firmar.",
+        "body": "El MOU explica cómo vamos a trabajar juntos. Lee cada punto y marca \"Entendí\". Cuando los marques todos, podrás firmar.",
         "understood": "Entendí",
-        "ready": "Marcaste los cuatro puntos. Ya puedes firmar.",
+        "ready": "Marcaste todos los puntos. Ya puedes firmar.",
         "missing": "Te faltan {{n}} puntos por marcar.",
+        "points_missing": "No pudimos cargar los puntos del MOU. Recarga la página o escríbele a tu consultor.",
         "sign": "Firmar",
         "signed": "Firmaste el MOU.",
         "t_error": "No pudimos guardar tus respuestas. Prueba de nuevo.",
@@ -3521,7 +3522,7 @@
     }
   },
   "auth": {
-    "by_sm": "by Strategic Mates",
+    "by_sm": "con Strategic Mates",
     "back_to_login": "Volver a entrar",
     "fields": {
       "email": "Correo",

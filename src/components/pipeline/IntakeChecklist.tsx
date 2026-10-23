@@ -141,7 +141,7 @@ export function IntakeChecklist({ leadId, readOnly, validation }: { leadId: stri
                 {sm?.sm_entity ? t("entry_contracts.checklist.sign_for", { entity: entities[sm.sm_entity].name }) : t("intake.sign_as_sm")}
               </button>
             )}
-            {!readOnly && canResend(c) && (
+            {!readOnly && (c.can_resend ?? canResend(c)) && (
               <button
                 onClick={() => resend.mutate({ id: leadId, contractId: c.id }, { onSuccess: () => toast.success(t("intake.t_resent", { name: c.name })), onError: () => toast.error(t("pipeline.t_error")) })}
                 className="text-xs text-link hover:underline"
@@ -160,14 +160,14 @@ export function IntakeChecklist({ leadId, readOnly, validation }: { leadId: stri
                 {s.party === "sm" ? smLine(s) : t(`intake.party.${s.party ?? "owner"}`)}, <span className={cn(s.status === "signed" && "text-status-success-fg", s.status === "declined" && "text-status-danger-fg")}>
                   {s.party === "sm" && s.status === "signed"
                     ? (s.user_id ? t("intake.signed_on_behalf_by", { name: s.name, entity: smSignerEntityName(s, entities) }) : t("intake.nda_signed_on_behalf"))
-                    : t(`intake.signer_status.${s.status ?? "sent"}`)}
+                    : t(`intake.signer_status.${s.status ?? "sent"}`, { defaultValue: "" })}
                 </span>
                 {last && ` · ${formatDate(last.at, lng)}`}
                 {s.decline_reason && ` · ${t("intake.declined_reason", { reason: s.decline_reason })}`}
               </li>
             );
           })}
-          {acks !== null && <li>{t("intake.mou_points", { n: acks, m: MOU_ACKNOWLEDGMENT_POINTS.length })}</li>}
+          {acks !== null && <li>{t("intake.mou_points", { n: acks, m: c.acknowledgment_points?.es.length || MOU_ACKNOWLEDGMENT_POINTS.length })}</li>}
           {waitingUntil && <li className="text-status-warning-fg">{t("entry.oa.waiting_sm", { date: formatDate(waitingUntil, lng) })}</li>}
           {deadline.state === "open" && <li>{t("entry_contracts.checklist.sign_by", { date: formatDate(deadline.sign_by, lng) })}</li>}
           {deadline.state === "overdue" && <li className="text-status-danger-fg">{t("entry_contracts.checklist.overdue", { date: formatDate(deadline.sign_by, lng) })}</li>}

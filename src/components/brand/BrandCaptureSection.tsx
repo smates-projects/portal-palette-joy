@@ -1,73 +1,52 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { FileText, Image, Loader2, Paperclip, X } from "lucide-react";
+import { FileText, Image, Paperclip, X } from "lucide-react";
 import type { BrandProposalUpload } from "@/lib/api/repositories";
 import type { BrandPalette } from "@/lib/api/types";
 import { checkAccent, checkPrimary, isHex } from "@/lib/brand/contrast";
-import { brandFileNames, detectBrandFromManual, readImageAsDataUrl, READING_DELAY_MS } from "@/lib/brand/detect";
+import { readImageAsDataUrl } from "@/lib/brand/files";
 import { SecondaryButton } from "@/components/tasks/detail/dialogs";
 import { inputCls } from "@/components/accounts/shared";
 import { BrandPreview } from "./BrandPreview";
 
+const EMPTY_PALETTE: BrandPalette = { primary_color: "", accent_color: "", font_family: "", logo_file_name: null, logo_url: null };
+
 /**
  * Brand capture used in the B5-13 delivery ("Diagnóstico de marca y manual básico de uso") and by SM when it
- * loads a brand by hand. The firm picks the manual PDF and the logo image from its computer; the app "reads" the
- * manual (simulated) and prefills the palette, the logo shows at once in the preview. The firm corrects the palette
- * before sending. Contrast is checked against AA with a darker tone proposed when it falls short. The picked Files go
- * out with the proposal (manual_file, logo_file) so the real API can upload them; the mock keeps the names.
+ * loads a brand by hand. Manual for now (owner decision, 23 Oct 2026): the firm attaches the manual PDF and the logo,
+ * and types the colors and the font itself; every field starts empty and is required (the manual PDF only in the
+ * delivery). Nothing is read or guessed from the manual. Contrast is checked against AA with a darker tone proposed
+ * when it falls short. The picked Files go out with the proposal (manual_file, logo_file) so the API uploads them.
+ * FUTURE: the API reads the palette from the manual (AI on the PDF) and this form starts from its answer.
  */
 export function BrandCaptureSection({ businessName, value, onChange, mode = "delivery" }: {
   businessName: string;
   value: BrandProposalUpload | null;
   onChange: (v: BrandProposalUpload | null) => void;
-  /** delivery: manual PDF first, then the palette. manual: SM types the palette straight away. */
+  /** delivery: the firm's B5-13, with the manual PDF. manual: SM loads the brand (the PDF is optional). */
   mode?: "delivery" | "manual";
 }) {
   const { t } = useTranslation();
-  const names = brandFileNames(businessName);
-  const [manual, setManual] = useState<string | null>(value?.manual_file_name ?? (mode === "manual" ? names.manual : null));
+  const [manual, setManual] = useState<string | null>(value?.manual_file_name || null);
   const [manualFile, setManualFile] = useState<File | null>(value?.manual_file ?? null);
   const [logo, setLogo] = useState<{ name: string; url: string; file: File | null } | null>(value?.logo_file_name ? { name: value.logo_file_name, url: value.logo_url ?? "", file: value.logo_file ?? null } : null);
-  const [reading, setReading] = useState(false);
-  const [palette, setPalette] = useState<BrandPalette | null>(value ? { primary_color: value.primary_color, accent_color: value.accent_color, font_family: value.font_family, logo_file_name: value.logo_file_name, logo_url: value.logo_url } : null);
+  const [palette, setPalette] = useState<BrandPalette>(value ? { primary_color: value.primary_color, accent_color: value.accent_color, font_family: value.font_family, logo_file_name: value.logo_file_name, logo_url: value.logo_url } : EMPTY_PALETTE);
 
-  // Attaching the manual starts the (simulated) reading; the palette appears when it ends.
+  // Tell the parent whenever the proposal is complete and valid (every field typed, logo attached, the PDF in a delivery).
   useEffect(() => {
-    if (!manual || palette || mode !== "delivery") return;
-    setReading(true);
-    const id = setTimeout(() => {
-      const d = detectBrandFromManual(businessName, manual, logo?.name ?? null, logo?.url ?? null);
-      setPalette({ primary_color: d.primary_color, accent_color: d.accent_color, font_family: d.font_family, logo_file_name: d.logo_file_name, logo_url: d.logo_url });
-      setReading(false);
-    }, READING_DELAY_MS);
-    return () => clearTimeout(id);
-  }, [manual, palette, mode, businessName, logo]);
-
-  // SM manual load: start from the sample palette at once.
-  useEffect(() => {
-    if (mode === "manual" && !palette) {
-      const d = detectBrandFromManual(businessName, names.manual, null);
-      setPalette({ primary_color: d.primary_color, accent_color: d.accent_color, font_family: d.font_family, logo_file_name: null, logo_url: null });
-    }
-  }, [mode, palette, businessName, names.manual]);
-
-  // Tell the parent whenever the proposal is complete and valid.
-  useEffect(() => {
-    if (!manual || !palette || !isHex(palette.primary_color) || !isHex(palette.accent_color)) return onChange(null);
-    onChange({ ...palette, logo_file_name: logo?.name ?? null, logo_url: logo?.url || null, manual_file_name: manual, manual_file: manualFile, logo_file: logo?.file ?? null });
+    const complete = isHex(palette.primary_color) && isHex(palette.accent_color) && !!palette.font_family?.trim() && !!logo && (mode === "manual" || !!manual);
+    if (!complete) return onChange(null);
+    onChange({ ...palette, font_family: palette.font_family!.trim(), logo_file_name: logo.name, logo_url: logo.url || null, manual_file_name: manual ?? "", manual_file: manualFile, logo_file: logo.file ?? null });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [manual, manualFile, logo, palette]);
+  }, [manual, manualFile, logo, palette, mode]);
 
   const attachLogo = async (file: File) => setLogo({ name: file.name, url: await readImageAsDataUrl(file), file });
   const attachManual = (file: File) => { setManual(file.name); setManualFile(file); };
-  const set = (k: keyof BrandPalette, v: string) => setPalette((p) => (p ? { ...p, [k]: v } : p));
-  const primary = palette && isHex(palette.primary_color) ? checkPrimary(palette.primary_color) : null;
-  const accent = palette && isHex(palette.accent_color) ? checkAccent(palette.accent_color) : null;
-  const withLogo = palette ? { ...palette, logo_file_name: logo?.name ?? null, logo_url: logo?.url || null } : null;
-
-  const logoRow = (
-    <FileRow label={t("brand.logo_file")} file={logo?.name ?? null} accept="image/png,image/svg+xml,image/jpeg,image/webp" icon={<Image className="h-4 w-4 text-muted-foreground" />} onAttach={attachLogo} onRemove={() => setLogo(null)} attachLabel={t("brand.attach_logo")} hint={t("brand.logo_hint")} />
-  );
+  const set = (k: keyof BrandPalette, v: string) => setPalette((p) => ({ ...p, [k]: v }));
+  const primary = isHex(palette.primary_color) ? checkPrimary(palette.primary_color) : null;
+  const accent = isHex(palette.accent_color) ? checkAccent(palette.accent_color) : null;
+  const withLogo = { ...palette, logo_file_name: logo?.name ?? null, logo_url: logo?.url || null };
+  const showPreview = isHex(palette.primary_color) && isHex(palette.accent_color);
 
   return (
     <section className="space-y-4 rounded-[4px] border border-border p-3">
@@ -76,34 +55,23 @@ export function BrandCaptureSection({ businessName, value, onChange, mode = "del
         <p className="mt-0.5 text-xs text-muted-foreground">{t(mode === "delivery" ? "brand.capture_hint" : "brand.manual_hint")}</p>
       </div>
 
-      {mode === "delivery" && (
-        <div className="space-y-2">
-          <FileRow label={t("brand.manual_file")} file={manual} accept="application/pdf" icon={<FileText className="h-4 w-4 text-muted-foreground" />} onAttach={attachManual} onRemove={() => { setManual(null); setManualFile(null); setPalette(null); }} attachLabel={t("brand.attach_manual")} />
-          {logoRow}
-        </div>
-      )}
-      {mode === "manual" && logoRow}
+      <div className="space-y-2">
+        <FileRow label={t(mode === "delivery" ? "brand.manual_file" : "brand.manual_file_optional")} file={manual} accept="application/pdf" icon={<FileText className="h-4 w-4 text-muted-foreground" />} onAttach={attachManual} onRemove={() => { setManual(null); setManualFile(null); }} attachLabel={t("brand.attach_manual")} />
+        <FileRow label={t("brand.logo_file")} file={logo?.name ?? null} accept="image/png,image/svg+xml,image/jpeg,image/webp" icon={<Image className="h-4 w-4 text-muted-foreground" />} onAttach={attachLogo} onRemove={() => setLogo(null)} attachLabel={t("brand.attach_logo")} hint={t("brand.logo_hint")} />
+      </div>
 
-      {reading && (
-        <p role="status" className="flex items-center gap-2 rounded-[4px] border border-border bg-muted px-3 py-2 text-sm">
-          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />{t("brand.reading")}
-        </p>
-      )}
-
-      {withLogo && !reading && (
-        <div className="space-y-3">
-          <p className="text-xs text-muted-foreground">{t(mode === "delivery" ? "brand.detected_hint" : "brand.palette_hint")}</p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <ColorField label={t("brand.primary")} hint={t("brand.primary_hint")} value={withLogo.primary_color} onChange={(v) => set("primary_color", v)} check={primary} fix={t("brand.use_darker")} />
-            <ColorField label={t("brand.accent")} hint={t("brand.accent_hint")} value={withLogo.accent_color} onChange={(v) => set("accent_color", v)} check={accent} fix={t("brand.use_darker")} />
-          </div>
-          <label className="block space-y-1.5">
-            <span className="text-sm font-medium">{t("brand.font")}</span>
-            <input className={inputCls} value={withLogo.font_family ?? ""} onChange={(e) => set("font_family", e.target.value)} placeholder={t("brand.font_placeholder")} autoComplete="off" />
-          </label>
-          <BrandPreview name={businessName} palette={withLogo} />
+      <div className="space-y-3">
+        <p className="text-xs text-muted-foreground">{t("brand.palette_hint")}</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <ColorField label={t("brand.primary")} hint={t("brand.primary_hint")} value={palette.primary_color} onChange={(v) => set("primary_color", v)} check={primary} fix={t("brand.use_darker")} />
+          <ColorField label={t("brand.accent")} hint={t("brand.accent_hint")} value={palette.accent_color} onChange={(v) => set("accent_color", v)} check={accent} fix={t("brand.use_darker")} />
         </div>
-      )}
+        <label className="block space-y-1.5">
+          <span className="text-sm font-medium">{t("brand.font")}</span>
+          <input className={inputCls} required value={palette.font_family ?? ""} onChange={(e) => set("font_family", e.target.value)} placeholder={t("brand.font_placeholder")} autoComplete="off" />
+        </label>
+        {showPreview && <BrandPreview name={businessName} palette={withLogo} />}
+      </div>
     </section>
   );
 }
@@ -140,10 +108,10 @@ function ColorField({ label, hint, value, onChange, check, fix }: { label: strin
       <span className="block text-sm font-medium">{label}</span>
       <div className="flex items-center gap-2">
         <input type="color" aria-label={label} value={valid ? value : "#000000"} onChange={(e) => onChange(e.target.value)} className="h-9 w-10 cursor-pointer rounded-[4px] border border-input bg-surface p-0.5" />
-        <input className={inputCls} value={value} onChange={(e) => onChange(e.target.value)} spellCheck={false} />
+        <input className={inputCls} required value={value} onChange={(e) => onChange(e.target.value)} placeholder="#RRGGBB" spellCheck={false} />
       </div>
       <span className="block text-xs text-muted-foreground">{hint}</span>
-      {!valid && <span className="block text-xs text-status-danger-fg">{t("brand.err_hex")}</span>}
+      {value !== "" && !valid && <span className="block text-xs text-status-danger-fg">{t("brand.err_hex")}</span>}
       {check && (
         check.ok ? (
           <span className="block text-xs text-status-success-fg">{t("brand.contrast_ok", { ratio: check.ratio })}</span>

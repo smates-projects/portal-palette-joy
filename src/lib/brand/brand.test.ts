@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { BusinessBrand } from "@/lib/api/types";
 import { checkAccent, checkPrimary, contrastRatio, darken, hoverOf, isHex } from "./contrast";
-import { brandFileNames, detectBrandFromManual } from "./detect";
 import { brandBusinessIdFor, brandFor, canReadBrand, canResetBrand, canSetBrand } from "./scope";
 
 describe("contrast AA", () => {
@@ -26,18 +25,6 @@ describe("contrast AA", () => {
   it("hover is a darker tone of the same color", () => {
     expect(contrastRatio(hoverOf("#1f4e3d"), "#ffffff")).toBeGreaterThan(contrastRatio("#1f4e3d", "#ffffff"));
     expect(darken("#ffffff", 0.5)).toBe("#808080");
-  });
-});
-
-describe("simulated reading of the manual", () => {
-  it("is stable for the same business and keeps the uploaded file names", () => {
-    const a = detectBrandFromManual("Vossler", "manual.pdf", "logo.png");
-    const b = detectBrandFromManual("Vossler", "manual.pdf", "logo.png");
-    expect(a).toEqual(b);
-    expect(a.manual_file_name).toBe("manual.pdf");
-    expect(a.logo_file_name).toBe("logo.png");
-    expect(isHex(a.primary_color) && isHex(a.accent_color)).toBe(true);
-    expect(brandFileNames("Bimbo Remodelaciones")).toEqual({ manual: "Bimbo_Remodelaciones_manual_de_marca.pdf", logo: "Bimbo_Remodelaciones_logo.png" });
   });
 });
 
