@@ -949,7 +949,17 @@
     "kind_meeting_booked_short": "{{owner}} booked a meeting with you",
     "kind_meeting_scheduled_short": "{{name}} scheduled a meeting with you",
     "kind_meeting_moved_short": "{{name}} moved a meeting of yours",
-    "kind_meeting_cancelled_short": "{{name}} cancelled a meeting of yours"
+    "kind_meeting_cancelled_short": "{{name}} cancelled a meeting of yours",
+    "pref_contract_due_soon": "The deadline to sign a contract is close",
+    "pref_owner_nda_received": "An owner sends their own NDA",
+    "pref_document_not_applicable": "An owner marks a document as not applicable",
+    "pref_unknown": "Other notices ({{kind}})",
+    "kind_contract_due_soon": "The {{contract_name}} of {{business_name}} is due soon and your signature is missing",
+    "kind_contract_due_soon_short": "A contract is due soon and your signature is missing",
+    "kind_owner_nda_received": "{{business_name}} sent their own NDA to sign",
+    "kind_owner_nda_received_short": "An owner sent their own NDA to sign",
+    "kind_document_not_applicable": "{{business_name}} says a document does not apply to their business",
+    "kind_document_not_applicable_short": "An owner says a document does not apply to their business"
   },
   "soon": {
     "manual": "Here you'll see your business's operations manual as the firms write it and you approve it.",
@@ -2454,7 +2464,8 @@
         "eligibility": "Minimum declared annual revenue",
         "intake_help_text": "Entry documents note",
         "sm_entities": "Strategic Mates entities",
-        "contracts": "Governing language"
+        "contracts": "Governing language",
+        "equity_ranges": "Participation ranges"
       },
       "percent": "{{value}}%",
       "days_one": "{{count}} day",
@@ -2467,7 +2478,9 @@
       "error_invalid_review_days": "Enter a number of days of 1 or more.",
       "amount_title": "Program amount",
       "amount_hint": "What the investor pays Strategic Mates for one program, outside the app. It applies to tripartite contracts signed from now on; signed ones keep their amount.",
-      "error_invalid_program_amount": "Enter a whole-dollar amount greater than zero."
+      "error_invalid_program_amount": "Enter a whole-dollar amount greater than zero.",
+      "hours_value": "{{hours}}, {{days}}",
+      "equity_value": "owner {{owner}}, investor {{bishop}}, SM Square {{sm}}"
     }
   },
   "owner_extra": {
@@ -4068,7 +4081,8 @@
       "mode_corporate_unset": "Global signs it (pick who signs for Corporate first)",
       "mode_office_holder": "The holder the office picks in each validation signs it",
       "global_only": "Only SM Global changes who signs.",
-      "t_saved": "You saved who signs for SM"
+      "t_saved": "You saved who signs for SM",
+      "mode_global_short": "Global signs for SM Square"
     },
     "people": {
       "can_sign": "Can sign for {{entity}}",

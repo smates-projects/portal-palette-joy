@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import i18n from "@/lib/i18n";
 import { NOTIFICATION_KINDS, type AppNotification } from "@/lib/api/types";
-import { notificationText } from "./text";
+import { notificationText, preferenceLabel } from "./text";
 
 const base = (overrides: Partial<AppNotification>): AppNotification => ({
   id: "n", user_id: "u", kind: "contract_signed", task_id: "", task_code: "", task_name: "", business_id: "", business_name: "",
@@ -30,6 +30,16 @@ describe("notificationText", () => {
       expect(line, kind).not.toMatch(/\bde\s*$|\bde\s*\(|\(\)|\bel\s*$|\bpara\s*$/);
       expect(line, kind).not.toContain("{{");
     }
+  });
+
+  it("preferences: every known kind has its label; an unknown one reads as words, never a raw key (QA M5)", () => {
+    const label = (kind: string, language = "es") => preferenceLabel(kind, (k, v) => i18n.t(k, { ...v, lng: language }), (k) => i18n.exists(k));
+    for (const kind of ["contract_due_soon", "owner_nda_received", "document_not_applicable", ...NOTIFICATION_KINDS]) {
+      expect(label(kind), kind).not.toMatch(/notifications\.|pref_/);
+      expect(label(kind, "en"), kind).not.toMatch(/notifications\.|pref_/);
+    }
+    expect(label("contract_due_soon")).toBe("El plazo para firmar un contrato está cerca");
+    expect(label("brand_new_kind")).toBe("Otros avisos (Brand new kind)");
   });
 
   it("a person without a name reads as Strategic Mates, an owner without a name as the owner", () => {

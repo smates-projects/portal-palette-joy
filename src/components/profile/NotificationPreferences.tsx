@@ -2,11 +2,13 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useNotificationPreferences, useSetNotificationPreference } from "@/lib/api/hooks";
 import type { NotificationChannel, NotificationKind } from "@/lib/api/types";
+import { preferenceLabel } from "@/lib/notifications/text";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function NotificationPreferences() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const label = (kind: string) => preferenceLabel(kind, (key, values) => t(key, values ?? {}), (key) => i18n.exists(key));
   const q = useNotificationPreferences();
   const set = useSetNotificationPreference();
   const change = (kind: NotificationKind, channel: NotificationChannel, enabled: boolean) =>
@@ -43,12 +45,12 @@ export function NotificationPreferences() {
         <ul className="divide-y divide-border border-t border-border">
           {(q.data ?? []).map((p) => (
             <li key={p.kind} className="grid grid-cols-[1fr_96px_96px] items-center px-5 py-2.5 text-sm">
-              <span>{t(`notifications.pref_${p.kind}`)}</span>
+              <span>{label(p.kind)}</span>
               <span className="flex justify-center">
-                <Switch checked={p.in_app} onCheckedChange={(v) => change(p.kind, "in_app", v)} aria-label={`${t(`notifications.pref_${p.kind}`)} · ${t("notifications.prefs_in_app")}`} />
+                <Switch checked={p.in_app} onCheckedChange={(v) => change(p.kind, "in_app", v)} aria-label={`${label(p.kind)} · ${t("notifications.prefs_in_app")}`} />
               </span>
               <span className="flex justify-center">
-                <Switch checked={p.email} onCheckedChange={(v) => change(p.kind, "email", v)} aria-label={`${t(`notifications.pref_${p.kind}`)} · ${t("notifications.prefs_email")}`} />
+                <Switch checked={p.email} onCheckedChange={(v) => change(p.kind, "email", v)} aria-label={`${label(p.kind)} · ${t("notifications.prefs_email")}`} />
               </span>
             </li>
           ))}

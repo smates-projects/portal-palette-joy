@@ -949,7 +949,17 @@
     "kind_meeting_booked_short": "{{owner}} agendó una reunión contigo",
     "kind_meeting_scheduled_short": "{{name}} agendó una reunión contigo",
     "kind_meeting_moved_short": "{{name}} movió una reunión tuya",
-    "kind_meeting_cancelled_short": "{{name}} canceló una reunión tuya"
+    "kind_meeting_cancelled_short": "{{name}} canceló una reunión tuya",
+    "pref_contract_due_soon": "El plazo para firmar un contrato está cerca",
+    "pref_owner_nda_received": "Un dueño envía su propio NDA",
+    "pref_document_not_applicable": "Un dueño marca que un documento no aplica",
+    "pref_unknown": "Otros avisos ({{kind}})",
+    "kind_contract_due_soon": "El {{contract_name}} de {{business_name}} vence pronto y falta tu firma",
+    "kind_contract_due_soon_short": "Un contrato vence pronto y falta tu firma",
+    "kind_owner_nda_received": "{{business_name}} envió su propio NDA para firmar",
+    "kind_owner_nda_received_short": "Un dueño envió su propio NDA para firmar",
+    "kind_document_not_applicable": "{{business_name}} dice que un documento no aplica a su negocio",
+    "kind_document_not_applicable_short": "Un dueño dice que un documento no aplica a su negocio"
   },
   "soon": {
     "manual": "Aquí verás el manual operativo de tu negocio a medida que las firmas lo escriban y tú lo apruebes.",
@@ -2454,7 +2464,8 @@
         "eligibility": "Facturación anual mínima declarada",
         "intake_help_text": "Nota de los documentos de ingreso",
         "sm_entities": "Entidades de Strategic Mates",
-        "contracts": "Idioma que prevalece"
+        "contracts": "Idioma que prevalece",
+        "equity_ranges": "Rangos de participación"
       },
       "percent": "{{value}}%",
       "days_one": "{{count}} día",
@@ -2467,7 +2478,9 @@
       "error_invalid_review_days": "Escribe un número de días de 1 o más.",
       "amount_title": "Monto del programa",
       "amount_hint": "Lo que el inversor le paga a Strategic Mates por un programa, fuera de la app. Aplica a los contratos tripartitos que se firmen desde ahora; los ya firmados mantienen su monto.",
-      "error_invalid_program_amount": "Escribe un monto en dólares enteros, mayor que cero."
+      "error_invalid_program_amount": "Escribe un monto en dólares enteros, mayor que cero.",
+      "hours_value": "{{hours}}, {{days}}",
+      "equity_value": "dueño {{owner}}, inversor {{bishop}}, SM Square {{sm}}"
     }
   },
   "owner_extra": {
@@ -4068,7 +4081,8 @@
       "mode_corporate_unset": "Lo firma Global (elige primero quién firma por Corporate)",
       "mode_office_holder": "Lo firma el titular que elige la oficina en cada validación",
       "global_only": "Solo SM Global cambia quién firma.",
-      "t_saved": "Guardaste quién firma por SM"
+      "t_saved": "Guardaste quién firma por SM",
+      "mode_global_short": "SM Square lo firma Global"
     },
     "people": {
       "can_sign": "Puede firmar por {{entity}}",

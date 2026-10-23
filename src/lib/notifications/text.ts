@@ -27,11 +27,27 @@ export function notificationText(n: AppNotification, translate: (key: string, va
   return t(`notifications.kind_${n.kind}`, values);
 }
 
+/**
+ * The label of a preference row in Mi perfil > Notificaciones (QA M5). A kind the API added before the front knows it
+ * never shows a raw key: it reads as its words ("contract_due_soon" -> "Contract due soon") under a generic prefix.
+ */
+export function preferenceLabel(
+  kind: string,
+  translate: (key: string, values?: Record<string, string>) => string,
+  exists: (key: string) => boolean,
+): string {
+  const key = `notifications.pref_${kind}`;
+  if (exists(key)) return translate(key);
+  const words = kind.replace(/[_-]+/g, " ").trim();
+  return translate("notifications.pref_unknown", { kind: words.charAt(0).toUpperCase() + words.slice(1) });
+}
+
 /** Kinds whose sentence names the business. */
 const SUBJECT_BUSINESS: ReadonlySet<string> = new Set([
   "contract_signed", "contract_sent", "signature_pending_review", "document_received", "document_requested", "documents_approved",
   "documents_unlocked", "review_overdue", "program_started", "binding_ready", "validation_closed", "brand_logo_rejected",
   "meeting_outcome_pending", "lead_assessment", "transfer_received", "lead_auto_discarded",
+  "contract_due_soon", "owner_nda_received", "document_not_applicable",
 ]);
 /** Kinds whose sentence names the place. */
 const SUBJECT_PLACE: ReadonlySet<string> = new Set(["opportunity_presented"]);

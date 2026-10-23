@@ -3,14 +3,13 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { ChevronDown } from "lucide-react";
 import { useCatalogAdmin, useRules, useRulesHistory, useUpdateRules, useUsers } from "@/lib/api/hooks";
-import type { IntakeDocRule, MeetingHours, PlatformRules, RulesField } from "@/lib/api/network-types";
+import type { PlatformRules, RulesField } from "@/lib/api/network-types";
 import { IntakeDocsEditor, IntakeTextsEditor } from "./IntakeDocsEditor";
-import { MeetingHoursRules, zoneKey } from "./MeetingHoursRules";
+import { MeetingHoursRules } from "./MeetingHoursRules";
 import { AssessmentMapEditor, EligibilityRulesSection, EntryFlowRules, ZonesSection } from "./EntryRules";
 import { ContractRulesSection, GoverningLanguageSection, SmEntitiesSection, SmSignersSection } from "./ContractRulesSection";
-import type { EligibilityRules, SmEntities } from "@/lib/api/types";
+import { rulesFieldLabel, rulesValueText } from "./rules-history-text";
 import { cn } from "@/lib/utils";
-import { formatUsd } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PrimaryButton } from "@/components/tasks/detail/dialogs";
 import { ErrorBox, GlobalHeader, HistoryList, type HistoryEntry } from "../shared";
@@ -45,50 +44,14 @@ export function RulesPage() {
     );
 
   const authorName = (id: string) => usersQ.data?.find((u) => u.id === id)?.full_name ?? "";
-  const show = (field: keyof PlatformRules, value: unknown) =>
-    // Revised entry: absent before SM Global set it (the default applied).
-    value === undefined || value === null
-      ? t("entry.rules.flow.default_value")
-      : field === "meeting_hours"
-      ? (() => {
-          const h = value as MeetingHours;
-          return t("calendar.rules.value", { start: h.start, end: h.end, zone: t(`calendar.rules.zones.${zoneKey(h.timezone)}`, { defaultValue: h.timezone }) });
-        })()
-      : field === "opportunity_visibility"
-      ? t(`entry.rules.flow.visibility_${String(value)}`)
-      : field === "require_expansion_meeting" || field === "nda_auto_signed_by_sm"
-      ? t(value ? "entry.rules.flow.yes" : "entry.rules.flow.no")
-      : field === "oa_waiting_days"
-      ? t("global.rules.days", { count: Number(value) })
-      : field === "assessment_area_map"
-      ? t("entry.rules.map_history")
-      : field === "eligibility"
-      ? formatUsd(Number((value as EligibilityRules).min_annual_revenue), i18n.language)
-      : field === "intake_help_text"
-      ? String(value)
-      : field === "sm_entities"
-      ? t("entry_contracts.entities.value", { corporate: (value as SmEntities).corporate.name, sm_square: (value as SmEntities).sm_square.name })
-      : field === "contracts"
-      ? t(`contracts_lang.rules.option_${(value as { governing_language?: string } | null)?.governing_language === "es" ? "es" : "en"}`)
-      : field === "program_amount"
-      ? formatUsd(Number(value), i18n.language)
-      : field === "intake_documents"
-      ? t("intake.rules.count", { count: (value as IntakeDocRule[]).filter((d) => !d.archived).length })
-      : field === "document_review_days"
-        ? t("global.rules.days", { count: Number(value) })
-        : Array.isArray(value)
-      ? value.length ? value.join(", ") : t("global.rules.required_none")
-      : field === "franchisability_goal"
-        ? t("global.rules.percent", { value })
-        : field === "area_amber_days"
-          ? t("global.rules.days", { count: Number(value) })
-          : t("global.rules.points", { count: Number(value) });
+  const translate = (key: string, values?: Record<string, unknown>) => t(key, values ?? {});
+  const show = (field: string, value: unknown) => rulesValueText(field, value, translate, i18n.language);
   const entries: HistoryEntry[] = (historyQ.data ?? []).map((c) => ({
     id: c.id,
     when: c.created_at,
     author: authorName(c.actor_user_id),
     title: t("global.rules.history_title"),
-    lines: c.changes.map((x) => t("global.history.change", { field: t(`global.rules.fields.${x.field}`), from: show(x.field, x.from), to: show(x.field, x.to) })),
+    lines: c.changes.map((x) => t("global.history.change", { field: rulesFieldLabel(x.field, translate), from: show(x.field, x.from), to: show(x.field, x.to) })),
     note: c.note,
   }));
 
