@@ -26,6 +26,49 @@ function AgreementStatus({ agreement: a }: { agreement: BishopAgreement }) {
   return <Tag tone={STATE_TONE[a.state]}>{t(`bishop.agreements.state_${a.state}`)}</Tag>;
 }
 
+/** Sign, open the signed document, the stored file, or a disabled "Ver documento" with the reason. */
+function AgreementAction({ agreement: a, onSign, onView }: { agreement: BishopAgreement; onSign: (c: Contract) => void; onView: (c: Contract) => void }) {
+  const { t } = useTranslation();
+  if (a.contract && a.contract.signers.some((x) => x.party === "bishop" && (x.status === "sent" || x.status === "opened"))) {
+    const contract = a.contract;
+    return <button onClick={() => onSign(contract)} className={primaryButton}>{t("bishop.agreements.sign")}</button>;
+  }
+  if (a.contract && a.contract.signers.some((x) => x.signed_at)) {
+    const contract = a.contract;
+    return (
+      <button onClick={() => onView(contract)} aria-label={t("bishop.agreements.open_document_for", { name: a.name })} className={secondaryButton}>
+        <FileText className="mr-1.5 h-3.5 w-3.5" />{t("bishop.agreements.open_document")}
+      </button>
+    );
+  }
+  if (a.file_url)
+    // The stored agreement (GET /files/{id}/download). Without a link the button stays disabled.
+    return (
+      <a
+        href={a.file_url}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={t("bishop.agreements.open_document_for", { name: a.name })}
+        className={`${secondaryButton} inline-flex items-center whitespace-nowrap`}
+      >
+        <FileText className="mr-1.5 h-3.5 w-3.5" />{t("bishop.agreements.open_document")}
+      </a>
+    );
+  // A disabled button gets no hover events, so the tooltip hangs from a focusable wrapper.
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span tabIndex={0} className="inline-block rounded-md focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+          <button disabled aria-label={t("bishop.agreements.open_document_for", { name: a.name })} className={secondaryButton}>
+            <FileText className="mr-1.5 h-3.5 w-3.5" />{t("bishop.agreements.open_document")}
+          </button>
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>{t("bishop.agreements.no_file")}</TooltipContent>
+    </Tooltip>
+  );
+}
+
 /** Agreements of the Bishop (equity agreement, NDA) with their signature status. */
 export function AgreementsPage() {
   const { t, i18n } = useTranslation();
@@ -54,12 +97,31 @@ export function AgreementsPage() {
       </Screen>
     );
 
+  const signedOn = (a: BishopAgreement) =>
+    a.signed_at ? t("bishop.agreements.signed_on", { date: formatDate(a.signed_at, lng) }) : t("bishop.agreements.not_signed");
+  const action = (a: BishopAgreement) => <AgreementAction agreement={a} onSign={setSigning} onView={setViewing} />;
+
   return (
     <Screen ns="bishop" screen="agreements">
-      <div className="mt-6">
+      <div className="mt-6 min-w-0">
         <Panel>
           <TooltipProvider delayDuration={150}>
-            <div className="overflow-x-auto">
+            {/* Phones: one card per agreement, never a table wider than the screen (QA M6, 390 px). */}
+            <ul className="divide-y divide-border md:hidden">
+              {agreementsQ.data.map((a) => (
+                <li key={a.id} className="space-y-2 px-4 py-3 text-sm">
+                  <p className="font-medium">{a.name}</p>
+                  {a.counterparties && <p className="text-muted-foreground">{a.counterparties}</p>}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <AgreementStatus agreement={a} />
+                    <span className="text-xs tabular-nums text-muted-foreground">{signedOn(a)}</span>
+                  </div>
+                  {a.contract && <SealedCopyLinks contract={a.contract} />}
+                  <div className="[&_a]:w-full [&_a]:justify-center [&_button]:w-full [&_button]:justify-center [&_span]:block">{action(a)}</div>
+                </li>
+              ))}
+            </ul>
+            <div className="hidden overflow-x-auto md:block">
               <table className="w-full min-w-[720px] text-left text-sm">
                 <thead className="bg-muted/50 text-xs text-muted-foreground">
                   <tr>
@@ -79,40 +141,9 @@ export function AgreementsPage() {
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">{a.counterparties}</td>
                       <td className="px-4 py-3"><AgreementStatus agreement={a} /></td>
-                      <td className="px-4 py-3 tabular-nums">
-                        {a.signed_at ? t("bishop.agreements.signed_on", { date: formatDate(a.signed_at, lng) }) : t("bishop.agreements.not_signed")}
-                      </td>
+                      <td className="px-4 py-3 tabular-nums">{signedOn(a)}</td>
                       <td className="w-44 whitespace-nowrap px-4 py-3 text-right [&_button]:inline-flex [&_button]:items-center [&_button]:whitespace-nowrap">
-                        {a.contract && a.contract.signers.some((x) => x.party === "bishop" && (x.status === "sent" || x.status === "opened")) ? (
-                          <button onClick={() => setSigning(a.contract!)} className={primaryButton}>{t("bishop.agreements.sign")}</button>
-                        ) : a.contract && a.contract.signers.some((x) => x.signed_at) ? (
-                          <button onClick={() => setViewing(a.contract!)} aria-label={t("bishop.agreements.open_document_for", { name: a.name })} className={secondaryButton}>
-                            <FileText className="mr-1.5 h-3.5 w-3.5" />{t("bishop.agreements.open_document")}
-                          </button>
-                        ) : a.file_url ? (
-                          // The stored agreement (GET /files/{id}/download). Without a link the button stays disabled.
-                          <a
-                            href={a.file_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            aria-label={t("bishop.agreements.open_document_for", { name: a.name })}
-                            className={`${secondaryButton} inline-flex items-center whitespace-nowrap`}
-                          >
-                            <FileText className="mr-1.5 h-3.5 w-3.5" />{t("bishop.agreements.open_document")}
-                          </a>
-                        ) : (
-                          // A disabled button gets no hover events, so the tooltip hangs from a focusable wrapper.
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span tabIndex={0} className="inline-block rounded-md focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
-                                <button disabled aria-label={t("bishop.agreements.open_document_for", { name: a.name })} className={secondaryButton}>
-                                  <FileText className="mr-1.5 h-3.5 w-3.5" />{t("bishop.agreements.open_document")}
-                                </button>
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent>{t("bishop.agreements.no_file")}</TooltipContent>
-                          </Tooltip>
-                        )}
+                        {action(a)}
                       </td>
                     </tr>
                   ))}
