@@ -213,6 +213,8 @@ export function createMockApi(): MockApi {
       if (m?.outcome_prompted_at && !m.outcome)
         leadNotifs.push({ id: newId(), user_id: l.consultant_user_id, kind: "meeting_outcome_pending", lead_id: l.id, actor_user_id: null, created_at: m.outcome_prompted_at, read: false, meeting_at: m.starts_at, meeting_id: m.id });
   let currentUserId = seed.U_LUCIA;
+  /** "Mi firma": the saved signature of each person (GET/PUT/DELETE /me/signature). */
+  const savedSignatures = new Map<string, import("./../types").SavedSignature>();
   // Login, logout, invitations, magic links and reset (./session). Starts signed in as currentUserId.
   const auth = createSession({ db, newId, delay, getUserId: () => currentUserId, setUserId: (id) => { currentUserId = id; } });
 
