@@ -495,7 +495,7 @@ export const useMySignature = () => useQuery({ queryKey: ["me", "signature"], qu
 export function useSaveMySignature() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (s: { kind: "drawn" | "uploaded"; image_url: string }) => api.documents.saveMySignature(s),
+    mutationFn: (s: { kind: "drawn" | "typed" | "uploaded"; image_url: string }) => api.documents.saveMySignature(s),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["me", "signature"] }),
   });
 }

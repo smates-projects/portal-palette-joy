@@ -504,7 +504,7 @@ export type SigningErrorCode = (typeof SIGNING_ERROR_CODES)[number];
 
 /** The signature a person keeps in Mi perfil (GET /me/signature). */
 export interface SavedSignature {
-  kind: "drawn" | "uploaded";
+  kind: "drawn" | "typed" | "uploaded";
   image_url: string;
   updated_at: IsoDateTime;
 }
@@ -512,7 +512,7 @@ export interface SavedSignature {
 /** PUT /me/signature: the stored file (context contract_signature) and how it was made. */
 export interface SaveSignatureInput {
   file_id: Uuid;
-  kind: "drawn" | "uploaded";
+  kind: "drawn" | "typed" | "uploaded";
 }
 
 /** POST /contracts/{id}/sign: a new signature (signature_file_id) or the saved one (use_saved_signature). */

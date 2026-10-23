@@ -703,7 +703,7 @@ export interface DocumentsRepository {
   /** GET /me/signature: the current person's saved signature, null without one. "forbidden" while viewing as someone. */
   getMySignature(): Promise<SavedSignature | null>;
   /** Stores the image (context contract_signature) and PUT /me/signature { file_id, kind }. */
-  saveMySignature(signature: { kind: "drawn" | "uploaded"; image_url: string }): Promise<SavedSignature>;
+  saveMySignature(signature: { kind: "drawn" | "typed" | "uploaded"; image_url: string }): Promise<SavedSignature>;
   /** DELETE /me/signature (204). */
   deleteMySignature(): Promise<void>;
   declineContract(contractId: Uuid, reason: string): Promise<Contract>;

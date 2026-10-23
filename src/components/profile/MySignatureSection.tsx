@@ -2,7 +2,7 @@ import { useState } from "react";
 import { PenLine } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { useDeleteMySignature, useMySignature, useSaveMySignature } from "@/lib/api/hooks";
+import { useCurrentUser, useDeleteMySignature, useMySignature, useSaveMySignature } from "@/lib/api/hooks";
 import type { ContractSignature } from "@/lib/api/types";
 import { formatDate } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,11 +16,12 @@ const primaryBtn =
 const errorCode = (e: unknown) => (e instanceof Error ? ((e as Error & { code?: string }).code ?? e.message) : "");
 
 /**
- * Mi perfil: "Mi firma". The saved signature (GET /me/signature) with "Cambiar" and "Eliminar"; draw or upload a new
- * one. Hidden while viewing as someone (the API answers 403).
+ * Mi perfil: "Mi firma". The saved signature (GET /me/signature) with "Cambiar" and "Eliminar"; draw it, type the full
+ * name or upload it, the same three ways a contract is signed. Hidden while viewing as someone (the API answers 403).
  */
 export function MySignatureSection() {
   const { t, i18n } = useTranslation();
+  const me = useCurrentUser().data;
   const q = useMySignature();
   const save = useSaveMySignature();
   const remove = useDeleteMySignature();
@@ -32,7 +33,7 @@ export function MySignatureSection() {
   const saved = q.data ?? null;
 
   const onSave = () => {
-    if (!draft || (draft.kind !== "drawn" && draft.kind !== "uploaded")) return;
+    if (!draft || draft.kind === "saved") return;
     save.mutate({ kind: draft.kind, image_url: draft.image_url }, {
       onSuccess: () => { setEditing(false); setDraft(null); toast.success(t("profile.signature.t_saved")); },
       onError: () => toast.error(t("profile.signature.t_error")),
@@ -67,7 +68,7 @@ export function MySignatureSection() {
               </div>
             ) : (
               <div className="mt-3 space-y-3">
-                <SignaturePad signerName="" allowTyped={false} onChange={setDraft} />
+                <SignaturePad signerName={me?.full_name ?? ""} onChange={setDraft} />
                 <div className="flex justify-end gap-2">
                   <button className={secondaryBtn} onClick={() => { setEditing(false); setDraft(null); }}>{t("profile.signature.cancel")}</button>
                   <button className={primaryBtn} onClick={onSave} disabled={!draft || save.isPending}>{t("profile.signature.save")}</button>
