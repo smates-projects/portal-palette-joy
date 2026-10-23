@@ -3736,7 +3736,7 @@
     "about_task_placeholder": "Pick a task",
     "participants": "Participants",
     "participants_hint": "You organize the meeting. Add whoever needs to be there.",
-    "participants_empty": "Add at least one person.",
+    "participants_empty": "Add at least one person, or invite someone by email below.",
     "add_person": "Add person",
     "add_person_placeholder": "Pick someone",
     "remove_person": "Remove {{name}}",
@@ -3831,7 +3831,9 @@
       "cant_no_mail": "Let {{name}} know you can't make it.",
       "not_found": "We could not find this meeting. You may no longer see it.",
       "close": "Close",
-      "open_task": "Open the task"
+      "open_task": "Open the task",
+      "external": "Invited by email",
+      "external_invited": "Google invitation"
     },
     "profile": {
       "title": "Google Calendar",
@@ -3883,6 +3885,20 @@
       "pick_continue": "Continue"
     },
     "lead_guest": "We invite {{email}} with the Meet link.",
+    "external_title": "Invite by email",
+    "external_hint": "For people without a portal account. Google sends them the invitation with the Meet link.",
+    "external_placeholder": "name@company.com",
+    "external_add": "Add",
+    "external_remove": "Remove {{email}}",
+    "external_errors": {
+      "invalid_email": "Type a valid email, for example name@company.com.",
+      "duplicate_email": "That email is already on the list.",
+      "own_email": "That is your email: you are already in the meeting."
+    },
+    "external_needs_calendar": "To invite by email, connect your Google Calendar: Google is who sends them the invitation.",
+    "external_availability": "We cannot see the calendar of the people you invite by email. Pick a time that works for them.",
+    "external_invited": "We also invited {{emails}} by email.",
+    "availability_unknown": "We cannot see {{name}}'s calendar: Google sends the invitation by email.",
     "not_connected_body": "Your Google Calendar is not connected. Connect it or record the meeting by hand.",
     "connect_google": "Connect Google Calendar",
     "register_manually": "Record meeting by hand"
@@ -4033,13 +4049,26 @@
     },
     "entities": {
       "title": "Strategic Mates entities",
-      "hint": "The names Strategic Mates signs with. Corporate signs the NDA, the MOU and the binding agreement; SM Square signs the Operating Agreement, through the holder picked in each validation.",
+      "hint": "The names Strategic Mates signs with. Corporate signs the NDA, the MOU and the binding agreement; SM Square signs the Operating Agreement (who signs for each one is set in \"Who signs for SM\").",
       "corporate": "Corporate",
       "sm_square": "SM Square",
       "required": "Write a name.",
       "save": "Save names",
       "t_saved": "Names saved",
       "value": "{{corporate}} and {{sm_square}}"
+    },
+    "signers_rule": {
+      "title": "Who signs for SM",
+      "hint": "For now everything Strategic Mates signs is signed by Global. The Corporate person signs the binding agreement and, when the rule says so, the NDA and the MOU with their saved signature.",
+      "corporate": "Signs for {{entity}}",
+      "corporate_hint": "A person of SM Global.",
+      "corporate_none": "Pick someone from SM Global",
+      "sm_square": "Signs for {{entity}} (Operating Agreement)",
+      "mode_corporate": "Global signs it ({{name}})",
+      "mode_corporate_unset": "Global signs it (pick who signs for Corporate first)",
+      "mode_office_holder": "The holder the office picks in each validation signs it",
+      "global_only": "Only SM Global changes who signs.",
+      "t_saved": "You saved who signs for SM"
     },
     "people": {
       "can_sign": "Can sign for {{entity}}",
@@ -4095,9 +4124,12 @@
       "err_invalid_split": "The percentages break the ranges or do not add up to 100 %.",
       "err_sm_square_signer_required": "That person cannot sign for SM Square.",
       "err_admin_only": "Only the office admin closes the validation.",
-      "err_validation_incomplete": "The SM Square center or its holder is missing.",
+      "err_validation_incomplete": "The SM Square center is missing (or its holder, when the office designates one).",
       "t_saved": "Validation saved",
-      "t_closed": "Validation closed. {{name}} has its final percentages"
+      "t_closed": "Validation closed. {{name}} has its final percentages",
+      "signs_for_sm_square": "Signs for SM Square",
+      "global_signs": "Global signs it ({{name}}).",
+      "global_signs_unset": "Global signs it. SM Global has not picked the person yet in Rules, \"Who signs for SM\"."
     },
     "owner": {
       "binding_not_yet": "We prepare it when an investor accepts your business. You, the investor and Strategic Mates sign it in the linking meeting.",
@@ -4120,7 +4152,7 @@
       "copy": "Copy link",
       "t_copied": "Link copied",
       "t_copy_failed": "It could not be copied. Select the link and copy it by hand.",
-      "none": "You have no link yet. Ask Strategic Mates Corporate for one."
+      "none": "You have no link yet. Ask SM Global for one."
     }
   },
   "contracts_lang": {

@@ -445,6 +445,8 @@ export interface PortalMeeting {
   meet_url: string | null;
   organizer: { user_id: Uuid; name: string };
   participants: PortalMeetingParticipant[];
+  /** Guests without a portal account, invited by email in the Google event (the API always sends it). */
+  external_emails?: string[] | undefined;
   status: PortalMeetingStatus;
   /** The event exists in the organizer's Google Calendar and the invitations went out. */
   google_synced: boolean;
@@ -496,6 +498,11 @@ export interface ScheduleMeetingInput {
   business_id?: Uuid | null | undefined;
   lead_id?: Uuid | null | undefined;
   participant_user_ids: Uuid[];
+  /**
+   * People without a portal account, invited by email in the organizer's Google event. They need the organizer's
+   * calendar connected (calendar_not_connected otherwise) and count in max_meeting_participants with the people.
+   */
+  external_emails?: string[] | undefined;
   starts_at: IsoDateTime;
   duration_minutes: number;
   topic: string;

@@ -113,6 +113,21 @@ function MeetingBody({ meeting }: { meeting: PortalMeeting }) {
             </ul>
           </dd>
         </div>
+        {(meeting.external_emails?.length ?? 0) > 0 && (
+          <div>
+            <dt className="text-xs text-muted-foreground">{t("calendar.panel.external")}</dt>
+            <dd className="mt-1">
+              <ul className="divide-y divide-border rounded-[4px] border border-border">
+                {(meeting.external_emails ?? []).map((email) => (
+                  <li key={email} className="flex items-center justify-between gap-2 px-3 py-1.5">
+                    <span className="min-w-0 truncate">{email}</span>
+                    <span className="shrink-0 text-xs text-muted-foreground">{t("calendar.panel.external_invited")}</span>
+                  </li>
+                ))}
+              </ul>
+            </dd>
+          </div>
+        )}
       </dl>
 
       {live && (

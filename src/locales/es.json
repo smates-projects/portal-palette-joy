@@ -3736,7 +3736,7 @@
     "about_task_placeholder": "Elige una tarea",
     "participants": "Participantes",
     "participants_hint": "Tú organizas la reunión. Suma a quien tenga que estar.",
-    "participants_empty": "Suma al menos una persona.",
+    "participants_empty": "Suma al menos una persona, o invita a alguien por correo más abajo.",
     "add_person": "Agregar persona",
     "add_person_placeholder": "Elige a alguien",
     "remove_person": "Quitar a {{name}}",
@@ -3831,7 +3831,9 @@
       "cant_no_mail": "Avísale a {{name}} que no puedes ir.",
       "not_found": "No encontramos esta reunión. Puede que ya no la veas.",
       "close": "Cerrar",
-      "open_task": "Abrir la tarea"
+      "open_task": "Abrir la tarea",
+      "external": "Invitados por correo",
+      "external_invited": "Invitación de Google"
     },
     "profile": {
       "title": "Google Calendar",
@@ -3883,6 +3885,20 @@
       "pick_continue": "Continuar"
     },
     "lead_guest": "Invitamos a {{email}} con el enlace de Meet.",
+    "external_title": "Invitar por correo",
+    "external_hint": "Para personas sin cuenta en el portal. Google les manda la invitación con el link de Meet.",
+    "external_placeholder": "nombre@empresa.com",
+    "external_add": "Agregar",
+    "external_remove": "Quitar {{email}}",
+    "external_errors": {
+      "invalid_email": "Escribe un correo válido, por ejemplo nombre@empresa.com.",
+      "duplicate_email": "Ese correo ya está en la lista.",
+      "own_email": "Ese es tu correo: tú ya estás en la reunión."
+    },
+    "external_needs_calendar": "Para invitar por correo, conecta tu Google Calendar: es Google quien les manda la invitación.",
+    "external_availability": "No vemos la agenda de quienes invitas por correo. Elige un horario que les sirva.",
+    "external_invited": "También invitamos por correo a {{emails}}.",
+    "availability_unknown": "No vemos la agenda de {{name}}: Google le manda la invitación por correo.",
     "not_connected_body": "Tu Google Calendar no está conectado. Conéctalo o registra la reunión a mano.",
     "connect_google": "Conectar Google Calendar",
     "register_manually": "Registrar reunión a mano"
@@ -4033,13 +4049,26 @@
     },
     "entities": {
       "title": "Entidades de Strategic Mates",
-      "hint": "Los nombres con los que firma Strategic Mates. Corporate firma el NDA, el MOU y el Acuerdo de Vinculación; SM Square firma el Operating Agreement, por medio del titular que se elige en cada validación.",
+      "hint": "Los nombres con los que firma Strategic Mates. Corporate firma el NDA, el MOU y el Acuerdo de Vinculación; SM Square firma el Operating Agreement (quién firma por cada una se elige en «Quién firma por SM»).",
       "corporate": "Corporate",
       "sm_square": "SM Square",
       "required": "Escribe un nombre.",
       "save": "Guardar nombres",
       "t_saved": "Nombres guardados",
       "value": "{{corporate}} y {{sm_square}}"
+    },
+    "signers_rule": {
+      "title": "Quién firma por SM",
+      "hint": "Por ahora todo lo que firma Strategic Mates lo firma Global. La persona de Corporate firma el Acuerdo de Vinculación y, cuando la regla lo dice, el NDA y el MOU con su firma guardada.",
+      "corporate": "Firma por {{entity}}",
+      "corporate_hint": "Una persona de SM Global.",
+      "corporate_none": "Elige a alguien de SM Global",
+      "sm_square": "Firma por {{entity}} (Operating Agreement)",
+      "mode_corporate": "Lo firma Global ({{name}})",
+      "mode_corporate_unset": "Lo firma Global (elige primero quién firma por Corporate)",
+      "mode_office_holder": "Lo firma el titular que elige la oficina en cada validación",
+      "global_only": "Solo SM Global cambia quién firma.",
+      "t_saved": "Guardaste quién firma por SM"
     },
     "people": {
       "can_sign": "Puede firmar por {{entity}}",
@@ -4095,9 +4124,12 @@
       "err_invalid_split": "Los porcentajes no cumplen los rangos o no suman 100 %.",
       "err_sm_square_signer_required": "Esa persona no puede firmar por SM Square.",
       "err_admin_only": "Solo el administrador de la oficina cierra la validación.",
-      "err_validation_incomplete": "Faltan el centro SM Square o su titular.",
+      "err_validation_incomplete": "Falta el centro SM Square (o su titular, si la oficina lo designa).",
       "t_saved": "Validación guardada",
-      "t_closed": "Validación cerrada. {{name}} ya tiene sus porcentajes definitivos"
+      "t_closed": "Validación cerrada. {{name}} ya tiene sus porcentajes definitivos",
+      "signs_for_sm_square": "Firma por SM Square",
+      "global_signs": "lo firma Global ({{name}}).",
+      "global_signs_unset": "lo firma Global. SM Global todavía no eligió la persona en Reglas, «Quién firma por SM»."
     },
     "owner": {
       "binding_not_yet": "Lo preparamos cuando un inversor acepte tu negocio. Lo firman tú, el inversor y Strategic Mates en la reunión de vinculación.",
@@ -4120,7 +4152,7 @@
       "copy": "Copiar link",
       "t_copied": "Link copiado",
       "t_copy_failed": "No se pudo copiar. Selecciona el link y cópialo a mano.",
-      "none": "Todavía no tienes un link. Pídeselo a Strategic Mates Corporate."
+      "none": "Todavía no tienes un link. Pídeselo a SM Global."
     }
   },
   "contracts_lang": {

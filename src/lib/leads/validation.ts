@@ -52,11 +52,18 @@ export function splitErrors(input: Pick<ValidationInput, SplitField>, ranges: Eq
 export const splitError = (input: Pick<ValidationInput, SplitField>, ranges: EquityRanges, complete = false): "invalid_split" | null =>
   Object.keys(splitErrors(input, ranges, complete)).length > 0 ? "invalid_split" : null;
 
-/** What closing still needs: the three percentages right, the SM Square center and its holder. */
-export function closeBlock(v: Pick<ValidationInput, SplitField | "sm_square_center" | "sm_square_holder_user_id">, ranges: EquityRanges): "invalid_split" | "center_required" | "holder_required" | null {
+/**
+ * What closing still needs: the three percentages right and the SM Square center; the holder only when the office
+ * designates who signs for SM Square (signer_mode office_holder; by default Global's Corporate signer does).
+ */
+export function closeBlock(
+  v: Pick<ValidationInput, SplitField | "sm_square_center" | "sm_square_holder_user_id">,
+  ranges: EquityRanges,
+  signerMode: "corporate" | "office_holder" = "corporate",
+): "invalid_split" | "center_required" | "holder_required" | null {
   if (splitError(v, ranges, true)) return "invalid_split";
   if (!v.sm_square_center?.trim()) return "center_required";
-  if (!v.sm_square_holder_user_id) return "holder_required";
+  if (signerMode === "office_holder" && !v.sm_square_holder_user_id) return "holder_required";
   return null;
 }
 

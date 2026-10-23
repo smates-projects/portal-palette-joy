@@ -19,20 +19,30 @@ import { BINDING_TEMPLATE, MOU_TEMPLATE, NDA_TEMPLATE, OPERATING_AGREEMENT_TEMPL
 
 export const DEFAULT_SM_ENTITIES: SmEntities = {
   corporate: { name: "Strategic Mates Corporate" },
-  sm_square: { name: "SM Square" },
+  sm_square: { name: "SM Square", signer_mode: "corporate" },
 };
 
 /**
  * The names SM Global set (the API always sends them); the defaults only while the rules load or in the demo.
- * corporate.signer_user_id is the SM person who signs for Corporate (null when SM Global has not named one).
+ * corporate.signer_user_id is the SM person who signs for Corporate (null when SM Global has not named one);
+ * sm_square.signer_mode who signs for SM Square (corporate, the default: that same person).
  */
 export const smEntitiesOf = (rules: { sm_entities?: SmEntities | undefined } | null | undefined): SmEntities => ({
   corporate: {
     name: rules?.sm_entities?.corporate.name?.trim() || DEFAULT_SM_ENTITIES.corporate.name,
     signer_user_id: rules?.sm_entities?.corporate.signer_user_id ?? null,
   },
-  sm_square: { name: rules?.sm_entities?.sm_square.name?.trim() || DEFAULT_SM_ENTITIES.sm_square.name },
+  sm_square: {
+    name: rules?.sm_entities?.sm_square.name?.trim() || DEFAULT_SM_ENTITIES.sm_square.name,
+    signer_mode: rules?.sm_entities?.sm_square.signer_mode ?? "corporate",
+  },
 });
+
+/**
+ * Global signs for SM Square (owner's decision of 23 Oct 2026, the default): the Corporate signer signs the SM Square
+ * party of the Operating Agreement and the validation names no holder. false: the office designates a holder.
+ */
+export const globalSignsSmSquare = (entities: SmEntities): boolean => (entities.sm_square.signer_mode ?? "corporate") === "corporate";
 
 /**
  * The company an SM signer signed for ("en nombre de …"): the name frozen on that signature, so renaming the company
@@ -233,15 +243,19 @@ export function contractDeadline(c: Pick<Contract, "signers" | "sign_by">, today
 
 /**
  * Why the current SM person cannot sign the SM part of a contract, or null. A signer with a person (the binding
- * agreement: Corporate's CEO; the Operating Agreement: the SM Square holder) is signed only by that person; signing
- * for SM Square also needs the permission (sm_square_signer_required).
+ * agreement: Corporate's CEO; the Operating Agreement: Global's Corporate signer, or the SM Square holder the office
+ * designated) is signed only by that person, as the API checks; an SM Square row with nobody named yet also needs the
+ * permission (sm_square_signer_required).
  */
 export function smSignBlock(
   signer: { user_id?: string | null | undefined; sm_entity?: SmEntity | null | undefined } | undefined,
   me: { id: string; can_sign_sm_square?: boolean | undefined } | undefined,
 ): "sm_square_signer_required" | "not_signer" | null {
   if (!signer || !me) return "not_signer";
-  if (signer.sm_entity === "sm_square" && (!me.can_sign_sm_square || (signer.user_id && signer.user_id !== me.id))) return "sm_square_signer_required";
+  if (signer.sm_entity === "sm_square") {
+    if (signer.user_id) return signer.user_id === me.id ? null : "sm_square_signer_required";
+    return me.can_sign_sm_square ? null : "sm_square_signer_required";
+  }
   if (signer.user_id && signer.user_id !== me.id) return "not_signer";
   return null;
 }

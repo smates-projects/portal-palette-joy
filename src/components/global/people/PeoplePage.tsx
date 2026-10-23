@@ -4,7 +4,7 @@ import { UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
 import { useBusinesses, useCurrentUser, useOrganizations, useRules, useSetSigningEntities, useUsersWithInactive } from "@/lib/api/hooks";
-import { smEntitiesOf } from "@/lib/leads/contract-rules";
+import { globalSignsSmSquare, smEntitiesOf } from "@/lib/leads/contract-rules";
 import type { User, UserRole, UserStatus } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -27,7 +27,10 @@ export function PeoplePage() {
   const usersQ = useUsersWithInactive();
   const orgsQ = useOrganizations();
   const bizQ = useBusinesses();
-  const smSquare = smEntitiesOf(useRules().data).sm_square.name;
+  const entities = smEntitiesOf(useRules().data);
+  const smSquare = entities.sm_square.name;
+  // "Puede firmar por SM Square" only matters while the office designates the holder; by default Global signs it.
+  const holderColumn = !globalSignsSmSquare(entities);
   const [office, setOffice] = useState<string | undefined>();
   const [role, setRole] = useState<UserRole | undefined>();
   const [status, setStatus] = useState<UserStatus | undefined>();
@@ -90,7 +93,7 @@ export function PeoplePage() {
                   <UserStatusBadge status={r.status} />
                 </div>
                 <div className="text-xs text-muted-foreground">{[t(`roles.${r.user.role}`), r.user.title, r.place, r.office || (r.user.role === "sm_global" ? t("roles.sm_global") : "")].filter(Boolean).join(" · ")}</div>
-                <SmSquareToggle user={r.user} />
+                {holderColumn && <SmSquareToggle user={r.user} />}
                 <PersonActions user={r.user} orgs={orgs} onDeactivate={setDeactivating} onHistory={setHistory} />
               </li>
             ))}
@@ -104,7 +107,7 @@ export function PeoplePage() {
                   <th className="px-3 py-2 text-left font-medium">{t("accounts.col_place")}</th>
                   <th className="px-3 py-2 text-left font-medium">{t("accounts.col_office")}</th>
                   <th className="px-3 py-2 text-left font-medium">{t("accounts.col_status")}</th>
-                  <th className="px-3 py-2 text-center font-medium">{t("entry_contracts.people.can_sign", { entity: smSquare })}</th>
+                  {holderColumn && <th className="px-3 py-2 text-center font-medium">{t("entry_contracts.people.can_sign", { entity: smSquare })}</th>}
                   <th className="px-3 py-2 text-right font-medium">{t("accounts.col_actions")}</th>
                 </tr>
               </thead>
@@ -121,7 +124,7 @@ export function PeoplePage() {
                     <td className="px-3 py-3">{r.place || <span className="text-xs text-muted-foreground">{t("app.no_data")}</span>}</td>
                     <td className="px-3 py-3">{r.office || (r.user.role === "sm_global" ? t("roles.sm_global") : <span className="text-xs text-muted-foreground">{t("app.no_data")}</span>)}</td>
                     <td className="px-3 py-3"><UserStatusBadge status={r.status} /></td>
-                    <td className="px-3 py-3 text-center"><SmSquareToggle user={r.user} bare /></td>
+                    {holderColumn && <td className="px-3 py-3 text-center"><SmSquareToggle user={r.user} bare /></td>}
                     <td className="px-3 py-3"><PersonActions user={r.user} orgs={orgs} onDeactivate={setDeactivating} onHistory={setHistory} /></td>
                   </tr>
                 ))}

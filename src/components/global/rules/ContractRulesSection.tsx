@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
-  useAddContractRule, useArchiveContractRule, useContractRules, useContractRulesHistory, useRestoreContractRule, useRules,
+  useAddContractRule, useArchiveContractRule, useContractRules, useContractRulesHistory, useCurrentUser, useRestoreContractRule, useRules,
   useUpdateContractRule, useUpdateRules, useUsers,
 } from "@/lib/api/hooks";
 import {
@@ -462,6 +462,77 @@ export function SmEntitiesSection({ rules }: { rules: PlatformRules }) {
       <div className="mt-3 flex justify-end">
         <PrimaryButton onClick={save} disabled={!dirty || empty || update.isPending}>{t("entry_contracts.entities.save")}</PrimaryButton>
       </div>
+    </section>
+  );
+}
+
+/**
+ * SM Global: "Quién firma por SM". The Corporate signer (the person who signs for Strategic Mates: the binding
+ * agreement, and pre-signs the NDA and the MOU) and who signs the SM Square party of the Operating Agreement: Global's
+ * Corporate signer (the default, owner's decision of 23 Oct 2026) or the holder each office designates in the
+ * validation. Only SM Global changes it; saved on change, with undo.
+ */
+export function SmSignersSection({ rules }: { rules: PlatformRules }) {
+  const { t } = useTranslation();
+  const update = useUpdateRules();
+  const me = useCurrentUser().data;
+  const users = useUsers().data ?? [];
+  const saved = smEntitiesOf(rules);
+  const editable = me?.role === "sm_global";
+  const globalPeople = users.filter((u) => u.role === "sm_global" && u.status !== "inactive");
+  const signerName = users.find((u) => u.id === saved.corporate.signer_user_id)?.full_name ?? null;
+  const mode = saved.sm_square.signer_mode ?? "corporate";
+  const patch = (next: { signer_user_id?: string | null; signer_mode?: "corporate" | "office_holder" }) => ({
+    sm_entities: {
+      corporate: { name: saved.corporate.name, signer_user_id: next.signer_user_id === undefined ? saved.corporate.signer_user_id ?? null : next.signer_user_id },
+      sm_square: { name: saved.sm_square.name, signer_mode: next.signer_mode ?? mode },
+    },
+  });
+  const save = (next: { signer_user_id?: string | null; signer_mode?: "corporate" | "office_holder" }) =>
+    update.mutate({ patch: patch(next) }, {
+      onSuccess: () => toast.success(t("entry_contracts.signers_rule.t_saved"), {
+        action: { label: t("global.undo"), onClick: () => update.mutate({ patch: { sm_entities: saved } }) },
+      }),
+      onError: () => toast.error(t("global.t_error")),
+    });
+  return (
+    <section className="mt-4 rounded-md border border-border bg-surface p-4">
+      <h2 className="text-sm font-semibold">{t("entry_contracts.signers_rule.title")}</h2>
+      <p className="mt-1 text-sm text-muted-foreground">{t("entry_contracts.signers_rule.hint")}</p>
+      <div className="mt-3 grid gap-4 sm:grid-cols-2">
+        <Field label={t("entry_contracts.signers_rule.corporate", { entity: saved.corporate.name })} hint={t("entry_contracts.signers_rule.corporate_hint")}>
+          <select
+            value={saved.corporate.signer_user_id ?? ""}
+            disabled={!editable || update.isPending}
+            onChange={(e) => save({ signer_user_id: e.target.value || null })}
+            className={inputCls}
+          >
+            <option value="">{t("entry_contracts.signers_rule.corporate_none")}</option>
+            {globalPeople.map((u) => <option key={u.id} value={u.id}>{u.full_name}</option>)}
+          </select>
+        </Field>
+        <fieldset className="space-y-1.5">
+          <legend className="text-sm font-medium">{t("entry_contracts.signers_rule.sm_square", { entity: saved.sm_square.name })}</legend>
+          {(["corporate", "office_holder"] as const).map((option) => (
+            <label key={option} className="flex cursor-pointer items-start gap-2 text-sm">
+              <input
+                type="radio"
+                name="sm-square-signer-mode"
+                checked={mode === option}
+                disabled={!editable || update.isPending}
+                onChange={() => save({ signer_mode: option })}
+                className="mt-0.5 h-4 w-4 accent-primary"
+              />
+              <span>
+                {option === "corporate"
+                  ? signerName ? t("entry_contracts.signers_rule.mode_corporate", { name: signerName }) : t("entry_contracts.signers_rule.mode_corporate_unset")
+                  : t("entry_contracts.signers_rule.mode_office_holder")}
+              </span>
+            </label>
+          ))}
+        </fieldset>
+      </div>
+      {!editable && <p className="mt-3 text-xs text-muted-foreground">{t("entry_contracts.signers_rule.global_only")}</p>}
     </section>
   );
 }

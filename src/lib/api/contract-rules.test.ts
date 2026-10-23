@@ -74,7 +74,7 @@ describe("the rule engine in the demo", () => {
     await expect(api.leads.sendTripartite(brisa.id)).rejects.toThrow("validation_open");
   });
 
-  it("the validation: ranges and 100 %, a holder who can sign for SM Square, closed by an admin; then the OA with 7 days", async () => {
+  it("the validation: ranges and 100 %, no holder (Global signs for SM Square), closed by an admin; then the OA with 7 days", async () => {
     const api = await as(seed.U_CAMILA);
     const { brisa, owner } = await bishopTakesBrisa(api);
     const binding = (await contractsOf(api, brisa.id)).find((c) => c.kind === "binding")!;
@@ -85,7 +85,8 @@ describe("the rule engine in the demo", () => {
     await api.session.setViewAs(seed.U_CAMILA);
     await expect(api.leads.saveValidation(brisa.id, { ...valid, equity_owner: 70 })).rejects.toThrow("invalid_split");
     await expect(api.leads.saveValidation(brisa.id, { ...valid, equity_bishop: 45, equity_owner: 45 })).rejects.toThrow("invalid_split");
-    await expect(api.leads.saveValidation(brisa.id, { ...valid, sm_square_holder_user_id: seed.U_NICOLAS })).rejects.toThrow("sm_square_signer_required");
+    // Global signs for SM Square (the default): a holder sent is ignored, as the API does.
+    expect((await api.leads.saveValidation(brisa.id, { ...valid, sm_square_holder_user_id: seed.U_NICOLAS })).validation?.sm_square_holder_user_id).toBeNull();
     // A draft may leave fields empty.
     expect((await api.leads.saveValidation(brisa.id, { ...valid, equity_bishop: null })).validation).toMatchObject({ status: "open", equity_bishop: null });
     await expect(api.leads.closeValidation(brisa.id)).rejects.toThrow("admin_only");
@@ -98,13 +99,15 @@ describe("the rule engine in the demo", () => {
     // The binding agreement was signed today: the Operating Agreement is created now, to sign by Oct 21.
     const oa = (await contractsOf(api, brisa.id)).find((c) => c.kind === "tripartite")!;
     expect(oa).toMatchObject({ rule_code: "operating_agreement", sent_at: "2026-10-14", sign_by: "2026-10-21" });
-    expect(oa.signers.find((s) => s.party === "sm")).toMatchObject({ sm_entity: "sm_square", user_id: seed.U_CAMILA, name: "Camila Soto" });
+    expect(oa.signers.find((s) => s.party === "sm")).toMatchObject({ sm_entity: "sm_square", user_id: seed.U_MARYLIN, name: "Marilyn Boraei" });
     expect(oa.body).toContain("Small Business, 60 %; Business Bishop, 30 %; SM Square, 10 %");
     expect(oa.body).toContain("SM Square Miami");
-    // Nicolás cannot sign for SM Square; Camila, the holder, can.
-    await api.session.setViewAs(seed.U_NICOLAS);
-    await expect(api.documents.signContract(oa.id)).rejects.toThrow("sm_square_signer_required");
-    await api.session.setViewAs(seed.U_CAMILA);
+    // Nicolás and Camila cannot sign for SM Square; Marilyn, Global's signer, can.
+    for (const id of [seed.U_NICOLAS, seed.U_CAMILA]) {
+      await api.session.setViewAs(id);
+      await expect(api.documents.signContract(oa.id)).rejects.toThrow("sm_square_signer_required");
+    }
+    await api.session.setViewAs(seed.U_MARYLIN);
     expect((await api.documents.signContract(oa.id)).signers.find((s) => s.party === "sm")!.status).toBe("signed");
     // The Bishop sees the definitive split; the owner reads it in "Tu ingreso" and in the bell.
     await api.session.setViewAs(net.U_LAURA);

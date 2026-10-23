@@ -184,8 +184,14 @@ export interface EntryContractRuleChange {
 export interface SmEntities {
   /** signer_user_id: the SM person who signs for Corporate (the CEO). */
   corporate: { name: string; signer_user_id?: Uuid | null | undefined };
-  sm_square: { name: string };
+  /**
+   * signer_mode: who signs the SM Square party of the Operating Agreement. corporate (the API's default): the
+   * Corporate signer, no holder in the validation; office_holder: the holder the office designates.
+   */
+  sm_square: { name: string; signer_mode?: SmSquareSignerMode | undefined };
 }
+
+export type SmSquareSignerMode = "corporate" | "office_holder";
 
 // ---------- Validation: the definitive percentages, after the documents ----------
 

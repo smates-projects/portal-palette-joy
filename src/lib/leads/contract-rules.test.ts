@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { EntryContractRule, Signer } from "@/lib/api/types";
 import {
-  DEFAULT_ENTRY_CONTRACT_RULES, contractDeadline, dueRules, fillContractTemplate, parseTrigger, ruleError, ruleSchedule, smEntitiesOf, smSignBlock, smSignerEntityName,
+  DEFAULT_ENTRY_CONTRACT_RULES, contractDeadline, dueRules, fillContractTemplate, globalSignsSmSquare, parseTrigger, ruleError, ruleSchedule, smEntitiesOf, smSignBlock, smSignerEntityName,
   type EntryFacts,
 } from "./contract-rules";
 
@@ -90,7 +90,10 @@ describe("rule checks and texts", () => {
       .toBe("Vossler · Carla · 60 % · {{unknown}}");
   });
   it("names Corporate and SM Square from the rules, or the defaults", () => {
-    expect(smEntitiesOf(null)).toEqual({ corporate: { name: "Strategic Mates Corporate", signer_user_id: null }, sm_square: { name: "SM Square" } });
+    expect(smEntitiesOf(null)).toEqual({
+      corporate: { name: "Strategic Mates Corporate", signer_user_id: null },
+      sm_square: { name: "SM Square", signer_mode: "corporate" },
+    });
     expect(smEntitiesOf({ sm_entities: { corporate: { name: "SM LLC", signer_user_id: "ceo" }, sm_square: { name: "SQ" } } }).corporate.signer_user_id).toBe("ceo");
     expect(smEntitiesOf({ sm_entities: { corporate: { name: "SM LLC" }, sm_square: { name: " " } } }).sm_square.name).toBe("SM Square");
   });
@@ -104,11 +107,20 @@ describe("signing for Strategic Mates and the deadline", () => {
     expect(smSignerEntityName({ sm_entity: "corporate", sm_entity_name: null }, entities)).toBe("SM Corporate Renamed");
     expect(smSignerEntityName({}, entities)).toBe("SM Corporate Renamed");
   });
-  it("only the SM Square holder signs for SM Square, and only with the permission", () => {
+  it("only the person named on the SM Square row signs it (Global's signer needs no extra permission); an unnamed row needs it", () => {
     expect(smSignBlock(smSquare, { id: "camila", can_sign_sm_square: true })).toBeNull();
     expect(smSignBlock(smSquare, { id: "nicolas", can_sign_sm_square: false })).toBe("sm_square_signer_required");
     expect(smSignBlock(smSquare, { id: "andrea", can_sign_sm_square: true })).toBe("sm_square_signer_required");
-    expect(smSignBlock({ user_id: "camila", sm_entity: "sm_square" }, { id: "camila" })).toBe("sm_square_signer_required");
+    // Global signs for SM Square: Marilyn is named on the row and signs without can_sign_sm_square.
+    expect(smSignBlock({ user_id: "marilyn", sm_entity: "sm_square" }, { id: "marilyn" })).toBeNull();
+    expect(smSignBlock({ user_id: null, sm_entity: "sm_square" }, { id: "camila" })).toBe("sm_square_signer_required");
+    expect(smSignBlock({ user_id: null, sm_entity: "sm_square" }, { id: "camila", can_sign_sm_square: true })).toBeNull();
+  });
+
+  it("who signs for SM Square: Global (corporate) by default and while the rules load; the office holder only when set", () => {
+    expect(globalSignsSmSquare(smEntitiesOf(undefined))).toBe(true);
+    expect(globalSignsSmSquare(smEntitiesOf({ sm_entities: { corporate: { name: "C" }, sm_square: { name: "S" } } }))).toBe(true);
+    expect(globalSignsSmSquare(smEntitiesOf({ sm_entities: { corporate: { name: "C" }, sm_square: { name: "S", signer_mode: "office_holder" } } }))).toBe(false);
   });
   it("Corporate's named signer signs the binding agreement; a signer without a person (NDA) anyone of the office", () => {
     expect(smSignBlock({ user_id: "marilyn", sm_entity: "corporate" }, { id: "nicolas" })).toBe("not_signer");

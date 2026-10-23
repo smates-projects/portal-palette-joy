@@ -30,7 +30,7 @@ import { createSession, type MockSessionControls } from "./session";
 import { createCalendar } from "./calendar";
 import { createContractRules } from "./contract-rules";
 import { seedAdvisors, seedSigningPeople, seedTechosBinding } from "./seed-entry-contracts";
-import { smSignBlock } from "@/lib/leads/contract-rules";
+import { globalSignsSmSquare, smEntitiesOf, smSignBlock } from "@/lib/leads/contract-rules";
 import { DEMO_EQUITY_RANGES, closeBlock, splitError } from "@/lib/leads/validation";
 import { MOCK_LIMITS } from "./economics";
 import { isDocsAdmin } from "@/lib/leads/onboarding";
@@ -1083,12 +1083,14 @@ export function createMockApi(): MockApi {
         if (l.stage !== "accepted" || l.validation?.status === "closed") throw new Error("invalid_state");
         if (splitError(input, equityRanges())) throw new Error("invalid_split");
         if (input.investment_amount !== null && (!Number.isFinite(input.investment_amount) || input.investment_amount < 0)) throw new Error("invalid_amount");
-        const holder = input.sm_square_holder_user_id ? db.users.find((u) => u.id === input.sm_square_holder_user_id) : null;
-        if (input.sm_square_holder_user_id && (!holder || !holder.can_sign_sm_square)) throw new Error("sm_square_signer_required");
+        // As the API: while Global signs for SM Square a holder sent is ignored, not refused.
+        const holderId = globalSignsSmSquare(smEntitiesOf(db.rules)) ? null : input.sm_square_holder_user_id ?? null;
+        const holder = holderId ? db.users.find((u) => u.id === holderId) : null;
+        if (holderId && (!holder || !holder.can_sign_sm_square)) throw new Error("sm_square_signer_required");
         l.validation = {
           status: "open", equity_owner: input.equity_owner, equity_bishop: input.equity_bishop, equity_sm: input.equity_sm,
           investment_amount: input.investment_amount, notes: input.notes?.trim() || null, sm_square_center: input.sm_square_center?.trim() || null,
-          sm_square_holder_user_id: input.sm_square_holder_user_id, closed_at: null, closed_by: null,
+          sm_square_holder_user_id: holderId, closed_at: null, closed_by: null,
         };
         pushLeadEvent({ lead_id: id, kind: "validation_saved", from: null, to: null, body: null });
         return delay(withBooking(l));
@@ -1100,10 +1102,16 @@ export function createMockApi(): MockApi {
         if (!l) throw new Error("not_found");
         if (!isDocsAdmin(u, l.office_id)) throw new Error("admin_only");
         if (l.stage !== "accepted" || !l.validation || l.validation.status === "closed") throw new Error("invalid_state");
-        const block = closeBlock({ ...l.validation, sm_square_center: l.validation.sm_square_center ?? null, sm_square_holder_user_id: l.validation.sm_square_holder_user_id ?? null }, equityRanges());
+        const officeHolder = !globalSignsSmSquare(smEntitiesOf(db.rules));
+        const block = closeBlock(
+          { ...l.validation, sm_square_center: l.validation.sm_square_center ?? null, sm_square_holder_user_id: l.validation.sm_square_holder_user_id ?? null },
+          equityRanges(),
+          officeHolder ? "office_holder" : "corporate",
+        );
         if (block) throw new Error(block === "invalid_split" ? "invalid_split" : "validation_incomplete");
         const holder = db.users.find((x) => x.id === l.validation!.sm_square_holder_user_id);
-        if (!holder?.can_sign_sm_square) throw new Error("sm_square_signer_required");
+        if (officeHolder && !holder?.can_sign_sm_square) throw new Error("sm_square_signer_required");
+        if (!officeHolder) l.validation.sm_square_holder_user_id = null;
         Object.assign(l.validation, { status: "closed", closed_at: nowIso(), closed_by: u.id });
         pushLeadEvent({ lead_id: id, kind: "validation_closed", from: null, to: null, body: `${l.validation.equity_owner} / ${l.validation.equity_bishop} / ${l.validation.equity_sm}` });
         notifyParties(l, "validation_closed", null);

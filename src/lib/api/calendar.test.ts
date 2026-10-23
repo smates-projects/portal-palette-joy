@@ -59,6 +59,24 @@ describe("calendar v2 (mock)", () => {
     expect(kinds).toContain("calendar_connect_suggested");
   });
 
+  it("a connected organizer with a guest who is not, plus emails: confirmed in Google, the emails kept; without Google, emails are refused", async () => {
+    const api = await as(seed.U_NICOLAS);
+    const m = await api.calendar.schedule({
+      kind: "business", business_id: seed.BIZ_VOSSLER, participant_user_ids: [seed.U_MARIANA], external_emails: [" Contadora@Vossler.com "],
+      starts_at: FREE, duration_minutes: 30, topic: "Cierre de mes",
+    });
+    expect(m).toMatchObject({ status: "confirmed", google_synced: true, external_emails: ["contadora@vossler.com"] });
+    await expect(api.calendar.schedule({
+      kind: "business", business_id: seed.BIZ_VOSSLER, participant_user_ids: [], external_emails: ["no-es-correo"], starts_at: FREE, duration_minutes: 30, topic: "x",
+    })).rejects.toThrow("validation_failed");
+
+    const mariana = await as(seed.U_MARIANA);
+    const task = await vosslerTecnoTask(mariana);
+    await expect(mariana.calendar.schedule({
+      kind: "task", task_id: task.id, participant_user_ids: [seed.U_JULIAN], external_emails: ["afuera@example.com"], starts_at: FREE, duration_minutes: 30, topic: "Demo",
+    })).rejects.toThrow("calendar_not_connected");
+  });
+
   it("availability: common free slots, existing portal meetings left out, and who could not be read", async () => {
     const api = await as(seed.U_NICOLAS);
     const before = await api.calendar.availability({ participant_user_ids: [seed.U_CARLA, seed.U_MARIANA], ...WINDOW, duration_minutes: 30 });

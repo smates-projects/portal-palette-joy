@@ -58,16 +58,40 @@ export interface MeetingPlan {
 }
 
 /**
- * The fallback decision. Organizer connected: the event goes to Google with the Meet link; it is confirmed when every
- * guest is connected too, and stays proposed for the ones who are not. Organizer not connected: nothing reaches
- * Google and the meeting is a proposal every guest confirms.
+ * The API's decision (POST /meetings). Organizer connected: the event goes to their Google Calendar with the Meet link
+ * and Google invites every guest by email, connected or not: confirmed, nobody to wait for. Organizer not connected:
+ * nothing reaches Google and the meeting is a proposal every guest confirms.
  */
 export function planMeeting(organizer: { user_id: string; connected: boolean }, participants: { user_id: string; connected: boolean }[]): MeetingPlan {
   const guests = participants.filter((p) => p.user_id !== organizer.user_id);
   if (!organizer.connected) return { status: "proposed", google_synced: false, pending_user_ids: guests.map((p) => p.user_id) };
-  const pending = guests.filter((p) => !p.connected).map((p) => p.user_id);
-  return { status: pending.length > 0 ? "proposed" : "confirmed", google_synced: true, pending_user_ids: pending };
+  return { status: "confirmed", google_synced: true, pending_user_ids: [] };
 }
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/** The API's longest email (POST /meetings external_emails). */
+const EMAIL_MAX = 254;
+
+export type ExternalEmailError = "invalid_email" | "duplicate_email" | "own_email";
+
+/**
+ * Adds one typed address to "Invitar por correo": trimmed, lowercased, each once, never the organizer's. Answers the
+ * new list, or the reason it was not added (the field keeps the text so the person can fix it).
+ */
+export function addExternalEmail(
+  list: readonly string[],
+  raw: string,
+  organizerEmail: string | null | undefined,
+): { list: string[]; error: ExternalEmailError | null } {
+  const email = raw.trim().toLowerCase();
+  if (!email || email.length > EMAIL_MAX || !EMAIL_PATTERN.test(email)) return { list: [...list], error: "invalid_email" };
+  if (organizerEmail && email === organizerEmail.trim().toLowerCase()) return { list: [...list], error: "own_email" };
+  if (list.includes(email)) return { list: [...list], error: "duplicate_email" };
+  return { list: [...list, email], error: null };
+}
+
+/** Removes one address of "Invitar por correo". */
+export const removeExternalEmail = (list: readonly string[], email: string): string[] => list.filter((e) => e !== email);
 
 export interface ScheduleOutcome {
   /** "Te llegó la invitación de Google con el link de Meet". */
@@ -117,15 +141,27 @@ export function addPerson(list: SchedulingPerson[], person: SchedulingPerson, or
   return [...list, person];
 }
 
-/** The dialog can ask for slots: at least one guest, a topic, an allowed length and not over the limit. */
+/**
+ * The dialog can ask for slots: at least one guest (a person or an email), a topic, an allowed length and not over the
+ * limit (people and emails count together, the organizer included).
+ */
 export function canSearchSlots(
-  input: { participants: SchedulingPerson[]; topic: string; duration: number },
+  input: { participants: SchedulingPerson[]; topic: string; duration: number; externalEmails?: readonly string[] | undefined },
   limits: { durations: readonly number[]; maxParticipants: number } = { durations: MEETING_DURATIONS, maxParticipants: MAX_MEETING_PARTICIPANTS },
 ): boolean {
-  return input.participants.length > 0
-    && input.participants.length + 1 <= limits.maxParticipants
+  const guests = input.participants.length + (input.externalEmails?.length ?? 0);
+  return guests > 0
+    && guests + 1 <= limits.maxParticipants
     && input.topic.trim().length > 0
     && limits.durations.includes(input.duration);
+}
+
+/**
+ * Who the slot picker could not read, as the dialog words it. With the organizer's calendar, those people still get
+ * Google's invitation by email (their free time is just unknown); without it, the meeting goes as a proposal.
+ */
+export function unknownAvailabilityKey(organizerConnected: boolean): "calendar.availability_unknown" | "calendar.guest_proposal" {
+  return organizerConnected ? "calendar.availability_unknown" : "calendar.guest_proposal";
 }
 
 /** "Mover" and "Cancelar" are for the organizer and SM; everyone else gets "Avisar que no puedo". */

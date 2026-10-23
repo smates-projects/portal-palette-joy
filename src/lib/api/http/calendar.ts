@@ -55,6 +55,7 @@ export function createHttpCalendarRepository(client: HttpClient): CalendarReposi
             ...(input.business_id ? { business_id: input.business_id } : {}),
             ...(input.lead_id ? { lead_id: input.lead_id } : {}),
             participant_user_ids: input.participant_user_ids,
+            ...(input.external_emails?.length ? { external_emails: input.external_emails } : {}),
             starts_at: input.starts_at,
             duration_minutes: input.duration_minutes,
             topic: input.topic,

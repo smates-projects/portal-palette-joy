@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { PortalMeeting } from "@/lib/api/types";
 import {
-  addPerson, availabilityWindow, canManageMeeting, canSearchSlots, isCalendarConnected, joinNames, meetingHoursOf, needsReconnect,
-  planMeeting, responseLabelKey, scheduleOutcome, unavailableKind, validateMeetingHours,
+  addExternalEmail, addPerson, availabilityWindow, canManageMeeting, canSearchSlots, isCalendarConnected, joinNames, meetingHoursOf,
+  needsReconnect, planMeeting, removeExternalEmail, responseLabelKey, scheduleOutcome, unavailableKind, unknownAvailabilityKey,
+  validateMeetingHours,
 } from "./scheduling";
 
 describe("responseLabelKey (a guest's answer next to their name)", () => {
@@ -31,9 +32,9 @@ describe("planMeeting (the fallback decision)", () => {
       .toEqual({ status: "confirmed", google_synced: true, pending_user_ids: [] });
   });
 
-  it("organizer connected, one guest not: the invitation goes out and that guest confirms", () => {
+  it("organizer connected, one guest not: Google invites that guest by email too, confirmed with nobody pending", () => {
     expect(planMeeting({ user_id: "org", connected: true }, [{ user_id: "a", connected: true }, { user_id: "b", connected: false }]))
-      .toEqual({ status: "proposed", google_synced: true, pending_user_ids: ["b"] });
+      .toEqual({ status: "confirmed", google_synced: true, pending_user_ids: [] });
   });
 
   it("organizer not connected: a proposal every guest confirms, nothing in Google", () => {
@@ -84,6 +85,29 @@ describe("helpers", () => {
     expect(canSearchSlots({ participants: eight, topic: "Revisar", duration: 30 }, { durations: [30, 45, 60], maxParticipants: 8 })).toBe(false);
     expect(canSearchSlots({ participants: eight, topic: "Revisar", duration: 30 }, { durations: [30, 45, 60], maxParticipants: 10 })).toBe(true);
     expect(canSearchSlots({ participants: people, topic: "Revisar", duration: 90 }, { durations: [30, 90], maxParticipants: 10 })).toBe(true);
+  });
+
+  it("Invitar por correo: valid, lowercased, each once and never the organizer's; removable", () => {
+    const one = addExternalEmail([], "  Contadora@Empresa.com ", "lucia@estudio.com");
+    expect(one).toEqual({ list: ["contadora@empresa.com"], error: null });
+    expect(addExternalEmail(one.list, "CONTADORA@empresa.com", "lucia@estudio.com")).toEqual({ list: ["contadora@empresa.com"], error: "duplicate_email" });
+    expect(addExternalEmail(one.list, "Lucia@Estudio.com", "lucia@estudio.com").error).toBe("own_email");
+    for (const bad of ["", "   ", "sin-arroba", "a@b", "a b@c.com", `${"x".repeat(250)}@e.com`]) {
+      expect(addExternalEmail(one.list, bad, null).error).toBe("invalid_email");
+    }
+    expect(removeExternalEmail(["a@x.com", "b@x.com"], "a@x.com")).toEqual(["b@x.com"]);
+  });
+
+  it("asks for slots with only emails too; people and emails count together in the limit", () => {
+    expect(canSearchSlots({ participants: [], externalEmails: ["a@x.com"], topic: "Revisar", duration: 30 })).toBe(true);
+    const nine = Array.from({ length: 9 }, (_, i) => `p${i}@x.com`);
+    expect(canSearchSlots({ participants: [], externalEmails: nine, topic: "Revisar", duration: 30 })).toBe(true);
+    expect(canSearchSlots({ participants: [{ user_id: "a", name: "Ana" }], externalEmails: nine, topic: "Revisar", duration: 30 })).toBe(false);
+  });
+
+  it("says whose availability is unknown: an invitation by email with the organizer's Google, a proposal without it", () => {
+    expect(unknownAvailabilityKey(true)).toBe("calendar.availability_unknown");
+    expect(unknownAvailabilityKey(false)).toBe("calendar.guest_proposal");
   });
 
   it("the slot picker looks 14 days ahead from now", () => {

@@ -5,7 +5,7 @@ import { useCloseValidation, useRules, useSaveValidation, useUsers } from "@/lib
 import type { EquityRanges, LeadWithComputed, ValidationInput } from "@/lib/api/types";
 import { formatDate, formatNumber, formatUsd } from "@/lib/format";
 import { closeBlock, isFixed, parsePct, rangeOf, splitErrors, validationInputOf, type SplitErrors } from "@/lib/leads/validation";
-import { smEntitiesOf } from "@/lib/leads/contract-rules";
+import { globalSignsSmSquare, smEntitiesOf } from "@/lib/leads/contract-rules";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PrimaryButton } from "@/components/tasks/detail/dialogs";
@@ -45,10 +45,18 @@ export function ValidationCard({ lead, readOnly, canClose }: { lead: LeadWithCom
   const rulesQ = useRules();
   const ranges = lead.validation?.equity_ranges ?? rulesQ.data?.equity_ranges;
   if (!ranges) return rulesQ.isLoading ? <Skeleton className="h-40 rounded-md" /> : null;
-  return <ValidationForm lead={lead} readOnly={readOnly} canClose={canClose} ranges={ranges} programAmount={rulesQ.data?.program_amount} corporateName={smEntitiesOf(rulesQ.data).corporate.name} />;
+  const entities = smEntitiesOf(rulesQ.data);
+  return (
+    <ValidationForm lead={lead} readOnly={readOnly} canClose={canClose} ranges={ranges} programAmount={rulesQ.data?.program_amount}
+      corporateName={entities.corporate.name} globalSigner={globalSignsSmSquare(entities) ? entities.corporate.signer_user_id ?? null : undefined} />
+  );
 }
 
-function ValidationForm({ lead, readOnly, canClose, ranges, programAmount, corporateName }: { lead: LeadWithComputed; readOnly: boolean; canClose: boolean; ranges: EquityRanges; programAmount: number | undefined; corporateName: string }) {
+/**
+ * globalSigner: Global signs for SM Square (signer_mode corporate): the Corporate signer's id (null while SM Global has
+ * not named one) and no holder picker; undefined: the office designates the holder.
+ */
+function ValidationForm({ lead, readOnly, canClose, ranges, programAmount, corporateName, globalSigner }: { lead: LeadWithComputed; readOnly: boolean; canClose: boolean; ranges: EquityRanges; programAmount: number | undefined; corporateName: string; globalSigner: string | null | undefined }) {
   const { t, i18n } = useTranslation();
   const lng = i18n.language;
   const usersQ = useUsers();
@@ -61,6 +69,9 @@ function ValidationForm({ lead, readOnly, canClose, ranges, programAmount, corpo
   const users = usersQ.data ?? [];
   const nameOf = (id: string | null | undefined) => (id ? users.find((u) => u.id === id)?.full_name ?? "" : "");
   const holders = users.filter((u) => (u.role === "sm_team" && u.organization_id === lead.office_id) || u.role === "sm_global").filter((u) => u.can_sign_sm_square);
+  const officeHolder = globalSigner === undefined;
+  // "Firma por SM Square": Global's Corporate signer, or the holder the office designated.
+  const smSquareSigner = officeHolder ? nameOf(v?.sm_square_holder_user_id) : nameOf(globalSigner) || corporateName;
 
   if (v?.status === "closed")
     return (
@@ -74,7 +85,8 @@ function ValidationForm({ lead, readOnly, canClose, ranges, programAmount, corpo
           </dl>
           <dl className="mt-3 grid gap-2 border-t border-border pt-3 text-xs sm:grid-cols-2">
             <div><dt className="text-muted-foreground">{t("entry_contracts.validation.investment")}</dt><dd className="mt-0.5 font-display tabular-nums">{v.investment_amount !== null ? formatUsd(v.investment_amount, lng) : t("app.no_data")}</dd></div>
-            <div><dt className="text-muted-foreground">{t("entry_contracts.validation.center")}</dt><dd className="mt-0.5">{[v.sm_square_center, nameOf(v.sm_square_holder_user_id)].filter(Boolean).join(" · ") || t("app.no_data")}</dd></div>
+            <div><dt className="text-muted-foreground">{t("entry_contracts.validation.center")}</dt><dd className="mt-0.5">{v.sm_square_center || t("app.no_data")}</dd></div>
+            <div><dt className="text-muted-foreground">{t("entry_contracts.validation.signs_for_sm_square")}</dt><dd className="mt-0.5">{smSquareSigner || t("app.no_data")}</dd></div>
           </dl>
           {v.notes && <p className="mt-3 rounded-[4px] border border-border bg-muted/50 px-3 py-2 text-xs">{v.notes}</p>}
           <p className="mt-3 text-xs text-muted-foreground">{t("entry_contracts.validation.closed", { name: nameOf(v.closed_by) || corporateName, date: v.closed_at ? formatDate(v.closed_at, lng) : "" })}</p>
@@ -86,7 +98,7 @@ function ValidationForm({ lead, readOnly, canClose, ranges, programAmount, corpo
   const errors: SplitErrors = splitErrors(input, ranges);
   const sum = [input.equity_owner, input.equity_bishop, input.equity_sm].reduce<number>((a, b) => a + (typeof b === "number" && Number.isFinite(b) ? b : 0), 0);
   const amountBad = input.investment_amount !== null && (!Number.isFinite(input.investment_amount) || input.investment_amount < 0);
-  const block = closeBlock(input, ranges);
+  const block = closeBlock(input, ranges, officeHolder ? "office_holder" : "corporate");
   const dirty = JSON.stringify(input) !== JSON.stringify(validationInputOf(v, ranges));
   const set = (key: keyof Text, value: string) => setText((x) => ({ ...x, [key]: value }));
   const fieldError = (field: "equity_owner" | "equity_bishop" | "equity_sm") => {
@@ -143,15 +155,22 @@ function ValidationForm({ lead, readOnly, canClose, ranges, programAmount, corpo
             {tried && block === "center_required" && <span className="block text-xs text-status-danger-fg">{t("entry_contracts.validation.err_center")}</span>}
           </label>
         </div>
-        <label className="block space-y-1.5">
-          <span className="text-sm font-medium">{t("entry_contracts.validation.holder")}</span>
-          <select value={text.sm_square_holder_user_id} disabled={disabled || holders.length === 0} onChange={(e) => set("sm_square_holder_user_id", e.target.value)} className={cn(inputCls, tried && block === "holder_required" && "border-status-danger-fg")}>
-            <option value="">{t("entry_contracts.validation.holder_placeholder")}</option>
-            {holders.map((u) => <option key={u.id} value={u.id}>{u.full_name}</option>)}
-          </select>
-          <span className="block text-xs text-muted-foreground">{holders.length === 0 ? t("entry_contracts.validation.holder_none") : t("entry_contracts.validation.holder_hint")}</span>
-          {tried && block === "holder_required" && <span className="block text-xs text-status-danger-fg">{t("entry_contracts.validation.err_holder")}</span>}
-        </label>
+        {officeHolder ? (
+          <label className="block space-y-1.5">
+            <span className="text-sm font-medium">{t("entry_contracts.validation.holder")}</span>
+            <select value={text.sm_square_holder_user_id} disabled={disabled || holders.length === 0} onChange={(e) => set("sm_square_holder_user_id", e.target.value)} className={cn(inputCls, tried && block === "holder_required" && "border-status-danger-fg")}>
+              <option value="">{t("entry_contracts.validation.holder_placeholder")}</option>
+              {holders.map((u) => <option key={u.id} value={u.id}>{u.full_name}</option>)}
+            </select>
+            <span className="block text-xs text-muted-foreground">{holders.length === 0 ? t("entry_contracts.validation.holder_none") : t("entry_contracts.validation.holder_hint")}</span>
+            {tried && block === "holder_required" && <span className="block text-xs text-status-danger-fg">{t("entry_contracts.validation.err_holder")}</span>}
+          </label>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">{t("entry_contracts.validation.signs_for_sm_square")}:</span>{" "}
+            {globalSigner ? t("entry_contracts.validation.global_signs", { name: smSquareSigner }) : t("entry_contracts.validation.global_signs_unset")}
+          </p>
+        )}
         <label className="block space-y-1.5">
           <span className="text-sm font-medium">{t("entry_contracts.validation.notes")}</span>
           <textarea rows={2} value={text.notes} disabled={disabled} onChange={(e) => set("notes", e.target.value)} className={cn(inputCls, "h-auto resize-none py-2")} />

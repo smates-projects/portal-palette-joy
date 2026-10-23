@@ -9,7 +9,7 @@ import type {
   PortalMeetingParticipant, Task, UnavailableParticipant, User,
 } from "../types";
 import { computeFreeSlots, dayInZone, isSlotFree, zonedTimeToInstant, type BusyBlock } from "@/lib/calendar/slots";
-import { MAX_MEETING_PARTICIPANTS, isCalendarConnected, meetingHoursOf, planMeeting } from "@/lib/calendar/scheduling";
+import { MAX_MEETING_PARTICIPANTS, addExternalEmail, isCalendarConnected, meetingHoursOf, planMeeting } from "@/lib/calendar/scheduling";
 import * as seed from "./seed";
 import * as seedNetwork from "./seed-network";
 
@@ -211,7 +211,7 @@ export function createCalendar(ctx: CalendarContext) {
 
   const build = (input: {
     id: string; kind: PortalMeeting["kind"]; task_id: string | null; business_id: string | null; lead_id: string | null; topic: string;
-    starts_at: string; duration: number; organizerId: string; participantIds: string[];
+    starts_at: string; duration: number; organizerId: string; participantIds: string[]; externalEmails?: string[];
   }): PortalMeeting => {
     const everyone = [...new Set([input.organizerId, ...input.participantIds])];
     const organizerConnected = connectionOf(userOf(input.organizerId)).connected;
@@ -230,7 +230,7 @@ export function createCalendar(ctx: CalendarContext) {
       starts_at: new Date(input.starts_at).toISOString(), ends_at: plusMinutes(input.starts_at, input.duration),
       meet_url: plan.google_synced ? meetCode(input.id) : null,
       organizer: { user_id: input.organizerId, name: nameOf(input.organizerId) },
-      participants, status: plan.status, google_synced: plan.google_synced, version: 1,
+      participants, external_emails: input.externalEmails ?? [], status: plan.status, google_synced: plan.google_synced, version: 1,
     };
   };
 
@@ -311,8 +311,19 @@ export function createCalendar(ctx: CalendarContext) {
     schedule: async (input) => {
       if (!input.topic.trim()) throw new Error("topic_required");
       const ids = peopleOf(input.participant_user_ids);
+      // As the API: emails validated, lowercased, each once, never the organizer's; counted with the people.
+      let externalEmails: string[] = [];
+      for (const raw of input.external_emails ?? []) {
+        const added = addExternalEmail(externalEmails, raw, me().email);
+        if (added.error === "invalid_email") throw new Error("validation_failed");
+        externalEmails = added.list;
+      }
+      if (ids.length + externalEmails.length > MAX_MEETING_PARTICIPANTS) throw new Error("too_many_participants");
       checkPeople(ids);
       checkContext(input.kind, input);
+      if (ids.length === 1 && externalEmails.length === 0 && input.kind !== "lead") throw new Error("person_required");
+      // Only Google invites people without an account: the organizer's calendar is needed.
+      if ((externalEmails.length > 0 || input.kind === "lead") && !connectionOf(me()).connected) throw new Error("calendar_not_connected");
       checkTime(input.starts_at, input.duration_minutes, ids);
       const task = input.kind === "task" ? db.tasks.find((t) => t.id === input.task_id) : undefined;
       const lead = input.kind === "lead" ? db.leads.find((l) => l.id === input.lead_id) : undefined;
@@ -320,7 +331,7 @@ export function createCalendar(ctx: CalendarContext) {
         id: newId(), kind: input.kind, task_id: input.kind === "task" ? input.task_id ?? null : null,
         business_id: input.kind === "business" ? input.business_id ?? null : task?.business_id ?? lead?.business_id ?? null,
         lead_id: input.kind === "lead" ? input.lead_id ?? null : null, topic: input.topic.trim(), starts_at: input.starts_at,
-        duration: input.duration_minutes, organizerId: me().id, participantIds: ids,
+        duration: input.duration_minutes, organizerId: me().id, participantIds: ids, externalEmails,
       });
       meetings.push(m);
       for (const p of m.participants) {

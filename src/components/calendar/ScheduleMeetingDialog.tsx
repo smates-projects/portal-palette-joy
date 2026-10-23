@@ -9,8 +9,8 @@ import {
 import type { AvailabilityInput, PortalMeeting, PortalMeetingKind } from "@/lib/api/types";
 import { isActiveUser } from "@/lib/accounts/permissions";
 import {
-  addPerson, availabilityWindow, canSearchSlots, durationOf,
-  isCalendarConnected, joinNames, scheduleOutcome, schedulingLimits, type SchedulingPerson,
+  addExternalEmail, addPerson, availabilityWindow, canSearchSlots, durationOf, isCalendarConnected, joinNames, removeExternalEmail,
+  scheduleOutcome, schedulingLimits, unknownAvailabilityKey, type ExternalEmailError, type SchedulingPerson,
 } from "@/lib/calendar/scheduling";
 import { groupSlotsByDay } from "@/lib/calendar/slots";
 import { formatDateTime, localeTag } from "@/lib/format";
@@ -107,6 +107,10 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<PortalMeeting | null>(null);
+  // "Invitar por correo": people without a portal account, invited by Google in the organizer's event.
+  const [emails, setEmails] = useState<string[]>([]);
+  const [emailDraft, setEmailDraft] = useState("");
+  const [emailError, setEmailError] = useState<ExternalEmailError | null>(null);
 
   const users = usersQ.data ?? [];
   const userOf = (id: string) => users.find((u) => u.id === id);
@@ -115,10 +119,19 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
   const choice = props.taskChoices?.find((c) => c.id === taskId);
   const context: ScheduleContext | null = props.taskChoices ? (taskId ? { kind: "task", task_id: taskId } : null) : (props.context ?? null);
   const pickable = users.filter((u) => isActiveUser(u) && u.id !== me?.id && !people.some((p) => p.user_id === u.id));
-  const tooMany = people.length + 1 > limits.maxParticipants;
-  const ready = !!context && (props.guestEmail
-    ? topic.trim().length > 0 && limits.durations.includes(duration)
-    : canSearchSlots({ participants: people, topic, duration }, limits));
+  const tooMany = people.length + emails.length + 1 > limits.maxParticipants;
+  // Only Google invites people without an account: that needs the organizer's own calendar.
+  const emailsNeedCalendar = emails.length > 0 && !meConnected;
+  const ready = !!context && !emailsNeedCalendar && (props.guestEmail
+    ? topic.trim().length > 0 && limits.durations.includes(duration) && !tooMany
+    : canSearchSlots({ participants: people, topic, duration, externalEmails: emails }, limits));
+  const addEmail = () => {
+    const added = addExternalEmail(emails, emailDraft, me?.email);
+    setEmailError(added.error);
+    if (added.error) return;
+    setEmails(added.list);
+    setEmailDraft("");
+  };
   const guestNote = props.guestEmail ? <p role="note" className="shrink-0 rounded-[4px] border border-input bg-surface px-3 py-2 text-xs text-muted-foreground">{t("calendar.lead_guest", { email: props.guestEmail })}</p> : null;
 
   // Moving keeps the meeting's own people (SM may move a meeting it is not part of).
@@ -133,7 +146,8 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
   const meUnreadable = !meConnected || (availabilityQ.data?.unavailable_participants ?? []).some((u) => u.user_id === me?.id);
   const activeDay = days.find((d) => d.day === selectedDay) ?? days[0];
   const validPicked = activeDay?.slots.some((s) => s.starts_at === picked) ? picked : null;
-  const proposal = meUnreadable || unavailable.length > 0;
+  // Only an organizer without Google sends a proposal; with it, Google invites everyone by email.
+  const proposal = !meConnected && !props.guestEmail;
   const hourOf = (iso: string) => Number(new Intl.DateTimeFormat("en-US", { hour: "numeric", hourCycle: "h23", timeZone: zone }).format(new Date(iso)));
   const slotGroups = [
     { key: "morning", slots: activeDay?.slots.filter((s) => hourOf(s.starts_at) < 12) ?? [] },
@@ -172,8 +186,8 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
     }
     if (!context) return;
     schedule.mutate({
-      ...context, participant_user_ids: people.map((p) => p.user_id), starts_at: validPicked, duration_minutes: duration, topic: topic.trim(),
-      note: note.trim() || null,
+      ...context, participant_user_ids: people.map((p) => p.user_id), external_emails: emails, starts_at: validPicked,
+      duration_minutes: duration, topic: topic.trim(), note: note.trim() || null,
     }, {
       onSuccess: (m) => { setResult(m); setStep("done"); props.onDone?.(m); },
       onError: fail,
@@ -195,6 +209,9 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
           <p>{result.topic} · {formatDateTime(result.starts_at, lng)}</p>
           {moving && <p>{t("calendar.moved_note", { when: formatDateTime(result.starts_at, lng) })}</p>}
           {!moving && outcome.invitation_sent && <p>{t("calendar.invitation_sent")}</p>}
+          {!moving && (result.external_emails?.length ?? 0) > 0 && (
+            <p>{t("calendar.external_invited", { emails: joinNames(result.external_emails ?? [], t("calendar.and")) })}</p>
+          )}
           {!moving && outcome.pending_names.length > 0 && (
             <p>{t("calendar.pending", { count: outcome.pending_names.length, names: joinNames(outcome.pending_names, t("calendar.and")) })}</p>
           )}
@@ -225,13 +242,15 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
             <h3 className="text-sm font-semibold">{t("calendar.slots_title")}</h3>
             <p className="mt-0.5 text-xs text-muted-foreground">{t("calendar.slots_hint", { count: limits.availabilityDays })}</p>
           </div>
-          {((meUnreadable && !moving) || unavailable.length > 0) && (
+          {((meUnreadable && !moving) || unavailable.length > 0 || (emails.length > 0 && !moving)) && (
             <div role="note" className="shrink-0 space-y-1 rounded-[4px] border border-input bg-surface px-3 py-2 text-xs leading-relaxed text-muted-foreground">
               {meUnreadable && !moving && <p>
                 {t("calendar.me_not_connected")}{" "}
                 <Link to="/perfil" className="font-medium text-link underline underline-offset-2">{t("calendar.connect_link")}</Link>
               </p>}
-              {unavailable.map((u) => <p key={u.user_id}>{t("calendar.guest_proposal", { name: nameOf(u.user_id) })}</p>)}
+              {/* Whose free time is unknown: with the organizer's Google they still get the invitation by email. */}
+              {unavailable.map((u) => <p key={u.user_id}>{t(unknownAvailabilityKey(meConnected), { name: nameOf(u.user_id) })}</p>)}
+              {emails.length > 0 && !moving && <p>{t("calendar.external_availability")}</p>}
             </div>
           )}
           {guestNote}
@@ -301,7 +320,7 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
         <div className="shrink-0 space-y-3 border-t border-border pt-3">
           {validPicked && <p role="status" className="text-xs leading-relaxed sm:text-sm">{t("calendar.selection_summary", {
             day: dayLabel(activeDay?.day ?? ""), time: time(validPicked), duration,
-            names: joinNames(people.map((p) => p.name), t("calendar.and")),
+            names: joinNames([...people.map((p) => p.name), ...emails], t("calendar.and")),
           })}</p>}
         <DialogFooter className="flex-row justify-end gap-2">
           {moving ? (
@@ -374,6 +393,54 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
                 </select>
               )}
               {tooMany && <p className="text-xs text-status-danger-fg">{t("calendar.too_many", { count: limits.maxParticipants })}</p>}
+            </fieldset>
+            <fieldset className="space-y-1.5">
+              <legend className="text-sm font-medium">{t("calendar.external_title")}</legend>
+              <p id="external-emails-hint" className="text-xs text-muted-foreground">{t("calendar.external_hint")}</p>
+              {emails.length > 0 && (
+                <ul aria-label={t("calendar.external_title")} className="flex flex-wrap gap-1.5">
+                  {emails.map((email) => (
+                    <li key={email} className="inline-flex max-w-full items-center gap-1 rounded-[4px] border border-border bg-surface py-0.5 pl-2 pr-1 text-xs">
+                      <span className="min-w-0 truncate">{email}</span>
+                      <button
+                        type="button"
+                        onClick={() => setEmails((list) => removeExternalEmail(list, email))}
+                        aria-label={t("calendar.external_remove", { email })}
+                        className="rounded-[4px] p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  inputMode="email"
+                  autoComplete="off"
+                  value={emailDraft}
+                  onChange={(e) => { setEmailDraft(e.target.value); setEmailError(null); }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addEmail(); }
+                  }}
+                  placeholder={t("calendar.external_placeholder")}
+                  aria-label={t("calendar.external_title")}
+                  aria-describedby="external-emails-hint"
+                  aria-invalid={emailError ? true : undefined}
+                  className={inputCls}
+                />
+                <Button type="button" variant="outline" onClick={addEmail} disabled={!emailDraft.trim()} className="h-9 shrink-0 rounded-[4px]">
+                  {t("calendar.external_add")}
+                </Button>
+              </div>
+              {emailError && <p role="alert" className="text-xs text-status-danger-fg">{t(`calendar.external_errors.${emailError}`)}</p>}
+              {emailsNeedCalendar && (
+                <p role="note" className="rounded-[4px] border border-status-warning-border bg-status-warning-bg px-3 py-2 text-xs text-status-warning-fg">
+                  {t("calendar.external_needs_calendar")}{" "}
+                  <Link to="/perfil" className="font-medium text-link underline underline-offset-2">{t("calendar.connect_google")}</Link>
+                </p>
+              )}
             </fieldset>
             <label className="block space-y-1.5">
               <span className="text-sm font-medium">{t("calendar.topic")}</span>

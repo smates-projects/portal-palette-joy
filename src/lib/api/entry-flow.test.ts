@@ -207,7 +207,8 @@ describe("Bishops: presented and the visibility rule", () => {
     expect(inv.presented!.map((p) => p.name).sort()).toEqual(["Jefferson Paula", "Laura Ortega"]);
     // Created by its rule the day the binding agreement was signed by the three, with seven days to sign.
     expect(inv.tripartite).toMatchObject({ name: "Operating Agreement", sent_at: "2026-10-11", sign_by: "2026-10-18", rule_code: "operating_agreement" });
-    expect(inv.tripartite!.signers.find((s) => s.party === "sm")).toMatchObject({ sm_entity: "sm_square", name: "Camila Soto" });
+    // Global signs for SM Square (the default): Marilyn, the Corporate signer.
+    expect(inv.tripartite!.signers.find((s) => s.party === "sm")).toMatchObject({ sm_entity: "sm_square", name: "Marilyn Boraei" });
     // No waiting period any more: Jefferson signs today.
     await api.session.setViewAs(net.U_JEFFERSON);
     expect((await api.documents.signContract(inv.tripartite!.id)).signers.find((s) => s.party === "bishop")!.status).toBe("signed");

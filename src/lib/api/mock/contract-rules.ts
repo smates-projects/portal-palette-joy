@@ -4,7 +4,7 @@
 // only tags them with their rule. The real API runs the same engine on its side.
 import { nowIso, todayIso } from "@/lib/clock";
 import {
-  DEFAULT_ENTRY_CONTRACT_RULES, byPosition, dueRules, parseTrigger, ruleError, smEntitiesOf, type EntryFacts,
+  DEFAULT_ENTRY_CONTRACT_RULES, byPosition, dueRules, globalSignsSmSquare, parseTrigger, ruleError, smEntitiesOf, type EntryFacts,
 } from "@/lib/leads/contract-rules";
 import { typedSignatureDataUrl } from "@/lib/contracts/signature";
 import { bilingualContract, governingLanguageOfRules } from "./contract-texts";
@@ -112,7 +112,8 @@ export function createContractRules(d: Deps) {
       return bishop ? base(bishop.full_name, bishop.id) : null;
     }
     // Corporate signs through its CEO, also when the rule pre-signs ("Firmado por Marilyn Boraei en nombre de ...").
-    const person = s.sm_entity === "sm_square"
+    // SM Square too while Global signs for it (signer_mode corporate); else the holder of the validation.
+    const person = s.sm_entity === "sm_square" && !globalSignsSmSquare(smEntitiesOf(db.rules))
       ? db.users.find((u) => u.id === l.validation?.sm_square_holder_user_id)
       : corporateSigner();
     if (s.sm_entity === "sm_square" && !person) return null;
@@ -128,7 +129,7 @@ export function createContractRules(d: Deps) {
     const signers = rule.signers.map((s) => signerOf(s, l, owner, on));
     if (signers.some((s) => s === null)) return null;
     const bishop = db.users.find((u) => u.id === l.bishop_user_id);
-    const holder = db.users.find((u) => u.id === l.validation?.sm_square_holder_user_id);
+    const holder = globalSignsSmSquare(smEntitiesOf(db.rules)) ? corporateSigner() : db.users.find((u) => u.id === l.validation?.sm_square_holder_user_id);
     const mou = contractsOf(businessId).find((c) => c.kind === "mou");
     const entities = smEntitiesOf(db.rules);
     const c: Contract = {

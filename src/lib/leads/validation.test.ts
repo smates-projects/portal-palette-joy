@@ -32,11 +32,13 @@ describe("split validation (the rule's ranges: 50-75 / 15-40 / SM Square 10, sum
     expect(splitErrors(split(60, null), R, true)).toEqual({ equity_bishop: "required" });
     expect(splitError(split(null, null, null), R, true)).toBe("invalid_split");
   });
-  it("closing also needs the SM Square center and its holder", () => {
+  it("closing also needs the SM Square center, and its holder only when the office designates one", () => {
     const ok = { ...split(60, 30), sm_square_center: "Centro A", sm_square_holder_user_id: "camila" };
     expect(closeBlock(ok, R)).toBeNull();
     expect(closeBlock({ ...ok, sm_square_center: " " }, R)).toBe("center_required");
-    expect(closeBlock({ ...ok, sm_square_holder_user_id: null }, R)).toBe("holder_required");
+    // Global signs for SM Square (the default): no holder needed.
+    expect(closeBlock({ ...ok, sm_square_holder_user_id: null }, R)).toBeNull();
+    expect(closeBlock({ ...ok, sm_square_holder_user_id: null }, R, "office_holder")).toBe("holder_required");
     expect(closeBlock({ ...ok, equity_owner: 70 }, R)).toBe("invalid_split");
   });
   it("the form starts with SM Square's fixed share and reads typed numbers", () => {
