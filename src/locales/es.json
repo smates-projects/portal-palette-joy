@@ -292,7 +292,7 @@
     },
     "calendar": {
       "title": "Calendario",
-      "subtitle": "¿Qué viene en mi programa?"
+      "subtitle": "Tus reuniones con los dueños y tu Google Calendar en un solo lugar."
     },
     "manual": {
       "title": "Mi manual",
@@ -389,10 +389,6 @@
     "bishops": {
       "title": "Bishops",
       "subtitle": "¿Qué pasa con los Bishops?"
-    },
-    "calendar": {
-      "title": "Calendario",
-      "subtitle": "Tus reuniones con los dueños y tu Google Calendar en un solo lugar."
     }
   },
   "meta": {
@@ -1480,7 +1476,8 @@
       "assessment": "Assessment completado",
       "meeting_scheduled": "Reunión agendada",
       "summary_sent": "Resumen enviado",
-      "meeting_held": "Reunión hecha"
+      "meeting_held": "Reunión hecha",
+      "outcome_missing": "Falta registrar el resultado"
     },
     "phase_hints": {
       "summary_sent": "con fecha, hora y link de la reunión"
@@ -1544,7 +1541,9 @@
         "invalid_transition": "Este negocio ya tiene su reunión o no está en una etapa donde se pueda registrar.",
         "invalid_url": "El link de la videollamada no es válido.",
         "invalid_date": "La fecha y la hora no son válidas."
-      }
+      },
+      "how_did_it_go": "¿Cómo fue?",
+      "body_expansion": "Registra la reunión de ampliación. Puede ser una que ya pasó."
     },
     "note": {
       "title": "Nota de la reunión con {{name}}",
@@ -3234,7 +3233,7 @@
         "book": "Ya aprobamos tus documentos. Reserva la reunión de ampliación. Es más larga y participa el inversor."
       },
       "mou": {
-        "not_sent": "Se abre apenas firmes el NDA.",
+        "not_sent": "Se abre apenas firmes el NDA. No hace falta esperar la firma de Strategic Mates.",
         "body": "El MOU explica cómo vamos a trabajar juntos. Lee cada punto y marca \"Entendí\". Cuando marques los cuatro, podrás firmar.",
         "understood": "Entendí",
         "ready": "Marcaste los cuatro puntos. Ya puedes firmar.",
@@ -3278,7 +3277,8 @@
         "waiting": "Tómate unos días para leerlo con calma. Podrás firmar desde el {{date}}.",
         "sign": "Firmar el Operating Agreement",
         "signed": "Firmaste el Operating Agreement. Te avisamos cuando firmen los demás."
-      }
+      },
+      "awaiting_sm": "Ya firmaste. Falta la firma de Strategic Mates."
     },
     "owner_docs": {
       "locked": "Podrás subir tus documentos cuando firmes el MOU.",
@@ -3828,7 +3828,11 @@
       "pick_hint_register": "Elige el negocio. Aparecen los evaluados y los que tienen una reunión para reagendar.",
       "pick_empty": "No hay negocios para elegir en esta vista. Cambia la oficina en Viendo o revisa el embudo.",
       "pick_continue": "Continuar"
-    }
+    },
+    "lead_guest": "Invitamos a {{email}} con el enlace de Meet.",
+    "not_connected_body": "Tu Google Calendar no está conectado. Conéctalo o registra la reunión a mano.",
+    "connect_google": "Conectar Google Calendar",
+    "register_manually": "Registrar reunión a mano"
   },
   "entry_contracts": {
     "rules": {

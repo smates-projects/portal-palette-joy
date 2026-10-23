@@ -46,6 +46,10 @@ export interface ScheduleMeetingDialogProps {
   /** "Mover": only the slot picker, for this meeting. */
   reschedule?: PortalMeeting | null | undefined;
   onDone?: ((meeting: PortalMeeting) => void) | undefined;
+  /** Lead meeting: the person without an account, invited by email with the Meet link (no portal guests needed). */
+  guestEmail?: string | undefined;
+  /** Shown when the calendar is not connected (409): register the meeting by hand instead. */
+  onRegisterManually?: (() => void) | undefined;
 }
 
 type Step = "details" | "slots" | "done";
@@ -110,7 +114,10 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
   const context: ScheduleContext | null = props.taskChoices ? (taskId ? { kind: "task", task_id: taskId } : null) : (props.context ?? null);
   const pickable = users.filter((u) => isActiveUser(u) && u.id !== me?.id && !people.some((p) => p.user_id === u.id));
   const tooMany = people.length + 1 > MAX_MEETING_PARTICIPANTS;
-  const ready = !!context && canSearchSlots({ participants: people, topic, duration });
+  const ready = !!context && (props.guestEmail
+    ? topic.trim().length > 0 && (MEETING_DURATIONS as readonly number[]).includes(duration)
+    : canSearchSlots({ participants: people, topic, duration }));
+  const guestNote = props.guestEmail ? <p role="note" className="shrink-0 rounded-[4px] border border-input bg-surface px-3 py-2 text-xs text-muted-foreground">{t("calendar.lead_guest", { email: props.guestEmail })}</p> : null;
 
   // Moving keeps the meeting's own people (SM may move a meeting it is not part of).
   const everyone = moving ? moving.participants.map((p) => p.user_id) : me ? [me.id, ...people.map((p) => p.user_id)] : [];
@@ -149,7 +156,7 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
       setPicked(null);
       void availabilityQ.refetch();
     }
-    setError(i18n.exists(`calendar.errors.${code}`) ? code : "generic");
+    setError(code === "calendar_not_connected" || i18n.exists(`calendar.errors.${code}`) ? code : "generic");
   };
   const confirm = () => {
     if (!validPicked) return;
@@ -225,7 +232,16 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
               {unavailable.map((u) => <p key={u.user_id}>{t("calendar.guest_proposal", { name: nameOf(u.user_id) })}</p>)}
             </div>
           )}
-          {error && <p role="alert" className={cn("rounded-[4px] border px-3 py-2 text-sm", NOTE_TONE.danger)}>{t(`calendar.errors.${error}`)}</p>}
+          {guestNote}
+          {error === "calendar_not_connected" ? (
+            <div role="alert" className={cn("space-y-2 rounded-[4px] border px-3 py-2 text-sm", NOTE_TONE.warning)}>
+              <p>{t("calendar.not_connected_body")}</p>
+              <div className="flex flex-wrap gap-3">
+                <Link to="/perfil" className="font-medium text-link underline underline-offset-2">{t("calendar.connect_google")}</Link>
+                {props.onRegisterManually && <button type="button" onClick={props.onRegisterManually} className="font-medium text-link underline underline-offset-2">{t("calendar.register_manually")}</button>}
+              </div>
+            </div>
+          ) : error && <p role="alert" className={cn("rounded-[4px] border px-3 py-2 text-sm", NOTE_TONE.danger)}>{t(`calendar.errors.${error}`)}</p>}
           {availabilityQ.isLoading ? (
             <p className="rounded-[4px] border border-border px-3 py-4 text-sm text-muted-foreground">{t("calendar.slots_loading")}</p>
           ) : availabilityQ.isError ? (
@@ -314,6 +330,7 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
         )}
         {(!props.taskChoices || choice) && (
           <>
+            {guestNote}
             <fieldset className="space-y-1.5">
               <legend className="text-sm font-medium">{t("calendar.participants")}</legend>
               <p className="text-xs text-muted-foreground">{t("calendar.participants_hint")}</p>
