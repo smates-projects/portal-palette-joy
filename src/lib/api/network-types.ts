@@ -493,8 +493,33 @@ export type SignerStatus = "sent" | "opened" | "signed" | "declined";
  * (who, when, from which IP, document hash), which is what gives the signature its legal weight, not the drawing.
  */
 export interface ContractSignature {
-  kind: "drawn" | "typed" | "uploaded";
+  /** saved: the person's signature kept in Mi perfil, used for this document. */
+  kind: "drawn" | "typed" | "uploaded" | "saved";
   image_url: string;
+}
+
+/** The signature a person keeps in Mi perfil (GET /me/signature). */
+export interface SavedSignature {
+  kind: "drawn" | "uploaded";
+  image_url: string;
+  updated_at: IsoDateTime;
+}
+
+/** PUT /me/signature: the stored file (context contract_signature) and how it was made. */
+export interface SaveSignatureInput {
+  file_id: Uuid;
+  kind: "drawn" | "uploaded";
+}
+
+/** POST /contracts/{id}/sign: a new signature (signature_file_id) or the saved one (use_saved_signature). */
+export type SignContractRequest =
+  & { consent: true; save_signature?: boolean | undefined }
+  & ({ signature_file_id: Uuid; signature_kind?: "drawn" | "typed" | "uploaded" | undefined } | { use_saved_signature: true });
+
+/** How signContract signs: the saved signature, or a new one (optionally saved for next time). */
+export interface SignContractOptions {
+  use_saved_signature?: boolean | undefined;
+  save_signature?: boolean | undefined;
 }
 
 export interface Signer {
