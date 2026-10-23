@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Download, PenLine } from "lucide-react";
 import { useContractSigningPoll, useDeclineContract, useMySignature, useOpenContract, useRefreshSigning, useSignContract } from "@/lib/api/hooks";
-import type { Contract, ContractLanguage, ContractSignature } from "@/lib/api/types";
+import { MOU_ACKNOWLEDGMENT_POINTS, type Contract, type ContractLanguage, type ContractSignature } from "@/lib/api/types";
 import { contractTextIn } from "@/lib/contracts/language";
 import { formatDate } from "@/lib/format";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -78,7 +78,8 @@ export function DocuSealSigner(props: { contract: Contract; party: "owner" | "sm
     const code = e instanceof Error ? ((e as Error & { code?: string }).code ?? e.message) : "";
     const detail = e instanceof Error ? (e as Error & { detail?: string | null }).detail ?? "" : "";
     if (code === "signature_not_saved") { setUseOther(true); void savedQ.refetch(); toast.error(t("intake.docuseal.saved_missing")); }
-    else if (code === "acknowledgment_required") toast.error(t(`entry.errors.${code}`));
+    // The number of points this MOU has (the API's list), not a written "four" (QA B4).
+    else if (code === "acknowledgment_required") toast.error(t(`entry.errors.${code}`, { count: props.contract.acknowledgment_points?.es.length || MOU_ACKNOWLEDGMENT_POINTS.length }));
     else if (code === "waiting_period") toast.error(t("entry.errors.waiting_period", { date: /^\d{4}-\d{2}-\d{2}/.test(detail) ? formatDate(detail, i18n.language) : detail }));
     else toast.error(t("intake.docuseal.t_error"));
   };

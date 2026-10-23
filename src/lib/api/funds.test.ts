@@ -14,9 +14,10 @@ const leadNamed = async (api: Awaited<ReturnType<typeof as>>, name: string) => (
 const receipt = { file_name: "comprobante.pdf", size_kb: 120 };
 
 /**
- * Techos Delgado's Operating Agreement waits for the three signatures in the sample data (Camila signs for SM Square,
- * as the holder of its validation). The three sign today (Oct 14) and SM records USD 100,000 of 150,000. Ends as
- * Camila. The waiting days SM Global drops only apply to older Operating Agreements: kept to show it does no harm.
+ * Techos Delgado's Operating Agreement waits for the three signatures in the sample data (Marilyn signs for SM Square:
+ * Global signs everything on SM's side by default). The three sign today (Oct 14) and SM records USD 100,000 of
+ * 150,000. Ends as Camila. The waiting days SM Global drops only apply to older Operating Agreements: kept to show it
+ * does no harm.
  */
 async function fundTechos(api: Awaited<ReturnType<typeof as>>) {
   await api.session.setViewAs(seed.U_MARYLIN);
@@ -25,8 +26,7 @@ async function fundTechos(api: Awaited<ReturnType<typeof as>>) {
   const lead = await leadNamed(api, "Techos Delgado");
   const oa = (await api.leads.getInvestors(lead.id))!.tripartite!;
   const owner = (await api.users.list()).find((u) => u.business_id === lead.business_id && u.role === "business_owner")!;
-  await api.documents.signContract(oa.id);
-  for (const id of [owner.id, net.U_JEFFERSON]) {
+  for (const id of [seed.U_MARYLIN, owner.id, net.U_JEFFERSON]) {
     await api.session.setViewAs(id);
     await api.documents.signContract(oa.id);
   }

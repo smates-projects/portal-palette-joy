@@ -6,7 +6,7 @@ import { useAcceptDocument, useContractRules, useCurrentUser, useLeadIntake, use
 import { MOU_ACKNOWLEDGMENT_POINTS, type BusinessDocument, type Contract, type EntryContractRule, type LeadValidation, type ReviewClock, type Signer } from "@/lib/api/types";
 import { checklistByRule, contractDeadline, factsFromContracts, ruleSchedule, smEntitiesOf, smSignBlock, smSignerEntityName } from "@/lib/leads/contract-rules";
 import { whenText } from "@/components/global/rules/contract-rules-text";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatWeekdayDate } from "@/lib/format";
 import { canResend } from "@/lib/leads/onboarding";
 import { entryRules, intakeDocumentHelp, ndaStatus, oaWaitingUntil, type NdaStatus } from "@/lib/leads/entry-flow";
 import { DocumentHelp } from "./DocumentHelp";
@@ -107,7 +107,7 @@ export function IntakeChecklist({ leadId, readOnly, validation }: { leadId: stri
         <ul className="mt-1 space-y-0.5 pl-6 text-xs text-muted-foreground">
           <li>{whenText(t, rule, contractRules)}</li>
           {s.waiting_validation && <li>{t("entry_contracts.checklist.waiting_validation")}</li>}
-          {s.sign_by && <li>{t("entry_contracts.checklist.sign_by", { date: formatDate(s.sign_by, lng) })}</li>}
+          {s.sign_by && <li>{t("entry_contracts.checklist.sign_by", { date: formatWeekdayDate(s.sign_by, lng) })}</li>}
         </ul>
       </li>
     );
@@ -169,7 +169,7 @@ export function IntakeChecklist({ leadId, readOnly, validation }: { leadId: stri
           })}
           {acks !== null && <li>{t("intake.mou_points", { n: acks, m: c.acknowledgment_points?.es.length || MOU_ACKNOWLEDGMENT_POINTS.length })}</li>}
           {waitingUntil && <li className="text-status-warning-fg">{t("entry.oa.waiting_sm", { date: formatDate(waitingUntil, lng) })}</li>}
-          {deadline.state === "open" && <li>{t("entry_contracts.checklist.sign_by", { date: formatDate(deadline.sign_by, lng) })}</li>}
+          {deadline.state === "open" && <li>{t("entry_contracts.checklist.sign_by", { date: formatWeekdayDate(deadline.sign_by, lng) })}</li>}
           {deadline.state === "overdue" && <li className="text-status-danger-fg">{t("entry_contracts.checklist.overdue", { date: formatDate(deadline.sign_by, lng) })}</li>}
           {reason && !readOnly && <li>{reason}</li>}
         </ul>

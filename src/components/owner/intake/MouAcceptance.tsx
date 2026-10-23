@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { useAcknowledgeMou } from "@/lib/api/hooks";
+import { useAcknowledgeMou, useProgramDays } from "@/lib/api/hooks";
 import { MOU_ACKNOWLEDGMENT_POINTS, type Contract, type MouAcknowledgmentPoint, type MouAcknowledgmentPointText } from "@/lib/api/types";
 import { isMockRepository } from "@/lib/api/mode";
 import { acknowledgedAll } from "@/lib/leads/entry-flow";
@@ -17,11 +17,13 @@ import { primaryButtonCls } from "../shared";
 export function MouAcceptance({ mou, onSign }: { mou: Contract; onSign: () => void }) {
   const { t, i18n } = useTranslation();
   const acknowledge = useAcknowledgeMou();
+  // The program length of the rules, never a written "180" (QA B4).
+  const days = useProgramDays();
   const fromApi = mou.acknowledgment_points?.[i18n.language.startsWith("en") ? "en" : "es"];
   const points: MouAcknowledgmentPointText[] = fromApi?.length
     ? fromApi
     : isMockRepository("documents")
-      ? MOU_ACKNOWLEDGMENT_POINTS.map((code) => ({ code, title: t(`intake.owner.mou.points.${code}.title`), body: t(`intake.owner.mou.points.${code}.body`) }))
+      ? MOU_ACKNOWLEDGMENT_POINTS.map((code) => ({ code, title: t(`intake.owner.mou.points.${code}.title`), body: t(`intake.owner.mou.points.${code}.body`, { days }) }))
       : [];
   const codes = points.map((p) => p.code);
   const saved = mou.signers.find((s) => s.party === "owner")?.acknowledgments ?? [];

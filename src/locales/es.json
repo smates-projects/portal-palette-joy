@@ -3,7 +3,8 @@
     "name": "SM Platform",
     "company": "Strategic Mates",
     "no_data": "Sin dato",
-    "loading": "Cargando…"
+    "loading": "Cargando…",
+    "close": "Cerrar"
   },
   "errors": {
     "not_found_title": "Página no encontrada",
@@ -1205,7 +1206,7 @@
       "high": "Alta",
       "mid": "Media",
       "low": "Baja",
-      "track": "Ya estás en camino"
+      "track": "En camino"
     },
     "band_label": "Banda",
     "score": "Puntaje",
@@ -1738,7 +1739,7 @@
       "outcome_already_set": "Esa reunión ya tiene un resultado.",
       "expansion_meeting_required": "Primero tiene que hacerse la reunión de ampliación.",
       "invalid_transition": "Todavía no se puede hacer eso. Revisa la hora de la reunión.",
-      "acknowledgment_required": "Antes de firmar, marca \"Entendí\" en los cuatro puntos del MOU.",
+      "acknowledgment_required": "Antes de firmar, marca \"Entendí\" en los {{count}} puntos del MOU.",
       "waiting_period": "Todavía no se puede firmar. Podrás hacerlo desde el {{date}}.",
       "meeting_id_missing": "No pudimos guardar el resultado. Falta el identificador de la reunión. Recarga la página y vuelve a intentarlo."
     }
@@ -2679,7 +2680,6 @@
       "royalties": "Regalías",
       "marketing_fund": "Fondo de marketing",
       "open_tickets": "Consultas abiertas",
-      "reports_due": "Hay {{count}} reportes por entregar.",
       "manual_version": "Versión del manual",
       "no_manual": "Sin versión",
       "go_manual": "Publicar una nueva versión",
@@ -2690,7 +2690,9 @@
       "reason_report_late": "Su reporte de {{month}} está atrasado",
       "reason_tickets_one": "Tiene {{count}} consulta abierta",
       "reason_tickets_other": "Tiene {{count}} consultas abiertas",
-      "reason_standards": "Cumple {{pct}}% de los estándares"
+      "reason_standards": "Cumple {{pct}}% de los estándares",
+      "reports_due_one": "Hay {{count}} reporte por entregar.",
+      "reports_due_other": "Hay {{count}} reportes por entregar."
     },
     "franchisor": {
       "question": "¿Qué manual reciben mis franquicias?",
@@ -3329,7 +3331,7 @@
           },
           "do_it_together_no_debt": {
             "title": "Lo hacemos juntos y no quedas con deudas",
-            "body": "Trabajamos contigo durante los 180 días del programa. Si algo no sale como esperamos, no le debes dinero a nadie por el programa."
+            "body": "Trabajamos contigo durante los {{days}} días del programa. Si algo no sale como esperamos, no le debes dinero a nadie por el programa."
           }
         },
         "when": "Puedes leerlo ahora. Lo firman juntos al final de la reunión",
@@ -4100,7 +4102,7 @@
     "checklist": {
       "not_created": "Todavía no se creó",
       "waiting_validation": "Espera que se cierre la validación.",
-      "sign_by": "Firma antes del {{date}}",
+      "sign_by": "Se firma a más tardar el {{date}} (hora del Este)",
       "overdue": "El plazo venció el {{date}} y falta firmar.",
       "sm_line": "Firma {{person}} por {{entity}}",
       "sm_line_any": "Firma cualquier persona de la oficina por {{entity}}",
@@ -4161,7 +4163,7 @@
       "binding_signed": "Firmaste el Acuerdo de Vinculación. Te avisamos cuando firmen los demás.",
       "oa_waiting": "Lo preparamos cuando los tres firmen el Acuerdo de Vinculación y Strategic Mates cierre la validación. Cuando salga, verás aquí la fecha límite para firmarlo.",
       "oa_read": "Leer el Operating Agreement completo",
-      "oa_deadline": "Firma antes del {{date}}.",
+      "oa_deadline": "Fírmalo a más tardar el {{date}} (hora del Este).",
       "oa_overdue": "El plazo para firmar venció el {{date}}. Habla con tu consultor.",
       "split_title": "Tus porcentajes definitivos",
       "split_body": "Tú conservas el {{owner}} % de la empresa nueva que va a vender las franquicias. El inversor tiene el {{bishop}} % y SM Square el {{sm}} %.",

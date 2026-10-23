@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Check, ExternalLink, Lock, Video } from "lucide-react";
 import { useContracts, useCurrentUser, useDocuments, useIntake, useRules } from "@/lib/api/hooks";
 import type { Contract, LeadMeeting } from "@/lib/api/types";
-import { formatDate, formatDateTime } from "@/lib/format";
+import { formatDate, formatDateTime, formatWeekdayDate } from "@/lib/format";
 import { entryRules, ndaStatus, oaWaitingUntil, ownerMeetingView, ownerSteps, type OwnerStepKey, type OwnerStepState } from "@/lib/leads/entry-flow";
 import { entryMeetings } from "@/lib/leads/meetings";
 import { contractDeadline } from "@/lib/leads/contract-rules";
@@ -255,7 +255,7 @@ export function IntakeHomePage({ focusStep }: { focusStep?: OwnerStepKey | undef
           <div className="space-y-3">
             {hasContractExplainer(oa) ? <ContractExplainerCard contract={oa} language={contractLanguage} onLanguageChange={setContractLanguage}>{readFull(oa, "entry_contracts.owner.oa_read")}</ContractExplainerCard> : <p className="text-sm text-muted-foreground">{t("intake.owner.oa.body")}</p>}
             {splitBlock}
-            {deadline.state === "open" && <p className="text-sm font-medium">{t("entry_contracts.owner.oa_deadline", { date: formatDate(deadline.sign_by, lng) })}</p>}
+            {deadline.state === "open" && <p className="text-sm font-medium">{t("entry_contracts.owner.oa_deadline", { date: formatWeekdayDate(deadline.sign_by, lng) })}</p>}
             {deadline.state === "overdue" && <p className="rounded-[4px] border border-status-danger-border bg-status-danger-bg px-3 py-2 text-sm text-status-danger-fg">{t("entry_contracts.owner.oa_overdue", { date: formatDate(deadline.sign_by, lng) })}</p>}
             {until
               ? <p className="rounded-[4px] border border-border bg-muted px-3 py-2 text-sm">{t("intake.owner.oa.waiting", { date: formatDate(until, lng) })}</p>

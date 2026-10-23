@@ -14,6 +14,10 @@ const US_SHORT_DATE: Intl.DateTimeFormatOptions = { month: "2-digit", day: "2-di
 /** "10/14/2026" in every language. */
 export const formatDate = (iso: string, _lng: string) => new Intl.DateTimeFormat("en-US", US_DATE).format(toDate(iso));
 
+/** "sábado 10/18/2026": a deadline day with its weekday, so it is never misread (QA B12). */
+export const formatWeekdayDate = (iso: string, lng: string) =>
+  `${new Intl.DateTimeFormat(localeTag(lng), { weekday: "long" }).format(toDate(iso))} ${formatDate(iso, lng)}`;
+
 export function formatRelativeDate(iso: string, lng: string, today: string = todayIso()) {
   const days = Math.round((toDate(iso).getTime() - toDate(today).getTime()) / 86_400_000);
   return new Intl.RelativeTimeFormat(localeTag(lng), { numeric: "auto" }).format(days, "day");

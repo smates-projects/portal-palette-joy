@@ -3,7 +3,8 @@
     "name": "SM Platform",
     "company": "Strategic Mates",
     "no_data": "No data",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "close": "Close"
   },
   "errors": {
     "not_found_title": "Page not found",
@@ -1205,7 +1206,7 @@
       "high": "High",
       "mid": "Mid",
       "low": "Low",
-      "track": "On your way"
+      "track": "On track"
     },
     "band_label": "Band",
     "score": "Score",
@@ -1738,7 +1739,7 @@
       "outcome_already_set": "That meeting already has an outcome.",
       "expansion_meeting_required": "The expansion meeting has to happen first.",
       "invalid_transition": "That cannot be done yet. Check the meeting time.",
-      "acknowledgment_required": "Before signing, tick \"I understand\" on the four points of the MOU.",
+      "acknowledgment_required": "Before signing, tick \"I understand\" on the {{count}} points of the MOU.",
       "waiting_period": "It cannot be signed yet. You can sign from {{date}}.",
       "meeting_id_missing": "We could not save the outcome. The meeting's identifier is missing. Reload the page and try again."
     }
@@ -2679,7 +2680,6 @@
       "royalties": "Royalties",
       "marketing_fund": "Marketing fund",
       "open_tickets": "Open requests",
-      "reports_due": "{{count}} reports are due.",
       "manual_version": "Manual version",
       "no_manual": "No version",
       "go_manual": "Publish a new version",
@@ -2690,7 +2690,9 @@
       "reason_report_late": "Its {{month}} report is late",
       "reason_tickets_one": "{{count}} open request",
       "reason_tickets_other": "{{count}} open requests",
-      "reason_standards": "Meets {{pct}}% of the standards"
+      "reason_standards": "Meets {{pct}}% of the standards",
+      "reports_due_one": "{{count}} report is due.",
+      "reports_due_other": "{{count}} reports are due."
     },
     "franchisor": {
       "question": "Which manual do my franchises receive?",
@@ -3329,7 +3331,7 @@
           },
           "do_it_together_no_debt": {
             "title": "We do it together and you are left with no debt",
-            "body": "We work with you for the 180 days of the program. If something does not turn out as expected, you owe nobody money for the program."
+            "body": "We work with you for the {{days}} days of the program. If something does not turn out as expected, you owe nobody money for the program."
           }
         },
         "when": "You can read it now. You sign it together at the end of the meeting",
@@ -4100,7 +4102,7 @@
     "checklist": {
       "not_created": "Not created yet",
       "waiting_validation": "Waits for the validation to close.",
-      "sign_by": "Sign by {{date}}",
+      "sign_by": "Sign by {{date}} at the latest (Eastern time)",
       "overdue": "The deadline passed on {{date}} and signatures are missing.",
       "sm_line": "{{person}} signs for {{entity}}",
       "sm_line_any": "Anyone of the office signs for {{entity}}",
@@ -4161,7 +4163,7 @@
       "binding_signed": "You signed the binding agreement. We will let you know when the others sign.",
       "oa_waiting": "We prepare it when the three sign the binding agreement and Strategic Mates closes the validation. Once it goes out, you will see here the last day to sign it.",
       "oa_read": "Read the full Operating Agreement",
-      "oa_deadline": "Sign by {{date}}.",
+      "oa_deadline": "Sign it by {{date}} at the latest (Eastern time).",
       "oa_overdue": "The deadline to sign passed on {{date}}. Talk to your consultant.",
       "split_title": "Your final percentages",
       "split_body": "You keep {{owner}} % of the new company that will sell the franchises. The investor has {{bishop}} % and SM Square {{sm}} %.",

@@ -2,9 +2,19 @@ import { describe, expect, it } from "vitest";
 import en from "@/locales/en.json";
 import es from "@/locales/es.json";
 import { bishopNav, franchiseeNav, franchisorNav, smGlobalNav } from "@/components/layout/nav";
-import { formatDate, formatDateTime, formatNumber, formatShortDate, formatUsd, localeTag, oneFinalPeriod } from "./format";
+import { formatDate, formatDateTime, formatNumber, formatShortDate, formatUsd, formatWeekdayDate, localeTag, oneFinalPeriod } from "./format";
 
 describe("formatting", () => {
+  it("a deadline day reads with its weekday, the US date and no time-zone shift (QA B12)", () => {
+    expect(formatWeekdayDate("2026-10-18", "es")).toBe("domingo 10/18/2026");
+    expect(formatWeekdayDate("2026-10-18", "en")).toBe("Sunday 10/18/2026");
+  });
+  it("Bajas of the QA: the dialog X, one report, the band of SM's Embudo (QA B1, B3, B6)", () => {
+    expect(es.app.close).toBe("Cerrar");
+    expect(en.app.close).toBe("Close");
+    expect(es.owner_extra.franchisor_home.reports_due_one).toBe("Hay {{count}} reporte por entregar.");
+    expect(es.pipeline.bands.track).toBe("En camino");
+  });
   it("a sentence ending in p.m. keeps one period", () => {
     expect(oneFinalPeriod("Reunión hecha. Lo marcaste el mié 10/14, 03:00 p.m..")).toBe("Reunión hecha. Lo marcaste el mié 10/14, 03:00 p.m.");
     expect(oneFinalPeriod("Listo.")).toBe("Listo.");

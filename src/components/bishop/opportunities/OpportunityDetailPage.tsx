@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { ArrowLeft, CheckCircle2, Circle, FileText, ShieldAlert } from "lucide-react";
 import { useAcceptOpportunity, useBishopAgreements, useBishopOpportunity, useClearOpportunityDecision, useCurrentUser, usePassOpportunity } from "@/lib/api/hooks";
 import { acceptBlock } from "@/lib/leads/opportunity";
-import { formatDate, formatUsd } from "@/lib/format";
+import { formatDate, formatUsd, formatWeekdayDate } from "@/lib/format";
 import { EmptyBlock, ErrorBlock, LoadingBlocks, Metric, Panel, primaryButton, ProvisionalTag, secondaryButton, Screen, SplitTag, Tag } from "@/components/bishop/ui";
 import type { Contract } from "@/lib/api/types";
 import {
@@ -283,7 +283,7 @@ export function OpportunityDetailPage({ opportunityId }: { opportunityId: string
               </Panel>
             )}
             {contractsShown.map((c) => (
-              <Panel key={c.id} title={c.name} action={c.sign_by && c.state !== "signed" ? <span className="text-xs text-muted-foreground">{t("entry_contracts.checklist.sign_by", { date: formatDate(c.sign_by, lng) })}</span> : undefined}>
+              <Panel key={c.id} title={c.name} action={c.sign_by && c.state !== "signed" ? <span className="text-xs text-muted-foreground">{t("entry_contracts.checklist.sign_by", { date: formatWeekdayDate(c.sign_by, lng) })}</span> : undefined}>
                 {c.kind === "binding" && firstExplainerLine(c) && <p className="px-4 pb-2 text-xs text-muted-foreground">{firstExplainerLine(c)}</p>}
                 {hasContractText(c) && (
                   <div className="px-4 pb-3">
