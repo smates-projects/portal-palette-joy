@@ -723,7 +723,7 @@
     "email": "Email",
     "phone": "Phone",
     "team_title": "Team members",
-    "team_empty": "Your firm has no other people yet. Ask the SM team to add them.",
+    "team_empty": "Your company has no other people yet. Ask the SM team to add them.",
     "you": "(you)",
     "cal_on_short": "Calendar connected",
     "cal_off_short": "No Calendar",
@@ -801,7 +801,13 @@
       "t_saved": "Your signature is saved.",
       "t_deleted": "Your saved signature was deleted.",
       "t_error": "We couldn't save the change. Try again."
-    }
+    },
+    "heading_sm": "Your profile at Strategic Mates",
+    "heading_owner": "Your profile and your business team",
+    "heading_person": "Your details",
+    "owner_card_hint": "This is how the Strategic Mates team sees your business.",
+    "business_team_title": "Your business team",
+    "business_team_empty": "There are no other people in your business yet."
   },
   "report": {
     "heading": "How is my work going?",

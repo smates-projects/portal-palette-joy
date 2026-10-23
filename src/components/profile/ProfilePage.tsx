@@ -7,9 +7,10 @@ import { TwoFactorSection } from "@/components/profile/TwoFactorSection";
 import { PasswordSection } from "@/components/profile/PasswordSection";
 import { MySignatureSection } from "@/components/profile/MySignatureSection";
 import { Mail, MapPin, Phone, UserPlus } from "lucide-react";
-import { useCurrentUser, useOrganizations, useUsersWithInactive } from "@/lib/api/hooks";
+import { useBusinesses, useBusinessTeam, useCurrentUser, useOrganizations, useUsersWithInactive } from "@/lib/api/hooks";
 import type { User } from "@/lib/api/types";
 import { isActiveUser, isFirmAdmin } from "@/lib/accounts/permissions";
+import { profileViewOf } from "@/lib/accounts/profile-view";
 import { isCalendarConnected } from "@/lib/calendar/scheduling";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -32,6 +33,8 @@ export function ProfilePage({ calendarStatus, onDismissCalendarStatus }: { calen
 
   const me = meQ.data;
   const org = orgsQ.data?.find((o) => o.id === me?.organization_id);
+  // Each role sees its own profile (QA M3): a firm its firm, an owner its business, a Bishop his own data.
+  const view = profileViewOf(me?.role);
   // The firm admin manages the team ("Mi equipo"); everyone else only sees it.
   const admin = !!me && isFirmAdmin(me);
   const team = (usersQ.data ?? []).filter((u) => u.organization_id && u.organization_id === me?.organization_id && (admin || isActiveUser(u)))
@@ -42,7 +45,7 @@ export function ProfilePage({ calendarStatus, onDismissCalendarStatus }: { calen
     <div className="mx-auto max-w-4xl px-6 py-8">
       {/* "Vista para firma aliada" only where it is true: the other roles read their role in the card below. */}
       {meQ.data?.role === "partner_firm" && <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("tasks.for_role")}</p>}
-      <h1 className="mt-1 text-2xl font-semibold tracking-tight">{t("profile.heading")}</h1>
+      <h1 className="mt-1 text-2xl font-semibold tracking-tight">{t(view.heading)}</h1>
 
       {meQ.isError || orgsQ.isError ? (
         <div className="mt-6 rounded-md border border-border bg-surface p-6 text-sm">
@@ -53,8 +56,11 @@ export function ProfilePage({ calendarStatus, onDismissCalendarStatus }: { calen
         <div className="mt-6 space-y-4"><Skeleton className="h-40 rounded-md" /><Skeleton className="h-32 rounded-md" /></div>
       ) : (
         <div className="mt-6 space-y-6">
-          {/* Firm */}
-          <section className="rounded-md border border-border bg-surface">
+          {view.card === "business" && <OwnerBusinessCard me={me} />}
+          {view.card === "person" && <PersonCard me={me} />}
+          {view.team === "business" && <BusinessTeamSection me={me} />}
+          {/* Firm, office or franchise unit */}
+          {view.card === "organization" && <section className="rounded-md border border-border bg-surface">
             <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
               <div>
                 <h2 className="text-base font-semibold">{org?.name}</h2>
@@ -74,10 +80,10 @@ export function ProfilePage({ calendarStatus, onDismissCalendarStatus }: { calen
               {org?.email && <Row icon={<Mail className="h-3.5 w-3.5" />} label={t("profile.email")} value={org.email} />}
               {org?.phone && <Row icon={<Phone className="h-3.5 w-3.5" />} label={t("profile.phone")} value={org.phone} />}
             </dl>
-          </section>
+          </section>}
 
           {/* Team ("Mi equipo": the firm admin invites and deactivates) */}
-          <section>
+          {view.team === "organization" && <section>
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="text-sm font-semibold">{t(admin ? "profile.my_team_title" : "profile.team_title")}</h2>
@@ -114,7 +120,7 @@ export function ProfilePage({ calendarStatus, onDismissCalendarStatus }: { calen
                 ))}
               </ul>
             )}
-          </section>
+          </section>}
 
           {/* Google Calendar: read and write, for every role */}
           <GoogleCalendarCard me={me} returnStatus={calendarStatus} onDismissReturn={onDismissCalendarStatus} />
@@ -131,6 +137,79 @@ export function ProfilePage({ calendarStatus, onDismissCalendarStatus }: { calen
       <DeactivatePersonDialog user={deactivating} onClose={() => setDeactivating(null)} />
       <AccountHistorySheet user={history} onClose={() => setHistory(null)} />
     </div>
+  );
+}
+
+/** An owner: their business, as SM sees it (name and place), with the owner's role. */
+function OwnerBusinessCard({ me }: { me: User }) {
+  const { t } = useTranslation();
+  const business = (useBusinesses().data ?? []).find((b) => b.id === me.business_id);
+  return (
+    <section className="rounded-md border border-border bg-surface">
+      <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
+        <div>
+          <h2 className="text-base font-semibold">{business?.name ?? t("app.no_data")}</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t("profile.owner_card_hint")}</p>
+        </div>
+        <span className="rounded-[4px] border border-border px-1.5 py-0.5 text-[11px] text-muted-foreground">{t(`roles.${me.role}`)}</span>
+      </div>
+      <dl className="grid gap-4 px-5 py-4 text-sm sm:grid-cols-2">
+        {business && <Row icon={<MapPin className="h-3.5 w-3.5" />} label={t("profile.city")} value={[business.city, business.state].filter(Boolean).join(", ")} />}
+        <Row icon={<Mail className="h-3.5 w-3.5" />} label={t("profile.email")} value={me.email} />
+      </dl>
+    </section>
+  );
+}
+
+/** A Bishop (or anyone without an organization): only their own data. */
+function PersonCard({ me }: { me: User }) {
+  const { t } = useTranslation();
+  return (
+    <section className="rounded-md border border-border bg-surface">
+      <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
+        <div>
+          <h2 className="text-base font-semibold">{me.full_name}</h2>
+          {me.title && <p className="mt-0.5 text-xs text-muted-foreground">{me.title}</p>}
+        </div>
+        <span className="rounded-[4px] border border-border px-1.5 py-0.5 text-[11px] text-muted-foreground">{t(`roles.${me.role}`)}</span>
+      </div>
+      <dl className="grid gap-4 px-5 py-4 text-sm sm:grid-cols-2">
+        <Row icon={<Mail className="h-3.5 w-3.5" />} label={t("profile.email")} value={me.email} />
+      </dl>
+    </section>
+  );
+}
+
+/** An owner: the people of the business (GET /businesses/{id}/team), active or invited. */
+function BusinessTeamSection({ me }: { me: User }) {
+  const { t } = useTranslation();
+  const teamQ = useBusinessTeam(me.business_id ?? undefined);
+  const team = (teamQ.data ?? []).filter((m) => m.state !== "inactive");
+  return (
+    <section>
+      <h2 className="mb-3 text-sm font-semibold">{t("profile.business_team_title")}</h2>
+      {teamQ.isLoading ? (
+        <Skeleton className="h-16 rounded-md" />
+      ) : team.length === 0 ? (
+        <p className="rounded-md border border-dashed border-border bg-surface p-4 text-sm text-muted-foreground">{t("profile.business_team_empty")}</p>
+      ) : (
+        <ul className="divide-y divide-border rounded-md border border-border bg-surface">
+          {team.map((m) => (
+            <li key={m.id} className="flex flex-wrap items-center gap-3 px-5 py-3">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary font-display text-xs font-semibold text-primary-foreground">{initials(m.name)}</span>
+              <div className="min-w-0 flex-1">
+                <p className="flex flex-wrap items-center gap-2 text-sm font-medium">
+                  {m.name}
+                  {m.user_id === me.id && <span className="text-xs font-normal text-muted-foreground">{t("profile.you")}</span>}
+                </p>
+                <p className="truncate text-xs text-muted-foreground">{[m.role, m.email].filter(Boolean).join(" · ")}</p>
+              </div>
+              <UserStatusBadge status={m.state} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 
