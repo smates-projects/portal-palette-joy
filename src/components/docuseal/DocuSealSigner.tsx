@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Download, PenLine } from "lucide-react";
-import { useContractSigningPoll, useDeclineContract, useOpenContract, useRefreshSigning, useSignContract } from "@/lib/api/hooks";
+import { useContractSigningPoll, useDeclineContract, useMySignature, useOpenContract, useRefreshSigning, useSignContract } from "@/lib/api/hooks";
 import type { Contract, ContractLanguage, ContractSignature } from "@/lib/api/types";
 import { contractTextIn } from "@/lib/contracts/language";
 import { formatDate } from "@/lib/format";
@@ -34,6 +34,13 @@ export function DocuSealSigner(props: { contract: Contract; party: "owner" | "sm
   const [signature, setSignature] = useState<ContractSignature | null>(null);
   const [missing, setMissing] = useState(false);
   const [embedSrc, setEmbedSrc] = useState<string | null>(null);
+  // "Mi firma": with a saved signature the main action signs with it; "Usar otra firma" opens the pad.
+  const savedQ = useMySignature();
+  const saved = savedQ.data ?? null;
+  const [useOther, setUseOther] = useState(false);
+  const [consent, setConsent] = useState(false);
+  const [saveNew, setSaveNew] = useState(false);
+  const withSaved = !!saved && !useOther;
   const shown = signed ? (me?.signature ?? signature) : null;
   const others = props.contract.signers.filter((s) => s.party !== props.party).map((s) => s.name);
   // The text in the language of the reader's "ES | EN" toggle (Spanish when the English one is missing).
@@ -70,13 +77,22 @@ export function DocuSealSigner(props: { contract: Contract; party: "owner" | "sm
   const fail = (e?: unknown) => {
     const code = e instanceof Error ? ((e as Error & { code?: string }).code ?? e.message) : "";
     const detail = e instanceof Error ? (e as Error & { detail?: string | null }).detail ?? "" : "";
-    if (code === "acknowledgment_required") toast.error(t(`entry.errors.${code}`));
+    if (code === "signature_not_saved") { setUseOther(true); void savedQ.refetch(); toast.error(t("intake.docuseal.saved_missing")); }
+    else if (code === "acknowledgment_required") toast.error(t(`entry.errors.${code}`));
     else if (code === "waiting_period") toast.error(t("entry.errors.waiting_period", { date: /^\d{4}-\d{2}-\d{2}/.test(detail) ? formatDate(detail, i18n.language) : detail }));
     else toast.error(t("intake.docuseal.t_error"));
   };
   const doSign = () => {
+    if (withSaved) {
+      if (!consent) return setMissing(true);
+      return sign.mutate({ contractId: props.contract.id, options: { use_saved_signature: true } }, {
+        onSuccess: () => { setSigned(true); toast.success(t("intake.docuseal.t_signed", { name: props.contract.name })); },
+        onError: fail,
+      });
+    }
     if (!signature) return setMissing(true);
-    sign.mutate({ contractId: props.contract.id, signature }, {
+    const canSave = saveNew && (signature.kind === "drawn" || signature.kind === "uploaded");
+    sign.mutate({ contractId: props.contract.id, signature, options: canSave ? { save_signature: true } : undefined }, {
       onSuccess: () => { setSigned(true); toast.success(t("intake.docuseal.t_signed", { name: props.contract.name })); },
       onError: fail,
     });
@@ -147,7 +163,7 @@ export function DocuSealSigner(props: { contract: Contract; party: "owner" | "sm
             ) : (
               <div className="mt-6">
                 <div className="flex h-14 items-end rounded-t-[4px] border-2 border-b-0 border-dashed border-gold bg-gold/10 px-3 pb-1 text-foreground">
-                  {signature ? <img src={signature.image_url} alt="" className="h-12 max-w-full object-contain object-left" /> : <span className="inline-flex items-center gap-1.5 pb-1 font-medium"><PenLine className="h-3.5 w-3.5" />{t("intake.docuseal.field")}</span>}
+                  {withSaved ? <img src={saved.image_url} alt={t("intake.docuseal.saved_alt")} className="h-12 max-w-full object-contain object-left" /> : signature ? <img src={signature.image_url} alt="" className="h-12 max-w-full object-contain object-left" /> : <span className="inline-flex items-center gap-1.5 pb-1 font-medium"><PenLine className="h-3.5 w-3.5" />{t("intake.docuseal.field")}</span>}
                 </div>
                 <div className="border-t border-foreground/60 pt-1 text-[11px] text-foreground">{props.signerName}</div>
               </div>
@@ -176,13 +192,35 @@ export function DocuSealSigner(props: { contract: Contract; party: "owner" | "sm
               <PrimaryButton onClick={doDecline} disabled={decline.isPending}>{t("intake.docuseal.decline_confirm")}</PrimaryButton>
             </div>
           </div>
+        ) : withSaved ? (
+          <div className="space-y-3">
+            <label className="flex items-start gap-2 text-sm">
+              <input type="checkbox" checked={consent} onChange={(e) => { setConsent(e.target.checked); if (e.target.checked) setMissing(false); }} className="mt-0.5 h-4 w-4 accent-primary" />
+              <span>{t("intake.docuseal.saved_consent")}</span>
+            </label>
+            {missing && !consent && <p className="text-xs text-status-danger-fg">{t("intake.docuseal.consent_required")}</p>}
+            <div className="flex flex-col-reverse gap-2 border-t border-border pt-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-wrap gap-4">
+                <button onClick={() => setDeclining(true)} className="text-sm text-muted-foreground hover:text-foreground hover:underline">{t("intake.docuseal.decline")}</button>
+                <button onClick={() => { setUseOther(true); setMissing(false); }} className="text-sm text-link hover:underline">{t("intake.docuseal.use_other")}</button>
+              </div>
+              <PrimaryButton onClick={doSign} disabled={sign.isPending || !consent}>{t("intake.docuseal.sign_saved")}</PrimaryButton>
+            </div>
+          </div>
         ) : (
           <div className="space-y-3">
             <SignaturePad signerName={props.signerName} onChange={(s) => { setSignature(s); if (s) setMissing(false); }} />
             {missing && !signature && <p className="text-xs text-status-danger-fg">{t("intake.docuseal.sig_required")}</p>}
+            <label className="flex items-start gap-2 text-sm">
+              <input type="checkbox" checked={saveNew} onChange={(e) => setSaveNew(e.target.checked)} className="mt-0.5 h-4 w-4 accent-primary" />
+              <span>{t("intake.docuseal.save_for_next")}</span>
+            </label>
             <p className="text-xs text-muted-foreground">{t("intake.docuseal.sig_consent")}</p>
             <div className="flex flex-col-reverse gap-2 border-t border-border pt-3 sm:flex-row sm:items-center sm:justify-between">
-              <button onClick={() => setDeclining(true)} className="text-sm text-muted-foreground hover:text-foreground hover:underline">{t("intake.docuseal.decline")}</button>
+              <div className="flex flex-wrap gap-4">
+                <button onClick={() => setDeclining(true)} className="text-sm text-muted-foreground hover:text-foreground hover:underline">{t("intake.docuseal.decline")}</button>
+                {saved && <button onClick={() => { setUseOther(false); setMissing(false); }} className="text-sm text-link hover:underline">{t("intake.docuseal.use_saved")}</button>}
+              </div>
               <PrimaryButton onClick={doSign} disabled={sign.isPending}>{t("intake.docuseal.sign")}</PrimaryButton>
             </div>
           </div>
