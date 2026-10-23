@@ -781,6 +781,24 @@
       "t_enabled": "Activaste la verificación en dos pasos.",
       "t_disabled": "Desactivaste la verificación en dos pasos.",
       "error": "Intenta de nuevo en unos minutos."
+    },
+    "signature": {
+      "title": "Mi firma",
+      "hint": "Tu firma se usa solo cuando tú confirmas cada documento.",
+      "empty": "Todavía no guardaste una firma. Dibújala o súbela para firmar más rápido.",
+      "add": "Guardar mi firma",
+      "change": "Cambiar",
+      "delete": "Eliminar",
+      "delete_confirm": "Sí, eliminar",
+      "confirm_delete": "¿Eliminar tu firma guardada? Los documentos que ya firmaste no cambian.",
+      "save": "Guardar firma",
+      "cancel": "Cancelar",
+      "alt": "Tu firma guardada",
+      "updated": "Guardada el {{date}}",
+      "load_error": "No pudimos cargar tu firma.",
+      "t_saved": "Guardamos tu firma.",
+      "t_deleted": "Eliminamos tu firma guardada.",
+      "t_error": "No pudimos guardar el cambio. Prueba de nuevo."
     }
   },
   "report": {
@@ -3190,7 +3208,16 @@
       "embed_title": "Formulario de firma de DocuSeal, {{name}}",
       "embed_hint": "Firma en el formulario de DocuSeal. Esta ventana se cierra sola cuando termines.",
       "document_title": "Documento",
-      "not_signed_yet": "Todavía nadie lo firmó. Léelo con calma."
+      "not_signed_yet": "Todavía nadie lo firmó. Léelo con calma.",
+      "sign_saved": "Firmar con mi firma guardada",
+      "use_other": "Usar otra firma",
+      "use_saved": "Usar mi firma guardada",
+      "save_for_next": "Guardar esta firma para la próxima",
+      "saved_consent": "Confirmo que leí este documento y acepto firmarlo con mi firma guardada.",
+      "consent_required": "Marca la casilla para firmar.",
+      "saved_missing": "Ya no tienes una firma guardada. Firma con una nueva.",
+      "saved_alt": "Tu firma guardada",
+      "saved_signature": "Firma guardada"
     },
     "owner": {
       "question": "¿Qué te falta para empezar?",

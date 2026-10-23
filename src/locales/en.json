@@ -781,6 +781,24 @@
       "t_enabled": "You turned on two-step verification.",
       "t_disabled": "You turned off two-step verification.",
       "error": "Try again in a few minutes."
+    },
+    "signature": {
+      "title": "My signature",
+      "hint": "Your signature is used only when you confirm each document.",
+      "empty": "You haven't saved a signature yet. Draw or upload it to sign faster.",
+      "add": "Save my signature",
+      "change": "Change",
+      "delete": "Delete",
+      "delete_confirm": "Yes, delete",
+      "confirm_delete": "Delete your saved signature? Documents you already signed don't change.",
+      "save": "Save signature",
+      "cancel": "Cancel",
+      "alt": "Your saved signature",
+      "updated": "Saved on {{date}}",
+      "load_error": "We couldn't load your signature.",
+      "t_saved": "Your signature is saved.",
+      "t_deleted": "Your saved signature was deleted.",
+      "t_error": "We couldn't save the change. Try again."
     }
   },
   "report": {
@@ -3190,7 +3208,16 @@
       "embed_title": "DocuSeal signing form, {{name}}",
       "embed_hint": "Sign in the DocuSeal form. This window closes by itself when you finish.",
       "document_title": "Document",
-      "not_signed_yet": "Nobody has signed it yet. Take your time to read it."
+      "not_signed_yet": "Nobody has signed it yet. Take your time to read it.",
+      "sign_saved": "Sign with my saved signature",
+      "use_other": "Use another signature",
+      "use_saved": "Use my saved signature",
+      "save_for_next": "Save this signature for next time",
+      "saved_consent": "I confirm I read this document and agree to sign it with my saved signature.",
+      "consent_required": "Check the box to sign.",
+      "saved_missing": "You no longer have a saved signature. Sign with a new one.",
+      "saved_alt": "Your saved signature",
+      "saved_signature": "Saved signature"
     },
     "owner": {
       "question": "What is left before you start?",
