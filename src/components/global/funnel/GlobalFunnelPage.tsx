@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useLeads, useOrganizations, useUsers } from "@/lib/api/hooks";
+import { useCurrentUser, useLeads, useOrganizations, useUsers } from "@/lib/api/hooks";
 import { LEAD_STAGES } from "@/lib/api/types";
 import { ALL_OFFICES, officeIdForQuery, useOfficeScope } from "@/lib/office-scope";
 import { cn } from "@/lib/utils";
@@ -24,6 +24,7 @@ export function GlobalFunnelPage({ initialLeadId }: { initialLeadId?: string | u
   const leadsQ = useLeads(officeIdForQuery(scope));
   const orgsQ = useOrganizations();
   const usersQ = useUsers();
+  const meId = useCurrentUser().data?.id;
   const header = <GlobalHeader question={t("global.funnel.question")} />;
   const queries = [leadsQ, orgsQ, usersQ];
 
