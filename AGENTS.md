@@ -10,6 +10,7 @@
 <!-- LOVABLE:END -->
 
 ## Architecture rules
+- Scheduling day visibility stays in `src/components/calendar/scheduling-days.ts`; the dialog filters returned working days without extending the API availability window. Why: presentation changes must not alter free-slot calculations or requests.
 - All data goes through `src/lib/api/` repositories (mock now, http later via `VITE_API_MODE`); components only use the TanStack Query hooks in `src/lib/api/hooks.ts`, never seed data. Why: the real backend is a separate Laravel API and must be swappable.
 - Blocked/overdue are computed in `src/lib/api/computed.ts`, never stored as statuses. Why: they depend on dependencies and the fixed TODAY in `src/config/app.ts`.
 - No UI text in components: all copy lives in `src/locales/{es,en}.json`. Why: bilingual app.
