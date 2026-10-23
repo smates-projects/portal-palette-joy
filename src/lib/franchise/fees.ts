@@ -1,4 +1,4 @@
-import { FEES } from "@/config/economics";
+import { FEES } from "@/lib/api/mock/economics";
 
 const cents = (n: number) => Math.round(n * 100) / 100;
 
@@ -8,10 +8,13 @@ export interface ReportAmounts {
   total_due: number;
 }
 
-/** Fees of one monthly report: royalty and marketing fund are percentages of gross sales, in USD cents. */
-export function computeReportAmounts(grossSales: number): ReportAmounts {
-  const royalty = cents(grossSales * FEES.royalty_rate);
-  const marketing = cents(grossSales * FEES.marketing_fund_rate);
+/**
+ * Demo only (the mock's reports and preview): royalty and marketing fund as percentages of gross sales, in USD
+ * cents. Screens never bill in the browser: they show the API's report and POST /reports/preview.
+ */
+export function computeReportAmounts(grossSales: number, rates: { royalty_rate: number; marketing_fund_rate: number } = FEES): ReportAmounts {
+  const royalty = cents(grossSales * rates.royalty_rate);
+  const marketing = cents(grossSales * rates.marketing_fund_rate);
   return { royalty_amount: royalty, marketing_fund_amount: marketing, total_due: cents(royalty + marketing) };
 }
 

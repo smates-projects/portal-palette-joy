@@ -13,12 +13,6 @@ import { buildRecoveryRows, formatMonth, recoveryGap, sortByDecision } from "./r
 
 const MAX_OPPORTUNITIES = 5;
 
-/** Latest payback month among the investments, null when any of them is not recovering. */
-function latestPayback(investments: BishopInvestment[]): string | null {
-  const months = investments.map((i) => i.estimated_payback_month);
-  return months.length === 0 || months.some((m) => m === null) ? null : (months as string[]).sort().at(-1)!;
-}
-
 /** Home of the Business Bishop: how much he invested, how much came back and which businesses SM presents next. */
 export function BishopPortfolioPage() {
   const { t, i18n } = useTranslation();
@@ -60,7 +54,10 @@ export function BishopPortfolioPage() {
   const shares = [...new Set(investments.map((i) => i.current_share_pct))].sort((a, b) => b - a);
   // "Definitivo" only when every business he funds has its validated percentage; "Provisional" otherwise.
   const allFinal = investments.every((i) => !!i.split_final);
-  const payback = latestPayback(investments);
+  // The API's estimate for the whole portfolio and whether any real month was reported yet.
+  const payback = totals.estimated_payback_month ?? null;
+  const noReports = totals.recovery_status === "no_reports_yet";
+  const windowMonths = totals.payback_window_months;
   const money = (n: number) => formatUsd(n, lng);
   const compact = (n: number) => formatNumber(n, lng, { style: "currency", currency: "USD", notation: "compact", maximumFractionDigits: 1 });
 
@@ -72,8 +69,8 @@ export function BishopPortfolioPage() {
           <Metric label={t("bishop.portfolio.invested")} value={money(totals.invested)} sub={t("bishop.portfolio.invested_sub", { count: investments.length })} />
           <Metric
             label={t("bishop.portfolio.recovered")}
-            value={money(totals.recovered)}
-            sub={t("bishop.portfolio.recovered_sub", { pct: totals.recovered_pct })}
+            value={noReports ? t("bishop.portfolio.no_reports") : money(totals.recovered)}
+            sub={noReports ? t("bishop.portfolio.no_reports_sub") : t("bishop.portfolio.recovered_sub", { pct: totals.recovered_pct })}
           />
           <Metric
             label={t("bishop.portfolio.share")}
@@ -84,12 +81,15 @@ export function BishopPortfolioPage() {
           <Metric
             label={t("bishop.portfolio.payback")}
             value={payback ? formatMonth(payback, lng) : t("bishop.portfolio.payback_none")}
-            sub={payback ? t("bishop.portfolio.payback_sub") : t("bishop.portfolio.payback_none_sub")}
+            sub={payback && windowMonths ? t("bishop.portfolio.payback_sub", { months: windowMonths }) : t("bishop.portfolio.payback_none_sub")}
           />
         </section>
 
-        {/* 2. Projected vs actual recovery */}
+        {/* 2. Projected vs actual recovery (nothing to draw until a real month is reported) */}
         <Panel title={t("bishop.portfolio.chart_title")}>
+          {noReports ? (
+            <div className="px-4 pb-4"><EmptyBlock title={t("bishop.portfolio.no_reports")} body={t("bishop.portfolio.no_reports_sub")} /></div>
+          ) : (
           <div className="px-4 pb-4">
             <p className="text-sm text-muted-foreground">
               {gap === null
@@ -144,6 +144,7 @@ export function BishopPortfolioPage() {
             </details>
             <p className="mt-3 text-xs text-muted-foreground">{t("bishop.portfolio.chart_note")}</p>
           </div>
+          )}
         </Panel>
 
         {/* 3. Investments */}
@@ -175,8 +176,12 @@ export function BishopPortfolioPage() {
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums">{money(i.invested)}</td>
                     <td className="w-56 px-4 py-3">
-                      <p className="tabular-nums">{money(i.recovered)} <span className="text-xs text-muted-foreground">({i.recovered_pct}%)</span></p>
-                      <div className="mt-1"><ProgressBar value={i.recovered_pct} label={t("bishop.portfolio.recovered")} /></div>
+                      {i.recovery_status === "no_reports_yet" ? (
+                        <p className="text-muted-foreground">{t("bishop.portfolio.no_reports")}</p>
+                      ) : (<>
+                        <p className="tabular-nums">{money(i.recovered)} <span className="text-xs text-muted-foreground">({i.recovered_pct}%)</span></p>
+                        <div className="mt-1"><ProgressBar value={i.recovered_pct} label={t("bishop.portfolio.recovered")} /></div>
+                      </>)}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums">
                       {i.current_share_pct}%

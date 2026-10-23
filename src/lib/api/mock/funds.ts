@@ -112,6 +112,8 @@ export function createFunds(d: Deps) {
   const toFunds = (l: Lead, r: FundRecord): BishopFunds => {
     const payments = paymentsOf(r.business_id);
     const received = confirmedTotal(payments);
+    const toConfirm = payments.filter((p) => p.status === "reported").reduce((s, p) => s + p.amount, 0);
+    const remaining = Math.max(0, r.total - received);
     return {
       business_id: r.business_id,
       lead_id: l.id,
@@ -120,7 +122,11 @@ export function createFunds(d: Deps) {
       bishop_name: db.users.find((u) => u.id === l.bishop_user_id)?.full_name ?? "",
       total: r.total,
       received,
-      to_confirm: payments.filter((p) => p.status === "reported").reduce((s, p) => s + p.amount, 0),
+      to_confirm: toConfirm,
+      // As the API: still missing, what can still be reported, and the confirmed share in percent.
+      remaining,
+      reportable: Math.max(0, remaining - toConfirm),
+      received_pct: r.total ? Math.min(100, Math.round((received / r.total) * 100)) : 0,
       status: fundsStatus(r.total, received),
       completed_on: fundsCompletedOn(r.total, payments),
       payments,

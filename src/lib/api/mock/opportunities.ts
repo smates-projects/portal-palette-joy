@@ -1,6 +1,6 @@
 // Bishop opportunities in the mock: born from the lead once NDA + MOU are signed by both. Also the framework agreement,
 // the tripartite contract and what SM sees (who viewed, who passed, who accepted, release).
-import { PROFIT_SPLIT } from "@/config/economics";
+import { PROFIT_SPLIT } from "./economics";
 import { todayIso, nowIso } from "@/lib/clock";
 import { projectYears } from "@/lib/bishop/split";
 import { opportunityPhase, tripartiteState, acceptBlock } from "@/lib/leads/opportunity";
@@ -125,20 +125,26 @@ export function createOpportunities(d: Deps) {
     const mine = l.bishop_user_id === u.id;
     const { name: _name, ...declared } = l.business;
     const mid = REVENUE_MID[l.business.revenue_range];
+    // Provisional: franchise fees grow with the size of the business. Same split as everywhere (PROFIT_SPLIT).
+    const projection = projectYears([1, 2, 3, 4, 5].map((year) => {
+      const franchises = Math.round((year * (year + 3)) * (mid / 1_000_000 + 0.6));
+      const revenue = Math.round(franchises * mid * 0.08 / 1000) * 1000;
+      return { year, franchises, revenue, result: Math.round(revenue * 0.36 / 1000) * 1000 };
+    }));
     return {
       ...base,
+      // What the API sends with the projection: SM's share, the period and the totals.
+      sm_share_pct: Math.round(PROFIT_SPLIT.sm_from_year2 * 100),
+      projection_years: projection.length,
+      projection_total_bishop: projection.reduce((sum, p) => sum + p.bishop, 0),
+      projection_total_sm: projection.reduce((sum, p) => sum + p.sm, 0),
       declared,
       // A business added by hand may have no assessment yet: the Bishop sees an empty result.
       result: l.result ?? { readiness: "on_track", band: "track", score: 0, eligible_program: false, eligibility_gaps: [], blocks: [], strengths: [], priorities: [] },
       know_how_example: l.know_how_example,
       verified: docs.filter((x) => x.required).map((x) => ({ name: x.name, fact: x.state === "reviewed" ? x.verified_fact ?? null : null })),
       checklist: { nda_signed: s.nda_signed, mou_signed: s.mou_signed, required_total: s.required_total, uploaded: s.uploaded, accepted: s.accepted, approved: !!s.approved_at },
-      // Provisional: franchise fees grow with the size of the business. Same split as everywhere (PROFIT_SPLIT).
-      projection: projectYears([1, 2, 3, 4, 5].map((year) => {
-        const franchises = Math.round((year * (year + 3)) * (mid / 1_000_000 + 0.6));
-        const revenue = Math.round(franchises * mid * 0.08 / 1000) * 1000;
-        return { year, franchises, revenue, result: Math.round(revenue * 0.36 / 1000) * 1000 };
-      })),
+      projection,
       files: mine
         ? docs.filter((x) => x.rule_id && BISHOP_FILE_RULES.includes(x.rule_id) && x.state === "reviewed" && x.file_name).map((x) => ({ id: x.id, name: x.name, file_name: x.file_name! }))
         : [],

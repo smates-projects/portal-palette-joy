@@ -108,7 +108,7 @@ function DistributionBody({ dist, readOnly }: { dist: Distribution; readOnly: bo
                     </div>
                     {p.status === "paid" && (
                       <p className="mt-0.5 flex flex-wrap gap-x-2 text-muted-foreground">
-                        <span>{t("funds.dist.paid_on", { date: formatDate(p.paid_on ?? todayIso(), lng), method: t(`funds.method.${p.method ?? "other"}`) })}</span>
+                        <span>{t(p.paid_on ? "funds.dist.paid_on" : "funds.dist.paid_no_date", { date: p.paid_on ? formatDate(p.paid_on, lng) : "", method: t(`funds.method.${p.method ?? "other"}`, { defaultValue: t("funds.method.other") }) })}</span>
                         {p.reference && <span>{t("funds.reference", { ref: p.reference })}</span>}
                         {p.receipt && <ReceiptLink receipt={p.receipt} />}
                       </p>

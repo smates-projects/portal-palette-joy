@@ -1,5 +1,4 @@
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { FileText } from "lucide-react";
 import { useState } from "react";
 import { useBishopAgreements, useCurrentUser } from "@/lib/api/hooks";
@@ -90,15 +89,17 @@ export function AgreementsPage() {
                           <button onClick={() => setViewing(a.contract!)} aria-label={t("bishop.agreements.open_document_for", { name: a.name })} className={secondaryButton}>
                             <FileText className="mr-1.5 h-3.5 w-3.5" />{t("bishop.agreements.open_document")}
                           </button>
-                        ) : a.has_file ? (
-                          // The mock has no real file: it only says that the document would download.
-                          <button
-                            onClick={() => toast.info(t("bishop.agreements.t_download", { file: a.file_name ?? a.name }))}
+                        ) : a.file_url ? (
+                          // The stored agreement (GET /files/{id}/download). Without a link the button stays disabled.
+                          <a
+                            href={a.file_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             aria-label={t("bishop.agreements.open_document_for", { name: a.name })}
-                            className={secondaryButton}
+                            className={`${secondaryButton} inline-flex items-center whitespace-nowrap`}
                           >
                             <FileText className="mr-1.5 h-3.5 w-3.5" />{t("bishop.agreements.open_document")}
-                          </button>
+                          </a>
                         ) : (
                           // A disabled button gets no hover events, so the tooltip hangs from a focusable wrapper.
                           <Tooltip>

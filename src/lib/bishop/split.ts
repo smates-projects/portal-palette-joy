@@ -1,4 +1,5 @@
-import { PROFIT_SPLIT } from "@/config/economics";
+// Demo only: the mock's split and projection (the API computes them for every screen).
+import { PROFIT_SPLIT } from "@/lib/api/mock/economics";
 import type { IsoDate, IsoMonth, ProjectionYear, RecoveryPoint } from "@/lib/api/types";
 import { addDaysIso } from "@/lib/api/program";
 

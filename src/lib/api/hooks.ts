@@ -682,6 +682,15 @@ export const useFranchisorSummary = (businessId?: string) =>
 export const useFranchiseReports = (franchiseId?: string) =>
   useQuery({ queryKey: ["franchises", "reports", franchiseId ?? "all"], queryFn: () => api.franchises.listReports(franchiseId) });
 /** Franchisee submits a report: fees are computed from gross sales. */
+/** POST /franchises/{id}/reports/preview: what the typed sales would bill (null amount = nothing to ask yet). */
+export const useReportPreview = (franchiseId: string | undefined, grossSales: number | null) =>
+  useQuery({
+    queryKey: ["franchises", "preview", franchiseId, grossSales],
+    queryFn: () => api.franchises.previewReport(franchiseId!, grossSales!),
+    enabled: !!franchiseId && grossSales !== null && grossSales > 0,
+    placeholderData: keepPreviousData,
+    retry: false,
+  });
 export const useSubmitFranchiseReport = () =>
   useNetworkMutation((v: { franchiseId: string } & SubmitReportInput) => api.franchises.submitReport(v.franchiseId, { month: v.month, gross_sales: v.gross_sales }), ["franchises", "franchisee"]);
 /** SupportTicket[] of the franchises in scope (franchisor, SM). A franchisee uses useFranchiseeTickets. */

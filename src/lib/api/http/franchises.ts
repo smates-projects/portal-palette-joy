@@ -6,6 +6,7 @@ import type {
   FranchiseReport,
   FranchiseSummary,
   FranchisorSummary,
+  ReportPreview,
   SupportTicket,
   Uuid,
 } from "../types";
@@ -39,6 +40,9 @@ export function createHttpFranchisesRepository(client: HttpClient): FranchisesRe
         month: input.month,
         gross_sales: input.gross_sales,
       }),
+
+    previewReport: (franchiseId, grossSales) =>
+      client.post<ReportPreview>(`${franchisePath(franchiseId)}/reports/preview`, { gross_sales: grossSales }),
 
     listTickets: () => client.get<SupportTicket[]>("/tickets"),
   };

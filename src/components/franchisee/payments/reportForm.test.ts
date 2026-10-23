@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_MONTHLY_SALES, parseSales, validateSales } from "./reportForm";
+import { parseSales, validateSales } from "./reportForm";
 
 describe("parseSales", () => {
   it("reads plain numbers, thousands separators and a dollar sign", () => {
@@ -26,6 +26,8 @@ describe("validateSales", () => {
     expect(validateSales("  ")).toBe("required");
     expect(validateSales("doce")).toBe("invalid");
     expect(validateSales("0")).toBe("not_positive");
-    expect(validateSales(String(MAX_MONTHLY_SALES + 1))).toBe("too_large");
+    // The limit is the API's (max_monthly_sales); without it only the API checks it.
+    expect(validateSales("5000001", 5_000_000)).toBe("too_large");
+    expect(validateSales("5000001")).toBeNull();
   });
 });

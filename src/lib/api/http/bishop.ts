@@ -56,9 +56,15 @@ const toDetail = (detail: OpportunityDetail): OpportunityDetail => ({
   verified: detail.verified,
   checklist: detail.checklist,
   projection: detail.projection,
+  // Each file with its download link (url), as the API sends it.
   files: detail.files,
   tripartite: detail.tripartite,
   ...(detail.binding !== undefined ? { binding: detail.binding } : {}),
+  // SM's share and the projection's period and totals: the API computes them.
+  ...(detail.sm_share_pct !== undefined ? { sm_share_pct: detail.sm_share_pct } : {}),
+  ...(detail.projection_years !== undefined ? { projection_years: detail.projection_years } : {}),
+  ...(detail.projection_total_bishop !== undefined ? { projection_total_bishop: detail.projection_total_bishop } : {}),
+  ...(detail.projection_total_sm !== undefined ? { projection_total_sm: detail.projection_total_sm } : {}),
 });
 
 const toInvestment = (investment: BishopInvestmentResponse): BishopInvestment => ({
@@ -73,9 +79,14 @@ const toInvestment = (investment: BishopInvestmentResponse): BishopInvestment =>
   current_share_pct: investment.current_share_pct,
   // "Definitivo" once SM closed the validation; absent until the API sends it (read as provisional).
   ...(investment.split_final !== undefined ? { split_final: investment.split_final } : {}),
+  ...(investment.split !== undefined ? { split: investment.split } : {}),
   estimated_payback_month: investment.estimated_payback_month,
   franchises: investment.franchises,
   recovery: investment.recovery,
+  // "no_reports_yet": nothing reported, so there is nothing recovered to draw.
+  ...(investment.recovery_status !== undefined ? { recovery_status: investment.recovery_status } : {}),
+  // The SM consultant of the business ("Agendar con..."): kept so the Bishop can schedule with him.
+  ...(investment.consultant !== undefined ? { consultant: investment.consultant } : {}),
 });
 
 const opportunityPath = (id: Uuid) => `/opportunities/${encodeURIComponent(id)}`;

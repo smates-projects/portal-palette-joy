@@ -26,6 +26,9 @@ const toPayment = (payment: FundPaymentResponse): FundPayment => ({
   method: payment.method,
   reference: payment.reference,
   receipt: toReceipt(payment.receipt),
+  // The stored receipt and its download link (SM office and the Bishop only; null for anyone else).
+  receipt_file_id: payment.receipt_file_id ?? payment.receipt?.file_id ?? null,
+  receipt_url: payment.receipt_url ?? null,
   status: payment.status,
   reported_by: payment.reported_by,
   created_at: payment.created_at,
@@ -41,6 +44,10 @@ const toFunds = (funds: BishopFundsResponse): BishopFunds => ({
   total: funds.total,
   received: funds.received,
   to_confirm: funds.to_confirm,
+  // Still missing, still reportable and the confirmed share, as the API computes them.
+  ...(funds.remaining !== undefined ? { remaining: funds.remaining } : {}),
+  ...(funds.reportable !== undefined ? { reportable: funds.reportable } : {}),
+  ...(funds.received_pct !== undefined ? { received_pct: funds.received_pct } : {}),
   status: funds.status,
   completed_on: funds.completed_on,
   payments: funds.payments.map(toPayment),

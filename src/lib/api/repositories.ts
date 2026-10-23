@@ -660,6 +660,11 @@ export interface FranchisesRepository {
   listReports(franchiseId?: Uuid): Promise<FranchiseReport[]>;
   /** Franchisee only, own unit, a month that is due. Royalty and marketing fund are computed from gross sales. */
   submitReport(franchiseId: Uuid, input: SubmitReportInput): Promise<FranchiseReport>;
+  /**
+   * POST /franchises/{id}/reports/preview { gross_sales }: what that month would bill, computed by the API with the
+   * unit's rates (nothing is stored). invalid_amount (<= 0), invalid_over_max_sales.
+   */
+  previewReport(franchiseId: Uuid, grossSales: number): Promise<ReportPreview>;
   /** Tickets from the franchises in scope, newest first. */
   listTickets(): Promise<SupportTicket[]>;
 }

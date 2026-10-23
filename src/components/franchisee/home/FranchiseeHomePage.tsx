@@ -3,7 +3,6 @@ import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Check, Circle } from "lucide-react";
-import { FEES } from "@/config/economics";
 import { todayIso } from "@/lib/clock";
 import { useFranchiseeChecklist, useFranchiseeHome, useFranchiseeTasks, useFranchiseeTickets, useSetFranchiseeTaskDone } from "@/lib/api/hooks";
 import type { FranchiseTask, TicketState } from "@/lib/api/types";
@@ -83,9 +82,9 @@ export function FranchiseeHomePage() {
             sub={lastReport ? formatMonth(lastReport.month, lng) : t("franchisee.home.no_report_sub")}
           />
           <Metric
-            label={t("franchisee.home.royalty", { pct: Math.round(FEES.royalty_rate * 100) })}
+            label={t("franchisee.home.royalty", { pct: home.royalty_pct ?? franchise.royalty_pct ?? "-" })}
             value={lastReport?.royalty_amount != null ? formatUsd(lastReport.royalty_amount, lng) : t("franchisee.home.no_report")}
-            sub={lastReport ? t("franchisee.home.royalty_sub", { pct: Math.round(FEES.marketing_fund_rate * 100) }) : undefined}
+            sub={lastReport ? t("franchisee.home.royalty_sub", { pct: home.marketing_fund_pct ?? franchise.marketing_fund_pct ?? "-" }) : undefined}
           />
           <Metric
             label={t(opening ? "franchisee.home.opening_pct" : "franchisee.home.standards")}

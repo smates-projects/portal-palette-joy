@@ -91,7 +91,8 @@ export function OpportunitiesPage() {
                     <th scope="col" className="px-4 py-2 text-right font-medium">{t("bishop.opportunities.col_score")}</th>
                     <th scope="col" className="px-4 py-2 text-right font-medium">{t("bishop.opportunities.col_investment")}</th>
                     <th scope="col" className="px-4 py-2 text-right font-medium">
-                      <span className="inline-flex items-center gap-2">{t("bishop.opportunities.col_share")}<ProvisionalTag /></span>
+                      {/* "Provisional" only while some split shown is still provisional (each row says final or not). */}
+                      <span className="inline-flex items-center gap-2">{t("bishop.opportunities.col_share")}{items.some((o) => !o.split_final) && <ProvisionalTag />}</span>
                     </th>
                     <th scope="col" className="px-4 py-2 font-medium">{t("bishop.opportunities.col_decision")}</th>
                   </tr>
@@ -120,7 +121,7 @@ export function OpportunitiesPage() {
             </>
           )}
         </Panel>
-        <p className="mt-3 text-xs text-muted-foreground">{t("bishop.opportunities.share_note")}</p>
+        {items.some((o) => !o.split_final) && <p className="mt-3 text-xs text-muted-foreground">{t("bishop.opportunities.share_note")}</p>}
       </div>
     </Screen>
   );

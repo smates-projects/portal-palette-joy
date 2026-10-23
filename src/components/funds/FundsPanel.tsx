@@ -36,18 +36,21 @@ export function FundsBody({ funds, mode }: { funds: BishopFunds; mode: "sm" | "b
   const record = useRecordFundPayment();
   const report = useReportFundPayment();
   const [reporting, setReporting] = useState(false);
-  const remaining = Math.max(0, funds.total - funds.received);
-  const reportable = Math.max(0, remaining - funds.to_confirm);
-  const pct = funds.total ? Math.min(100, Math.round((funds.received / funds.total) * 100)) : 0;
+  // What is still missing, what can still be reported and the confirmed share: the API's numbers.
+  const remaining = funds.remaining ?? 0;
+  const reportable = funds.reportable ?? 0;
+  const pct = Math.min(100, funds.received_pct ?? 0);
   const fail = () => toast.error(t("funds.t_error"));
 
+  // Undo records the same payment again. A receipt cannot travel back (its file stays on the server), so a payment
+  // with a receipt is removed without undo instead of coming back without it.
   const removePayment = (p: FundPayment) =>
     remove.mutate({ businessId: funds.business_id, paymentId: p.id }, {
       onSuccess: () =>
-        toast.success(t("funds.t_removed"), {
+        toast.success(t("funds.t_removed"), p.receipt ? undefined : {
           action: {
             label: t("funds.undo"),
-            onClick: () => record.mutate({ businessId: funds.business_id, input: { amount: p.amount, paid_on: p.paid_on, method: p.method, reference: p.reference, receipt: p.receipt } }, { onError: fail }),
+            onClick: () => record.mutate({ businessId: funds.business_id, input: { amount: p.amount, paid_on: p.paid_on, method: p.method, reference: p.reference, receipt: null } }, { onError: fail }),
           },
         }),
       onError: fail,
@@ -92,14 +95,14 @@ export function FundsBody({ funds, mode }: { funds: BishopFunds; mode: "sm" | "b
             <li key={p.id} className="px-4 py-2.5 text-sm">
               <div className="flex flex-wrap items-center gap-2">
                 <Amount value={p.amount} className="font-semibold" />
-                <span className="text-muted-foreground">· {formatDate(p.paid_on, lng)} · {t(`funds.method.${p.method}`)}</span>
+                <span className="text-muted-foreground">· {formatDate(p.paid_on, lng)} · {t(`funds.method.${p.method}`, { defaultValue: t("funds.method.other") })}</span>
                 <span className="ml-auto">
                   {p.status === "confirmed" ? <Badge tone="success">{t("funds.payment_confirmed")}</Badge> : <Badge tone="warning">{t("funds.payment_reported")}</Badge>}
                 </span>
               </div>
               <p className="mt-0.5 flex flex-wrap gap-x-2 text-xs text-muted-foreground">
                 {p.reference && <span>{t("funds.reference", { ref: p.reference })}</span>}
-                {p.receipt ? <ReceiptLink receipt={p.receipt} /> : <span>{t("funds.no_receipt")}</span>}
+                {p.receipt ? <ReceiptLink receipt={p.receipt} url={p.receipt_url} /> : <span>{t("funds.no_receipt")}</span>}
                 <span>{t(p.reported_by === "bishop" ? "funds.by_bishop" : "funds.by_sm")}</span>
               </p>
               {mode === "sm" && !funds.program_started && (

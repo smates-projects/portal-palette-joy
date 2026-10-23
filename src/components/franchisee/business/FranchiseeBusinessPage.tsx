@@ -1,7 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { FEES } from "@/config/economics";
 import { useFranchiseeHome, useFranchiseeTeam } from "@/lib/api/hooks";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatNumber } from "@/lib/format";
 import { EmptyBlock, ErrorBlock, LoadingBlocks, Panel, Screen, Tag } from "@/components/bishop/ui";
 
 /** Data of the franchise unit as the franchisor has it, the terms the unit works under, and its team. */
@@ -36,9 +35,11 @@ export function FranchiseeBusinessPage() {
     },
     { label: t("franchisee.business.manual_version"), value: manualVersion },
   ];
+  // The unit's rates as the API sends them (its agreement); "-" while unknown.
+  const pctOf = (n: number | undefined) => (n === undefined ? "-" : `${formatNumber(n, lng)}%`);
   const terms: { label: string; value: string }[] = [
-    { label: t("franchisee.business.royalty"), value: `${Math.round(FEES.royalty_rate * 100)}%` },
-    { label: t("franchisee.business.marketing"), value: `${Math.round(FEES.marketing_fund_rate * 100)}%` },
+    { label: t("franchisee.business.royalty"), value: pctOf(homeQ.data.royalty_pct ?? franchise.royalty_pct) },
+    { label: t("franchisee.business.marketing"), value: pctOf(homeQ.data.marketing_fund_pct ?? franchise.marketing_fund_pct) },
   ];
 
   return (

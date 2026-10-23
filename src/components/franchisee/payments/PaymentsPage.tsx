@@ -1,11 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { FEES } from "@/config/economics";
 import { todayIso } from "@/lib/clock";
-import { useFranchiseeHome, useFranchiseReports, useSubmitFranchiseReport } from "@/lib/api/hooks";
+import { useFranchiseeHome, useFranchiseReports, useReportPreview, useSubmitFranchiseReport } from "@/lib/api/hooks";
 import type { ReportStatus } from "@/lib/api/types";
-import { computeReportAmounts } from "@/lib/franchise/fees";
 import { formatDate, formatUsd } from "@/lib/format";
 import { formatMonth } from "@/components/bishop/portfolio/recovery";
 import { EmptyBlock, ErrorBlock, LoadingBlocks, Panel, primaryButton, Screen, Tag, type Tone } from "@/components/bishop/ui";
@@ -30,6 +28,17 @@ export function PaymentsPage() {
   const [sales, setSales] = useState("");
   const [touched, setTouched] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  // The amounts shown before sending are the API's (POST /reports/preview), asked once the typing pauses.
+  const maxSales = homeQ.data?.max_monthly_sales;
+  const error = validateSales(sales, maxSales);
+  const typed = error === null ? parseSales(sales) : null;
+  const [amount, setAmount] = useState<number | null>(null);
+  useEffect(() => {
+    const id = setTimeout(() => setAmount(typed), 300);
+    return () => clearTimeout(id);
+  }, [typed]);
+  const previewQ = useReportPreview(homeQ.data?.franchise.id, amount);
+  const fees = typed !== null && amount === typed && previewQ.data?.gross_sales === typed ? previewQ.data : null;
 
   if (homeQ.isError || reportsQ.isError)
     return (
@@ -50,16 +59,15 @@ export function PaymentsPage() {
   const dueReports = reports.filter((r) => r.status === "due").sort((a, b) => a.month.localeCompare(b.month));
   const month = dueReports.find((r) => r.month === chosenMonth)?.month ?? dueReports[0]?.month;
   const dueReport = dueReports.find((r) => r.month === month);
-  const error = validateSales(sales);
-  const amount = error === null ? parseSales(sales) : null;
-  const fees = amount === null ? null : computeReportAmounts(amount);
-  const royaltyPct = Math.round(FEES.royalty_rate * 100);
-  const marketingPct = Math.round(FEES.marketing_fund_rate * 100);
+  // The unit's rates as the API sends them; "-" while unknown.
+  const royaltyPct = homeQ.data.royalty_pct ?? homeQ.data.franchise.royalty_pct ?? "-";
+  const marketingPct = homeQ.data.marketing_fund_pct ?? homeQ.data.franchise.marketing_fund_pct ?? "-";
+  const previewError = previewQ.error instanceof Error && previewQ.error.message === "invalid_over_max_sales" ? "too_large" : null;
 
   const send = () => {
-    if (!month || amount === null) return;
+    if (!month || typed === null || !fees) return;
     submit.mutate(
-      { franchiseId: homeQ.data.franchise.id, month, gross_sales: amount },
+      { franchiseId: homeQ.data.franchise.id, month, gross_sales: typed },
       {
         onSuccess: () => {
           toast.success(t("franchisee.payments.t_sent", { month: formatMonth(month, lng) }));
@@ -133,7 +141,8 @@ export function PaymentsPage() {
               onSubmit={(e) => {
                 e.preventDefault();
                 setTouched(true);
-                if (error === null) setConfirming(true);
+                // Sent only once the API answered what it bills (the confirmation shows that total).
+                if (error === null && fees) setConfirming(true);
               }}
             >
               <div className="space-y-1.5">
@@ -158,13 +167,13 @@ export function PaymentsPage() {
                   autoComplete="off"
                   placeholder="45,000"
                   value={sales}
-                  aria-invalid={touched && error !== null}
-                  aria-describedby={touched && error !== null ? "report-sales-error" : "report-sales-help"}
+                  aria-invalid={(touched && error !== null) || previewError !== null}
+                  aria-describedby={(touched && error !== null) || previewError ? "report-sales-error" : "report-sales-help"}
                   onChange={(e) => setSales(e.target.value)}
                   onBlur={() => setTouched(true)}
                 />
-                {touched && error !== null ? (
-                  <p id="report-sales-error" className="text-xs text-status-danger-fg">{t(`franchisee.payments.error_${error}`)}</p>
+                {(touched && error !== null) || previewError ? (
+                  <p id="report-sales-error" className="text-xs text-status-danger-fg">{t(`franchisee.payments.error_${error ?? previewError}`)}</p>
                 ) : (
                   <p id="report-sales-help" className="text-xs text-muted-foreground">{t("franchisee.payments.field_sales_help")}</p>
                 )}
@@ -188,7 +197,7 @@ export function PaymentsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>{t("franchisee.payments.confirm_title", { month: month ? formatMonth(month, lng) : "" })}</AlertDialogTitle>
             <AlertDialogDescription>
-              {fees && amount !== null && t("franchisee.payments.confirm_body", { sales: money(amount), total: money(fees.total_due) })}
+              {fees && t("franchisee.payments.confirm_body", { sales: money(fees.gross_sales), total: money(fees.total_due) })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

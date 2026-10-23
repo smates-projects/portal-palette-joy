@@ -1,6 +1,3 @@
-/** Largest monthly sales a single unit can report; anything above is almost surely a typing mistake. */
-export const MAX_MONTHLY_SALES = 5_000_000;
-
 export type SalesError = "required" | "invalid" | "not_positive" | "too_large";
 
 /**
@@ -14,12 +11,15 @@ export function parseSales(input: string): number | null {
   return Number(cleaned);
 }
 
-/** Why the typed gross sales cannot be sent, or null when they can. */
-export function validateSales(input: string): SalesError | null {
+/**
+ * Why the typed gross sales cannot be sent, or null when they can. maxMonthlySales is the API's limit
+ * (FranchiseeHome.max_monthly_sales); unknown = only the API checks it (invalid_over_max_sales).
+ */
+export function validateSales(input: string, maxMonthlySales?: number): SalesError | null {
   if (input.trim() === "") return "required";
   const value = parseSales(input);
   if (value === null) return "invalid";
   if (value <= 0) return "not_positive";
-  if (value > MAX_MONTHLY_SALES) return "too_large";
+  if (maxMonthlySales !== undefined && value > maxMonthlySales) return "too_large";
   return null;
 }

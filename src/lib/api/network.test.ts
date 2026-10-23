@@ -447,7 +447,7 @@ describe("owner data", () => {
 describe("Business Bishop", () => {
   it("portfolio: invested, recovered, current share and estimated payback come from the data", async () => {
     const { investments, totals } = await (await asBishop()).bishop.getPortfolio();
-    expect(totals).toEqual({ invested: 150000, recovered: 41800, recovered_pct: 28 });
+    expect(totals).toEqual({ invested: 150000, recovered: 41800, recovered_pct: 28, estimated_payback_month: "2028-09", recovery_status: "reporting", payback_window_months: 6 });
     const bimbo = investments[0]!;
     // Bimbo entered before the validations existed: the split is still the provisional one.
     expect(bimbo).toMatchObject({ business_name: "Bimbo Remodelaciones", current_share_pct: 50, split_final: false, franchises: 2, estimated_payback_month: "2028-09" });

@@ -53,10 +53,10 @@ const apiFunds = (payments: unknown[] = [apiPayment()]) => ({
   program_started: false,
 });
 
-/** The same funds as the front's type: the receipt without file_id. */
+/** The same funds as the front's type: the stored receipt's id and link beside the receipt, not inside it. */
 const frontFunds = () => ({
   ...apiFunds([]),
-  payments: [{ ...apiPayment(), receipt: { file_name: "comprobante.pdf", size_kb: 120 } }],
+  payments: [{ ...apiPayment(), receipt: { file_name: "comprobante.pdf", size_kb: 120 }, receipt_file_id: FILE_ID, receipt_url: null }],
 });
 
 const presigned = () =>

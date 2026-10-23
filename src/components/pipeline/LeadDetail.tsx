@@ -198,7 +198,7 @@ export function LeadDetail(props: {
     }
     props.onPrimary?.(lead);
   };
-  const remaining = fundsQ.data ? Math.max(0, fundsQ.data.total - fundsQ.data.received) : 0;
+  const remaining = fundsQ.data?.remaining ?? 0;
   const recordFunds = (input: PaymentFormValue) => {
     if (!lead.business_id) return;
     record.mutate({ businessId: lead.business_id, input }, {

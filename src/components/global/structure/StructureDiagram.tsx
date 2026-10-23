@@ -132,7 +132,7 @@ function CardBody({ node }: { node: DiagramNode }) {
       {investor && (
         <>
           <span className={datum}>{t("global.structure.diagram.investor_amount", { amount: formatUsd(investor.invested, i18n.language) })}</span>
-          <span className={datum}>{t("global.structure.diagram.investor_share", { pct: investor.share_pct })}</span>
+          <span className={datum}>{t(investor.split_final ? "global.structure.diagram.investor_share_final" : "global.structure.diagram.investor_share", { pct: investor.share_pct })}</span>
         </>
       )}
     </>

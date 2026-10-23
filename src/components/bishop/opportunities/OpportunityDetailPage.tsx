@@ -3,7 +3,6 @@ import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { ArrowLeft, CheckCircle2, Circle, FileText, ShieldAlert } from "lucide-react";
-import { PROFIT_SPLIT } from "@/config/economics";
 import { useAcceptOpportunity, useBishopAgreements, useBishopOpportunity, useClearOpportunityDecision, useCurrentUser, usePassOpportunity } from "@/lib/api/hooks";
 import { acceptBlock } from "@/lib/leads/opportunity";
 import { formatDate, formatUsd } from "@/lib/format";
@@ -55,7 +54,9 @@ export function OpportunityDetailPage({ opportunityId }: { opportunityId: string
   const frameworkSigned = agreementsQ.data?.find((a) => a.kind === "framework")?.state === "signed";
   const block = acceptBlock(o.phase, frameworkSigned);
   const name = title(o);
-  const totalForYou = o.projection.reduce((sum, p) => sum + p.bishop, 0);
+  // The projection's period, totals and SM's share are the API's; nothing is added up here.
+  const years = o.projection_years ?? o.projection.length;
+  const totalForYou = o.projection_total_bishop;
   const fail = () => toast.error(t("bishop.error_action"));
   // The Acuerdo de Vinculación comes first, then the Operating Agreement: the first one still waiting for him.
   const pendingForMe = (c: Contract | null | undefined) => !!c?.signers.some((s) => s.party === "bishop" && (s.status === "sent" || s.status === "opened"));
@@ -190,7 +191,7 @@ export function OpportunityDetailPage({ opportunityId }: { opportunityId: string
             </Panel>
 
             {/* Projection */}
-            <Panel title={t("bishop.opportunity_detail.projection_title")} action={<ProvisionalTag />}>
+            <Panel title={t("bishop.opportunity_detail.projection_title", { years })} action={o.split_final ? <SplitTag final /> : <ProvisionalTag />}>
               <div className="overflow-x-auto border-t border-border">
                 <table className="w-full text-left text-sm">
                   <thead className="bg-muted/50 text-xs text-muted-foreground">
@@ -215,14 +216,16 @@ export function OpportunityDetailPage({ opportunityId }: { opportunityId: string
                   </tbody>
                   <tfoot>
                     <tr className="border-t border-border bg-muted/50">
-                      <th scope="row" colSpan={4} className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">{t("bishop.opportunity_detail.total_for_you")}</th>
-                      <td className="px-4 py-2 text-right font-semibold tabular-nums">{money(totalForYou)}</td>
+                      <th scope="row" colSpan={4} className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">{t("bishop.opportunity_detail.total_for_you", { years })}</th>
+                      <td className="px-4 py-2 text-right font-semibold tabular-nums">{totalForYou === undefined ? "-" : money(totalForYou)}</td>
                     </tr>
                   </tfoot>
                 </table>
               </div>
               <p className="px-4 pb-4 pt-3 text-xs text-muted-foreground">
-                {t("bishop.opportunity_detail.projection_note", { year1: o.share_year1_pct, stable: o.share_stable_pct, sm: Math.round(PROFIT_SPLIT.sm_from_year2 * 100) })}
+                {o.split_final
+                  ? t("bishop.opportunity_detail.projection_note_final", { share: o.share_stable_pct, sm: o.sm_share_pct ?? "-" })
+                  : t("bishop.opportunity_detail.projection_note", { year1: o.share_year1_pct, stable: o.share_stable_pct, sm: o.sm_share_pct ?? "-" })}
               </p>
             </Panel>
           </div>
@@ -265,9 +268,14 @@ export function OpportunityDetailPage({ opportunityId }: { opportunityId: string
                   {o.files.map((f) => (
                     <li key={f.id} className="flex items-center justify-between gap-2 px-4 py-2 text-sm">
                       <span className="min-w-0 truncate">{f.name}</span>
-                      <button onClick={() => toast.info(t("bishop.agreements.t_download", { file: f.file_name }))} className={secondaryButton}>
-                        <FileText className="mr-1.5 h-3.5 w-3.5" />{t("bishop.opportunity_detail.open_file")}
-                      </button>
+                      {/* The real file (GET /files/{id}/download); the demo has no stored bytes, so no link there. */}
+                      {f.url ? (
+                        <a href={f.url} target="_blank" rel="noopener noreferrer" className={secondaryButton}>
+                          <FileText className="mr-1.5 h-3.5 w-3.5" />{t("bishop.opportunity_detail.open_file")}
+                        </a>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">{f.file_name}</span>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -287,7 +295,7 @@ export function OpportunityDetailPage({ opportunityId }: { opportunityId: string
                     <li key={s.name + s.party} className="flex items-center justify-between gap-2 px-4 py-2 text-sm">
                       <span>{s.name}</span>
                       <Tag tone={s.status === "signed" ? "success" : s.status === "declined" ? "danger" : "neutral"}>
-                        {t(`intake.signer_status.${s.status ?? "sent"}`)}{s.signed_at ? ` · ${formatDate(s.signed_at, lng)}` : ""}
+                        {t(`intake.signer_status.${s.status ?? "sent"}`, { defaultValue: "" })}{s.signed_at ? ` · ${formatDate(s.signed_at, lng)}` : ""}
                       </Tag>
                     </li>
                   ))}

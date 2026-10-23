@@ -38,12 +38,14 @@ export function FundsStatusBadge({ status }: { status: FundsStatus }) {
   return <Badge tone={FUNDS_TONE[status]}>{t(`funds.status.${status}`)}</Badge>;
 }
 
-export function ReceiptLink({ receipt }: { receipt: Receipt }) {
+/** The receipt with its download link (receipt_url from the API); without one (demo) only its name, no dead link. */
+export function ReceiptLink({ receipt, url }: { receipt: Receipt; url?: string | null | undefined }) {
   const { t } = useTranslation();
-  // Simulated upload: there is no file behind it yet, so the link does nothing.
+  const label = <><FileText className="h-3 w-3" aria-hidden />{receipt.file_name}</>;
+  if (!url) return <span className="inline-flex items-center gap-1" title={t("funds.receipt_size", { kb: receipt.size_kb })}>{label}</span>;
   return (
-    <a href="#" onClick={(e) => e.preventDefault()} className="inline-flex items-center gap-1 text-link hover:underline" title={t("funds.receipt_size", { kb: receipt.size_kb })}>
-      <FileText className="h-3 w-3" aria-hidden />{receipt.file_name}
+    <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-link hover:underline" title={t("funds.receipt_size", { kb: receipt.size_kb })}>
+      {label}
     </a>
   );
 }

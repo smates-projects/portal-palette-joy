@@ -1,7 +1,7 @@
 // In-memory implementation of the network repositories (SM Global, franchises, manual, owner data, Bishop,
 // franchisee). Like the rest of the mock layer it filters by the current user to simulate API authorization.
 import { todayIso, nowIso } from "@/lib/clock";
-import { PROFIT_SPLIT } from "@/config/economics";
+import { FEE_FIELDS, MOCK_MAX_MONTHLY_SALES, PROFIT_SPLIT } from "./economics";
 import { isActiveFirm, isActiveUser } from "@/lib/accounts/permissions";
 import { bishopShareAt, estimatePaybackMonth } from "@/lib/bishop/split";
 import { computeReportAmounts, nextMonth, previousMonth } from "@/lib/franchise/fees";
@@ -210,6 +210,7 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       open_tickets: openTicketsOf(f.id),
       last_report: last,
       last_sales: last?.gross_sales ?? null,
+      ...FEE_FIELDS,
     };
   };
 
@@ -647,6 +648,12 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
       if (reportTask) reportTask.done = true;
       return delay(report);
     },
+    previewReport: async (franchiseId, grossSales) => {
+      findFranchise(franchiseId);
+      if (!Number.isFinite(grossSales) || grossSales <= 0) throw new Error("invalid_amount");
+      if (grossSales > MOCK_MAX_MONTHLY_SALES) throw new Error("invalid_over_max_sales");
+      return delay({ gross_sales: grossSales, ...computeReportAmounts(grossSales), ...FEE_FIELDS, max_monthly_sales: MOCK_MAX_MONTHLY_SALES });
+    },
     listTickets: async () => {
       const ids = new Set(visibleFranchises().map((f) => f.id));
       return delay(db.tickets.filter((t) => ids.has(t.franchise_id)).sort((a, b) => b.created_at.localeCompare(a.created_at)));
@@ -868,11 +875,19 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
             estimated_payback_month: estimatePaybackMonth(series, i.invested),
             franchises: db.franchises.filter((f) => f.franchisor_business_id === i.business_id).length,
             recovery: series,
+            recovery_status: series.some((p) => p.actual !== null) ? "reporting" : "no_reports_yet",
           };
         });
       const invested = investments.reduce((a, i) => a + i.invested, 0);
       const recovered = investments.reduce((a, i) => a + i.recovered, 0);
-      return delay({ investments, totals: { invested, recovered, recovered_pct: pct(recovered, invested) } });
+      // As the API: the latest payback month, null when any investment is not recovering.
+      const months = investments.map((i) => i.estimated_payback_month);
+      const payback = months.length === 0 || months.some((m) => m === null) ? null : (months as string[]).sort().at(-1)!;
+      const reporting = investments.some((i) => i.recovery_status === "reporting");
+      return delay({
+        investments,
+        totals: { invested, recovered, recovered_pct: pct(recovered, invested), estimated_payback_month: payback, recovery_status: reporting ? "reporting" : "no_reports_yet", payback_window_months: 6 },
+      });
     },
     listAgreements: async () => {
       const u = bishopOnly();
@@ -900,6 +915,8 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
         next_report: reportsOf(f.id).filter((r) => r.status === "due").at(-1) ?? null,
         open_tickets: openTicketsOf(f.id),
         tasks,
+        ...FEE_FIELDS,
+        max_monthly_sales: MOCK_MAX_MONTHLY_SALES,
       });
     },
     listChecklist: async () => {
