@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useNotificationPreferences, useSetNotificationPreference } from "@/lib/api/hooks";
 import type { NotificationChannel, NotificationKind } from "@/lib/api/types";
-import { preferenceLabel } from "@/lib/notifications/text";
+import { isRetiredKind, preferenceLabel } from "@/lib/notifications/text";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -43,7 +43,7 @@ export function NotificationPreferences() {
         </div>
       ) : (
         <ul className="divide-y divide-border border-t border-border">
-          {(q.data ?? []).map((p) => (
+          {(q.data ?? []).filter((p) => !isRetiredKind(p.kind)).map((p) => (
             <li key={p.kind} className="grid grid-cols-[1fr_96px_96px] items-center px-5 py-2.5 text-sm">
               <span>{label(p.kind)}</span>
               <span className="flex justify-center">

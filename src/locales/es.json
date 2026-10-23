@@ -958,13 +958,10 @@
     "kind_meeting_moved_short": "{{name}} movió una reunión tuya",
     "kind_meeting_cancelled_short": "{{name}} canceló una reunión tuya",
     "pref_contract_due_soon": "El plazo para firmar un contrato está cerca",
-    "pref_owner_nda_received": "Un dueño envía su propio NDA",
     "pref_document_not_applicable": "Un dueño marca que un documento no aplica",
     "pref_unknown": "Otros avisos ({{kind}})",
     "kind_contract_due_soon": "El {{contract_name}} de {{business_name}} vence pronto y falta tu firma",
     "kind_contract_due_soon_short": "Un contrato vence pronto y falta tu firma",
-    "kind_owner_nda_received": "{{business_name}} envió su propio NDA para firmar",
-    "kind_owner_nda_received_short": "Un dueño envió su propio NDA para firmar",
     "kind_document_not_applicable": "{{business_name}} dice que un documento no aplica a su negocio",
     "kind_document_not_applicable_short": "Un dueño dice que un documento no aplica a su negocio"
   },
@@ -1182,7 +1179,7 @@
       "week": "assessments esta semana",
       "uncontacted": "sin contactar hace más de {{days}} días",
       "signed_month": "entraron al programa este mes",
-      "conversion": "Conversión del mes: de los assessments de este mes, cuántos entraron al programa",
+      "conversion": "Conversión del mes. De los assessments de este mes, cuántos entraron al programa",
       "conversion_value": "{{pct}}% · {{reached}} de {{total}} ya entraron al programa",
       "conversion_none": "Sin assessments este mes",
       "in_review": "en revisión de documentos",
@@ -3915,12 +3912,12 @@
     "external_errors": {
       "invalid_email": "Escribe un correo válido, por ejemplo nombre@empresa.com.",
       "duplicate_email": "Ese correo ya está en la lista.",
-      "own_email": "Ese es tu correo: tú ya estás en la reunión."
+      "own_email": "Ese es tu correo. Tú ya estás en la reunión."
     },
-    "external_needs_calendar": "Para invitar por correo, conecta tu Google Calendar: es Google quien les manda la invitación.",
+    "external_needs_calendar": "Para invitar por correo, conecta tu Google Calendar. Google es quien les manda la invitación.",
     "external_availability": "No vemos la agenda de quienes invitas por correo. Elige un horario que les sirva.",
     "external_invited": "También invitamos por correo a {{emails}}.",
-    "availability_unknown": "No vemos la agenda de {{name}}: Google le manda la invitación por correo.",
+    "availability_unknown": "No vemos la agenda de {{name}}. Google le manda la invitación por correo.",
     "not_connected_body": "Tu Google Calendar no está conectado. Conéctalo o registra la reunión a mano.",
     "connect_google": "Conectar Google Calendar",
     "register_manually": "Registrar reunión a mano"

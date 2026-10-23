@@ -958,13 +958,10 @@
     "kind_meeting_moved_short": "{{name}} moved a meeting of yours",
     "kind_meeting_cancelled_short": "{{name}} cancelled a meeting of yours",
     "pref_contract_due_soon": "The deadline to sign a contract is close",
-    "pref_owner_nda_received": "An owner sends their own NDA",
     "pref_document_not_applicable": "An owner marks a document as not applicable",
     "pref_unknown": "Other notices ({{kind}})",
     "kind_contract_due_soon": "The {{contract_name}} of {{business_name}} is due soon and your signature is missing",
     "kind_contract_due_soon_short": "A contract is due soon and your signature is missing",
-    "kind_owner_nda_received": "{{business_name}} sent their own NDA to sign",
-    "kind_owner_nda_received_short": "An owner sent their own NDA to sign",
     "kind_document_not_applicable": "{{business_name}} says a document does not apply to their business",
     "kind_document_not_applicable_short": "An owner says a document does not apply to their business"
   },
@@ -1182,7 +1179,7 @@
       "week": "assessments this week",
       "uncontacted": "not contacted for over {{days}} days",
       "signed_month": "joined the program this month",
-      "conversion": "Conversion this month: of this month's assessments, how many entered the program",
+      "conversion": "Conversion this month. Of this month's assessments, how many entered the program",
       "conversion_value": "{{pct}}% · {{reached}} of {{total}} already joined the program",
       "conversion_none": "No assessments this month",
       "in_review": "in document review",
@@ -3915,12 +3912,12 @@
     "external_errors": {
       "invalid_email": "Type a valid email, for example name@company.com.",
       "duplicate_email": "That email is already on the list.",
-      "own_email": "That is your email: you are already in the meeting."
+      "own_email": "That is your email. You are already in the meeting."
     },
-    "external_needs_calendar": "To invite by email, connect your Google Calendar: Google is who sends them the invitation.",
+    "external_needs_calendar": "To invite by email, connect your Google Calendar. Google sends them the invitation.",
     "external_availability": "We cannot see the calendar of the people you invite by email. Pick a time that works for them.",
     "external_invited": "We also invited {{emails}} by email.",
-    "availability_unknown": "We cannot see {{name}}'s calendar: Google sends the invitation by email.",
+    "availability_unknown": "We cannot see {{name}}'s calendar. Google sends the invitation by email.",
     "not_connected_body": "Your Google Calendar is not connected. Connect it or record the meeting by hand.",
     "connect_google": "Connect Google Calendar",
     "register_manually": "Record meeting by hand"

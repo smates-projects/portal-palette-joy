@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import i18n from "@/lib/i18n";
 import { NOTIFICATION_KINDS, type AppNotification } from "@/lib/api/types";
-import { notificationText, preferenceLabel } from "./text";
+import { isRetiredKind, notificationText, preferenceLabel } from "./text";
 
 const base = (overrides: Partial<AppNotification>): AppNotification => ({
   id: "n", user_id: "u", kind: "contract_signed", task_id: "", task_code: "", task_name: "", business_id: "", business_name: "",
@@ -34,7 +34,8 @@ describe("notificationText", () => {
 
   it("preferences: every known kind has its label; an unknown one reads as words, never a raw key (QA M5)", () => {
     const label = (kind: string, language = "es") => preferenceLabel(kind, (k, v) => i18n.t(k, { ...v, lng: language }), (k) => i18n.exists(k));
-    for (const kind of ["contract_due_soon", "owner_nda_received", "document_not_applicable", ...NOTIFICATION_KINDS]) {
+    expect(isRetiredKind("owner_nda_received")).toBe(true);
+    for (const kind of ["contract_due_soon", "document_not_applicable", ...NOTIFICATION_KINDS]) {
       expect(label(kind), kind).not.toMatch(/notifications\.|pref_/);
       expect(label(kind, "en"), kind).not.toMatch(/notifications\.|pref_/);
     }

@@ -31,6 +31,11 @@ export function notificationText(n: AppNotification, translate: (key: string, va
  * The label of a preference row in Mi perfil > Notificaciones (QA M5). A kind the API added before the front knows it
  * never shows a raw key: it reads as its words ("contract_due_soon" -> "Contract due soon") under a generic prefix.
  */
+/** Kinds of features that no longer exist (the owner's own NDA, removed 20 Oct 2026): never offered as a preference. */
+const RETIRED_KINDS: ReadonlySet<string> = new Set(["owner_nda_received"]);
+
+export const isRetiredKind = (kind: string): boolean => RETIRED_KINDS.has(kind);
+
 export function preferenceLabel(
   kind: string,
   translate: (key: string, values?: Record<string, string>) => string,
@@ -47,7 +52,7 @@ const SUBJECT_BUSINESS: ReadonlySet<string> = new Set([
   "contract_signed", "contract_sent", "signature_pending_review", "document_received", "document_requested", "documents_approved",
   "documents_unlocked", "review_overdue", "program_started", "binding_ready", "validation_closed", "brand_logo_rejected",
   "meeting_outcome_pending", "lead_assessment", "transfer_received", "lead_auto_discarded",
-  "contract_due_soon", "owner_nda_received", "document_not_applicable",
+  "contract_due_soon", "document_not_applicable",
 ]);
 /** Kinds whose sentence names the place. */
 const SUBJECT_PLACE: ReadonlySet<string> = new Set(["opportunity_presented"]);
