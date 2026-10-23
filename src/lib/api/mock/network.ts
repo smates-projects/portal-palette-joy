@@ -487,7 +487,9 @@ export function createNetworkRepositories(ctx: MockContext): NetworkApi {
     program_length_days: MOCK_PROGRAM.length_days,
     program: structuredClone(MOCK_PROGRAM),
     limits: { ...MOCK_LIMITS, meeting_durations: [...MOCK_LIMITS.meeting_durations] },
-    defaults: RULES_FIELDS.filter((f) => db.rules[f] === undefined || sameJson(db.rules[f], DEFAULT_PLATFORM_RULES[f])),
+    // Money is SM's and the Bishops' only: for anyone else program_amount is not even named among the defaults.
+    defaults: RULES_FIELDS.filter((f) => (f !== "program_amount" || ["sm_team", "sm_global", "bishop"].includes(me().role))
+      && (db.rules[f] === undefined || sameJson(db.rules[f], DEFAULT_PLATFORM_RULES[f]))),
   });
   const rules: RulesRepository = {
     get: async () => delay(readRules()),
