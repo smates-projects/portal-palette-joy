@@ -554,6 +554,8 @@ export interface ManualOverview {
   completion_pct: number;
   /** Franchises that follow this manual (only visible to the franchisor, SM and Global). */
   franchises_following: number;
+  /** The version the next publication gets (API). */
+  next_manual_version?: string | null | undefined;
 }
 
 export interface PublishManualInput {

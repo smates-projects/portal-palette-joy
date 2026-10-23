@@ -300,7 +300,12 @@ export function createCalendar(ctx: CalendarContext) {
       const from = Date.parse(input.from);
       const to = Date.parse(input.to);
       const { busy, unavailable } = busyOf(ids, from, to);
-      const slots = computeFreeSlots({ from: input.from, to: input.to, durationMinutes: input.duration_minutes, hours: meetingHoursOf(db.rules), busy, now: Date.parse(nowIso()) });
+      const hours = meetingHoursOf(db.rules);
+      // As the API: only the rule's weekdays (Monday to Friday when the rule does not say), in the hours' time zone.
+      const weekdays = hours.weekdays ?? [1, 2, 3, 4, 5];
+      const weekdayOf = (iso: string) => ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: hours.timezone }).format(new Date(iso)));
+      const slots = computeFreeSlots({ from: input.from, to: input.to, durationMinutes: input.duration_minutes, hours, busy, now: Date.parse(nowIso()) })
+        .filter((s) => weekdays.includes(weekdayOf(s.starts_at)));
       return delay({ slots, unavailable_participants: unavailable });
     },
     schedule: async (input) => {

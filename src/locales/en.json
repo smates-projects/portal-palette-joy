@@ -2109,9 +2109,9 @@
     "offices": {
       "question": "How is the SM office network doing?",
       "corporate_signature": {
-        "title": "Strategic Mates Corporate signature",
-        "hint_named": "With this signature the NDA, the MOU and the Binding Agreement go out signed by {{name}} on behalf of Strategic Mates.",
-        "hint": "With this signature the NDA, the MOU and the Binding Agreement go out signed by the CEO on behalf of Strategic Mates."
+        "title": "{{entity}} signature",
+        "hint_named": "With this signature the NDA, the MOU and the Binding Agreement go out signed by {{name}} on behalf of {{entity}}.",
+        "hint": "With this signature the NDA, the MOU and the Binding Agreement go out signed on behalf of {{entity}}. Choose in Rules who signs for the company."
       },
       "new": "New office",
       "col_office": "Office",
@@ -3847,7 +3847,7 @@
     },
     "rules": {
       "title": "Hours to schedule meetings",
-      "hint": "The portal offers free times only inside these hours, every 30 minutes.",
+      "hint": "The portal offers free times only inside these hours, every {{minutes}} minutes.",
       "start": "From",
       "end": "To",
       "timezone": "Time zone",

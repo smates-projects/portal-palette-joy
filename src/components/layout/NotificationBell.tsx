@@ -74,10 +74,13 @@ export function NotificationBell() {
   const me = useCurrentUser().data;
   const [scope] = useOfficeScope();
   const scoped = me?.role === "sm_global" && scope !== ALL_OFFICES;
-  const leadsQ = useLeads(undefined, scoped);
-  const bizQ = useBusinesses(scoped);
+  // The API names each notification's office (office_id); only the demo, without it, infers it from leads and businesses.
+  const infer = scoped && (q.data ?? []).some((n) => n.office_id === undefined);
+  const leadsQ = useLeads(undefined, infer);
+  const bizQ = useBusinesses(infer);
   const officeOf = (n: AppNotification) =>
-    (n.lead_id && leadsQ.data?.find((l) => l.id === n.lead_id)?.office_id) || (n.business_id && bizQ.data?.find((b) => b.id === n.business_id)?.office_id) || null;
+    n.office_id !== undefined ? n.office_id
+      : (n.lead_id && leadsQ.data?.find((l) => l.id === n.lead_id)?.office_id) || (n.business_id && bizQ.data?.find((b) => b.id === n.business_id)?.office_id) || null;
   const all = (q.data ?? []).filter((n) => !scoped || inOfficeScope(scope, officeOf(n)));
   const unread = all.filter((n) => !n.read_at);
   const list = tab === "unread" ? unread : all;

@@ -26,7 +26,8 @@ export function FranchisorPage() {
 
   const manual = manualQ.data;
   const franchiseCount = manual?.franchises_following ?? franchisesQ.data?.length ?? 0;
-  const next = nextManualVersion(manual?.current_version ?? null);
+  // The version the next publication gets, as the API names it (next_manual_version); the demo bumps the minor.
+  const next = manual?.next_manual_version ?? nextManualVersion(manual?.current_version ?? null);
   const versions = manual?.versions ?? [];
   const canPublish = selected.length > 0 && note.trim().length > 0;
 

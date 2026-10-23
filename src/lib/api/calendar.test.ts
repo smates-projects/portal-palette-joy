@@ -93,9 +93,9 @@ describe("calendar v2 (mock)", () => {
     expect((await api.calendar.schedule({ ...base, participant_user_ids: [seed.U_NICOLAS] })).status).toBe("confirmed");
   });
 
-  it("too many people answers too_many_participants", async () => {
+  it("too many people answers too_many_participants (over the API's 10, organizer included)", async () => {
     const api = await as(seed.U_NICOLAS);
-    const people = (await api.users.list()).filter((u) => u.id !== seed.U_NICOLAS).slice(0, 8).map((u) => u.id);
+    const people = (await api.users.list()).filter((u) => u.id !== seed.U_NICOLAS).slice(0, 10).map((u) => u.id);
     await expect(api.calendar.availability({ participant_user_ids: people, ...WINDOW, duration_minutes: 30 })).rejects.toThrow("too_many_participants");
   });
 

@@ -3,7 +3,8 @@ import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/format";
-import { useCreateOffice, useCurrentUser, useOffices, useOrganizations } from "@/lib/api/hooks";
+import { useCreateOffice, useOffices, useOrganizations, useRules, useUsers } from "@/lib/api/hooks";
+import { smEntitiesOf } from "@/lib/leads/contract-rules";
 import { ALL_OFFICES, inOfficeScope, useOfficeScope } from "@/lib/office-scope";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PrimaryButton } from "@/components/tasks/detail/dialogs";
@@ -22,10 +23,12 @@ export function OfficesPage() {
   const [scope] = useOfficeScope();
   const create = useCreateOffice();
   const [creating, setCreating] = useState(false);
-  // Corporate (the sm_global organization) signs the NDA, the MOU and the binding agreement through its CEO.
+  // Corporate (the sm_global organization) signs the NDA, the MOU and the binding agreement through the person the
+  // rules name (sm_entities.corporate.signer_user_id), under the company name the rules set.
   const corporate = useOrganizations().data?.find((o) => o.kind === "sm_global");
-  const me = useCurrentUser().data;
-  const ceoName = me?.role === "sm_global" && me.is_admin ? me.full_name : null;
+  const entities = smEntitiesOf(useRules().data);
+  const signerId = entities.corporate.signer_user_id;
+  const ceoName = useUsers().data?.find((u) => u.id === signerId)?.full_name ?? null;
   const header = <GlobalHeader question={t("global.offices.question")} />;
   const open = (officeId: string) => void navigate({ to: "/oficinas/$officeId", params: { officeId } });
 
@@ -96,8 +99,8 @@ export function OfficesPage() {
         <div className="mt-2">
           <OfficeSignatureSection
             office={corporate}
-            title={t("global.offices.corporate_signature.title")}
-            hint={ceoName ? t("global.offices.corporate_signature.hint_named", { name: ceoName }) : t("global.offices.corporate_signature.hint")}
+            title={t("global.offices.corporate_signature.title", { entity: entities.corporate.name })}
+            hint={ceoName ? t("global.offices.corporate_signature.hint_named", { name: ceoName, entity: entities.corporate.name }) : t("global.offices.corporate_signature.hint", { entity: entities.corporate.name })}
           />
         </div>
       )}

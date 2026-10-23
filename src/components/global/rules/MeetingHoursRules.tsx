@@ -6,6 +6,7 @@ import type { MeetingHours, PlatformRules } from "@/lib/api/network-types";
 import { MEETING_TIMEZONES, meetingHoursOf, validateMeetingHours } from "@/lib/calendar/scheduling";
 import { cn } from "@/lib/utils";
 import { PrimaryButton } from "@/components/tasks/detail/dialogs";
+import { DefaultTag } from "./RulesPage";
 
 const fieldCls =
   "h-9 rounded-[4px] border border-input bg-surface px-3 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30";
@@ -36,8 +37,8 @@ export function MeetingHoursRules({ rules }: { rules: PlatformRules }) {
 
   return (
     <section className="mt-4 rounded-md border border-border bg-surface p-4">
-      <h2 className="text-sm font-semibold">{t("calendar.rules.title")}</h2>
-      <p className="mt-1 text-sm text-muted-foreground">{t("calendar.rules.hint")}</p>
+      <h2 className="flex items-center gap-2 text-sm font-semibold">{t("calendar.rules.title")}{rules.defaults?.includes("meeting_hours") && <DefaultTag />}</h2>
+      <p className="mt-1 text-sm text-muted-foreground">{t("calendar.rules.hint", { minutes: rules.limits?.meeting_slot_minutes ?? "…" })}</p>
       <div className="mt-3 flex flex-wrap items-end gap-3">
         <label className="block space-y-1 text-sm">
           <span className="block font-medium">{t("calendar.rules.start")}</span>

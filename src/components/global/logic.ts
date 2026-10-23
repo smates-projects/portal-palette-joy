@@ -32,7 +32,8 @@ export function buildOfficeCards(offices: OfficeSummary[], rows: MatrixRow[]): O
       for (const row of mine)
         for (const cell of row.cells)
           if (cell.overdue > (worst?.overdue ?? 0)) worst = { business_name: row.business.name, area: cell.area, overdue: cell.overdue };
-      return { summary, health: worstHealth(mine.map((r) => r.health)), overdue: summary.stats.overdue_tasks, worst };
+      // Same light as Oficinas: the API's office stats (OfficeSummary.stats.health), not a recount of the matrix.
+      return { summary, health: officeHealth(summary.stats.health), overdue: summary.stats.overdue_tasks, worst };
     })
     .sort((a, b) => SEVERITY[b.health] - SEVERITY[a.health] || a.summary.office.name.localeCompare(b.summary.office.name));
 }
@@ -83,7 +84,8 @@ export function scopeBottlenecks(rows: AreaBottleneck[], officeId: string | null
       ...b,
       open: mine?.open ?? 0,
       overdue: mine?.overdue ?? 0,
-      red_businesses: Math.min(stuckBusinesses(matrix, b.area).length, total),
+      // The API counts the office's red businesses (by_office[].red_businesses); the demo recounts its matrix.
+      red_businesses: mine?.red_businesses ?? Math.min(stuckBusinesses(matrix, b.area).length, total),
       by_office: mine ? [mine] : [],
     };
   });

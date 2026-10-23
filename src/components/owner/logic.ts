@@ -18,7 +18,8 @@ export function buildManualSections(sections: ManualSection[], tasks: TaskWithCo
   return sections.map((section) => {
     const own = tasks.filter((t) => section.catalog_codes.includes(t.code)).sort((a, b) => a.code.localeCompare(b.code));
     const included = own.filter((t) => t.status === "accepted").length;
-    return { section, tasks: own, included, ready: own.length > 0 && included === own.length };
+    // The API says whether this person may approve the section now (can_approve); the demo derives it from the tasks.
+    return { section, tasks: own, included, ready: section.can_approve ?? (own.length > 0 && included === own.length) };
   });
 }
 

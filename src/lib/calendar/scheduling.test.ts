@@ -79,8 +79,11 @@ describe("helpers", () => {
     expect(canSearchSlots({ participants: [], topic: "Revisar", duration: 30 })).toBe(false);
     expect(canSearchSlots({ participants: people, topic: "  ", duration: 30 })).toBe(false);
     expect(canSearchSlots({ participants: people, topic: "Revisar", duration: 90 })).toBe(false);
+    // The limit is the API's (limits.max_meeting_participants, organizer included).
     const eight = Array.from({ length: 8 }, (_, i) => ({ user_id: `p${i}`, name: `P${i}` }));
-    expect(canSearchSlots({ participants: eight, topic: "Revisar", duration: 30 })).toBe(false);
+    expect(canSearchSlots({ participants: eight, topic: "Revisar", duration: 30 }, { durations: [30, 45, 60], maxParticipants: 8 })).toBe(false);
+    expect(canSearchSlots({ participants: eight, topic: "Revisar", duration: 30 }, { durations: [30, 45, 60], maxParticipants: 10 })).toBe(true);
+    expect(canSearchSlots({ participants: people, topic: "Revisar", duration: 90 }, { durations: [30, 90], maxParticipants: 10 })).toBe(true);
   });
 
   it("the slot picker looks 14 days ahead from now", () => {

@@ -1,18 +1,27 @@
 // Calendar v2 rules the screens and the mock share: who is connected, what a new meeting becomes (confirmed in
 // Google or a proposal), what the success note says, and the meeting hours with their defaults.
 import type {
-  CalendarConnection, MeetingHours, PlatformRules, PortalMeeting, PortalMeetingParticipant, User, UserRole,
+  CalendarConnection, MeetingHours, PlatformLimits, PlatformRules, PortalMeeting, PortalMeetingParticipant, User, UserRole,
 } from "@/lib/api/types";
 import { DEFAULT_MEETING_HOURS } from "./slots";
 
+// Demo values of the limits (the mock's): the screens read rules.limits (meeting_durations,
+// max_meeting_participants, availability_days), which the API fixes.
 export const MEETING_DURATIONS = [30, 45, 60] as const;
 export type MeetingDuration = (typeof MEETING_DURATIONS)[number];
 
-/** Organizer included. Over this the API answers too_many_participants. */
-export const MAX_MEETING_PARTICIPANTS = 8;
+/** Organizer included. Over this the API answers too_many_participants (the API's limit is 10). */
+export const MAX_MEETING_PARTICIPANTS = 10;
 
 /** How far ahead the slot picker looks. */
 export const AVAILABILITY_DAYS = 14;
+
+/** The scheduling limits a screen uses: the API's (rules.limits), the demo's while they are absent. */
+export const schedulingLimits = (limits: Partial<Pick<PlatformLimits, "meeting_durations" | "max_meeting_participants" | "availability_days">> | null | undefined) => ({
+  durations: limits?.meeting_durations ?? [...MEETING_DURATIONS],
+  maxParticipants: limits?.max_meeting_participants ?? MAX_MEETING_PARTICIPANTS,
+  availabilityDays: limits?.availability_days ?? AVAILABILITY_DAYS,
+});
 
 /** The short list of US zones SM Global picks from in Reglas. */
 export const MEETING_TIMEZONES = [
@@ -109,11 +118,14 @@ export function addPerson(list: SchedulingPerson[], person: SchedulingPerson, or
 }
 
 /** The dialog can ask for slots: at least one guest, a topic, an allowed length and not over the limit. */
-export function canSearchSlots(input: { participants: SchedulingPerson[]; topic: string; duration: number }): boolean {
+export function canSearchSlots(
+  input: { participants: SchedulingPerson[]; topic: string; duration: number },
+  limits: { durations: readonly number[]; maxParticipants: number } = { durations: MEETING_DURATIONS, maxParticipants: MAX_MEETING_PARTICIPANTS },
+): boolean {
   return input.participants.length > 0
-    && input.participants.length + 1 <= MAX_MEETING_PARTICIPANTS
+    && input.participants.length + 1 <= limits.maxParticipants
     && input.topic.trim().length > 0
-    && (MEETING_DURATIONS as readonly number[]).includes(input.duration);
+    && limits.durations.includes(input.duration);
 }
 
 /** "Mover" and "Cancelar" are for the organizer and SM; everyone else gets "Avisar que no puedo". */

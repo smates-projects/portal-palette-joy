@@ -4,13 +4,13 @@ import { useTranslation } from "react-i18next";
 import { CalendarCheck, X } from "lucide-react";
 import { nowIso } from "@/lib/clock";
 import {
-  useAvailability, useCalendarConnection, useCurrentUser, useRescheduleMeeting, useScheduleMeeting, useUsers,
+  useAvailability, useCalendarConnection, useCurrentUser, useLimits, useRescheduleMeeting, useScheduleMeeting, useUsers,
 } from "@/lib/api/hooks";
 import type { AvailabilityInput, PortalMeeting, PortalMeetingKind } from "@/lib/api/types";
 import { isActiveUser } from "@/lib/accounts/permissions";
 import {
-  AVAILABILITY_DAYS, MAX_MEETING_PARTICIPANTS, MEETING_DURATIONS, addPerson, availabilityWindow, canSearchSlots, durationOf,
-   isCalendarConnected, joinNames, scheduleOutcome, type SchedulingPerson,
+  addPerson, availabilityWindow, canSearchSlots, durationOf,
+  isCalendarConnected, joinNames, scheduleOutcome, schedulingLimits, type SchedulingPerson,
 } from "@/lib/calendar/scheduling";
 import { groupSlotsByDay } from "@/lib/calendar/slots";
 import { formatDateTime, localeTag } from "@/lib/format";
@@ -89,6 +89,8 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
   const schedule = useScheduleMeeting();
   const move = useRescheduleMeeting();
   const moving = props.reschedule ?? null;
+  // Lengths, the most people and how far ahead to look: the API's limits (GET /rules limits).
+  const limits = schedulingLimits(useLimits());
 
   const [taskId, setTaskId] = useState(props.context?.task_id ?? "");
   const [people, setPeople] = useState<SchedulingPerson[]>(() =>
@@ -97,10 +99,10 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
       : (props.participants ?? []).reduce<SchedulingPerson[]>((list, p) => addPerson(list, p, me?.id), []),
   );
   const [topic, setTopic] = useState(moving?.topic ?? props.defaultTopic ?? "");
-  const [duration, setDuration] = useState<number>(moving ? durationOf(moving) : 30);
+  const [duration, setDuration] = useState<number>(moving ? durationOf(moving) : limits.durations[0] ?? 30);
   const [note, setNote] = useState("");
   const [step, setStep] = useState<Step>(moving ? "slots" : "details");
-  const [range, setRange] = useState(() => availabilityWindow(Date.parse(nowIso())));
+  const [range, setRange] = useState(() => availabilityWindow(Date.parse(nowIso()), limits.availabilityDays));
   const [picked, setPicked] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -113,10 +115,10 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
   const choice = props.taskChoices?.find((c) => c.id === taskId);
   const context: ScheduleContext | null = props.taskChoices ? (taskId ? { kind: "task", task_id: taskId } : null) : (props.context ?? null);
   const pickable = users.filter((u) => isActiveUser(u) && u.id !== me?.id && !people.some((p) => p.user_id === u.id));
-  const tooMany = people.length + 1 > MAX_MEETING_PARTICIPANTS;
+  const tooMany = people.length + 1 > limits.maxParticipants;
   const ready = !!context && (props.guestEmail
-    ? topic.trim().length > 0 && (MEETING_DURATIONS as readonly number[]).includes(duration)
-    : canSearchSlots({ participants: people, topic, duration }));
+    ? topic.trim().length > 0 && limits.durations.includes(duration)
+    : canSearchSlots({ participants: people, topic, duration }, limits));
   const guestNote = props.guestEmail ? <p role="note" className="shrink-0 rounded-[4px] border border-input bg-surface px-3 py-2 text-xs text-muted-foreground">{t("calendar.lead_guest", { email: props.guestEmail })}</p> : null;
 
   // Moving keeps the meeting's own people (SM may move a meeting it is not part of).
@@ -144,7 +146,7 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
     if (next) setPeople(next.participants.reduce<SchedulingPerson[]>((list, p) => addPerson(list, p, me?.id), []));
   };
   const openSlots = () => {
-    setRange(availabilityWindow(Date.parse(nowIso())));
+    setRange(availabilityWindow(Date.parse(nowIso()), limits.availabilityDays));
     setPicked(null);
     setSelectedDay(null);
     setError(null);
@@ -221,7 +223,7 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
         <div className="flex min-h-0 flex-1 flex-col gap-3">
           <div className="shrink-0">
             <h3 className="text-sm font-semibold">{t("calendar.slots_title")}</h3>
-            <p className="mt-0.5 text-xs text-muted-foreground">{t("calendar.slots_hint", { count: AVAILABILITY_DAYS })}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{t("calendar.slots_hint", { count: limits.availabilityDays })}</p>
           </div>
           {((meUnreadable && !moving) || unavailable.length > 0) && (
             <div role="note" className="shrink-0 space-y-1 rounded-[4px] border border-input bg-surface px-3 py-2 text-xs leading-relaxed text-muted-foreground">
@@ -250,7 +252,7 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
               <Button variant="link" onClick={() => void availabilityQ.refetch()} className="mt-1 h-auto p-0 text-link">{t("calendar.slots_retry")}</Button>
             </div>
           ) : days.length === 0 ? (
-            <p className="rounded-[4px] border border-border px-3 py-4 text-sm text-muted-foreground">{t("calendar.slots_empty", { count: AVAILABILITY_DAYS })}</p>
+            <p className="rounded-[4px] border border-border px-3 py-4 text-sm text-muted-foreground">{t("calendar.slots_empty", { count: limits.availabilityDays })}</p>
           ) : (
             <>
               <div role="group" aria-label={t("calendar.choose_day")} className="flex shrink-0 gap-2 overflow-x-auto pb-2">
@@ -371,7 +373,7 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
                   {pickable.map((u) => <option key={u.id} value={u.id}>{u.full_name}{u.title ? ` · ${u.title}` : ""}</option>)}
                 </select>
               )}
-              {tooMany && <p className="text-xs text-status-danger-fg">{t("calendar.too_many", { count: MAX_MEETING_PARTICIPANTS })}</p>}
+              {tooMany && <p className="text-xs text-status-danger-fg">{t("calendar.too_many", { count: limits.maxParticipants })}</p>}
             </fieldset>
             <label className="block space-y-1.5">
               <span className="text-sm font-medium">{t("calendar.topic")}</span>
@@ -380,7 +382,7 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
             <fieldset>
               <legend className="text-sm font-medium">{t("calendar.duration")}</legend>
               <div role="radiogroup" aria-label={t("calendar.duration")} className="mt-1.5 flex gap-1.5">
-                {MEETING_DURATIONS.map((m) => (
+                {limits.durations.map((m) => (
                   <button
                     key={m}
                     type="button"
