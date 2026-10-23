@@ -6,7 +6,7 @@ import { Link } from "@tanstack/react-router";
 import { useContracts, useCurrentUser, useDocuments, useMarkNotApplicable, useRules, useUploadDocument } from "@/lib/api/hooks";
 import { TextDialog } from "@/components/pipeline/IntakeChecklist";
 import { INTAKE_DOCUMENT_ACCEPT, entryRules, intakeDocumentHelp, oaWaitingUntil } from "@/lib/leads/entry-flow";
-import { smEntitiesOf } from "@/lib/leads/contract-rules";
+import { smEntitiesOf, smSignerEntityName } from "@/lib/leads/contract-rules";
 import { DocumentHelp } from "@/components/pipeline/DocumentHelp";
 import { ReviewNoteAlert } from "@/components/pipeline/ReviewNoteAlert";
 import type { Contract } from "@/lib/api/types";
@@ -194,7 +194,7 @@ export function OwnerDocumentsPage() {
                         {c.signers.map((s) => (
                           <li key={`${s.name}-${s.role}`}>
                             {/* The SM part reads "Firmado por Marilyn Boraei en nombre de Strategic Mates Corporate". */}
-                            {s.party === "sm" && s.signed_at && s.user_id ? t("intake.signed_on_behalf_by", { name: s.name, entity: entities[s.sm_entity ?? "corporate"].name }) : `${s.name} (${s.party ? t(`intake.party.${s.party}`) : s.role})`},{" "}
+                            {s.party === "sm" && s.signed_at && s.user_id ? t("intake.signed_on_behalf_by", { name: s.name, entity: smSignerEntityName(s, entities) }) : `${s.name} (${s.party ? t(`intake.party.${s.party}`) : s.role})`},{" "}
                             <span className={s.signed_at ? "text-status-success-fg" : undefined}>
                               {s.signed_at ? t("owner_extra.documents.signer_signed", { date: formatDate(s.signed_at, lng) }) : t("owner_extra.documents.signer_pending")}
                             </span>

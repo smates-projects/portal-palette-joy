@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Check, Circle, FileText } from "lucide-react";
 import { useAcceptDocument, useContractRules, useCurrentUser, useLeadIntake, useRequestDocument, useResendContract, useRules } from "@/lib/api/hooks";
 import { MOU_ACKNOWLEDGMENT_POINTS, type BusinessDocument, type Contract, type EntryContractRule, type LeadValidation, type ReviewClock, type Signer } from "@/lib/api/types";
-import { checklistByRule, contractDeadline, factsFromContracts, ruleSchedule, smEntitiesOf, smSignBlock } from "@/lib/leads/contract-rules";
+import { checklistByRule, contractDeadline, factsFromContracts, ruleSchedule, smEntitiesOf, smSignBlock, smSignerEntityName } from "@/lib/leads/contract-rules";
 import { whenText } from "@/components/global/rules/contract-rules-text";
 import { formatDate } from "@/lib/format";
 import { canResend } from "@/lib/leads/onboarding";
@@ -81,7 +81,7 @@ export function IntakeChecklist({ leadId, readOnly, validation }: { leadId: stri
 
   /** "Firma Camila Soto por SM Square" / "Firma cualquier persona de la oficina por Corporate". */
   const smLine = (s: Signer) => {
-    const entity = s.sm_entity ? entities[s.sm_entity].name : null;
+    const entity = s.sm_entity || s.sm_entity_name?.trim() ? smSignerEntityName(s, entities) : null;
     if (!entity) return t("intake.party.sm");
     return s.user_id ? t("entry_contracts.checklist.sm_line", { person: s.name, entity }) : t("entry_contracts.checklist.sm_line_any", { entity });
   };
@@ -159,7 +159,7 @@ export function IntakeChecklist({ leadId, readOnly, validation }: { leadId: stri
                 {/* The SM part is signed by a person on behalf of the company: "Firmado por Marilyn Boraei en nombre de Strategic Mates Corporate". */}
                 {s.party === "sm" ? smLine(s) : t(`intake.party.${s.party ?? "owner"}`)}, <span className={cn(s.status === "signed" && "text-status-success-fg", s.status === "declined" && "text-status-danger-fg")}>
                   {s.party === "sm" && s.status === "signed"
-                    ? (s.user_id ? t("intake.signed_on_behalf_by", { name: s.name, entity: entities[s.sm_entity ?? "corporate"].name }) : t("intake.nda_signed_on_behalf"))
+                    ? (s.user_id ? t("intake.signed_on_behalf_by", { name: s.name, entity: smSignerEntityName(s, entities) }) : t("intake.nda_signed_on_behalf"))
                     : t(`intake.signer_status.${s.status ?? "sent"}`)}
                 </span>
                 {last && ` · ${formatDate(last.at, lng)}`}

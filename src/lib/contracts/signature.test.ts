@@ -27,6 +27,59 @@ describe("contract sections (the document dialog)", () => {
     expect(sections[0]?.text).toContain("Vossler, domiciliada en");
     expect(sections.filter((s) => s.heading)).toHaveLength(10);
   });
+
+  it("the API's text, one clause per line with no blank lines, keeps every clause (es)", () => {
+    const body = [
+      "MEMORANDO DE ENTENDIMIENTO",
+      "SMALL BUSINESS",
+      "PRIMERA: COMPARECIENTES.-",
+      "Comparecen LA EMPRESA y EL SMALL BUSINESS.",
+      "SEGUNDA: ANTECEDENTES Y OBJETO.-",
+      "El negocio hace remodelaciones.",
+      "Small Business: del 50 % al 75 %.",
+      "DÉCIMA PRIMERA: DISPOSICIONES GENERALES Y FIRMA.-",
+      "En constancia, LAS PARTES firman.",
+      "",
+      "POR LA EMPRESA",
+      "Marilyn Boraei",
+      "",
+      "Este documento se firma en español y en inglés.",
+    ].join("\n");
+    expect(contractSections(body)).toEqual([
+      { heading: "PRIMERA: COMPARECIENTES.-", text: "Comparecen LA EMPRESA y EL SMALL BUSINESS." },
+      { heading: "SEGUNDA: ANTECEDENTES Y OBJETO.-", text: "El negocio hace remodelaciones.\nSmall Business: del 50 % al 75 %." },
+      { heading: "DÉCIMA PRIMERA: DISPOSICIONES GENERALES Y FIRMA.-", text: "En constancia, LAS PARTES firman." },
+      { heading: null, text: "POR LA EMPRESA\nMarilyn Boraei\n\nEste documento se firma en español y en inglés." },
+    ]);
+  });
+
+  it("the API's text, one clause per line with no blank lines, keeps every clause (en)", () => {
+    const body = [
+      "SMALL BUSINESS CONFIDENTIALITY AGREEMENT",
+      "FIRST: THE PARTIES AND PURPOSE.-",
+      "STRATEGIC MATES LLC and the business sign this agreement.",
+      "The information is exchanged to evaluate the business.",
+      "SECOND: CONFIDENTIAL INFORMATION AND EXCLUSIONS.-",
+      "Confidential Information is any non-public information.",
+      "ELEVENTH: GENERAL PROVISIONS AND SIGNATURE.-",
+      "THE PARTIES sign this agreement.",
+    ].join("\n");
+    const sections = contractSections(body);
+    expect(sections.map((s) => s.heading)).toEqual([
+      "FIRST: THE PARTIES AND PURPOSE.-",
+      "SECOND: CONFIDENTIAL INFORMATION AND EXCLUSIONS.-",
+      "ELEVENTH: GENERAL PROVISIONS AND SIGNATURE.-",
+    ]);
+    expect(sections[0]?.text).toBe("STRATEGIC MATES LLC and the business sign this agreement.\nThe information is exchanged to evaluate the business.");
+    expect(sections[2]?.text).toBe("THE PARTIES sign this agreement.");
+  });
+
+  it("text before the first clause that is not the title stays, as an untitled section", () => {
+    expect(contractSections("ACUERDO\nEntre A y B.\nPRIMERA: OBJETO.-\nTodo.")).toEqual([
+      { heading: null, text: "Entre A y B." },
+      { heading: "PRIMERA: OBJETO.-", text: "Todo." },
+    ]);
+  });
 });
 
 describe("signature view (the signature blocks of a contract)", () => {

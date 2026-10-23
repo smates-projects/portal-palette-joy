@@ -28,6 +28,15 @@ export const smEntitiesOf = (rules: { sm_entities?: SmEntities | undefined } | n
   sm_square: { name: rules?.sm_entities?.sm_square.name?.trim() || DEFAULT_SM_ENTITIES.sm_square.name },
 });
 
+/**
+ * The company an SM signer signed for ("en nombre de …"): the name frozen on that signature, so renaming the company
+ * in the rules never rewrites a signed contract. Older signatures without it fall back to the current name.
+ */
+export const smSignerEntityName = (
+  signer: { sm_entity?: SmEntity | null | undefined; sm_entity_name?: string | null | undefined },
+  entities: SmEntities,
+): string => signer.sm_entity_name?.trim() || entities[signer.sm_entity ?? "corporate"].name;
+
 // ---------- Templates ----------
 
 /** Placeholders a template can use; the editor shows them as chips to insert. */

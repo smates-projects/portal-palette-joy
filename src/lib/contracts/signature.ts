@@ -8,20 +8,64 @@ export function typedSignatureDataUrl(name: string): string {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
+export type ContractSection = { heading: string | null; text: string };
+
+/** Strategic Mates' documents title each clause "PRIMERA: LAS PARTES Y FINALIDAD.-" ("FIRST: THE PARTIES AND PURPOSE.-"). */
+const CLAUSE_HEADING = /^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ ]*:\s.*\.-$/;
+const isClauseHeading = (line: string) => CLAUSE_HEADING.test(line.trim());
+/** A line in capitals only ("MEMORANDO DE ENTENDIMIENTO"): part of the document's title. */
+const isTitleLine = (line: string) => line === line.toLocaleUpperCase() && /\p{Lu}/u.test(line);
+
+/** Lines without the blank ones at both ends, joined. */
+const joinTrimmed = (lines: string[]) => lines.join("\n").trim();
+
 /**
- * The sections of a contract's full text (Contract.body), for the document dialog. Blocks are separated by a blank
- * line; a block whose first line reads "1. Qué protege" becomes a section with that heading. The first block is the
- * title of the text (the dialog already shows the contract's name), so it is left out.
+ * The sections of a contract's full text (Contract.body), for the document dialog. Two shapes:
+ * - Clause headings (Strategic Mates' texts, the API's one clause per line with no blank lines): each heading starts
+ *   a section that runs until the next heading. The capitals title above the first clause is left out (the dialog
+ *   already shows the contract's name); any other text before it is an untitled section. After the last clause, what
+ *   follows a blank line (signature blocks, the governing language clause) is an untitled section.
+ * - Otherwise blocks separated by a blank line; a block whose first line reads "1. Qué protege" becomes a section with
+ *   that heading. The first block is the title, so it is left out.
  */
-export function contractSections(body: string): { heading: string | null; text: string }[] {
+export function contractSections(body: string): ContractSection[] {
+  const lines = body.replace(/\r\n/g, "\n").split("\n");
+  const starts = lines.flatMap((line, i) => (isClauseHeading(line) ? [i] : []));
+  return starts.length > 0 ? clauseSections(lines, starts) : blockSections(body);
+}
+
+function clauseSections(lines: string[], starts: number[]): ContractSection[] {
+  const sections: ContractSection[] = [];
+  const preamble = lines.slice(0, starts[0]).map((l) => l.trim()).filter(Boolean);
+  let titleEnd = 0;
+  while (titleEnd < preamble.length && isTitleLine(preamble[titleEnd]!)) titleEnd++;
+  const intro = preamble.slice(titleEnd).join("\n");
+  if (intro) sections.push({ heading: null, text: intro });
+
+  starts.forEach((start, n) => {
+    const isLast = n === starts.length - 1;
+    const bodyLines = lines.slice(start + 1, isLast ? lines.length : starts[n + 1]);
+    let trailer: string[] = [];
+    if (isLast) {
+      // The last clause ends at the first blank line after its text; the rest is not part of the clause.
+      const firstText = bodyLines.findIndex((l) => l.trim() !== "");
+      const blank = firstText < 0 ? -1 : bodyLines.findIndex((l, i) => i > firstText && l.trim() === "");
+      if (blank >= 0) trailer = bodyLines.splice(blank);
+    }
+    sections.push({ heading: lines[start]!.trim(), text: joinTrimmed(bodyLines) });
+    const rest = joinTrimmed(trailer);
+    if (rest) sections.push({ heading: null, text: rest });
+  });
+  return sections;
+}
+
+function blockSections(body: string): ContractSection[] {
   const blocks = body.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
   return blocks.slice(1).map((block) => {
     const [first = "", ...rest] = block.split("\n");
     // "1. Objeto. …\n2. Información …" is a numbered list of clauses (siblings), not a heading with its text.
     const list = rest.some((line) => /^\d+\.\s/.test(line.trim()));
-    // Strategic Mates' documents title each clause "PRIMERA: LAS PARTES Y FINALIDAD.-".
-    const clause = /^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ ]*:\s.*\.-$/.test(first.trim());
-    return (clause || (/^\d+\.\s/.test(first) && !list)) && rest.length > 0 ? { heading: first, text: rest.join("\n") } : { heading: null, text: block };
+    return /^\d+\.\s/.test(first) && !list && rest.length > 0 ? { heading: first, text: rest.join("\n") } : { heading: null, text: block };
   });
 }
 

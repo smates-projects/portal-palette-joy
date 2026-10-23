@@ -541,6 +541,8 @@ export interface Signer {
   acknowledgments?: MouAcknowledgmentPoint[] | null | undefined;
   /** SM signer of a contract created by a rule: the Strategic Mates company it signs for. */
   sm_entity?: SmEntity | null | undefined;
+  /** SM signer: the name of that company when the contract was created, frozen per signature (a later rename of the rules does not change it). */
+  sm_entity_name?: string | null | undefined;
 }
 
 export interface Contract {

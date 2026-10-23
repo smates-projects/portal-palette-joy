@@ -102,7 +102,9 @@ export function createContractRules(d: Deps) {
   const signerOf = (s: EntryContractSigner, l: Lead, owner: User | undefined, on: string): Signer | null => {
     const base = (name: string, user_id: Uuid | null): Signer => ({
       name, role: s.party, party: s.party, user_id, status: "sent", signed_at: null, decline_reason: null,
-      history: [{ status: "sent", at: on }], ...(s.party === "sm" ? { sm_entity: s.sm_entity ?? "corporate" } : {}),
+      history: [{ status: "sent", at: on }],
+      // As the API: the company's name is frozen on the signature when the contract is created.
+      ...(s.party === "sm" ? { sm_entity: s.sm_entity ?? "corporate", sm_entity_name: smEntitiesOf(db.rules)[s.sm_entity ?? "corporate"].name } : {}),
     });
     if (s.party === "owner") return base(owner?.full_name ?? l.contact.name, owner?.id ?? null);
     if (s.party === "bishop") {

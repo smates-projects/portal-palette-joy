@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { EntryContractRule, Signer } from "@/lib/api/types";
 import {
-  DEFAULT_ENTRY_CONTRACT_RULES, contractDeadline, dueRules, fillContractTemplate, parseTrigger, ruleError, ruleSchedule, smEntitiesOf, smSignBlock,
+  DEFAULT_ENTRY_CONTRACT_RULES, contractDeadline, dueRules, fillContractTemplate, parseTrigger, ruleError, ruleSchedule, smEntitiesOf, smSignBlock, smSignerEntityName,
   type EntryFacts,
 } from "./contract-rules";
 
@@ -97,6 +97,12 @@ describe("rule checks and texts", () => {
 
 describe("signing for Strategic Mates and the deadline", () => {
   const smSquare = { user_id: "camila", sm_entity: "sm_square" as const };
+  it("'en nombre de …' uses the name frozen on the signature, not the current rules name", () => {
+    const entities = smEntitiesOf({ sm_entities: { corporate: { name: "SM Corporate Renamed" }, sm_square: { name: "SM Square" } } });
+    expect(smSignerEntityName({ sm_entity: "corporate", sm_entity_name: "Strategic Mates Corporate" }, entities)).toBe("Strategic Mates Corporate");
+    expect(smSignerEntityName({ sm_entity: "corporate", sm_entity_name: null }, entities)).toBe("SM Corporate Renamed");
+    expect(smSignerEntityName({}, entities)).toBe("SM Corporate Renamed");
+  });
   it("only the SM Square holder signs for SM Square, and only with the permission", () => {
     expect(smSignBlock(smSquare, { id: "camila", can_sign_sm_square: true })).toBeNull();
     expect(smSignBlock(smSquare, { id: "nicolas", can_sign_sm_square: false })).toBe("sm_square_signer_required");

@@ -3,7 +3,7 @@ import { Printer, ShieldCheck } from "lucide-react";
 import type { Contract, ContractLanguage, Signer } from "@/lib/api/types";
 import { contractTextIn } from "@/lib/contracts/language";
 import { documentFingerprint } from "@/lib/contracts/signature";
-import { smEntitiesOf } from "@/lib/leads/contract-rules";
+import { smEntitiesOf, smSignerEntityName } from "@/lib/leads/contract-rules";
 import { useRules } from "@/lib/api/hooks";
 import { formatDate } from "@/lib/format";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -31,7 +31,7 @@ export function SignedContractDialog({ contract, language: initial, onClose }: {
   const entities = smEntitiesOf(useRules().data);
   const partyLabel = (s: Signer) => (s.party ? t(`intake.party.${s.party}`) : s.role);
   // The SM part is signed by a person on behalf of the company (the CEO for Corporate).
-  const onBehalf = (s: Signer) => (s.party === "sm" && s.signed_at && s.user_id ? t("intake.signed_on_behalf_by", { name: s.name, entity: entities[s.sm_entity ?? "corporate"].name }) : null);
+  const onBehalf = (s: Signer) => (s.party === "sm" && s.signed_at && s.user_id ? t("intake.signed_on_behalf_by", { name: s.name, entity: smSignerEntityName(s, entities) }) : null);
   // Older contracts only keep signed_at: show that as the one audit event.
   const events = contract.signers
     .flatMap((s) => (s.history?.length ? s.history : s.signed_at ? [{ status: "signed" as const, at: s.signed_at }] : []).map((h) => ({ ...h, signer: s.name })))
