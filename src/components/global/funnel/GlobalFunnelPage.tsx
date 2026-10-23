@@ -84,7 +84,8 @@ export function GlobalFunnelPage({ initialLeadId }: { initialLeadId?: string | u
         <SheetContent className="w-full overflow-y-auto bg-surface p-0 sm:max-w-xl [&>button]:hidden">
           <SheetTitle className="sr-only">{selected?.business.name ?? t("pipeline.detail.open_full")}</SheetTitle>
           <SheetDescription className="sr-only">{selected?.contact.name ?? ""}</SheetDescription>
-          {leadId && <LeadDetail readOnly leadId={leadId} onClose={() => setLeadId(undefined)} />}
+          {/* Read only unless the current user is the lead's consultant. */}
+          {leadId && <LeadDetail readOnly={selected?.consultant_user_id !== meId} leadId={leadId} onClose={() => setLeadId(undefined)} />}
         </SheetContent>
       </Sheet>
     </div>

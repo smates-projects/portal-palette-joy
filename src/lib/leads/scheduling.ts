@@ -19,14 +19,15 @@ export function leadOwnerOf<U extends Pick<User, "id" | "role" | "business_id" |
 }
 
 /**
- * How "Agendar reunión" / "Reagendar" books: with an owner account, the portal's scheduling dialog (both calendars,
- * the lead refreshes in place); without one, the consultant's booking link (the person books it). null: not a
- * booking action.
+ * How "Agendar reunión" / "Reagendar" books: with the SM user's Google Calendar connected or an owner account, the
+ * portal's scheduling dialog (the lead's email gets the Meet invitation); otherwise the consultant's booking link.
+ * null: not a booking action.
  */
 export function scheduleRoute(
   action: LeadPrimaryAction,
   ownerHasAccount: boolean,
+  smCalendarConnected = false,
 ): "dialog" | "booking_link" | null {
   if (action !== "schedule" && action !== "rebook") return null;
-  return ownerHasAccount ? "dialog" : "booking_link";
+  return smCalendarConnected || ownerHasAccount ? "dialog" : "booking_link";
 }
