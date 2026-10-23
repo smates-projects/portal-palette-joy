@@ -3,7 +3,7 @@
 // runs the real driver). Files travel through the files module
 // (./files.ts): the adapter uploads the bytes first and then attaches the returned file_id.
 import type { DocumentUpload, DocumentsRepository, SigningSession } from "../repositories";
-import type { BusinessDocument, Contract, IntakeSummary, IsoDateTime, Uuid } from "../types";
+import type { BusinessDocument, Contract, IntakeSummary, IsoDateTime, SavedSignature, Uuid } from "../types";
 import { ApiError, getOrNull, type HttpClient } from "./client";
 import { signatureToPng, uploadFile } from "./files";
 import { ensureCurrentUser } from "./session";
@@ -23,7 +23,7 @@ export interface SignedDocument {
     name: string;
     status: SignerStatus;
     signed_at: IsoDateTime | null;
-    signature: { kind: "drawn" | "typed" | "uploaded"; image_url: string } | null;
+    signature: { kind: "drawn" | "typed" | "uploaded" | "saved"; image_url: string } | null;
   }[];
   audit_trail: {
     party: Party;
@@ -115,7 +115,10 @@ export function createHttpDocumentsRepository(client: HttpClient): HttpDocuments
      * The SignaturePad gives a data URL; the API wants the image stored first (context contract_signature, PNG
      * only) and its id. Pressing "Firmar" after reading the consent text is the consent the API records.
      */
-    signContract: async (contractId, signature) => {
+    signContract: async (contractId, signature, options) => {
+      if (options?.use_saved_signature) {
+        return client.post<Contract>(`${contractPath(contractId)}/sign`, { use_saved_signature: true, consent: true });
+      }
       if (!signature) {
         throw new ApiError({
           code: "signature_required",
@@ -131,8 +134,22 @@ export function createHttpDocumentsRepository(client: HttpClient): HttpDocuments
       return client.post<Contract>(`${contractPath(contractId)}/sign`, {
         signature_file_id: fileId,
         signature_kind: signature.kind,
+        ...(options?.save_signature ? { save_signature: true } : {}),
         consent: true,
       });
+    },
+
+    getMySignature: () => getOrNull<SavedSignature>(client, "/me/signature"),
+
+    /** presign (contract_signature) → PUT the bytes → complete → PUT /me/signature { file_id, kind }. */
+    saveMySignature: async (signature) => {
+      const png = await signatureToPng(signature.image_url);
+      const fileId = await uploadFile(client, png, { context: "contract_signature", name: "signature.png" });
+      return client.request<SavedSignature>("PUT", "/me/signature", { body: { file_id: fileId, kind: signature.kind } });
+    },
+
+    deleteMySignature: async () => {
+      await client.delete<unknown>("/me/signature");
     },
 
     declineContract: (contractId, reason) =>

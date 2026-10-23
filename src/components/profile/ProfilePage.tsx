@@ -5,6 +5,7 @@ import { BookingUrlSection } from "@/components/profile/BookingUrlSection";
 import { AdvisorLinkSection } from "@/components/profile/AdvisorLinkSection";
 import { TwoFactorSection } from "@/components/profile/TwoFactorSection";
 import { PasswordSection } from "@/components/profile/PasswordSection";
+import { MySignatureSection } from "@/components/profile/MySignatureSection";
 import { Mail, MapPin, Phone, UserPlus } from "lucide-react";
 import { useCurrentUser, useOrganizations, useUsersWithInactive } from "@/lib/api/hooks";
 import type { User } from "@/lib/api/types";
@@ -119,6 +120,7 @@ export function ProfilePage({ calendarStatus, onDismissCalendarStatus }: { calen
           <GoogleCalendarCard me={me} returnStatus={calendarStatus} onDismissReturn={onDismissCalendarStatus} />
 
           <PasswordSection me={me} />
+          <MySignatureSection />
           <TwoFactorSection me={me} />
           <AdvisorLinkSection />
           <BookingUrlSection />

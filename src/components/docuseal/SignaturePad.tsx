@@ -14,7 +14,7 @@ const SCRIPT_FONT = '"Segoe Script", "Brush Script MT", "Apple Chancery", "URW C
  * Captures the signature the way DocuSeal does: draw it, type the name (rendered in a script font) or upload an
  * image. Reports a PNG data URL whenever a valid signature exists, null otherwise.
  */
-export function SignaturePad({ signerName, onChange }: { signerName: string; onChange: (s: ContractSignature | null) => void }) {
+export function SignaturePad({ signerName, onChange, allowTyped = true }: { signerName: string; onChange: (s: ContractSignature | null) => void; allowTyped?: boolean }) {
   const { t } = useTranslation();
   const [mode, setMode] = useState<ContractSignature["kind"]>("drawn");
   const [typed, setTyped] = useState(signerName);
@@ -88,7 +88,7 @@ export function SignaturePad({ signerName, onChange }: { signerName: string; onC
         <span className="text-sm font-medium">{t("intake.docuseal.sig_title")}</span>
         <div role="tablist" className="grid w-full grid-cols-3 rounded-md border border-border bg-muted/50 p-0.5 sm:inline-grid sm:w-auto">
           {tab("drawn", t("intake.docuseal.sig_draw"))}
-          {tab("typed", t("intake.docuseal.sig_type"))}
+          {allowTyped && tab("typed", t("intake.docuseal.sig_type"))}
           {tab("uploaded", t("intake.docuseal.sig_upload"))}
         </div>
       </div>

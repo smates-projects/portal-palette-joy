@@ -489,7 +489,23 @@ export function useRefreshSigning() {
   const qc = useQueryClient();
   return () => Promise.all([qc.invalidateQueries({ queryKey: ["leads"] }), qc.invalidateQueries({ queryKey: ["documents"] }), qc.invalidateQueries({ queryKey: ["bishop"] })]);
 }
-export const useSignContract = () => useIntakeMutation((v: { contractId: string; signature: ContractSignature }) => api.documents.signContract(v.contractId, v.signature));
+export const useSignContract = () => useIntakeMutation((v: { contractId: string; signature?: ContractSignature | undefined; options?: import("./types").SignContractOptions | undefined }) => api.documents.signContract(v.contractId, v.signature, v.options));
+/** "Mi firma": the current person's saved signature (null without one; "forbidden" while viewing as someone). */
+export const useMySignature = () => useQuery({ queryKey: ["me", "signature"], queryFn: () => api.documents.getMySignature(), retry: false });
+export function useSaveMySignature() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (s: { kind: "drawn" | "uploaded"; image_url: string }) => api.documents.saveMySignature(s),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["me", "signature"] }),
+  });
+}
+export function useDeleteMySignature() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.documents.deleteMySignature(),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["me", "signature"] }),
+  });
+}
 export const useDeclineContract = () => useIntakeMutation((v: { contractId: string; reason: string }) => api.documents.declineContract(v.contractId, v.reason));
 /** True when the current user owns a business still entering (NDA and MOU sent, not in program yet). */
 export function useIsOnboarding(): boolean {

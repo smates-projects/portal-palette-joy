@@ -84,6 +84,7 @@ export function SignedContractDialog({ contract, language: initial, onClose }: {
                   <p className="mt-1.5 text-sm font-medium text-foreground">{s.name}</p>
                   <p className="text-xs">{partyLabel(s)}{s.signed_at ? ` · ${t("intake.docuseal.signed_on", { date: formatDate(s.signed_at, lng) })}` : ""}</p>
                   {onBehalf(s) && <p className="text-xs">{onBehalf(s)}</p>}
+                  {s.signed_at && s.signature?.kind === "saved" && <p className="text-xs">{t("intake.docuseal.saved_signature")}</p>}
                 </div>
               ))}
             </div>

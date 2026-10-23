@@ -35,7 +35,7 @@ export type SignatureView = { kind: "text"; text: string } | { kind: "image"; sr
  * is resolved against the API base URL, not the front. Without any image, the name in the script style.
  */
 export function signatureView(
-  signature: { kind: "drawn" | "typed" | "uploaded"; image_url: string } | null | undefined,
+  signature: { kind: "drawn" | "typed" | "uploaded" | "saved"; image_url: string } | null | undefined,
   signerName: string,
   apiBaseUrl: string,
 ): SignatureView {

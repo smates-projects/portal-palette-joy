@@ -213,6 +213,8 @@ export function createMockApi(): MockApi {
       if (m?.outcome_prompted_at && !m.outcome)
         leadNotifs.push({ id: newId(), user_id: l.consultant_user_id, kind: "meeting_outcome_pending", lead_id: l.id, actor_user_id: null, created_at: m.outcome_prompted_at, read: false, meeting_at: m.starts_at, meeting_id: m.id });
   let currentUserId = seed.U_LUCIA;
+  /** "Mi firma": the saved signature of each person (GET/PUT/DELETE /me/signature). */
+  const savedSignatures = new Map<string, import("./../types").SavedSignature>();
   // Login, logout, invitations, magic links and reset (./session). Starts signed in as currentUserId.
   const auth = createSession({ db, newId, delay, getUserId: () => currentUserId, setUserId: (id) => { currentUserId = id; } });
 
@@ -479,8 +481,10 @@ export function createMockApi(): MockApi {
           if (s && s.status === "sent" && (party !== "sm" || !smSignBlock(s, me()))) intake.setSignerStatus(c, party, "opened");
           return delay(withSigningView(c, me()));
         },
-        signContract: async (contractId, signature) => {
+        signContract: async (contractId, signature, options) => {
           const { c, party } = contractInScope(contractId);
+          const saved = savedSignatures.get(currentUserId);
+          if (options?.use_saved_signature && !saved) throw new Error("signature_not_saved");
           // Contracts created by a rule: Corporate's CEO signs the binding agreement, the SM Square holder the OA.
           if (party === "sm") {
             const block = smSignBlock(c.signers.find((x) => x.party === "sm"), me());
@@ -488,7 +492,10 @@ export function createMockApi(): MockApi {
           }
           intake.setSignerStatus(c, party, "signed");
           const signer = c.signers.find((x) => x.party === party);
-          if (signer) signer.signature = signature ?? null;
+          if (signer) signer.signature = options?.use_saved_signature && saved ? { kind: "saved", image_url: saved.image_url } : signature ?? null;
+          // "Guardar esta firma para la próxima" (drawn or uploaded only).
+          if (options?.save_signature && signature && (signature.kind === "drawn" || signature.kind === "uploaded"))
+            savedSignatures.set(currentUserId, { kind: signature.kind, image_url: signature.image_url, updated_at: nowIso() });
           // The owner signed the NDA: the MOU is ready right away (he can sign it before or during the meeting).
           if (party === "owner" && intake.mouOnNdaSigned(c)) notifyOwner(c.business_id, "mou_ready");
           // Tripartite signed by the three: the Bishop funds open with today's program amount.
@@ -499,6 +506,16 @@ export function createMockApi(): MockApi {
           // A contract signed by all may be the trigger of the next one (the binding agreement opens the OA).
           if (c.state === "signed") crules.sweep();
           return delay(c);
+        },
+        getMySignature: async () => delay(savedSignatures.get(currentUserId) ?? null),
+        saveMySignature: async (signature) => {
+          const s = { kind: signature.kind, image_url: signature.image_url, updated_at: nowIso() };
+          savedSignatures.set(currentUserId, s);
+          return delay(s);
+        },
+        deleteMySignature: async () => {
+          savedSignatures.delete(currentUserId);
+          return delay(undefined);
         },
         declineContract: async (contractId, reason) => {
           if (!reason.trim()) throw new Error("reason_required");
