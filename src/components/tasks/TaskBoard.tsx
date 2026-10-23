@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { todayIso } from "@/lib/clock";
 import { useApproveTask, useCurrentUser, useStartTask, useUnstartTask } from "@/lib/api/hooks";
 import type { TaskWithComputed, VisibleTaskStatus } from "@/lib/api/types";
 import { formatDate, formatRelativeDate } from "@/lib/format";
 import { BOARD_COLUMNS, resolveBoardMove } from "@/lib/tasks/board";
-import { daysBetween } from "@/lib/tasks/table";
+import { overdueDays, overdueLabel } from "@/lib/tasks/table";
 import { cn } from "@/lib/utils";
 import { AreaSquare } from "@/components/AreaTag";
 import { areaColorVar } from "@/lib/tasks/area-color";
@@ -150,7 +149,7 @@ export function TaskBoard(props: {
                       title={formatDate(task.due_date, lng)}
                     >
                       {task.is_overdue
-                        ? t("tasks.overdue_days", { count: daysBetween(task.due_date, todayIso()) })
+                        ? overdueLabel(t, overdueDays(task))
                         : formatRelativeDate(task.due_date, lng)}
                     </span>
                   </div>

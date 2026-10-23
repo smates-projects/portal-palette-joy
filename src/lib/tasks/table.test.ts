@@ -1,10 +1,25 @@
 import { describe, expect, it } from "vitest";
 import { withComputed } from "@/lib/api/computed";
 import * as seed from "@/lib/api/mock/seed";
-import { filterTasks, matchesDue, sortTasks } from "./table";
+import i18n from "@/lib/i18n";
+import { filterTasks, matchesDue, overdueDays, overdueLabel, sortTasks } from "./table";
 
 const all = seed.tasks.map((t) => withComputed(t, seed.tasks, "2026-10-14"));
 const ctx = { businessName: (id: string) => seed.businesses.find((b) => b.id === id)!.name, statusLabel: (s: string) => s };
+
+describe("overdue days", () => {
+  const t = i18n.getFixedT("es");
+  it("uses the API's overdue_days when sent, otherwise counts from due_date", () => {
+    expect(overdueDays({ due_date: "2026-10-10", overdue_days: 5 }, "2026-10-14")).toBe(5);
+    expect(overdueDays({ due_date: "2026-10-10" }, "2026-10-14")).toBe(4);
+  });
+  it("0 days or less reads 'Vence hoy', never 'Vencida hace 0 días'", () => {
+    expect(overdueLabel(t, 0)).toBe("Vence hoy");
+    expect(overdueLabel(t, -1)).toBe("Vence hoy");
+    expect(overdueLabel(t, 1)).toBe("Vencida hace 1 día");
+    expect(overdueLabel(t, 3)).toBe("Vencida hace 3 días");
+  });
+});
 
 describe("Mis tareas table", () => {
   it("default order puts overdue tasks first, then by due date", () => {

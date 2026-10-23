@@ -14,6 +14,7 @@ import {
   useVersions,
 } from "@/lib/api/hooks";
 import { buildNetworkMatrix } from "@/lib/tasks/sm";
+import { overdueLabel } from "@/lib/tasks/table";
 import { ALL_OFFICES, inOfficeScope, useOfficeScope } from "@/lib/office-scope";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -82,7 +83,7 @@ export function GlobalHomePage() {
   const scopeEmpty = scoped && totals.programs === 0 && totals.leads_month === 0 && totals.ready === 0;
   const reasonText = (a: (typeof attention)[number]) =>
     a.reason === "overdue"
-      ? t("tasks.overdue_days", { count: a.days })
+      ? overdueLabel(t, a.days)
       : a.reason === "stale"
         ? t("sm.reason_stale", { count: a.days })
         : t("sm.reason_long_block", { codes: a.blockers.map((b) => b.code).join(", ") });

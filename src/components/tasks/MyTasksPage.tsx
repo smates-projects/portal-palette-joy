@@ -2,7 +2,6 @@ import { useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { ArrowDown, ArrowUp, ArrowUpDown, CalendarDays, Columns3, GanttChart, Search, Table2, X } from "lucide-react";
-import { todayIso } from "@/lib/clock";
 import { useBusinesses, useCurrentUser, useOrganizations, useTasks, useTasksWithCancelled } from "@/lib/api/hooks";
 import { CancelTasksDialog, EditTasksDialog, type EditMode } from "@/components/tasks/sm/SmTaskActions";
 import type { AreaCode, TaskWithComputed, VisibleTaskStatus } from "@/lib/api/types";
@@ -11,8 +10,9 @@ import {
   DUE_FILTERS,
   VIEWS,
   VISIBLE_STATUSES,
-  daysBetween,
   filterTasks,
+  overdueDays,
+  overdueLabel,
   sortTasks,
   type SortKey,
   type TasksSearch,
@@ -473,7 +473,7 @@ export function MyTasksPage({ search, calendarRoute = false }: { search: TasksSe
                               </Indicator>
                             )}
                             {task.is_overdue && (
-                              <Indicator>{t("tasks.overdue_days", { count: daysBetween(task.due_date, todayIso()) })}</Indicator>
+                              <Indicator>{overdueLabel(t, overdueDays(task))}</Indicator>
                             )}
                           </div>
                         </td>

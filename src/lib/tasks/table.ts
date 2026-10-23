@@ -1,3 +1,4 @@
+import type { TFunction } from "i18next";
 import { todayIso } from "@/lib/clock";
 import type { TaskWithComputed, VisibleTaskStatus } from "@/lib/api/types";
 
@@ -39,6 +40,16 @@ const addDays = (iso: string, n: number) => {
 
 export function daysBetween(from: string, to: string) {
   return Math.round((Date.parse(`${to}T12:00:00Z`) - Date.parse(`${from}T12:00:00Z`)) / 86_400_000);
+}
+
+/** Days past due: the API's overdue_days (its clock) when sent, otherwise counted here from due_date. */
+export function overdueDays(task: Pick<TaskWithComputed, "due_date" | "overdue_days">, today: string = todayIso()) {
+  return task.overdue_days ?? daysBetween(task.due_date, today);
+}
+
+/** "Vencida hace X días", or "Vence hoy" when the count is 0 or less (never "Vencida hace 0 días"). */
+export function overdueLabel(t: TFunction, days: number) {
+  return days <= 0 ? t("home.due_today") : t("tasks.overdue_days", { count: days });
 }
 
 /** Week ends on Sunday; month ends on its last day. Approved tasks never match. */

@@ -1,7 +1,7 @@
 import { todayIso } from "@/lib/clock";
 import type { Business, Organization, TaskVersion, TaskWithComputed } from "@/lib/api/types";
 import { AREAS, areaHealth, type Health } from "./owner";
-import { attentionReason, daysBetween, isStaleSubmission, type AttentionReason } from "./table";
+import { attentionReason, daysBetween, isStaleSubmission, overdueDays, type AttentionReason } from "./table";
 
 export interface SmSummary {
   due_today: number;
@@ -42,10 +42,10 @@ export function buildAttention(tasks: TaskWithComputed[], all: TaskWithComputed[
           : [];
       const days =
         reason === "overdue"
-          ? daysBetween(task.due_date, today)
+          ? overdueDays(task, today)
           : reason === "stale"
             ? daysBetween((task.last_submitted_at ?? today).slice(0, 10), today)
-            : Math.max(...blockers.map((b) => daysBetween(b.due_date, today)));
+            : Math.max(...blockers.map((b) => overdueDays(b, today)));
       return [{ task, reason, days, blockers }];
     })
     .sort((a, b) => REASON_ORDER[a.reason] - REASON_ORDER[b.reason] || b.days - a.days || a.task.code.localeCompare(b.task.code));

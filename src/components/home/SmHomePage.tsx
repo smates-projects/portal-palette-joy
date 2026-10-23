@@ -4,7 +4,7 @@ import { useBusinesses, useCurrentUser, useLeads, useOrganizations, useTasks } f
 import { ClockLabel } from "@/components/pipeline/IntakeChecklist";
 import type { TaskWithComputed } from "@/lib/api/types";
 import { buildAttention, buildSmSummary, type SmSummary } from "@/lib/tasks/sm";
-import { isStaleSubmission } from "@/lib/tasks/table";
+import { isStaleSubmission, overdueLabel } from "@/lib/tasks/table";
 import { todayIso } from "@/lib/clock";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -51,7 +51,7 @@ export function SmHomePage({ taskId }: { taskId?: string | undefined }) {
 
   const reasonText = (a: (typeof attention)[number]) =>
     a.reason === "overdue"
-      ? t("tasks.overdue_days", { count: a.days })
+      ? overdueLabel(t, a.days)
       : a.reason === "stale"
         ? t("sm.reason_stale", { count: a.days })
         : t("sm.reason_long_block", { codes: a.blockers.map((b) => b.code).join(", ") });
