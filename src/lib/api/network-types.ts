@@ -498,6 +498,10 @@ export interface ContractSignature {
   image_url: string;
 }
 
+/** Error codes of the signing and scheduling endpoints the screens read. */
+export const SIGNING_ERROR_CODES = ["signature_not_saved", "calendar_not_connected"] as const;
+export type SigningErrorCode = (typeof SIGNING_ERROR_CODES)[number];
+
 /** The signature a person keeps in Mi perfil (GET /me/signature). */
 export interface SavedSignature {
   kind: "drawn" | "uploaded";

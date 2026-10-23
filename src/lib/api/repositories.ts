@@ -21,6 +21,8 @@ import type {
   ChecklistItem,
   Contract,
   ContractSignature,
+  SavedSignature,
+  SignContractOptions,
   CreateOfficeInput,
   FinancialSeries,
   FranchiseDetail,
@@ -697,7 +699,13 @@ export interface DocumentsRepository {
    * four points first (acknowledgment_required); the Operating Agreement waits oa_waiting_days from the day it went
    * out (waiting_period, the date in the error's detail).
    */
-  signContract(contractId: Uuid, signature?: ContractSignature): Promise<Contract>;
+  signContract(contractId: Uuid, signature?: ContractSignature, options?: SignContractOptions): Promise<Contract>;
+  /** GET /me/signature: the current person's saved signature, null without one. "forbidden" while viewing as someone. */
+  getMySignature(): Promise<SavedSignature | null>;
+  /** Stores the image (context contract_signature) and PUT /me/signature { file_id, kind }. */
+  saveMySignature(signature: { kind: "drawn" | "uploaded"; image_url: string }): Promise<SavedSignature>;
+  /** DELETE /me/signature (204). */
+  deleteMySignature(): Promise<void>;
   declineContract(contractId: Uuid, reason: string): Promise<Contract>;
   /** Owner, MOU: the four points confirmed with "Entendí" (POST /contracts/{id}/acknowledge). All four, or invalid_points. */
   acknowledge(contractId: Uuid, points: MouAcknowledgmentPoint[]): Promise<Contract>;
