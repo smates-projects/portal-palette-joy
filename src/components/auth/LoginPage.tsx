@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useLogin, useRequestMagicLink } from "@/lib/api/hooks";
-import { DEMO_PASSWORD } from "@/lib/api/mock";
+import { DEMO_PASSWORD } from "@/lib/api/mock/demo-credentials";
 import { isMockRepository } from "@/lib/api/mode";
 import { authErrorCode, emailProblem, focusFirstError } from "@/lib/auth/form";
 import { nextStepAfterSignIn } from "@/lib/auth/two-factor";

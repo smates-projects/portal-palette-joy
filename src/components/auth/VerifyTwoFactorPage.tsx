@@ -3,7 +3,7 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { buttonVariants } from "@/components/ui/button";
 import { useRecoverTwoFactor, useVerifyTwoFactor } from "@/lib/api/hooks";
-import { DEMO_TOTP_CODE } from "@/lib/api/mock/session";
+import { DEMO_TOTP_CODE } from "@/lib/api/mock/demo-credentials";
 import { isMockRepository } from "@/lib/api/mode";
 import { TOTP_CODE_LENGTH } from "@/lib/api/types";
 import { authErrorCode, focusFirstError } from "@/lib/auth/form";

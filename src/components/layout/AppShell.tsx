@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, Navigate, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { ChevronsLeft, ChevronsRight, Search, Check, Eye, LogOut, Menu, UserRound } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, Check, Eye, LogOut, Menu, UserRound } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { Logo } from "@/components/brand/Logo";
@@ -348,14 +348,7 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
       </button>
       {/* The screen name keeps a readable minimum on phones; "Ver como" shrinks instead. */}
       <div className="min-w-[5.5rem] flex-1 truncate font-semibold">{current ? t(`pages.${current.key}.title`) : pathname === "/perfil" ? t("pages.profile.title") : ""}</div>
-      <label className="relative hidden w-72 md:block">
-        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <input
-          type="search"
-          placeholder={t("topbar.search_placeholder")}
-          className="h-8 w-full rounded-md border border-input bg-background pl-8 pr-3 text-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30"
-        />
-      </label>
+      {/* No global search yet: the box searched nothing, so it is not shown until a search endpoint exists. */}
       {/* SM Global only: "Viendo" the whole network, Corporate or one office. */}
       <OfficeScopeSelect />
       <NotificationBell />

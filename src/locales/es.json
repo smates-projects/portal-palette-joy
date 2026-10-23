@@ -1480,7 +1480,7 @@
       "email": "Correo",
       "phone": "Teléfono",
       "origin_note": "Cómo llegó (opcional)",
-      "origin_note_hint": "Por ejemplo, referido de Carla Méndez o evento de la cámara. Queda como primera nota.",
+      "origin_note_hint": "Por ejemplo, referido por un cliente o evento de la cámara. Queda como primera nota.",
       "pick": "Elige una opción",
       "confirm": "Agregar negocio",
       "err_required": "Escribe el nombre del negocio y el del dueño.",

@@ -20,13 +20,11 @@ import {
 } from "../types";
 
 /**
- * Password of every seeded user. The login screen shows it as a hint only in development builds
- * (import.meta.env.DEV); production never displays it.
+ * Password of every seeded user and the only code the mock's "authenticator app" ever shows. The auth screens show
+ * them only while the session repository is the mock (isMockRepository("session")).
  */
-export const DEMO_PASSWORD = "Demo1234!";
-
-/** The only code the mock's "authenticator app" ever shows (verify, confirm and disable). */
-export const DEMO_TOTP_CODE = "123456";
+import { DEMO_PASSWORD, DEMO_TOTP_CODE } from "./demo-credentials";
+export { DEMO_PASSWORD, DEMO_TOTP_CODE };
 
 /** Secret the mock hands out on setup (base32, as an authenticator app expects it). */
 export const DEMO_TOTP_SECRET = "JBSWY3DPEHPK3PXPSMDEMOFA";
