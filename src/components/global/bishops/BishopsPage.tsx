@@ -11,7 +11,8 @@ import { EmptyBox, ErrorBox, GlobalHeader, ListSkeleton } from "../shared";
 import { MAX_HOME_ITEMS } from "../logic";
 import { BishopPrimaryAction, BishopStateChip } from "./shared";
 
-const COUNTERS: (keyof BishopCounts)[] = ["awaiting_sm", "invited", "active", "investing"];
+// Every state has its counter, so each Bishop falls in one; "Sin acuerdo marco" only shows when someone is there.
+const COUNTERS: (keyof BishopCounts)[] = ["awaiting_sm", "invited", "awaiting_bishop", "no_agreement", "active", "investing"];
 
 /**
  * Bishops (SM Global): every Bishop in one list with the state of the framework agreement and the one thing to do
@@ -41,6 +42,8 @@ export function BishopsPage() {
 
   const rows = bishopRows(usersQ.data ?? [], contracts, leadsQ.data ?? []);
   const counts = bishopCounts(rows);
+  // Kept while it is the active filter, so the filter never hides itself.
+  const counters = COUNTERS.filter((k) => k !== "no_agreement" || counts[k] > 0 || filter === k);
   const visible = rows.filter((r) => matchesName(r, query) && (!filter || r.state === filter));
   const shown = all ? visible : visible.slice(0, MAX_HOME_ITEMS);
   const lng = i18n.language;
@@ -49,8 +52,8 @@ export function BishopsPage() {
     <>
       {rows.length > 0 && (
         <>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            {COUNTERS.map((k) => (
+          <div className={cn("grid grid-cols-2 gap-3 md:grid-cols-3", counters.length > 5 ? "lg:grid-cols-6" : "lg:grid-cols-5")}>
+            {counters.map((k) => (
               <button
                 key={k}
                 type="button"

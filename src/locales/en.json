@@ -2234,6 +2234,8 @@
       "corporate": "Strategic Mates Corporate",
       "count_awaiting_sm": "Waiting for your signature",
       "count_invited": "Invited, not accepted",
+      "count_awaiting_bishop": "Needs their signature",
+      "count_no_agreement": "No framework agreement",
       "count_active": "Active",
       "count_investing": "Investing",
       "filter_hint": "Tap a number to see only those Bishops.",

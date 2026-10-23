@@ -66,19 +66,11 @@ export function bishopRows(users: User[], contracts: Contract[], leads: LeadWith
     .sort((a, b) => BISHOP_STATE_ORDER.indexOf(a.state) - BISHOP_STATE_ORDER.indexOf(b.state) || a.user.full_name.localeCompare(b.user.full_name));
 }
 
-export interface BishopCounts {
-  awaiting_sm: number;
-  invited: number;
-  active: number;
-  investing: number;
-}
+/** One counter per state, so every Bishop falls in exactly one of them. */
+export type BishopCounts = Record<BishopState, number>;
 
-export const bishopCounts = (rows: BishopRow[]): BishopCounts => ({
-  awaiting_sm: rows.filter((r) => r.state === "awaiting_sm").length,
-  invited: rows.filter((r) => r.state === "invited").length,
-  active: rows.filter((r) => r.state === "active").length,
-  investing: rows.filter((r) => r.state === "investing").length,
-});
+export const bishopCounts = (rows: BishopRow[]): BishopCounts =>
+  Object.fromEntries(BISHOP_STATE_ORDER.map((state) => [state, rows.filter((r) => r.state === state).length])) as BishopCounts;
 
 const fold = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 

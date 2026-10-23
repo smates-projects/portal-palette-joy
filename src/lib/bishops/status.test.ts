@@ -53,8 +53,16 @@ describe("Bishops list", () => {
     expect(rows.find((r) => r.user.id === "zoe")!.funded).toEqual([]);
   });
 
-  it("counters: Esperan tu firma, Invitados sin aceptar, Activos, Invirtiendo", () => {
-    expect(bishopCounts(rows)).toEqual({ awaiting_sm: 1, invited: 1, active: 1, investing: 1 });
+  it("counters: Esperan tu firma, Invitados sin aceptar, Falta su firma, Sin acuerdo marco, Activos, Invirtiendo", () => {
+    expect(bishopCounts(rows)).toEqual({ awaiting_sm: 1, invited: 1, awaiting_bishop: 0, no_agreement: 0, active: 1, investing: 1 });
+  });
+
+  it("every Bishop falls in some counter (awaiting_bishop and no_agreement included)", () => {
+    const withMissing = bishopRows([...users, user("x", "X"), user("rio", "Río Waiting")], [...contracts, framework("rio", null, "2026-10-05")], leads);
+    const counts = bishopCounts(withMissing);
+    expect(counts.no_agreement).toBe(1);
+    expect(counts.awaiting_bishop).toBe(1);
+    expect(Object.values(counts).reduce((a, b) => a + b, 0)).toBe(withMissing.length);
   });
 
   it("one primary action per state", () => {
