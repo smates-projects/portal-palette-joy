@@ -1439,7 +1439,10 @@
       "actor_fallback": "Strategic Mates",
       "contract_created": "An entry contract was created",
       "validation_saved": "{{actor}} saved the validation",
-      "validation_closed": "{{actor}} closed the validation with the final percentages"
+      "validation_closed": "{{actor}} closed the validation with the final percentages",
+      "binding_sent": "The Binding and Formalization Agreement went out to the owner, the investor and Strategic Mates",
+      "doc_not_applicable": "{{actor}} marked a document as not applicable",
+      "other": "{{actor}} made a change to the business"
     },
     "error_title": "We could not load the pipeline.",
     "retry": "Retry",

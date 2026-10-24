@@ -232,7 +232,9 @@ export function LeadDetail(props: {
     // The API names the actor; the office could not list SM Global's people otherwise ("Marilyn lo reactivó").
     const actor = e.actor_name || userName(e.actor_user_id) || t("pipeline.events.actor_fallback");
     const stage = (s: string | null) => (s ? t(`pipeline.stages.${s}`) : "");
-    return t(`pipeline.events.${e.kind}`, {
+    // A kind without its sentence (a retired one, or one newer than this screen) never shows its raw key.
+    const key = i18n.exists(`pipeline.events.${e.kind}`) ? `pipeline.events.${e.kind}` : "pipeline.events.other";
+    return t(key, {
       actor, owner: lead.contact.name, from: stage(e.from), to: stage(e.to), date: e.signed_on ? formatDate(e.signed_on, lng) : "",
       outcome: e.outcome ? t(`entry.outcome.${e.outcome}`) : "",
       // transferred: the office name travels in the body ("Derivado a SM Orlando por Marilyn").

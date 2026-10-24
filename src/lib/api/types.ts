@@ -921,23 +921,33 @@ export interface IntakeSummary {
   entry?: OwnerEntry | null | undefined;
 }
 
-export type LeadEventKind =
-  | "submitted" | "stage_changed" | "discarded" | "restored" | "note" | "contract_signed"
-  | "nda_sent" | "doc_accepted" | "doc_requested" | "docs_approved"
-  | "bishop_accepted" | "bishop_released" | "tripartite_sent"
-  | "funds_recorded" | "funds_reported" | "funds_confirmed" | "funds_removed" | "program_started"
+/**
+ * Every kind of lead event the API and the mock write. Each has its sentence in pipeline.events (locales.test checks
+ * it), except own_nda_proposed: the owner's own NDA was retired and its texts with it, so an old event of it reads as
+ * the generic pipeline.events.other.
+ */
+export const LEAD_EVENT_KINDS = [
+  "submitted", "stage_changed", "discarded", "restored", "note", "contract_signed",
+  "nda_sent", "doc_accepted", "doc_requested", "docs_approved",
+  "bishop_accepted", "bishop_released", "tripartite_sent",
+  "funds_recorded", "funds_reported", "funds_confirmed", "funds_removed", "program_started",
   // Business added by hand and the assessment sent to it afterwards.
-  | "created_manual" | "assessment_sent"
+  "created_manual", "assessment_sent",
   // Automatic entry (actor null): summary email sent, meeting booked by the owner. meeting_note: the consultant's note after it.
-  | "summary_sent" | "meeting_booked" | "meeting_note"
-  // Revised entry: outcome of a meeting, MOU sent, presented to Bishops, expansion meeting booked.
-  | "meeting_outcome" | "mou_sent"
-  | "presented_to_bishops" | "expansion_booked"
+  "summary_sent", "meeting_booked", "meeting_note",
+  // Revised entry: NDA and MOU signed, outcome of a meeting, MOU sent, presented to Bishops, expansion meeting booked,
+  // the binding agreement sent, a document the owner marked "No aplica".
+  "nda_signed", "mou_signed", "meeting_outcome", "mou_sent",
+  "presented_to_bishops", "expansion_booked", "binding_sent", "doc_not_applicable",
   // Moved to another office ("Derivar a oficina"): body carries the office name. Reactivated by SM Global after an
   // automatic discard. A meeting SM registered by hand ("Registrar reunión").
-  | "transferred" | "reactivated" | "meeting_registered"
+  "transferred", "reactivated", "meeting_registered",
   // Configurable entry contracts: a rule created a contract; the validation saved or closed.
-  | "contract_created" | "validation_saved" | "validation_closed";
+  "contract_created", "validation_saved", "validation_closed",
+  // Retired: the owner's own NDA.
+  "own_nda_proposed",
+] as const;
+export type LeadEventKind = (typeof LEAD_EVENT_KINDS)[number];
 
 export interface LeadEvent {
   id: Uuid;

@@ -1439,7 +1439,10 @@
       "actor_fallback": "Strategic Mates",
       "contract_created": "Se creó un contrato del ingreso",
       "validation_saved": "{{actor}} guardó la validación",
-      "validation_closed": "{{actor}} cerró la validación con los porcentajes definitivos"
+      "validation_closed": "{{actor}} cerró la validación con los porcentajes definitivos",
+      "binding_sent": "Se envió el Acuerdo de Vinculación y Formalización al dueño, al inversor y a Strategic Mates",
+      "doc_not_applicable": "{{actor}} marcó que un documento no aplica",
+      "other": "{{actor}} hizo un cambio en el negocio"
     },
     "error_title": "No pudimos cargar el embudo.",
     "retry": "Reintentar",

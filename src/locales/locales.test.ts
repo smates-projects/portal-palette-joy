@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import en from "./en.json";
 import es from "./es.json";
-import { NOTIFICATION_KINDS } from "@/lib/api/types";
+import { LEAD_EVENT_KINDS, NOTIFICATION_KINDS } from "@/lib/api/types";
 
 /** Dotted path of every text in a locale file. */
 function keysOf(node: unknown, prefix = ""): string[] {
@@ -92,6 +92,15 @@ describe("locales", () => {
     expect(es.notifications.kind_contract_signed).toContain("{{business_name}}");
     expect(en.notifications.kind_contract_signed).toContain("{{contract_name}}");
     expect(en.notifications.kind_contract_signed).toContain("{{business_name}}");
+  });
+
+  it("every lead event kind has its sentence in both languages (no raw pipeline.events key in the history)", () => {
+    const missing = (locale: { pipeline: { events: Record<string, unknown> } }) =>
+      [...LEAD_EVENT_KINDS, "other"]
+        .filter((kind) => kind !== "own_nda_proposed")
+        .filter((kind) => typeof locale.pipeline.events[kind] !== "string" || !(locale.pipeline.events[kind] as string).trim());
+    expect(missing(es)).toEqual([]);
+    expect(missing(en)).toEqual([]);
   });
 
   it("the payment receipt is stored, not only its name", () => {
