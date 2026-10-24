@@ -89,6 +89,8 @@ export interface OwnerEntryMeeting {
   duration_min?: number | undefined;
   duration_minutes?: number | undefined;
   meet_url?: string | null | undefined;
+  /** When it was booked: the newest booking is the meeting "Tu ingreso" shows (older answers may come without it). */
+  booked_at?: IsoDateTime | null | undefined;
   outcome?: MeetingOutcome | null | undefined;
   outcome_prompted_at?: IsoDateTime | null | undefined;
 }

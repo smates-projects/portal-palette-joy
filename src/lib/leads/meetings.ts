@@ -41,6 +41,22 @@ const sameInstant = (a: string, b: string) => a === b || Date.parse(a) === Date.
 /** Newest first: by booking, then by start. */
 const recency = (m: RawMeeting) => Date.parse(m.booked_at ?? m.starts_at) || 0;
 
+/**
+ * The newest meeting of a list: by booking date when every meeting has one, else by the list's order (the owner's
+ * entry lists the bookings oldest first). Never by the start: a meeting booked again after a reschedule may start
+ * before the one it replaced, and the owner's "Tu ingreso" kept showing the old one. The API's latestMeetingOf
+ * follows the same rule.
+ */
+function newestOf(list: readonly RawMeeting[]): RawMeeting | undefined {
+  const booked = list.every((m) => !!m.booked_at && !Number.isNaN(Date.parse(m.booked_at)));
+  const ranked = list.map((meeting, index) => ({ meeting, index }));
+  ranked.sort((a, b) => (booked ? Date.parse(b.meeting.booked_at ?? "") - Date.parse(a.meeting.booked_at ?? "") : 0) || b.index - a.index);
+  return ranked[0]?.meeting;
+}
+
+/** The same meeting: by id when both have one, otherwise by its start. */
+const sameMeeting = (a: RawMeeting, b: RawMeeting) => (a.id && b.id ? a.id === b.id : sameInstant(a.starts_at, b.starts_at));
+
 /** The full LeadMeeting the screens use; unknown fields get neutral values (duration 0 = unknown). */
 export function toLeadMeeting(raw: RawMeeting): LeadMeeting {
   return {
@@ -74,10 +90,14 @@ function pick(src: MeetingSources, kind: MeetingKind): LeadMeeting | null {
       : src.meeting && kindOf(src.meeting) === "initial"
         ? src.meeting
         : null;
-  const newest = [...list].sort((a, b) => recency(b) - recency(a))[0];
+  const newest = newestOf(list);
   // After a reschedule the answer may still carry the old meeting as `meeting`: a newer booking in the list wins, so
-  // "Tu reunión" shows the new date instead of "Reunión hecha el <old date>".
-  const newerInList = !!explicit && !!newest && !sameInstant(newest.starts_at, explicit.starts_at) && recency(newest) > recency(explicit);
+  // "Tu reunión" shows the new date instead of "Reunión hecha el <old date>". When the list holds the explicit one,
+  // the list's ranking decides; otherwise its booking (or start) is compared with the newest of the list.
+  const explicitInList = explicit ? list.find((m) => sameMeeting(m, explicit)) : undefined;
+  const newerInList =
+    !!explicit && !!newest &&
+    (explicitInList ? explicitInList !== newest : !sameInstant(newest.starts_at, explicit.starts_at) && recency(newest) > recency(explicit));
   const base = newerInList ? newest : explicit ?? newest;
   if (!base) return null;
   // The same meeting in the list: by id when the base has one, otherwise by its start (that is how the id is found).

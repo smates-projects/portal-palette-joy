@@ -112,6 +112,25 @@ describe("entryMeetings: one selector for the meeting ids", () => {
     expect(entryMeetings({ meeting: { ...old, id: undefined }, meetings: [old, fresh] }).initial).toMatchObject({ id: "new", outcome: null, starts_at: "2026-10-22T15:00:00Z" });
   });
 
+  it("a meeting booked again that starts before the one it replaced is still the newest (never ranked by start)", () => {
+    // Moved from the 30th to the 24th and held: the owner's home must show the held one, not the rescheduled one.
+    const replaced = { id: "old", kind: "initial" as const, starts_at: "2026-10-30T15:00:00Z", duration_min: 30, outcome: "reschedule" as const };
+    const held = { id: "new", kind: "initial" as const, starts_at: "2026-10-24T15:00:00Z", duration_min: 30, outcome: "held" as const };
+    // The owner's entry lists the bookings oldest first; without booking dates the list's order decides.
+    expect(entryMeetings({ meetings: [replaced, held] }).initial).toMatchObject({ id: "new", outcome: "held" });
+    // With booking dates on every meeting, they decide whatever the order.
+    expect(
+      entryMeetings({
+        meetings: [
+          { ...held, booked_at: "2026-10-20T10:00:00Z" },
+          { ...replaced, booked_at: "2026-10-10T10:00:00Z" },
+        ],
+      }).initial,
+    ).toMatchObject({ id: "new", outcome: "held" });
+    // The answer naming the replaced one as `meeting` still gives the held one.
+    expect(entryMeetings({ meeting: { ...replaced, id: undefined }, meetings: [replaced, held] }).initial).toMatchObject({ id: "new" });
+  });
+
   it("no id anywhere: the selector says so (null), the screen shows an error instead of doing nothing", () => {
     const { initial } = entryMeetings({ meeting: INITIAL });
     expect(meetingIdOf(initial)).toBeNull();
