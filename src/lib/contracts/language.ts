@@ -15,6 +15,13 @@ export const isContractLanguage = (value: unknown): value is ContractLanguage =>
 export const contractLanguageOf = (appLanguage: string | null | undefined): ContractLanguage =>
   appLanguage?.toLowerCase().startsWith("en") ? "en" : "es";
 
+/**
+ * The API's download of one sealed copy (the path of Contract.sealed_files.<lang>.download_url: a short-lived redirect
+ * for the contract's parties), on the API's origin. The "Contrato firmado" email's /contratos/$id page opens it.
+ */
+export const sealedCopyUrl = (contractId: string, language: ContractLanguage, apiBase: string): string =>
+  new URL(`/api/v1/contracts/${encodeURIComponent(contractId)}/sealed-files?lang=${language}`, apiBase).toString();
+
 type Readable = Pick<Contract, "body" | "text" | "explainer" | "explainers">;
 
 const filled = (value: string | null | undefined): string | null => (value?.trim() ? value : null);

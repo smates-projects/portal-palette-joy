@@ -13,6 +13,8 @@ describe("new role routes", () => {
     "/oportunidades", "/oportunidades/abc", "/acuerdos", "/bishops", "/bishops/abc", "/calendario", "/manual", "/pagos",
     // Public sign-in screens of the two-factor flow and the owner entry link.
     "/verificacion", "/activar-verificacion", "/entrada/abc",
+    // Where the "Contrato firmado" email lands: the signed copy of one contract.
+    "/contratos/abc",
   ];
   it.each(paths)("matches %s", (path) => {
     expect(router.matchRoutes(path).at(-1)?.routeId).not.toBe(rootRouteId);

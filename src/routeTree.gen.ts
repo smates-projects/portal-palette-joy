@@ -36,6 +36,7 @@ import { Route as ReporteRouteImport } from './routes/reporte'
 import { Route as VerificacionRouteImport } from './routes/verificacion'
 import { Route as BishopsIndexRouteImport } from './routes/bishops.index'
 import { Route as BishopsUserIdRouteImport } from './routes/bishops.$userId'
+import { Route as ContratosContractIdRouteImport } from './routes/contratos.$contractId'
 import { Route as EnlaceTokenRouteImport } from './routes/enlace.$token'
 import { Route as EntradaTokenRouteImport } from './routes/entrada.$token'
 import { Route as FranquiciasIndexRouteImport } from './routes/franquicias.index'
@@ -184,6 +185,11 @@ const BishopsUserIdRoute = BishopsUserIdRouteImport.update({
   path: '/bishops/$userId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ContratosContractIdRoute = ContratosContractIdRouteImport.update({
+  id: '/contratos/$contractId',
+  path: '/contratos/$contractId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EnlaceTokenRoute = EnlaceTokenRouteImport.update({
   id: '/enlace/$token',
   path: '/enlace/$token',
@@ -273,6 +279,7 @@ export interface FileRoutesByFullPath {
   '/reporte': typeof ReporteRoute
   '/verificacion': typeof VerificacionRoute
   '/bishops/$userId': typeof BishopsUserIdRoute
+  '/contratos/$contractId': typeof ContratosContractIdRoute
   '/enlace/$token': typeof EnlaceTokenRoute
   '/entrada/$token': typeof EntradaTokenRoute
   '/franquicias/$franchiseId': typeof FranquiciasFranchiseIdRoute
@@ -314,6 +321,7 @@ export interface FileRoutesByTo {
   '/reporte': typeof ReporteRoute
   '/verificacion': typeof VerificacionRoute
   '/bishops/$userId': typeof BishopsUserIdRoute
+  '/contratos/$contractId': typeof ContratosContractIdRoute
   '/enlace/$token': typeof EnlaceTokenRoute
   '/entrada/$token': typeof EntradaTokenRoute
   '/franquicias/$franchiseId': typeof FranquiciasFranchiseIdRoute
@@ -356,6 +364,7 @@ export interface FileRoutesById {
   '/reporte': typeof ReporteRoute
   '/verificacion': typeof VerificacionRoute
   '/bishops/$userId': typeof BishopsUserIdRoute
+  '/contratos/$contractId': typeof ContratosContractIdRoute
   '/enlace/$token': typeof EnlaceTokenRoute
   '/entrada/$token': typeof EntradaTokenRoute
   '/franquicias/$franchiseId': typeof FranquiciasFranchiseIdRoute
@@ -399,6 +408,7 @@ export interface FileRouteTypes {
     | '/reporte'
     | '/verificacion'
     | '/bishops/$userId'
+    | '/contratos/$contractId'
     | '/enlace/$token'
     | '/entrada/$token'
     | '/franquicias/$franchiseId'
@@ -440,6 +450,7 @@ export interface FileRouteTypes {
     | '/reporte'
     | '/verificacion'
     | '/bishops/$userId'
+    | '/contratos/$contractId'
     | '/enlace/$token'
     | '/entrada/$token'
     | '/franquicias/$franchiseId'
@@ -481,6 +492,7 @@ export interface FileRouteTypes {
     | '/reporte'
     | '/verificacion'
     | '/bishops/$userId'
+    | '/contratos/$contractId'
     | '/enlace/$token'
     | '/entrada/$token'
     | '/franquicias/$franchiseId'
@@ -523,6 +535,7 @@ export interface RootRouteChildren {
   ReporteRoute: typeof ReporteRoute
   VerificacionRoute: typeof VerificacionRoute
   BishopsUserIdRoute: typeof BishopsUserIdRoute
+  ContratosContractIdRoute: typeof ContratosContractIdRoute
   EnlaceTokenRoute: typeof EnlaceTokenRoute
   EntradaTokenRoute: typeof EntradaTokenRoute
   FranquiciasFranchiseIdRoute: typeof FranquiciasFranchiseIdRoute
@@ -729,6 +742,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BishopsUserIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/contratos/$contractId': {
+      id: '/contratos/$contractId'
+      path: '/contratos/$contractId'
+      fullPath: '/contratos/$contractId'
+      preLoaderRoute: typeof ContratosContractIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/enlace/$token': {
       id: '/enlace/$token'
       path: '/enlace/$token'
@@ -843,6 +863,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReporteRoute: ReporteRoute,
   VerificacionRoute: VerificacionRoute,
   BishopsUserIdRoute: BishopsUserIdRoute,
+  ContratosContractIdRoute: ContratosContractIdRoute,
   EnlaceTokenRoute: EnlaceTokenRoute,
   EntradaTokenRoute: EntradaTokenRoute,
   FranquiciasFranchiseIdRoute: FranquiciasFranchiseIdRoute,

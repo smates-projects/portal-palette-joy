@@ -4204,6 +4204,9 @@
     "download_es": "Descargar en español",
     "download_en": "Download in English",
     "sealed_label": "Sealed copies of {{name}}",
-    "t_demo_download": "The demo has no real PDF. With the API the sealed copy opens in a new tab"
+    "t_demo_download": "The demo has no real PDF. With the API the sealed copy opens in a new tab",
+    "copy_page_title": "Your signed contract",
+    "copy_page_body": "The download starts by itself. If it does not, pick the language of the copy.",
+    "copy_page_home": "Go to the home page"
   }
 }

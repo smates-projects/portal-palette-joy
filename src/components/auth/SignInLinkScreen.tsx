@@ -12,15 +12,19 @@ import { BackToLogin, FormAlert, PendingState } from "./AuthFields";
 
 /**
  * Shared screen of the single-use sign-in links (magic link, owner entry link): uses the link as soon as the page
- * opens, then goes home or to the two-factor step. On error, says why and offers a new link.
+ * opens, then goes where the link points (`next`, a path of this app, checked by nextStepAfterSignIn) or home, or to
+ * the two-factor step keeping it. On error, says why and offers a new link.
  */
 export function SignInLinkScreen({
   exchange,
+  next,
   title,
   pendingLabel,
   expiredHelp,
 }: {
   exchange: UseQueryResult<SignInResult>;
+  /** Where to land once signed in (an entry link's ?siguiente=); anything outside this app is ignored. */
+  next?: string | undefined;
   title: string;
   pendingLabel: string;
   /** Help under an expired or used link. */
@@ -32,10 +36,10 @@ export function SignInLinkScreen({
 
   useEffect(() => {
     if (!result) return;
-    const step = nextStepAfterSignIn(result);
+    const step = nextStepAfterSignIn(result, next);
     if (step.kind === "signed_in") void navigate({ href: step.href, replace: true });
     else void navigate({ to: step.to, search: step.search, state: step.state, replace: true });
-  }, [result, navigate]);
+  }, [result, navigate, next]);
 
   if (!exchange.isError) {
     return (

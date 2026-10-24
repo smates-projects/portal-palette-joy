@@ -8,6 +8,7 @@ import {
   hasContractText,
   hasEnglishVersion,
   sealedCopiesOf,
+  sealedCopyUrl,
 } from "./language";
 
 const ES = { title: "Qué es el NDA", paragraphs: ["Es un acuerdo."], bullets: ["Cuida tu información."] };
@@ -81,5 +82,14 @@ describe("contract language", () => {
     expect(sealedCopiesOf(contract({ sealed_files: { es, en: null } }))).toEqual([{ language: "es", ...es }]);
     expect(sealedCopiesOf(contract({ sealed_files: null }))).toEqual([]);
     expect(sealedCopiesOf(contract())).toEqual([]);
+  });
+
+  it("sealedCopyUrl is the API's download of one copy, on the API's origin", () => {
+    expect(sealedCopyUrl("c-1", "en", "https://app.example.com/api/v1")).toBe(
+      "https://app.example.com/api/v1/contracts/c-1/sealed-files?lang=en",
+    );
+    expect(sealedCopyUrl("a/b", "es", "http://localhost:3100/api/v1")).toBe(
+      "http://localhost:3100/api/v1/contracts/a%2Fb/sealed-files?lang=es",
+    );
   });
 });

@@ -15,6 +15,18 @@ describe("nextStepAfterSignIn", () => {
     expect(nextStepAfterSignIn(user, "/login")).toEqual({ kind: "signed_in", href: "/" });
   });
 
+  it("an entry link lands where its email points (?siguiente=): a step of the owner's home or a signed copy", () => {
+    expect(nextStepAfterSignIn(user, "/?step=operating_agreement")).toEqual({
+      kind: "signed_in",
+      href: "/?step=operating_agreement",
+    });
+    expect(nextStepAfterSignIn(user, "/contratos/c-1?copia=en")).toEqual({
+      kind: "signed_in",
+      href: "/contratos/c-1?copia=en",
+    });
+    expect(nextStepAfterSignIn(user, "/entrada/other-token")).toEqual({ kind: "signed_in", href: "/" });
+  });
+
   it("a challenge goes to /verificacion with the id in the history state and ?next= kept", () => {
     expect(
       nextStepAfterSignIn({ two_factor_required: true, challenge_id: "ch-1" }, "/perfil"),
