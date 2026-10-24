@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Mail, MapPin, Phone, X } from "lucide-react";
 import {
-  useAddLeadNote, useApproveDocuments, useBusinessFunds, useConfirmProgramStart, useCurrentUser, useLeadDetail, useLeadIntake, useOrganizations,
+  useAddLeadNote, useApproveDocuments, useBusinessFunds, useConfirmProgramStart, useCurrentUser, useLeadDetail, useLeadIntake, useLeadInvestors, useOrganizations,
   useReactivateLead, useRecordFundPayment, useRegisterMeeting, useRejectDocuments, useRemoveFundPayment, useRules, useSendTripartite, useSetMeetingOutcome, useTransferLead, useUsers,
 } from "@/lib/api/hooks";
 import { AUTO_DISCARD_MOU_NOT_SIGNED, bookingKind, entryRules, heldWithoutMou, oaSendBlock } from "@/lib/leads/entry-flow";
@@ -12,7 +12,7 @@ import { RegisterMeetingDialog } from "./RegisterMeetingDialog";
 import { TransferDialog, canTransfer } from "./TransferDialog";
 import { meetingIdOf } from "@/lib/leads/meetings";
 import { nowIso } from "@/lib/clock";
-import { leadOwnerOf, scheduleRoute } from "@/lib/leads/scheduling";
+import { leadMeetingPeople, leadOwnerOf, scheduleRoute } from "@/lib/leads/scheduling";
 import { isCalendarConnected } from "@/lib/calendar/scheduling";
 import type { LeadMeeting, MeetingOutcome } from "@/lib/api/types";
 import { validateFundPayment } from "@/lib/leads/funds";
@@ -81,6 +81,8 @@ export function LeadDetail(props: {
   const userName = (id: string | null) => (id ? usersQ.data?.find((u) => u.id === id)?.full_name ?? "" : "");
   // The entry contracts (cached with the checklist): with an Acuerdo de Vinculación the OA is created by its rule.
   const intakeQ = useLeadIntake(q.data?.lead.intake ? props.leadId : undefined);
+  // The Bishop who accepted the lead joins its expansion meeting (shared with the Inversores section's query).
+  const investorsQ = useLeadInvestors(q.data?.lead.stage === "accepted" ? props.leadId : undefined);
 
   if (q.isLoading)
     return <div className="space-y-4 p-6"><Skeleton className="h-8 w-2/3" /><Skeleton className="h-24" /><Skeleton className="h-48" /></div>;
@@ -332,7 +334,7 @@ export function LeadDetail(props: {
         open={scheduling}
         onOpenChange={setScheduling}
         context={{ kind: "lead", lead_id: lead.id }}
-        participants={[]}
+        participants={leadMeetingPeople(lead, leadOwner, investorsQ.data?.bishop)}
         guestEmail={lead.contact.email}
         defaultTopic={lead.business.name}
         onRegisterManually={canRegister ? () => { setScheduling(false); setRegistering(true); } : undefined}

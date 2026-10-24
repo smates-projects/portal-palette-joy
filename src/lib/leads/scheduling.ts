@@ -1,5 +1,6 @@
 // "Agendar reunión" on a lead: who the owner's account is, and whether the portal schedules it or the booking link does.
-import type { User } from "@/lib/api/types";
+import type { LeadStage, User } from "@/lib/api/types";
+import type { SchedulingPerson } from "@/lib/calendar/scheduling";
 import type { LeadPrimaryAction } from "./pipeline";
 
 /**
@@ -30,4 +31,21 @@ export function scheduleRoute(
 ): "dialog" | "booking_link" | null {
   if (action !== "schedule" && action !== "rebook") return null;
   return smCalendarConnected || ownerHasAccount ? "dialog" : "booking_link";
+}
+
+/**
+ * Who the scheduling dialog of a lead starts with, besides the organizer. On an accepted lead the meeting is the
+ * expansion one: the Bishop who accepted it and the owner's account. Before that nobody: the prospect is invited by
+ * the lead's email.
+ */
+export function leadMeetingPeople(
+  lead: { stage: LeadStage },
+  owner: Pick<User, "id" | "full_name"> | undefined,
+  bishop: { user_id: string; name: string } | null | undefined,
+): SchedulingPerson[] {
+  if (lead.stage !== "accepted") return [];
+  return [
+    ...(bishop ? [{ user_id: bishop.user_id, name: bishop.name }] : []),
+    ...(owner ? [{ user_id: owner.id, name: owner.full_name }] : []),
+  ];
 }

@@ -15,7 +15,7 @@ import {
 import { groupSlotsByDay } from "@/lib/calendar/slots";
 import { formatDateTime, localeTag } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PrimaryButton, SecondaryButton } from "@/components/tasks/detail/dialogs";
 import { Button } from "@/components/ui/button";
 import { schedulingDays } from "./scheduling-days";
@@ -68,10 +68,10 @@ export function ScheduleMeetingDialog(props: ScheduleMeetingDialogProps) {
   const { t } = useTranslation();
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-      <DialogContent className="flex max-h-[85dvh] w-[calc(100%-2rem)] flex-col overflow-hidden bg-surface p-4 sm:max-w-lg sm:p-6">
+      {/* No dialog description: "Tú organizas la reunión..." is read once, from the participants list it explains. */}
+      <DialogContent aria-describedby={undefined} className="flex max-h-[85dvh] w-[calc(100%-2rem)] flex-col overflow-hidden bg-surface p-4 sm:max-w-lg sm:p-6">
         <DialogHeader className="shrink-0 pr-6 text-left">
           <DialogTitle>{t(props.reschedule ? "calendar.title_reschedule" : "calendar.title")}</DialogTitle>
-          <DialogDescription className="sr-only">{t("calendar.participants_hint")}</DialogDescription>
         </DialogHeader>
         {/* Mounted only while open, so every opening starts clean. */}
         {props.open && <ScheduleBody {...props} />}
@@ -118,7 +118,13 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
   const nameOf = (id: string) => (id === me?.id ? me.full_name : people.find((p) => p.user_id === id)?.name ?? userOf(id)?.full_name ?? "");
   const choice = props.taskChoices?.find((c) => c.id === taskId);
   const context: ScheduleContext | null = props.taskChoices ? (taskId ? { kind: "task", task_id: taskId } : null) : (props.context ?? null);
-  const pickable = users.filter((u) => isActiveUser(u) && u.id !== me?.id && !people.some((p) => p.user_id === u.id));
+  // The portal people the caller lists, plus the pre-filled ones it may not list (the Bishop of a lead), so a guest
+  // removed by mistake can be added back.
+  const candidates: (SchedulingPerson & { title?: string | null | undefined })[] = [
+    ...users.filter(isActiveUser).map((u) => ({ user_id: u.id, name: u.full_name, title: u.title })),
+    ...(props.participants ?? []).filter((p) => !userOf(p.user_id)),
+  ];
+  const pickable = candidates.filter((c) => c.user_id !== me?.id && !people.some((p) => p.user_id === c.user_id));
   const tooMany = people.length + emails.length + 1 > limits.maxParticipants;
   // Only Google invites people without an account: that needs the organizer's own calendar.
   const emailsNeedCalendar = emails.length > 0 && !meConnected;
@@ -352,9 +358,9 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
         {(!props.taskChoices || choice) && (
           <>
             {guestNote}
-            <fieldset className="space-y-1.5">
+            <fieldset className="space-y-1.5" aria-describedby="schedule-participants-hint">
               <legend className="text-sm font-medium">{t("calendar.participants")}</legend>
-              <p className="text-xs text-muted-foreground">{t("calendar.participants_hint")}</p>
+              <p id="schedule-participants-hint" className="text-xs text-muted-foreground">{t("calendar.participants_hint")}</p>
               {people.length === 0 ? (
                 <p className="rounded-[4px] border border-dashed border-border px-3 py-2 text-sm text-muted-foreground">{t("calendar.participants_empty")}</p>
               ) : (
@@ -383,13 +389,13 @@ function ScheduleBody(props: ScheduleMeetingDialogProps) {
                   value=""
                   aria-label={t("calendar.add_person")}
                   onChange={(e) => {
-                    const u = userOf(e.target.value);
-                    if (u) setPeople((list) => addPerson(list, { user_id: u.id, name: u.full_name }, me?.id));
+                    const c = pickable.find((p) => p.user_id === e.target.value);
+                    if (c) setPeople((list) => addPerson(list, { user_id: c.user_id, name: c.name }, me?.id));
                   }}
                   className={inputCls}
                 >
                   <option value="">{t("calendar.add_person_placeholder")}</option>
-                  {pickable.map((u) => <option key={u.id} value={u.id}>{u.full_name}{u.title ? ` · ${u.title}` : ""}</option>)}
+                  {pickable.map((c) => <option key={c.user_id} value={c.user_id}>{c.name}{c.title ? ` · ${c.title}` : ""}</option>)}
                 </select>
               )}
               {tooMany && <p className="text-xs text-status-danger-fg">{t("calendar.too_many", { count: limits.maxParticipants })}</p>}
