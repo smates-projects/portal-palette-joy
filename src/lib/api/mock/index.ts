@@ -15,7 +15,7 @@ import { outcomeBlock } from "@/lib/leads/entry-flow";
 import { createFunds, type FundRecord, type StoredDistLine } from "./funds";
 import { seedFunds } from "./seed-funds";
 import { createAccounts } from "./accounts";
-import { isActiveFirm, isActiveUser } from "@/lib/accounts/permissions";
+import { hasBookingLink, isActiveFirm, isActiveUser } from "@/lib/accounts/permissions";
 import type { AccountEvent, BrandEvent, BrandProposal, BusinessBrand, FirmEvent } from "../types";
 import { readyToStart, validDay1, programDayOn } from "@/lib/leads/funds";
 import { tripartiteState } from "@/lib/leads/opportunity";
@@ -819,7 +819,7 @@ export function createMockApi(): MockApi {
       },
       setBookingUrl: async (url) => {
         const u = me();
-        if (u.role !== "sm_team") throw new Error("sm_only");
+        if (!hasBookingLink(u)) throw new Error("sm_only");
         const clean = url?.trim() || null;
         if (clean && !/^https?:\/\/\S+\.\S+/.test(clean)) throw new Error("invalid_url");
         u.booking_url = clean;

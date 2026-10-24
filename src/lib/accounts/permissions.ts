@@ -46,6 +46,8 @@ export function officeOfUser(u: Pick<User, "role" | "organization_id" | "busines
   return null;
 }
 
+/** Who has a personal booking link: the people who take the meetings of the leads, the SM team and SM Global. */
+export const hasBookingLink = (u: Pick<User, "role">) => u.role === "sm_team" || u.role === "sm_global";
 export const isOfficeAdmin = (u: Pick<User, "role" | "is_admin">) => u.role === "sm_team" && !!u.is_admin;
 export const isFirmAdmin = (u: Pick<User, "role" | "is_admin">) => u.role === "partner_firm" && !!u.is_admin;
 

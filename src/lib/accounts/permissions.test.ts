@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Business, Organization, User } from "@/lib/api/types";
-import { canInvite, canManage, canManageFirms, invitableRoles, officeOfUser } from "./permissions";
+import { canInvite, canManage, canManageFirms, hasBookingLink, invitableRoles, officeOfUser } from "./permissions";
 
 const user = (id: string, role: User["role"], organization_id: string | null, business_id: string | null, is_admin = false, status: User["status"] = "active"): User => ({
   id, full_name: id, email: `${id}@x.com`, role, organization_id, business_id, title: null, google_calendar_email: null, booking_url: null, is_admin, status,
@@ -101,5 +101,9 @@ describe("who deactivates, reactivates or accepts for whom", () => {
     expect(officeOfUser(lucia, ctx)).toBe("miami");
     expect(officeOfUser(carla, ctx)).toBe("miami");
     expect(officeOfUser(marilyn, ctx)).toBeNull();
+  });
+  it("a booking link belongs to who takes the meetings of the leads: the SM team and SM Global", () => {
+    expect([marilyn, andrea, nicolas].every(hasBookingLink)).toBe(true);
+    expect([lucia, carla, user("jefferson", "bishop", null, null)].some(hasBookingLink)).toBe(false);
   });
 });
