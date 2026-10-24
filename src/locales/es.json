@@ -3312,7 +3312,8 @@
         "held_short": "Reunión hecha."
       },
       "expansion": {
-        "book": "Ya aprobamos tus documentos. Reserva la reunión de ampliación. Es más larga y participa el inversor."
+        "book": "Ya aprobamos tus documentos. El siguiente paso es la reunión de ampliación con el inversor. Strategic Mates te enviará el día y la hora.",
+        "rebook": "La reunión no se hizo. Strategic Mates te enviará otra fecha."
       },
       "mou": {
         "not_sent": "Se abre apenas firmes el NDA. No hace falta esperar la firma de Strategic Mates.",

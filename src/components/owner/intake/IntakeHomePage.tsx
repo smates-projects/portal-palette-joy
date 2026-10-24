@@ -95,8 +95,9 @@ export function IntakeHomePage({ focusStep }: { focusStep?: OwnerStepKey | undef
     if (view === "book" || view === "rebook" || !m)
       return (
         <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">{t(view === "rebook" ? "intake.owner.meeting.rebook" : kind === "expansion" ? "intake.owner.expansion.book" : "intake.owner.meeting.book")}</p>
-          {entry?.booking_url && (
+          <p className="text-sm text-muted-foreground">{t(`intake.owner.${kind === "expansion" ? "expansion" : "meeting"}.${view === "rebook" ? "rebook" : "book"}`)}</p>
+          {/* Only the first meeting is booked by the owner: Strategic Mates sets the expansion one with the investor. */}
+          {kind === "initial" && entry?.booking_url && (
             <a href={entry.booking_url} target="_blank" rel="noreferrer" className={primaryButtonCls}>{t("intake.owner.meeting.book_cta")}</a>
           )}
         </div>

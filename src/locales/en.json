@@ -3312,7 +3312,8 @@
         "held_short": "Meeting held."
       },
       "expansion": {
-        "book": "We approved your documents. Book the expansion meeting. It is longer and the investor joins."
+        "book": "We approved your documents. The next step is the expansion meeting with the investor. Strategic Mates will send you the day and time.",
+        "rebook": "The meeting did not happen. Strategic Mates will send you another date."
       },
       "mou": {
         "not_sent": "It opens as soon as you sign the NDA. You don't need to wait for Strategic Mates to sign.",
