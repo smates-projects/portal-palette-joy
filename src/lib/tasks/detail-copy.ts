@@ -36,3 +36,18 @@ export function taskEmptyState(
   }
   return { key, name: viewer === "firm" ? names.ownerFirst : "" };
 }
+
+/**
+ * Why sending a deliverable failed, in the person's words (the API's error code is the error's message): the upload
+ * itself, a file refused by the check or too large, a slow check, the business out of reach, anything else. The
+ * dialog shows it and stays open with the files, so the person can send again.
+ */
+export function deliverableErrorKey(error: unknown): string {
+  const code = error instanceof Error ? error.message : "";
+  if (code === "upload_failed" || code === "network_error") return "taskDetail.d_error_upload";
+  if (code === "file_rejected" || code === "invalid_file" || code === "file_type_not_allowed") return "taskDetail.d_error_rejected";
+  if (code === "file_too_large") return "taskDetail.d_error_too_large";
+  if (code === "file_verification_timeout") return "taskDetail.d_error_timeout";
+  if (code === "not_found" || code === "forbidden" || code === "invalid_office") return "taskDetail.d_error_scope";
+  return "taskDetail.d_error_generic";
+}

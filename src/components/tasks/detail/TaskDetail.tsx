@@ -25,7 +25,7 @@ import { PreValidationBlock } from "./PreValidation";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CancelTasksDialog, EditTasksDialog } from "@/components/tasks/sm/SmTaskActions";
 import { describeChange } from "@/lib/tasks/changes";
-import { taskEmptyState, type TaskEmptySection } from "@/lib/tasks/detail-copy";
+import { deliverableErrorKey, taskEmptyState, type TaskEmptySection } from "@/lib/tasks/detail-copy";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MentionInput, MentionText } from "./mentions";
 import {
@@ -77,6 +77,8 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
   const [answering, setAnswering] = useState<OwnerRequest | null>(null);
 
   const [submitOpen, setSubmitOpen] = useState(openSubmit);
+  // Why the last "Enviar entrega" failed (an i18n key), shown inside the dialog; cleared when it closes or sends again.
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [requestOpen, setRequestOpen] = useState(false);
   const [meetingOpen, setMeetingOpen] = useState(false);
 
@@ -612,14 +614,19 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
       {isSm && <CancelTasksDialog open={cancelOpen} onOpenChange={setCancelOpen} tasks={[task]} />}
       <SubmitDeliverableDialog
         open={submitOpen}
-        onOpenChange={setSubmitOpen}
+        onOpenChange={(open) => {
+          setSubmitOpen(open);
+          if (!open) setSubmitError(null);
+        }}
         nextVersion={task.current_version + 1}
         isResubmit={status === "changes_requested"}
         ownerName={ownerFirst}
         changesQuote={status === "changes_requested" ? latestChanges?.body ?? null : null}
         pending={submit.isPending}
+        error={submitOpen ? submitError : null}
         brandCapture={task.code === BRAND_TASK_CODE ? { businessName: business?.name ?? "" } : undefined}
-        onSubmit={(v) =>
+        onSubmit={(v) => {
+          setSubmitError(null);
           submit.mutate(
             { id: task.id, ...v },
             {
@@ -627,10 +634,11 @@ export function TaskDetail({ taskId, mode, onClose, openSubmit = false, openChan
                 setSubmitOpen(false);
                 toast.success(t("taskDetail.t_submitted", { version: ver.version, code: task.code, name: ownerFirst }));
               },
-              onError: fail,
+              // Never a dialog that stays open in silence: it says why, and keeps the files to send again.
+              onError: (e) => setSubmitError(deliverableErrorKey(e)),
             },
-          )
-        }
+          );
+        }}
       />
       <RequestChangesDialog
         open={changesOpen}

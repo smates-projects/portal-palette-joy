@@ -53,6 +53,8 @@ export function SubmitDeliverableDialog(props: {
   ownerName: string;
   changesQuote: string | null;
   pending: boolean;
+  /** Why the last send failed (an i18n key): shown in the dialog, which keeps the files so the person sends again. */
+  error?: string | null | undefined;
   /** B5-13 only: the firm uploads the brand manual and the logo; the palette read from it travels with the version. */
   brandCapture?: { businessName: string } | undefined;
   /** file_names for the mock, files (the picked Files, same order, without the brand's) for the real API. */
@@ -132,6 +134,11 @@ export function SubmitDeliverableDialog(props: {
           <Field label={t("taskDetail.d_note", { name: props.ownerName })}>
             <textarea rows={4} value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("taskDetail.d_note_placeholder")} className={textareaCls} />
           </Field>
+          {props.error && (
+            <p role="alert" className="rounded-[4px] border border-status-danger-border bg-status-danger-bg px-3 py-2 text-sm text-status-danger-fg">
+              {t(props.error)}
+            </p>
+          )}
         </div>
         <DialogFooter>
           <SecondaryButton onClick={() => props.onOpenChange(false)}>{t("taskDetail.d_cancel")}</SecondaryButton>
