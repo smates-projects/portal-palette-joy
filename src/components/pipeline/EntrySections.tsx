@@ -156,6 +156,8 @@ export function MeetingCard(props: {
   lead: LeadWithComputed;
   consultantName: string;
   readOnly?: boolean;
+  /** Who may answer "¿Se hizo?" (canAnswerOutcome); without it, anyone not in read only. */
+  canAnswer?: ((meeting: LeadMeeting) => boolean) | undefined;
   focused?: boolean;
   pending?: boolean;
   onOutcome?: (meeting: LeadMeeting, outcome: MeetingOutcome) => void;
@@ -189,6 +191,7 @@ function OneMeeting(props: {
   actionable: boolean;
   consultantName: string;
   readOnly?: boolean;
+  canAnswer?: ((meeting: LeadMeeting) => boolean) | undefined;
   focused: boolean;
   pending?: boolean;
   onOutcome?: (meeting: LeadMeeting, outcome: MeetingOutcome) => void;
@@ -198,7 +201,8 @@ function OneMeeting(props: {
   const expansion = props.kind === "expansion";
   const started = !!m && Date.parse(m.starts_at) <= Date.parse(nowIso());
   const asked = outcomePending(m) && !!m?.outcome_prompted_at;
-  const canAnswer = props.actionable && !props.readOnly;
+  // Who held it answers even from SM Global's read-only funnel (the API decides by person, not by screen).
+  const canAnswer = props.actionable && !!m && (props.canAnswer ? props.canAnswer(m) : !props.readOnly);
   return (
     <section>
       <h3 className={sectionTitle}>{t(expansion ? "entry.meeting.expansion_title" : "entry.meeting.title")}</h3>

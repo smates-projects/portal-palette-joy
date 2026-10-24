@@ -17,6 +17,7 @@ import {
   type OpportunityVisibility,
   type OwnerEntry,
   type PlatformRules,
+  type User,
 } from "@/lib/api/types";
 import { meetingHeld } from "./entry";
 import { entryMeetings } from "./meetings";
@@ -82,6 +83,24 @@ export function outcomeBlock(
 }
 
 export const isExpansion = (m: Pick<LeadMeeting, "kind">) => kindOf(m) === "expansion";
+
+/**
+ * Who answers "¿Se hizo?" (the API refuses anyone else with 403): the person who held the meeting (its organizer),
+ * the lead's consultant, or an admin of the lead's office. Not the role nor the funnel: SM Global answers the leads it
+ * consults or the meetings it held, and an office colleague who is none of these sees the question without buttons.
+ */
+export function canAnswerOutcome(
+  me: Pick<User, "id" | "role" | "is_admin" | "organization_id"> | null | undefined,
+  lead: { consultant_user_id: string; office_id: string },
+  meeting: Pick<LeadMeeting, "organizer_user_id">,
+): boolean {
+  if (!me) return false;
+  return (
+    (!!meeting.organizer_user_id && me.id === meeting.organizer_user_id) ||
+    me.id === lead.consultant_user_id ||
+    (!!me.is_admin && me.role === "sm_team" && me.organization_id === lead.office_id)
+  );
+}
 
 const needsNewBooking = (m: LeadMeeting | null | undefined) => !m || m.outcome === "no_show" || m.outcome === "reschedule";
 

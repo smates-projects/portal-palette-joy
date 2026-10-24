@@ -6,7 +6,7 @@ import {
   useAddLeadNote, useApproveDocuments, useBusinessFunds, useConfirmProgramStart, useCurrentUser, useLeadDetail, useLeadIntake, useLeadInvestors, useOrganizations,
   useReactivateLead, useRecordFundPayment, useRegisterMeeting, useRejectDocuments, useRemoveFundPayment, useRules, useSendTripartite, useSetMeetingOutcome, useTransferLead, useUsers,
 } from "@/lib/api/hooks";
-import { AUTO_DISCARD_MOU_NOT_SIGNED, bookingKind, entryRules, heldWithoutMou, oaSendBlock } from "@/lib/leads/entry-flow";
+import { AUTO_DISCARD_MOU_NOT_SIGNED, bookingKind, canAnswerOutcome, entryRules, heldWithoutMou, oaSendBlock } from "@/lib/leads/entry-flow";
 import { MouUnsignedDialog } from "./LeadDialogs";
 import { RegisterMeetingDialog } from "./RegisterMeetingDialog";
 import { TransferDialog, canTransfer } from "./TransferDialog";
@@ -343,7 +343,7 @@ export function LeadDetail(props: {
       <div className="flex-1 space-y-6 px-6 py-5">
         {/* 1a. Automatic entry: the four phases, the booked meeting and the summary email */}
         {lead.source !== "manual" && <EntryTimeline lead={lead} />}
-        <MeetingCard lead={lead} consultantName={consultant?.full_name ?? ""} readOnly={!!props.readOnly} focused={props.focus === "meeting"} pending={outcome.isPending} onOutcome={onOutcome} />
+        <MeetingCard lead={lead} consultantName={consultant?.full_name ?? ""} readOnly={!!props.readOnly} canAnswer={(m) => canAnswerOutcome(meQ.data, lead, m)} focused={props.focus === "meeting"} pending={outcome.isPending} onOutcome={onOutcome} />
         {/* 1b. Entry checklist (from NDA + MOU on) */}
         {lead.intake && <IntakeChecklist leadId={lead.id} readOnly={!!props.readOnly} validation={lead.validation} />}
         {/* After the documents: the definitive percentages, in parallel with the presentation to the Bishops. */}

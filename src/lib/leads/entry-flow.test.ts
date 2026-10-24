@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Contract, LeadMeeting, Signer } from "@/lib/api/types";
 import {
-  ENTRY_RULE_DEFAULTS, INTAKE_DOCUMENT_ACCEPT, OWNER_STEPS, acknowledgedAll, bishopSees, bookingKind, cleanDocumentHelp,
+  ENTRY_RULE_DEFAULTS, INTAKE_DOCUMENT_ACCEPT, OWNER_STEPS, acknowledgedAll, bishopSees, bookingKind, canAnswerOutcome, cleanDocumentHelp,
   entryRules, intakeDocumentHelp, missingAcknowledgments, ndaStatus, oaSendBlock, oaSignableFrom, oaWaitingUntil,
   outcomeBlock, outcomePending, ownerMeetingView, ownerSteps, signBlock, validAcknowledgment,
 } from "./entry-flow";
@@ -91,6 +91,23 @@ describe("meeting outcome", () => {
     expect(bookingKind({ stage: "meeting", meeting: meeting(NOW) })).toBeNull();
     expect(bookingKind({ stage: "accepted", meeting: null, expansion_meeting: null })).toBe("expansion");
     expect(bookingKind({ stage: "accepted", meeting: null, expansion_meeting_held_at: NOW })).toBeNull();
+  });
+  it("who held the meeting, the consultant or an admin of the office answers it, whatever the funnel", () => {
+    const lead = { consultant_user_id: "marilyn", office_id: "miami" };
+    const held = meeting("2026-10-14T15:00:00Z", { organizer_user_id: "nicolas" });
+    const person = (id: string, extra: { role?: "sm_team" | "sm_global"; is_admin?: boolean; organization_id?: string | null } = {}) =>
+      ({ id, role: extra.role ?? "sm_team", is_admin: extra.is_admin ?? false, organization_id: extra.organization_id ?? "miami" });
+    // The consultant is SM Global (the Corporate CEO): she answers from her read-only funnel.
+    expect(canAnswerOutcome(person("marilyn", { role: "sm_global", organization_id: "global" }), lead, held)).toBe(true);
+    // The colleague who held it answers although the lead is not his.
+    expect(canAnswerOutcome(person("nicolas"), lead, held)).toBe(true);
+    expect(canAnswerOutcome(person("andrea", { is_admin: true }), lead, held)).toBe(true);
+    // Anyone else sees the question without buttons (the API answers 403).
+    expect(canAnswerOutcome(person("valentina"), lead, held)).toBe(false);
+    expect(canAnswerOutcome(person("andrea", { is_admin: true, organization_id: "orlando" }), lead, held)).toBe(false);
+    expect(canAnswerOutcome(person("global-admin", { role: "sm_global", is_admin: true, organization_id: "miami" }), lead, held)).toBe(false);
+    expect(canAnswerOutcome(person("nicolas"), lead, meeting("2026-10-14T15:00:00Z"))).toBe(false);
+    expect(canAnswerOutcome(undefined, lead, held)).toBe(false);
   });
 });
 

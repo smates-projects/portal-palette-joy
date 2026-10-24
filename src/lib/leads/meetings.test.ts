@@ -131,6 +131,11 @@ describe("entryMeetings: one selector for the meeting ids", () => {
     expect(entryMeetings({ meeting: { ...replaced, id: undefined }, meetings: [replaced, held] }).initial).toMatchObject({ id: "new" });
   });
 
+  it("keeps who held the meeting (organizer_user_id) when the API sends it", () => {
+    expect(entryMeetings({ meetings: [{ ...INITIAL, id: "a", organizer_user_id: "nicolas" }] }).initial).toMatchObject({ organizer_user_id: "nicolas" });
+    expect(entryMeetings({ meetings: [{ ...INITIAL, id: "a" }] }).initial).not.toHaveProperty("organizer_user_id");
+  });
+
   it("no id anywhere: the selector says so (null), the screen shows an error instead of doing nothing", () => {
     const { initial } = entryMeetings({ meeting: INITIAL });
     expect(meetingIdOf(initial)).toBeNull();

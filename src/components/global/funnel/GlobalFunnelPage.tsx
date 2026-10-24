@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useCurrentUser, useLeads, useOrganizations, useUsers } from "@/lib/api/hooks";
+import { useCurrentUser, useLeadDetail, useLeads, useOrganizations, useUsers } from "@/lib/api/hooks";
 import { LEAD_STAGES } from "@/lib/api/types";
 import { ALL_OFFICES, officeIdForQuery, useOfficeScope } from "@/lib/office-scope";
 import { cn } from "@/lib/utils";
@@ -25,6 +25,8 @@ export function GlobalFunnelPage({ initialLeadId }: { initialLeadId?: string | u
   const orgsQ = useOrganizations();
   const usersQ = useUsers();
   const meId = useCurrentUser().data?.id;
+  // The open lead as its detail reads it (the same query): a lead opened from the bell may be outside the office in view.
+  const openQ = useLeadDetail(leadId);
   const header = <GlobalHeader question={t("global.funnel.question")} />;
   const queries = [leadsQ, orgsQ, usersQ];
 
@@ -46,6 +48,7 @@ export function GlobalFunnelPage({ initialLeadId }: { initialLeadId?: string | u
   const leads = leadsQ.data ?? [];
   const consultantName = (id: string) => usersQ.data?.find((u) => u.id === id)?.full_name ?? "";
   const selected = leads.find((l) => l.id === leadId);
+  const openConsultant = openQ.data?.lead.consultant_user_id ?? selected?.consultant_user_id;
   const office = scope === ALL_OFFICES ? null : orgsQ.data?.find((o) => o.id === scope);
   const officeLabel = office ? (office.kind === "sm_global" ? t("topbar.viewing_corporate") : office.name) : t("global.funnel.all_offices");
 
@@ -85,8 +88,8 @@ export function GlobalFunnelPage({ initialLeadId }: { initialLeadId?: string | u
         <SheetContent className="w-full overflow-y-auto bg-surface p-0 sm:max-w-xl [&>button]:hidden">
           <SheetTitle className="sr-only">{selected?.business.name ?? t("pipeline.detail.open_full")}</SheetTitle>
           <SheetDescription className="sr-only">{selected?.contact.name ?? ""}</SheetDescription>
-          {/* Read only unless the current user is the lead's consultant. */}
-          {leadId && <LeadDetail readOnly={selected?.consultant_user_id !== meId} leadId={leadId} onClose={() => setLeadId(undefined)} />}
+          {/* Read only unless the current user is the lead's consultant (who held a meeting answers it either way). */}
+          {leadId && <LeadDetail readOnly={!meId || openConsultant !== meId} leadId={leadId} onClose={() => setLeadId(undefined)} />}
         </SheetContent>
       </Sheet>
     </div>

@@ -17,6 +17,7 @@ export interface RawMeeting {
   duration_min?: number | null | undefined;
   meet_url?: string | null | undefined;
   consultant_user_id?: string | null | undefined;
+  organizer_user_id?: string | null | undefined;
   booked_at?: string | null | undefined;
   notes_at?: string | null | undefined;
   outcome?: LeadMeeting["outcome"];
@@ -66,6 +67,7 @@ export function toLeadMeeting(raw: RawMeeting): LeadMeeting {
     duration_minutes: raw.duration_minutes ?? raw.duration_min ?? 0,
     meet_url: raw.meet_url ?? "",
     consultant_user_id: raw.consultant_user_id ?? "",
+    ...(raw.organizer_user_id ? { organizer_user_id: raw.organizer_user_id } : {}),
     booked_at: raw.booked_at ?? raw.starts_at,
     notes_at: raw.notes_at ?? null,
     outcome: raw.outcome ?? null,

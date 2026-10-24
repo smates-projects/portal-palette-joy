@@ -39,6 +39,11 @@ export interface LeadMeeting {
   duration_minutes: number;
   meet_url: string;
   consultant_user_id: Uuid;
+  /**
+   * Who holds the meeting: who scheduled it in the portal or registered it (the consultant when the owner booked it).
+   * They answer the outcome too. Absent in older answers.
+   */
+  organizer_user_id?: Uuid | null | undefined;
   /** When the owner booked it. */
   booked_at: IsoDateTime;
   /** When the consultant answered the outcome (or wrote the note, before outcomes existed); null until then. */
