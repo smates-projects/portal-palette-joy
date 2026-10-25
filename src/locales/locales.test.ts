@@ -72,6 +72,17 @@ describe("locales", () => {
     expect(en.intake.docuseal.t_signed).toBe("You signed the {{name}}.");
   });
 
+  it("Notificaciones says the important notices go out by email (the portal sends real email), never that emails are not sent", () => {
+    expect(es.notifications.prefs_email_note).toBe(
+      "Los avisos importantes, como reuniones y documentos para firmar, te llegan siempre por email. Por ahora, apagar un aviso por email solo guarda tu preferencia.",
+    );
+    expect(en.notifications.prefs_email_note).toBe(
+      "Important notices, like meetings and documents to sign, always reach you by email. For now, turning a notice off by email only saves your choice.",
+    );
+    expect(textsOf(es).filter((text) => /no se env[ií]an/i.test(text))).toEqual([]);
+    expect(textsOf(en).filter((text) => /aren't sent|are not sent/i.test(text))).toEqual([]);
+  });
+
   it("the MOU explainer and the meeting warning say it in the agreed words", () => {
     expect(es.intake.owner.mou.when).toBe("Puedes leerlo ahora. Lo firman juntos al final de la reunión");
     expect(es.entry.outcome.mou_warning_body).toBe("El MOU no está firmado. Si marcas que la reunión se hizo, el prospecto sale del proceso");

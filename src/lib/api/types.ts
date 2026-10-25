@@ -643,7 +643,7 @@ export interface AppNotification {
 export interface NotificationPreference {
   kind: NotificationKind;
   in_app: boolean;
-  /** Only stored for now: emails are not sent yet. */
+  /** Only stored for now: the important emails (meetings, documents to sign) go out whatever it says. */
   email: boolean;
 }
 

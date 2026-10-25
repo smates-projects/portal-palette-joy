@@ -855,7 +855,7 @@
     "prefs_type": "Alert",
     "prefs_in_app": "In the app",
     "prefs_email": "By email",
-    "prefs_email_note": "Emails aren't sent yet. For now we only save your choice.",
+    "prefs_email_note": "Important notices, like meetings and documents to sign, always reach you by email. For now, turning a notice off by email only saves your choice.",
     "prefs_saved": "Preference saved",
     "prefs_error": "We couldn't save the preference.",
     "kind_due_today": "Due today",

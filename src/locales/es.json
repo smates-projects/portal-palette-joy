@@ -855,7 +855,7 @@
     "prefs_type": "Aviso",
     "prefs_in_app": "En la app",
     "prefs_email": "Por email",
-    "prefs_email_note": "Los emails todavía no se envían. Por ahora solo guardamos tu preferencia.",
+    "prefs_email_note": "Los avisos importantes, como reuniones y documentos para firmar, te llegan siempre por email. Por ahora, apagar un aviso por email solo guarda tu preferencia.",
     "prefs_saved": "Preferencia guardada",
     "prefs_error": "No pudimos guardar la preferencia.",
     "kind_due_today": "Vence hoy",
