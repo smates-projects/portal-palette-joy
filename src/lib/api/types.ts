@@ -777,6 +777,13 @@ export type LeadReadiness = "ready" | "on_track";
 /** landing: came from the public readiness assessment of the landing. manual: SM added it by hand (referral, event). */
 export type LeadSource = "landing" | "manual";
 
+/**
+ * The owner's answer to the assessment's closing question ("¿Estás dispuesto a trabajar con Strategic Mates en la
+ * transformación de tu negocio?"): advance ("Sí, quiero conocer cómo avanzar") or understand_first ("Quiero conversar
+ * primero para entender el proceso").
+ */
+export type LeadOpenness = "advance" | "understand_first";
+
 export interface LeadResult {
   readiness: LeadReadiness;
   /** Headline band. Minimum shown score: high 70, mid 55, low 0. "track" whenever readiness is on_track. */
@@ -790,6 +797,8 @@ export interface LeadResult {
   strengths: string[];
   /** The payload brings priorities[{ question, block, title, reading, help }]: only the title is kept here. */
   priorities: string[];
+  /** The closing answer, for the SM team only (never the Bishop's). Absent on older assessments and manual leads. */
+  openness?: LeadOpenness | null | undefined;
 }
 
 /** What SM types to add a business by hand: the same data the assessment collects, without the result. */

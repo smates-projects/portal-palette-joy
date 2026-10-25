@@ -6,7 +6,7 @@ import { STALE_STAGE_DAYS, byNewThenTime, byTimeInStage, daysSince } from "@/lib
 import { entryPhase, isNewLead, unbookedDays } from "@/lib/leads/entry";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { AssessmentBadge, BandBadge, STAGE_BAR, StageBadge } from "./LeadBadges";
+import { AssessmentBadge, BandBadge, OpennessNote, STAGE_BAR, StageBadge } from "./LeadBadges";
 
 /**
  * Entry sub-state inside Evaluado and Reunión: "Nuevo", "Esperando reserva" (amber "Sin reservar hace N días"
@@ -86,6 +86,8 @@ function LeadCard({ lead, selected, consultantName, readOnly, onOpen, onDragStar
       <p className="mt-1.5 text-xs text-muted-foreground">
         {t(`pipeline.industries.${lead.business.industry}`)} · {t(`pipeline.revenue_ranges.${lead.business.revenue_range}`)}
       </p>
+      {/* The owner's closing answer: the meeting happens anyway, the consultant knows how convinced he is. */}
+      <OpennessNote result={lead.result} className="mt-1" />
       <EntryState lead={lead} />
       <div className="mt-2 flex items-center justify-between gap-2 border-t border-border pt-2 text-xs">
         <span className="truncate text-muted-foreground">{consultantName}</span>

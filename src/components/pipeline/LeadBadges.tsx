@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
-import type { BlockStatus, LeadBand, LeadSource, LeadStage } from "@/lib/api/types";
+import type { BlockStatus, LeadBand, LeadResult, LeadSource, LeadStage } from "@/lib/api/types";
+import { opennessKey } from "@/lib/leads/readiness";
 import { cn } from "@/lib/utils";
 
 const base = "inline-flex items-center whitespace-nowrap rounded-[4px] border px-1.5 py-0.5 text-xs font-medium leading-none";
@@ -53,6 +54,23 @@ export function AssessmentBadge({ lead }: { lead: { source?: LeadSource | undefi
       {t(lead.assessment_sent_at ? "pipeline.manual.assessment_pending" : "pipeline.manual.no_assessment")}
     </span>
   );
+}
+
+/**
+ * The owner's closing answer as a quiet line for the SM team ("Quiere entender el proceso primero"): the meeting
+ * happens anyway, the consultant just knows how convinced the owner is. Nothing for leads without it.
+ */
+export function OpennessNote({
+  result,
+  className,
+}: {
+  result: Pick<LeadResult, "openness"> | null | undefined;
+  className?: string;
+}) {
+  const { t } = useTranslation();
+  const key = opennessKey(result);
+  if (!key) return null;
+  return <p className={cn("text-xs text-muted-foreground", className)}>{t(key)}</p>;
 }
 
 export function BlockBadge({ status }: { status: BlockStatus }) {

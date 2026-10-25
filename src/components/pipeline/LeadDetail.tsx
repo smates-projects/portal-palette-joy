@@ -28,7 +28,7 @@ import { ValidationCard } from "./ValidationCard";
 import { primaryActionFor } from "@/lib/leads/pipeline";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PrimaryButton } from "@/components/tasks/detail/dialogs";
-import { StageBadge } from "./LeadBadges";
+import { OpennessNote, StageBadge } from "./LeadBadges";
 import { ManualLeadSection } from "./ManualLeadSection";
 import { AssessmentResult, KnowHow } from "./AssessmentResult";
 import { EntryTimeline, MeetingCard, MeetingNoteDialog, SummaryEmail } from "./EntrySections";
@@ -269,6 +269,8 @@ export function LeadDetail(props: {
               {lead.contact.name}
  · {t(`pipeline.hispanic.${lead.contact.hispanic_owner}`)}
             </p>
+            {/* The owner's closing answer to the assessment, so the consultant knows how convinced he is. */}
+            <OpennessNote result={lead.result} className="mt-1" />
             {/* The SM advisor whose assessment link the owner used. */}
             {lead.completed_by_advisor && (
               <p className="mt-1 text-xs text-muted-foreground">{t("entry_contracts.lead.completed_by", { name: firstName(lead.completed_by_advisor.name) })}</p>

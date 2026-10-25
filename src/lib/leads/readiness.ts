@@ -37,6 +37,14 @@ export function eligibilityGaps(business: Pick<Lead["business"], "years_range" |
   return gaps;
 }
 
+/**
+ * Locale key of the owner's closing answer, the quiet line the SM team reads on the funnel card and the lead detail
+ * ("Quiere entender el proceso primero"). Null when the lead has none: older assessments and leads added by hand.
+ */
+export const opennessKey = (
+  result: Pick<LeadResult, "openness"> | null | undefined,
+): string | null => (result?.openness ? `pipeline.openness.${result.openness}` : null);
+
 /** readiness, band and eligibility of a business with the shown score (the ready threshold is 0 today). */
 export function readinessOutcome(
   business: Pick<Lead["business"], "years_range" | "revenue_range">,

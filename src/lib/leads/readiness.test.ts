@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { leads } from "@/lib/api/mock/seed-leads";
-import { bandOf, eligibilityGaps, readinessOutcome } from "./readiness";
+import en from "@/locales/en.json";
+import es from "@/locales/es.json";
+import { bandOf, eligibilityGaps, opennessKey, readinessOutcome } from "./readiness";
 
 describe("Readiness outcome (same rules as the sm-platform assessment)", () => {
   it("less than 1 year operating is a gap: band track and readiness on_track", () => {
@@ -14,6 +16,28 @@ describe("Readiness outcome (same rules as the sm-platform assessment)", () => {
     });
     expect(eligibilityGaps({ years_range: "years_1_2", revenue_range: "1m_2m" })).toEqual([]);
   });
+  it("the closing answer reads as a quiet line for the SM team; a lead without it shows nothing", () => {
+    expect(opennessKey({ openness: "advance" })).toBe("pipeline.openness.advance");
+    expect(opennessKey({ openness: "understand_first" })).toBe(
+      "pipeline.openness.understand_first",
+    );
+    expect(opennessKey({ openness: null })).toBeNull();
+    expect(opennessKey({})).toBeNull();
+    expect(opennessKey(null)).toBeNull();
+    expect(es.pipeline.openness).toEqual({
+      advance: "Quiere conocer cómo avanzar",
+      understand_first: "Quiere entender el proceso primero",
+    });
+    expect(en.pipeline.openness).toEqual({
+      advance: "Wants to know how to move forward",
+      understand_first: "Wants to understand the process first",
+    });
+    // The demo funnel has both answers and leads without one.
+    expect(new Set(leads.map((l) => l.result?.openness ?? null))).toEqual(
+      new Set(["advance", "understand_first", null]),
+    );
+  });
+
   it("bands follow the shown score minimums 70 / 55 / 0", () => {
     expect([92, 70, 69, 55, 54, 40].map(bandOf)).toEqual(["high", "high", "mid", "mid", "low", "low"]);
   });

@@ -1239,6 +1239,10 @@
       "no": "No hispano",
       "talk": "Prefiere conversarlo"
     },
+    "openness": {
+      "advance": "Quiere conocer cómo avanzar",
+      "understand_first": "Quiere entender el proceso primero"
+    },
     "hispanic_answers": {
       "yes": "Sí",
       "no": "No",
