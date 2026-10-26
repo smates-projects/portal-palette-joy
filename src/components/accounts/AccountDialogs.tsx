@@ -60,7 +60,9 @@ export function InvitePersonDialog(props: { open: boolean; onOpenChange: (o: boo
   const placeId = props.fixedOrganizationId ?? (places.length === 1 ? places[0]!.id : place);
   // The office admin creates the first person of a firm as its admin; everyone else it invites is not an admin.
   const adminForced = me && isOfficeAdmin(me) ? effectiveRole === "partner_firm" : me?.role !== "sm_global" ? false : null;
-  const adminValue = adminForced === null ? isAdmin : adminForced;
+  // A Business Bishop belongs to no organization: there is nothing for him to administer, so the box is not offered.
+  const offersAdmin = effectiveRole !== "bishop";
+  const adminValue = !offersAdmin ? false : adminForced === null ? isAdmin : adminForced;
 
   const submit = () => {
     if (!effectiveRole) return setError(t("accounts.invite.err_role"));
@@ -115,7 +117,7 @@ export function InvitePersonDialog(props: { open: boolean; onOpenChange: (o: boo
           <Field label={t("accounts.invite.title_label")}>
             <input className={inputCls} value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder={t("accounts.invite.title_placeholder")} autoComplete="off" />
           </Field>
-          {adminForced === null ? (
+          {!offersAdmin ? null : adminForced === null ? (
             <label className="flex items-start gap-2 text-sm">
               <input type="checkbox" checked={isAdmin} onChange={(e) => setIsAdmin(e.target.checked)} className="mt-0.5 h-4 w-4 rounded-[4px] border-input" />
               <span>
