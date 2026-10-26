@@ -1419,6 +1419,7 @@
       "todo": {
         "title": "Lo que toca hacer",
         "empty": "Nada pendiente de tu lado",
+        "moved": "Lo tienes arriba, en Lo que toca hacer.",
         "next": {
           "schedule": "El dueño agenda su reunión desde el link.",
           "join_meet": "La reunión es en el horario agendado.",
@@ -1442,7 +1443,14 @@
       "signatures_of": "{{n}} de {{m}}",
       "docs_counter": "{{uploaded}} de {{total}} subidos, {{accepted}} aceptados",
       "email_not_sent": "Todavía no se envió",
-      "no_intake": "El ingreso empieza cuando se envía el NDA."
+      "no_intake": "El ingreso empieza cuando se envía el NDA.",
+      "investors_empty": "Cuando la documentación esté aprobada, aquí ves a qué inversores se presenta.",
+      "contract_state": {
+        "draft": "Borrador",
+        "in_progress": "En firma",
+        "signed": "Firmado",
+        "declined": "Rechazado"
+      }
     },
     "blocks": {
       "time_team": "Tu tiempo y tu equipo",

@@ -1419,6 +1419,7 @@
       "todo": {
         "title": "What needs doing",
         "empty": "Nothing pending on your side",
+        "moved": "It is up top, in What needs doing.",
         "next": {
           "schedule": "The owner books the meeting from the link.",
           "join_meet": "The meeting happens at the booked time.",
@@ -1442,7 +1443,14 @@
       "signatures_of": "{{n}} of {{m}}",
       "docs_counter": "{{uploaded}} of {{total}} uploaded, {{accepted}} accepted",
       "email_not_sent": "Not sent yet",
-      "no_intake": "The entry starts when the NDA goes out."
+      "no_intake": "The entry starts when the NDA goes out.",
+      "investors_empty": "Once the documents are approved, here you see which investors it is presented to.",
+      "contract_state": {
+        "draft": "Draft",
+        "in_progress": "Being signed",
+        "signed": "Signed",
+        "declined": "Declined"
+      }
     },
     "blocks": {
       "time_team": "Your time and your team",
