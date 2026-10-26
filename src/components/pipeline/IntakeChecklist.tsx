@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Check, Circle, FileText } from "lucide-react";
+import { Check, ChevronDown, Circle, FileText } from "lucide-react";
 import { useAcceptDocument, useContractRules, useCurrentUser, useLeadIntake, useRequestDocument, useResendContract, useRules } from "@/lib/api/hooks";
 import { MOU_ACKNOWLEDGMENT_POINTS, type BusinessDocument, type Contract, type EntryContractRule, type LeadValidation, type ReviewClock, type Signer } from "@/lib/api/types";
 import { checklistByRule, contractDeadline, factsFromContracts, ruleSchedule, smEntitiesOf, smSignBlock, smSignerEntityName } from "@/lib/leads/contract-rules";
@@ -11,6 +11,7 @@ import { canResend } from "@/lib/leads/onboarding";
 import { entryRules, intakeDocumentHelp, ndaStatus, oaWaitingUntil, type NdaStatus } from "@/lib/leads/entry-flow";
 import { DocumentHelp } from "./DocumentHelp";
 import { ReviewNoteAlert } from "./ReviewNoteAlert";
+import { StateMark } from "./LeadBadges";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -35,6 +36,14 @@ const DOC_TONE: Record<BusinessDocument["state"], string> = {
   rejected: "border-status-warning-border bg-status-warning-bg text-status-warning-fg",
   not_applicable: "border-status-info-border bg-status-info-bg text-status-info-fg",
 };
+/** The same states as a plain word with a square mark (the compact documents table). */
+const DOC_MARK: Record<BusinessDocument["state"], "neutral" | "info" | "success" | "warning"> = {
+  requested: "neutral",
+  received: "info",
+  reviewed: "success",
+  rejected: "warning",
+  not_applicable: "info",
+};
 
 export function ClockLabel({ clock }: { clock: ReviewClock }) {
   const { t } = useTranslation();
@@ -46,21 +55,29 @@ export function ClockLabel({ clock }: { clock: ReviewClock }) {
 }
 
 /**
- * Entry checklist of a lead: NDA, MOU, documents uploaded and accepted, and each document with Aceptar / Pedir otro.
- * Review is Strategic Mates team work: any SM person of the office acts. SM Global reads it (`readOnly`).
- */
-/**
- * With the entry contract rules, the contracts come in the rules' order: each one with its state, or "todavía no se
- * creó" with when it will be (and its deadline when known). `validation` tells when a contract that waits for it can
- * be created.
+ * Entry checklist of a lead: the contracts (NDA, MOU, the rule ones) and the documents, together. The lead detail
+ * shows them as separate pieces (IntakeContracts, IntakeDocuments); this composition stays for the screens that
+ * want the whole checklist in one block.
  */
 export function IntakeChecklist({ leadId, readOnly, validation }: { leadId: string; readOnly: boolean; validation?: LeadValidation | null | undefined }) {
+  return (
+    <section className="space-y-3">
+      <IntakeContracts leadId={leadId} readOnly={readOnly} validation={validation} />
+      <IntakeDocuments leadId={leadId} readOnly={readOnly} />
+    </section>
+  );
+}
+
+/**
+ * The entry contracts in the rules' order: each one with its state, or "todavía no se creó" with when it will be
+ * (and its deadline when known). `validation` tells when a contract that waits for it can be created. Review is
+ * Strategic Mates team work: any SM person of the office acts. SM Global reads it (`readOnly`).
+ */
+export function IntakeContracts({ leadId, readOnly, validation, withHeader = true }: { leadId: string; readOnly: boolean; validation?: LeadValidation | null | undefined; withHeader?: boolean }) {
   const { t, i18n } = useTranslation();
   const lng = i18n.language;
   const q = useLeadIntake(leadId);
   const resend = useResendContract();
-  const [accepting, setAccepting] = useState<BusinessDocument | null>(null);
-  const [requesting, setRequesting] = useState<BusinessDocument | null>(null);
   const [signing, setSigning] = useState<Contract | null>(null);
   const [viewing, setViewing] = useState<Contract | null>(null);
   const rulesData = useRules().data;
@@ -68,12 +85,11 @@ export function IntakeChecklist({ leadId, readOnly, validation }: { leadId: stri
   const me = useCurrentUser().data;
   const contractRulesQ = useContractRules(me?.role === "sm_team" || me?.role === "sm_global");
   const entities = smEntitiesOf(rulesData);
-  const helpText = rulesData?.intake_help_text?.trim() ?? "";
 
   if (q.isLoading) return <Skeleton className="h-40 rounded-md" />;
   if (q.isError) return <button onClick={() => void q.refetch()} className="text-sm text-link hover:underline">{t("pipeline.retry")}</button>;
   if (!q.data) return null;
-  const { summary, contracts, documents } = q.data;
+  const { summary, contracts } = q.data;
 
   const contractRules = contractRulesQ.data ?? [];
   const { rows, others } = checklistByRule(contractRules, contracts);
@@ -180,10 +196,12 @@ export function IntakeChecklist({ leadId, readOnly, validation }: { leadId: stri
 
   return (
     <section className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("intake.title")}</h3>
-        <ClockLabel clock={summary.clock} />
-      </div>
+      {withHeader && (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("intake.title")}</h3>
+          <ClockLabel clock={summary.clock} />
+        </div>
+      )}
       <div className="rounded-md border border-border px-4">
         <ul className="divide-y divide-border">
           {contractRules.length > 0 ? (
@@ -192,14 +210,137 @@ export function IntakeChecklist({ leadId, readOnly, validation }: { leadId: stri
               {others.map(contractRow)}
             </>
           ) : contracts.map(contractRow)}
-          <CountRow label={t("intake.uploaded")} n={summary.uploaded} m={summary.required_total} />
-          <CountRow label={t("intake.accepted")} n={summary.accepted} m={summary.required_total} />
         </ul>
       </div>
       {!readOnly && <p className="text-xs text-muted-foreground">{t("intake.team_note")}</p>}
 
+      {signing && <DocuSealSigner contract={signing} party="sm" signerName={signing.signers.find((s) => s.party === "sm")?.name || "Strategic Mates"} onClose={() => setSigning(null)} />}
+      {viewing && <SignedContractDialog contract={viewing} onClose={() => setViewing(null)} />}
+    </section>
+  );
+}
+
+/**
+ * The entry documents. `full` is the checklist with the help under each one; `table` is the compact table of the
+ * lead detail's Documentos tab (one row per document, the long help collapsed in an expandable row, the owner's
+ * instructions collapsed once on top).
+ */
+export function IntakeDocuments({ leadId, readOnly, variant = "full" }: { leadId: string; readOnly: boolean; variant?: "full" | "table" }) {
+  const { t } = useTranslation();
+  const q = useLeadIntake(leadId);
+  const rulesData = useRules().data;
+  const [accepting, setAccepting] = useState<BusinessDocument | null>(null);
+  const [requesting, setRequesting] = useState<BusinessDocument | null>(null);
+  const [helpOpen, setHelpOpen] = useState<string | null>(null);
+  const [instructionsOpen, setInstructionsOpen] = useState(false);
+  const helpText = rulesData?.intake_help_text?.trim() ?? "";
+
+  if (q.isLoading) return <Skeleton className="h-40 rounded-md" />;
+  if (q.isError) return <button onClick={() => void q.refetch()} className="text-sm text-link hover:underline">{t("pipeline.retry")}</button>;
+  if (!q.data) return null;
+  const { summary, documents } = q.data;
+
+  const actions = (d: BusinessDocument) =>
+    !readOnly && (d.state === "received" || d.state === "reviewed" || d.state === "not_applicable") ? (
+      <div className="flex gap-3">
+        {(d.state === "received" || d.state === "not_applicable") && <button onClick={() => setAccepting(d)} className="text-xs font-medium text-link hover:underline">{t("intake.accept")}</button>}
+        <button onClick={() => setRequesting(d)} className="text-xs text-muted-foreground hover:text-foreground hover:underline">{t(d.state === "not_applicable" ? "intake.request_anyway" : "intake.request_again")}</button>
+      </div>
+    ) : null;
+
+  const dialogs = (
+    <>
+      {accepting && <AcceptDialog leadId={leadId} doc={accepting} onClose={() => setAccepting(null)} />}
+      {requesting && <RequestDialog leadId={leadId} doc={requesting} onClose={() => setRequesting(null)} />}
+    </>
+  );
+
+  if (variant === "table")
+    return (
+      <section className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("intake.docs_title")}</h3>
+          <span className="text-xs tabular-nums text-muted-foreground">{t("pipeline.detail.docs_counter", { uploaded: summary.uploaded, total: summary.required_total, accepted: summary.accepted })}</span>
+        </div>
+        {/* The same note the owner reads at the top of his list, collapsed once for the whole table. */}
+        {helpText && documents.length > 0 && (
+          <div className="rounded-md border border-border">
+            <button type="button" aria-expanded={instructionsOpen} onClick={() => setInstructionsOpen((o) => !o)} className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-xs font-medium">
+              {t("intake.table.owner_instructions")}
+              <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform", instructionsOpen && "rotate-180")} />
+            </button>
+            {instructionsOpen && <p className="whitespace-pre-line border-t border-border px-3 py-2 text-xs text-muted-foreground">{helpText}</p>}
+          </div>
+        )}
+        <div className="overflow-x-auto rounded-md border border-border">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-border text-left text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                <th className="px-3 py-2">{t("intake.table.document")}</th>
+                <th className="px-3 py-2">{t("intake.table.state")}</th>
+                <th className="px-3 py-2">{t("intake.table.file")}</th>
+                <th className="px-3 py-2">{t("intake.table.fact")}</th>
+                <th className="px-3 py-2">{t("intake.table.actions")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {documents.map((d, i) => {
+                const help = intakeDocumentHelp(d, rulesData);
+                const open = helpOpen === d.id;
+                return (
+                  <Fragment key={d.id}>
+                    <tr className="border-t border-border align-top first:border-t-0">
+                      <td className="px-3 py-2">
+                        <span className="font-medium tabular-nums">{i + 1}. </span>
+                        <span className="font-medium">{d.name}</span>
+                        <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                          {d.required ? t("intake.required") : t("intake.optional")}
+                          {d.only_if_llc ? ` · ${t("intake.only_llc")}` : ""}
+                          {d.locked_until_mou ? ` · ${t("intake.locked_until_mou")}` : ""}
+                        </span>
+                        {help && (
+                          <button type="button" aria-expanded={open} onClick={() => setHelpOpen(open ? null : d.id)} className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-link hover:underline">
+                            {t("intake.table.help")}
+                            <ChevronDown className={cn("h-3 w-3 transition-transform", open && "rotate-180")} />
+                          </button>
+                        )}
+                      </td>
+                      <td className="px-3 py-2"><StateMark tone={DOC_MARK[d.state]}>{t(`intake.state.${d.state}`)}</StateMark></td>
+                      <td className="px-3 py-2">
+                        {d.file_name ? (
+                          <a href="#" onClick={(e) => e.preventDefault()} className="inline-flex min-w-0 items-center gap-1 text-link hover:underline"><FileText className="h-3 w-3 shrink-0" /><span className="max-w-32 truncate">{d.file_name}</span></a>
+                        ) : d.state !== "not_applicable" ? <span className="text-muted-foreground">{t("intake.table.no_file")}</span> : null}
+                      </td>
+                      <td className="max-w-40 px-3 py-2 text-muted-foreground">
+                        {d.state === "reviewed" && d.verified_fact ? <span className="text-status-success-fg">{d.verified_fact}</span>
+                          : d.state === "rejected" && d.review_comment ? <span className="text-status-warning-fg">{d.review_comment}</span>
+                          : d.state === "not_applicable" ? d.not_applicable_reason ?? ""
+                          : ""}
+                      </td>
+                      <td className="px-3 py-2">{actions(d)}</td>
+                    </tr>
+                    {open && help && (
+                      <tr className="border-t border-border bg-muted/40">
+                        <td colSpan={5} className="px-3 py-2"><DocumentHelp help={help} /></td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {dialogs}
+      </section>
+    );
+
+  return (
+    <section className="space-y-3">
       <div id="intake-docs" className="rounded-md border border-border">
-        <p className="border-b border-border px-4 py-2 text-xs font-medium text-muted-foreground">{t("intake.docs_title")}</p>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2">
+          <p className="text-xs font-medium text-muted-foreground">{t("intake.docs_title")}</p>
+          <span className="text-xs tabular-nums text-muted-foreground">{t("pipeline.detail.docs_counter", { uploaded: summary.uploaded, total: summary.required_total, accepted: summary.accepted })}</span>
+        </div>
         {/* The same note the owner reads at the top of his list. */}
         {helpText && documents.length > 0 && <p className="mx-4 mt-2.5 whitespace-pre-line rounded-[4px] border border-border px-3 py-2 text-xs">{helpText}</p>}
         <ul className="divide-y divide-border">
@@ -227,23 +368,57 @@ export function IntakeChecklist({ leadId, readOnly, validation }: { leadId: stri
                 <p className="mt-1.5 rounded-[4px] border border-status-info-border bg-status-info-bg px-3 py-2 text-xs text-status-info-fg">{t("intake.not_applicable_reason", { reason: d.not_applicable_reason ?? "" })}</p>
               )}
               {help && <DocumentHelp help={help} className="mt-1.5" />}
-              {!readOnly && (d.state === "received" || d.state === "reviewed" || d.state === "not_applicable") && (
-                <div className="mt-1.5 flex gap-3">
-                  {(d.state === "received" || d.state === "not_applicable") && <button onClick={() => setAccepting(d)} className="text-xs font-medium text-link hover:underline">{t("intake.accept")}</button>}
-                  <button onClick={() => setRequesting(d)} className="text-xs text-muted-foreground hover:text-foreground hover:underline">{t(d.state === "not_applicable" ? "intake.request_anyway" : "intake.request_again")}</button>
-                </div>
-              )}
+              {actions(d) && <div className="mt-1.5">{actions(d)}</div>}
             </li>
             );
           })}
         </ul>
       </div>
-
-      {accepting && <AcceptDialog leadId={leadId} doc={accepting} onClose={() => setAccepting(null)} />}
-      {requesting && <RequestDialog leadId={leadId} doc={requesting} onClose={() => setRequesting(null)} />}
-      {signing && <DocuSealSigner contract={signing} party="sm" signerName={signing.signers.find((s) => s.party === "sm")?.name || "Strategic Mates"} onClose={() => setSigning(null)} />}
-      {viewing && <SignedContractDialog contract={viewing} onClose={() => setViewing(null)} />}
+      {dialogs}
     </section>
+  );
+}
+
+/**
+ * The Resumen tab's contracts table: one row per entry contract with its state as a plain word and a square mark,
+ * the signature count and the sealed copies. Pure: the caller passes the contracts it already loaded.
+ */
+export function ContractsSummaryTable({ contracts }: { contracts: Contract[] }) {
+  const { t } = useTranslation();
+  if (contracts.length === 0) return null;
+  const stateOf = (c: Contract): { key: "draft" | "in_progress" | "signed" | "declined"; tone: "neutral" | "info" | "success" | "danger" } => {
+    if (c.signers.length > 0 && c.signers.every((s) => s.status === "signed")) return { key: "signed", tone: "success" };
+    if (c.signers.some((s) => s.status === "declined")) return { key: "declined", tone: "danger" };
+    if (c.state === "draft") return { key: "draft", tone: "neutral" };
+    return { key: "in_progress", tone: "info" };
+  };
+  return (
+    <div className="overflow-x-auto rounded-md border border-border">
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="border-b border-border text-left text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            <th className="px-3 py-2">{t("pipeline.detail.contracts_table.documento")}</th>
+            <th className="px-3 py-2">{t("pipeline.detail.contracts_table.estado")}</th>
+            <th className="px-3 py-2">{t("pipeline.detail.contracts_table.firmas")}</th>
+            <th className="px-3 py-2">{t("pipeline.detail.contracts_table.descargas")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {contracts.map((c) => {
+            const s = stateOf(c);
+            const signed = c.signers.filter((x) => x.status === "signed").length;
+            return (
+              <tr key={c.id} className="border-t border-border align-top first:border-t-0">
+                <td className="px-3 py-2 font-medium">{c.name}</td>
+                <td className="px-3 py-2"><StateMark tone={s.tone}>{t(`pipeline.detail.contract_state.${s.key}`)}</StateMark></td>
+                <td className="px-3 py-2 tabular-nums text-muted-foreground">{t("pipeline.detail.signatures_of", { n: signed, m: c.signers.length })}</td>
+                <td className="px-3 py-2"><SealedCopyLinks contract={c} /></td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
