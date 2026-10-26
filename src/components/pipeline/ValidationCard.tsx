@@ -153,13 +153,18 @@ function ValidationForm({ lead, readOnly, canClose, ranges, programAmount, corpo
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block space-y-1.5">
             <span className="text-sm font-medium">{t("entry_contracts.validation.investment")}</span>
-            <input inputMode="numeric" value={text.investment_amount} disabled={disabled} onChange={(e) => set("investment_amount", e.target.value)} placeholder={programAmount !== undefined ? formatNumber(programAmount, lng) : undefined} className={cn(inputCls, "font-display tabular-nums", amountBad && "border-status-danger-fg")} />
+            <input inputMode="numeric" value={text.investment_amount} disabled={disabled} onChange={(e) => set("investment_amount", e.target.value)} className={cn(inputCls, "font-display tabular-nums", (amountBad || (tried && missing.includes("investment"))) && "border-status-danger-fg")} />
             {amountBad && <span className="block text-xs text-status-danger-fg">{t("entry_contracts.validation.err_amount")}</span>}
+            {!amountBad && tried && missing.includes("investment") && <span className="block text-xs text-status-danger-fg">{t("entry_contracts.validation.err_investment_required")}</span>}
           </label>
           <label className="block space-y-1.5">
             <span className="text-sm font-medium">{t("entry_contracts.validation.center")}</span>
-            <input value={text.sm_square_center} disabled={disabled} onChange={(e) => set("sm_square_center", e.target.value)} placeholder={t("entry_contracts.validation.center_placeholder")} className={cn(inputCls, tried && block === "center_required" && "border-status-danger-fg")} />
-            {tried && block === "center_required" && <span className="block text-xs text-status-danger-fg">{t("entry_contracts.validation.err_center")}</span>}
+            <select value={text.sm_square_center || leadOfficeName} disabled={disabled || offices.length === 0} onChange={(e) => set("sm_square_center", e.target.value)} className={cn(inputCls, tried && missing.includes("center") && "border-status-danger-fg")}>
+              {offices.length === 0 && <option value="">{t("entry_contracts.validation.center_placeholder")}</option>}
+              {offices.map((o) => <option key={o.id} value={o.name}>{o.name}</option>)}
+              {text.sm_square_center && !offices.some((o) => o.name === text.sm_square_center) && <option value={text.sm_square_center}>{text.sm_square_center}</option>}
+            </select>
+            {tried && missing.includes("center") && <span className="block text-xs text-status-danger-fg">{t("entry_contracts.validation.err_center")}</span>}
           </label>
         </div>
         {officeHolder ? (
