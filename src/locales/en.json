@@ -3296,7 +3296,7 @@
       },
       "nda": {
         "not_sent": "We send it when you book your meeting.",
-        "body": "It is an agreement to protect your information and ours. Strategic Mates already signed it; your signature is missing.",
+        "body": "It is an agreement that protects your business's information. Strategic Mates already signed it; your signature is missing.",
         "sign": "Sign the NDA",
         "signed": "You signed the NDA.",
         "sm_signed": "Strategic Mates already signed. Only your signature is missing.",
