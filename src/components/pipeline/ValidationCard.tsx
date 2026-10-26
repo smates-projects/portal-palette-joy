@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useCloseValidation, useOrganizations, useRules, useSaveValidation, useUsers } from "@/lib/api/hooks";
 import type { EquityRanges, LeadWithComputed, ValidationInput } from "@/lib/api/types";
-import { formatDate, formatNumber, formatUsd } from "@/lib/format";
+import { formatDate, formatUsd } from "@/lib/format";
 import { closeMissing, isFixed, parsePct, rangeOf, splitErrors, validationInputOf, type SplitErrors } from "@/lib/leads/validation";
 import { globalSignsSmSquare, smEntitiesOf } from "@/lib/leads/contract-rules";
 import { cn } from "@/lib/utils";
@@ -147,8 +147,8 @@ function ValidationForm({ lead, readOnly, canClose, ranges, programAmount, corpo
             <PctInput id="v-sm" label={t("entry_contracts.validation.sm")} value={text.equity_sm} disabled={disabled} error={fieldError("equity_sm")} onChange={(x) => set("equity_sm", x)} />
           )}
         </div>
-        <p className={cn("text-xs", errors.sum ? "text-status-danger-fg" : "text-muted-foreground")} role={errors.sum ? "alert" : undefined}>
-          {errors.sum ? t("entry_contracts.validation.err_sum", { sum }) : t("entry_contracts.validation.sum", { sum })}
+        <p className={cn("text-xs", shownErrors.sum ? "text-status-danger-fg" : "text-muted-foreground")} role={shownErrors.sum ? "alert" : undefined}>
+          {shownErrors.sum ? t("entry_contracts.validation.err_sum", { sum }) : t("entry_contracts.validation.sum", { sum })}
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block space-y-1.5">
