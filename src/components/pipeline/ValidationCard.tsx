@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { useCloseValidation, useRules, useSaveValidation, useUsers } from "@/lib/api/hooks";
+import { useCloseValidation, useOrganizations, useRules, useSaveValidation, useUsers } from "@/lib/api/hooks";
 import type { EquityRanges, LeadWithComputed, ValidationInput } from "@/lib/api/types";
 import { formatDate, formatNumber, formatUsd } from "@/lib/format";
-import { closeBlock, isFixed, parsePct, rangeOf, splitErrors, validationInputOf, type SplitErrors } from "@/lib/leads/validation";
+import { closeMissing, isFixed, parsePct, rangeOf, splitErrors, validationInputOf, type SplitErrors } from "@/lib/leads/validation";
 import { globalSignsSmSquare, smEntitiesOf } from "@/lib/leads/contract-rules";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,14 +24,14 @@ const textOf = (v: ValidationInput): Text => ({
   sm_square_center: v.sm_square_center ?? "",
   sm_square_holder_user_id: v.sm_square_holder_user_id ?? "",
 });
-const inputOfText = (x: Text, ranges: EquityRanges): ValidationInput => ({
+const inputOfText = (x: Text, ranges: EquityRanges, fallbackCenter = ""): ValidationInput => ({
   equity_owner: parsePct(x.equity_owner),
   equity_bishop: parsePct(x.equity_bishop),
   // A single-value range (SM Square's fixed share) is not typed: it is the rule's value.
   equity_sm: isFixed(ranges, "equity_sm") ? ranges.sm.min : parsePct(x.equity_sm),
   investment_amount: x.investment_amount.trim() === "" ? null : Number(x.investment_amount.replace(/[.,\s]/g, "")),
   notes: x.notes.trim() || null,
-  sm_square_center: x.sm_square_center.trim() || null,
+  sm_square_center: x.sm_square_center.trim() || fallbackCenter || null,
   sm_square_holder_user_id: x.sm_square_holder_user_id || null,
 });
 
