@@ -1434,6 +1434,7 @@
       "result_summary": "Puntaje {{score}} de 100, {{band}}, {{strengths}} fortalezas, {{priorities}} prioridades",
       "email_summary": "{{subject}} · {{date}}",
       "view_all_activity": "Ver toda la actividad",
+      "events_expand": "Ver una por una",
       "contracts_table": {
         "documento": "Documento",
         "estado": "Estado",

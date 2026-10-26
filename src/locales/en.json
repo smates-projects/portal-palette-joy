@@ -1434,6 +1434,7 @@
       "result_summary": "Score {{score}} out of 100, {{band}}, {{strengths}} strengths, {{priorities}} priorities",
       "email_summary": "{{subject}} · {{date}}",
       "view_all_activity": "View all activity",
+      "events_expand": "View one by one",
       "contracts_table": {
         "documento": "Document",
         "estado": "Status",
