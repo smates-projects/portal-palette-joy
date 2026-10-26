@@ -170,16 +170,16 @@ function ValidationForm({ lead, readOnly, canClose, ranges, programAmount, corpo
         {officeHolder ? (
           <label className="block space-y-1.5">
             <span className="text-sm font-medium">{t("entry_contracts.validation.holder")}</span>
-            <select value={text.sm_square_holder_user_id} disabled={disabled || holders.length === 0} onChange={(e) => set("sm_square_holder_user_id", e.target.value)} className={cn(inputCls, tried && block === "holder_required" && "border-status-danger-fg")}>
+            <select value={text.sm_square_holder_user_id} disabled={disabled || holders.length === 0} onChange={(e) => set("sm_square_holder_user_id", e.target.value)} className={cn(inputCls, tried && missing.includes("holder") && "border-status-danger-fg")}>
               <option value="">{t("entry_contracts.validation.holder_placeholder")}</option>
               {holders.map((u) => <option key={u.id} value={u.id}>{u.full_name}</option>)}
             </select>
             <span className="block text-xs text-muted-foreground">{holders.length === 0 ? t("entry_contracts.validation.holder_none") : t("entry_contracts.validation.holder_hint")}</span>
-            {tried && block === "holder_required" && <span className="block text-xs text-status-danger-fg">{t("entry_contracts.validation.err_holder")}</span>}
+            {tried && missing.includes("holder") && <span className="block text-xs text-status-danger-fg">{t("entry_contracts.validation.err_holder")}</span>}
           </label>
         ) : (
           <p className="text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">{t("entry_contracts.validation.signs_for_sm_square")}:</span>{" "}
+            <span className="font-medium text-foreground">{t("entry_contracts.validation.signs_for_sm_square")}</span>{" "}
             {globalSigner ? t("entry_contracts.validation.global_signs", { name: smSquareSigner }) : t("entry_contracts.validation.global_signs_unset")}
           </p>
         )}
@@ -194,7 +194,11 @@ function ValidationForm({ lead, readOnly, canClose, ranges, programAmount, corpo
             {!canClose && <span className="text-xs text-muted-foreground">{t("entry_contracts.validation.close_admin")}</span>}
           </div>
         )}
-        {tried && block === "invalid_split" && Object.keys(errors).length === 0 && <p className="text-xs text-status-danger-fg">{t("entry_contracts.validation.err_complete")}</p>}
+        {tried && missing.length > 0 && (
+          <p className="text-xs text-status-danger-fg" role="alert">
+            {t("entry_contracts.validation.err_missing", { count: missing.length, items: missing.map((m) => t(`entry_contracts.validation.miss_${m}`)).join(", ") })}
+          </p>
+        )}
       </div>
     </section>
   );
