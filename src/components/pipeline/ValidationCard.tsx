@@ -125,7 +125,8 @@ function ValidationForm({ lead, readOnly, canClose, ranges, programAmount, corpo
   };
   const doClose = () => {
     setTried(true);
-    if (block || amountBad) return;
+    // Missing fields are named in one message and marked on the inputs; nothing is sent until all are there.
+    if (missing.length > 0 || Object.keys(errors).length > 0 || amountBad) return;
     const run = () => close.mutate(lead.id, { onSuccess: () => toast.success(t("entry_contracts.validation.t_closed", { name: lead.business.name })), onError: fail });
     // Unsaved changes go first, so what closes is what is on screen.
     return dirty ? doSave(run) : run();
