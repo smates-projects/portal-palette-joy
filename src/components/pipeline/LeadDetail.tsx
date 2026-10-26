@@ -645,7 +645,7 @@ function DetailTabs({ tab, onChange }: { tab: DetailTab; onChange: (tab: DetailT
     if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
     e.preventDefault();
     const i = DETAIL_TABS.indexOf(tab);
-    const next = DETAIL_TABS[(i + (e.key === "ArrowRight" ? 1 : DETAIL_TABS.length - 1)) % DETAIL_TABS.length];
+    const next = DETAIL_TABS[(i + (e.key === "ArrowRight" ? 1 : DETAIL_TABS.length - 1)) % DETAIL_TABS.length] ?? "resumen";
     onChange(next);
     refs.current[DETAIL_TABS.indexOf(next)]?.focus();
   };

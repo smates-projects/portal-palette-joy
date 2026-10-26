@@ -1,6 +1,6 @@
 // The lead detail's journey strip and "Lo que toca hacer": pure rules shared by the screen and the tests; the
 // Laravel backend reads the same dates from the same fields.
-import type { Contract, IntakeSummary, Lead, LeadEvent, LeadInvestors, LeadMeeting } from "@/lib/api/types";
+import type { Contract, IntakeSummary, Lead, LeadEvent, LeadMeeting, TripartiteState } from "@/lib/api/types";
 import type { LeadPrimaryAction } from "@/lib/leads/pipeline";
 
 export const JOURNEY_STEPS = ["assessment", "reunion", "nda", "mou", "documentos", "inversor", "vinculacion", "programa"] as const;
@@ -12,7 +12,8 @@ export interface JourneyStep {
   at: string | null;
 }
 
-type JourneyLead = Pick<Lead, "stage" | "discarded_from" | "submitted_at" | "stage_entered_at" | "bishop_user_id" | "tripartite"> & {
+type JourneyLead = Pick<Lead, "stage" | "discarded_from" | "submitted_at" | "stage_entered_at" | "bishop_user_id"> & {
+  tripartite?: TripartiteState | null | undefined;
   intake?: Pick<IntakeSummary, "nda_signed" | "mou_signed" | "approved_at"> | null | undefined;
   meeting?: Pick<LeadMeeting, "starts_at" | "outcome"> | null | undefined;
 };
@@ -27,7 +28,7 @@ const baseStage = (l: Pick<Lead, "stage" | "discarded_from">) => (l.stage === "d
 export function leadJourney(
   lead: JourneyLead,
   contracts: Pick<Contract, "kind" | "signed_at">[] = [],
-  investors?: Pick<LeadInvestors, "bishop" | "tripartite"> | null,
+  investors?: { bishop?: { accepted_at: string } | null | undefined; tripartite?: Pick<Contract, "state" | "signed_at"> | null | undefined } | null,
 ): JourneyStep[] {
   const stage = baseStage(lead);
   const pastMeeting = !["evaluated", "meeting"].includes(stage);
@@ -95,7 +96,7 @@ export function pendingBlock(action: LeadPrimaryAction, validationOpen: boolean)
 /** Five minutes: two events of the same kind by the same person closer than this read as one action. */
 export const EVENT_GROUP_WINDOW_MS = 5 * 60_000;
 
-type GroupableEvent = Pick<LeadEvent, "id" | "kind" | "actor_user_id" | "created_at">;
+type GroupableEvent = Pick<LeadEvent, "id" | "actor_user_id" | "created_at"> & { kind: string };
 
 /**
  * The activity tab's collapse: newest first, consecutive events of the same kind by the same person within five
