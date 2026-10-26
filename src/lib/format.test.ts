@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import en from "@/locales/en.json";
 import es from "@/locales/es.json";
 import { bishopNav, franchiseeNav, franchisorNav, smGlobalNav } from "@/components/layout/nav";
-import { formatDate, formatDateTime, formatNumber, formatShortDate, formatUsd, formatWeekdayDate, localeTag, oneFinalPeriod } from "./format";
+import { formatDate, formatDateTime, formatNumber, formatShortDate, formatTime, formatUsd, formatWeekdayDate, localeTag, oneFinalPeriod } from "./format";
 
 describe("formatting", () => {
   it("a deadline day reads with its weekday, the US date and no time-zone shift (QA B12)", () => {
@@ -34,6 +34,11 @@ describe("formatting", () => {
     const when = formatDateTime("2026-10-14T15:00:00Z", "es");
     expect(when).toMatch(/10\/1[45], /);
     expect(when).not.toMatch(/oct/i);
+  });
+
+  it("formats the hour alone in the viewer's language", () => {
+    expect(formatTime("2026-10-14T15:30:00Z", "es")).toMatch(/\d{1,2}:\d{2}/);
+    expect(formatTime("2026-10-14T15:30:00Z", "en")).toMatch(/\d{1,2}:\d{2}/);
   });
 });
 

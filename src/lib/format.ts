@@ -39,6 +39,10 @@ export const formatDateTime = (iso: string, lng: string) => {
   return `${weekday} ${date}, ${time}`;
 };
 
+/** "10:54 p.m." in the viewer's language (the activity lines of the lead detail). */
+export const formatTime = (iso: string, lng: string) =>
+  new Intl.DateTimeFormat(localeTag(lng), { hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
+
 export const formatNumber = (n: number, lng: string, options?: Intl.NumberFormatOptions) =>
   new Intl.NumberFormat(localeTag(lng), options).format(n);
 

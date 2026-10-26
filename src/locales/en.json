@@ -1396,7 +1396,62 @@
       "booking_from_office": "The office link will open because {{name}} has not added one yet.",
       "no_booking_url": "Add a booking link in the profile or in the office to be able to schedule.",
       "reactivate_hint": "It goes back to {{to}}, the stage it was in.",
-      "read_only": "Read only. The office makes the changes."
+      "read_only": "Read only. The office makes the changes.",
+      "tabs": {
+        "resumen": "Summary",
+        "ingreso": "Entry",
+        "documentos": "Documents",
+        "inversores": "Investors",
+        "actividad": "Activity"
+      },
+      "journey": {
+        "title": "Journey",
+        "assessment": "Assessment",
+        "reunion": "Meeting",
+        "nda": "NDA",
+        "mou": "MOU",
+        "documentos": "Documents",
+        "inversor": "Investor",
+        "vinculacion": "Binding",
+        "programa": "Program",
+        "pending": "Pending"
+      },
+      "todo": {
+        "title": "What needs doing",
+        "empty": "Nothing pending on your side",
+        "moved": "It is up top, in What needs doing.",
+        "next": {
+          "schedule": "The owner books the meeting from the link.",
+          "join_meet": "The meeting happens at the booked time.",
+          "rebook": "The owner books again from the link.",
+          "wait_investor": "The next step is automatic. An investor accepts the opportunity.",
+          "wait_signatures": "The next step is automatic. The Operating Agreement gets signed.",
+          "view_program": "The program is already running. You see it in Businesses.",
+          "restore": "SM Global decides whether it comes back.",
+          "generic": "The next step moves from the button above."
+        }
+      },
+      "result_summary": "Score {{score}} out of 100, {{band}}, {{strengths}} strengths, {{priorities}} priorities",
+      "email_summary": "{{subject}} · {{date}}",
+      "view_all_activity": "View all activity",
+      "events_expand": "View one by one",
+      "contracts_table": {
+        "documento": "Document",
+        "estado": "Status",
+        "firmas": "Signatures",
+        "descargas": "Downloads"
+      },
+      "signatures_of": "{{n}} of {{m}}",
+      "docs_counter": "{{uploaded}} of {{total}} uploaded, {{accepted}} accepted",
+      "email_not_sent": "Not sent yet",
+      "no_intake": "The entry starts when the NDA goes out.",
+      "investors_empty": "Once the documents are approved, here you see which investors it is presented to.",
+      "contract_state": {
+        "draft": "Draft",
+        "in_progress": "Being signed",
+        "signed": "Signed",
+        "declined": "Declined"
+      }
     },
     "blocks": {
       "time_team": "Your time and your team",
@@ -1452,7 +1507,10 @@
       "validation_closed": "{{actor}} closed the validation with the final percentages",
       "binding_sent": "The Binding and Formalization Agreement went out to the owner, the investor and Strategic Mates",
       "doc_not_applicable": "{{actor}} marked a document as not applicable",
-      "other": "{{actor}} made a change to the business"
+      "other": "{{actor}} made a change to the business",
+      "doc_accepted_many": "{{actor}} accepted {{count}} documents",
+      "doc_requested_many": "{{actor}} asked for {{count}} documents again",
+      "and_more": "{{text}} and {{count}} more"
     },
     "error_title": "We could not load the pipeline.",
     "retry": "Retry",
@@ -3161,6 +3219,16 @@
       "done": "Review finished"
     },
     "docs_title": "Documents",
+    "table": {
+      "document": "Document",
+      "state": "Status",
+      "file": "File",
+      "fact": "Verification note",
+      "actions": "Actions",
+      "help": "What it is and what it is for",
+      "owner_instructions": "Instructions the owner sees",
+      "no_file": "No file"
+    },
     "required": "Required",
     "optional": "Optional",
     "only_llc": "Only if LLC",

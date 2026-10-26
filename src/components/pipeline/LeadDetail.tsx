@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Mail, MapPin, Phone, X } from "lucide-react";
+import { ChevronDown, Mail, MapPin, Phone, X } from "lucide-react";
 import {
   useAddLeadNote, useApproveDocuments, useBusinessFunds, useConfirmProgramStart, useCurrentUser, useLeadDetail, useLeadIntake, useLeadInvestors, useOrganizations,
   useReactivateLead, useRecordFundPayment, useRegisterMeeting, useRejectDocuments, useRemoveFundPayment, useRules, useSendTripartite, useSetMeetingOutcome, useTransferLead, useUsers,
@@ -21,22 +21,31 @@ import { PaymentDialog, type PaymentFormValue } from "@/components/funds/parts";
 import { StartProgramDialog } from "@/components/funds/StartProgramDialog";
 import { InvestorsSection } from "./InvestorsSection";
 import { isDocsAdmin } from "@/lib/leads/onboarding";
-import { IntakeChecklist, RejectDocsDialog } from "./IntakeChecklist";
+import { ContractsSummaryTable, IntakeContracts, IntakeDocuments, RejectDocsDialog } from "./IntakeChecklist";
 import type { LeadEvent, LeadWithComputed } from "@/lib/api/types";
-import { firstName, formatDate, formatDateTime } from "@/lib/format";
+import { firstName, formatDate, formatDateTime, formatTime, formatWeekdayDate } from "@/lib/format";
 import { ValidationCard } from "./ValidationCard";
 import { primaryActionFor } from "@/lib/leads/pipeline";
+import { GROUPABLE_KINDS, collapseEvents, leadJourney, pendingBlock, type PendingBlock } from "@/lib/leads/journey";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PrimaryButton } from "@/components/tasks/detail/dialogs";
 import { OpennessNote, StageBadge } from "./LeadBadges";
 import { ManualLeadSection } from "./ManualLeadSection";
 import { AssessmentResult, KnowHow } from "./AssessmentResult";
-import { EntryTimeline, MeetingCard, MeetingNoteDialog, SummaryEmail } from "./EntrySections";
+import { MeetingCard, MeetingNoteDialog, SummaryEmail } from "./EntrySections";
 import { ScheduleMeetingDialog } from "@/components/calendar/ScheduleMeetingDialog";
+import { cn } from "@/lib/utils";
+
+const sectionTitle = "text-xs font-medium uppercase tracking-wide text-muted-foreground";
+const DETAIL_TABS = ["resumen", "ingreso", "documentos", "inversores", "actividad"] as const;
+type DetailTab = (typeof DETAIL_TABS)[number];
 
 /**
  * Detail of one lead. With `readOnly` (SM Global) there are no actions and no note box: it only shows what the
  * office knows. Without it, `onPrimary`, `onDiscard` and `pending` are required in practice.
+ *
+ * Layout: a sticky header (who it is and the actions), the eight-step journey strip, "Lo que toca hacer" with the
+ * one block that needs action now, and the tabs Resumen, Ingreso, Documentos, Inversores and Actividad.
  */
 export function LeadDetail(props: {
   leadId: string;
@@ -70,6 +79,7 @@ export function LeadDetail(props: {
   const [scheduling, setScheduling] = useState(false);
   const [registering, setRegistering] = useState(false);
   const [transferring, setTransferring] = useState(false);
+  const [tab, setTab] = useState<DetailTab>("resumen");
   const outcome = useSetMeetingOutcome();
   const reactivate = useReactivateLead();
   const register = useRegisterMeeting();
@@ -82,7 +92,7 @@ export function LeadDetail(props: {
   // The entry contracts (cached with the checklist): with an Acuerdo de Vinculación the OA is created by its rule.
   const intakeQ = useLeadIntake(q.data?.lead.intake ? props.leadId : undefined);
   // The Bishop who accepted the lead joins its expansion meeting (shared with the Inversores section's query).
-  const investorsQ = useLeadInvestors(q.data?.lead.stage === "accepted" ? props.leadId : undefined);
+  const investorsQ = useLeadInvestors(q.data?.lead.stage === "accepted" || q.data?.lead.stage === "in_program" ? props.leadId : undefined);
 
   if (q.isLoading)
     return <div className="space-y-4 p-6"><Skeleton className="h-8 w-2/3" /><Skeleton className="h-24" /><Skeleton className="h-48" /></div>;
@@ -114,9 +124,9 @@ export function LeadDetail(props: {
       ? t(approval.reason === "contracts" ? "intake.missing_contracts" : "intake.missing_docs", { list: approval.missing.join(", ") })
       : action === "send_tripartite" && intakeQ.data?.contracts.some((c) => c.kind === "binding")
         ? t(lead.validation?.status === "closed" ? "entry_contracts.lead.oa_after_binding" : "entry_contracts.lead.oa_needs_validation")
-      : action === "send_tripartite" && oaSendBlock(lead, rules) === "expansion_meeting_required"
-        ? t("entry.oa.needs_expansion")
-        : action === "meeting_outcome" ? ""
+        : action === "send_tripartite" && oaSendBlock(lead, rules) === "expansion_meeting_required"
+          ? t("entry.oa.needs_expansion")
+          : action === "meeting_outcome" ? ""
           : null;
   const fail = (e?: unknown) =>
     toast.error(e instanceof Error && ["outcome_already_set", "expansion_meeting_required", "invalid_transition"].includes(e.message)
@@ -243,6 +253,7 @@ export function LeadDetail(props: {
       office: e.kind === "transferred" ? e.body ?? "" : "",
     });
   };
+  const actorOf = (e: LeadEvent) => e.actor_name || userName(e.actor_user_id) || t("pipeline.events.actor_fallback");
   /** The automatic discard carries a code, not a free text: it reads in plain words. */
   const discardText = (reason: string) =>
     reason === AUTO_DISCARD_MOU_NOT_SIGNED ? t("pipeline.detail.discard_mou_not_signed") : t("pipeline.detail.discard_reason", { reason });
@@ -254,10 +265,90 @@ export function LeadDetail(props: {
     });
   };
 
+  // The journey strip, "Lo que toca hacer" and the tabs.
+  const journey = leadJourney(lead, intakeQ.data?.contracts ?? [], investorsQ.data);
+  const validationOpen = lead.stage === "accepted" && lead.validation?.status !== "closed";
+  const pending = pendingBlock(action, validationOpen);
+  const nextKey = `pipeline.detail.todo.next.${action}`;
+  const nextText = i18n.exists(nextKey) ? t(nextKey) : t("pipeline.detail.todo.next.generic");
+  const readOnly = !!props.readOnly;
+
+  const meetingCard = (
+    <MeetingCard lead={lead} consultantName={consultant?.full_name ?? ""} readOnly={readOnly} canAnswer={(m) => canAnswerOutcome(meQ.data, lead, m)} focused={props.focus === "meeting"} pending={outcome.isPending} onOutcome={onOutcome} />
+  );
+  const validationCard = (lead.stage === "accepted" || (lead.stage === "in_program" && lead.validation)) ? (
+    <ValidationCard key={`${lead.id}-${lead.validation?.status ?? "none"}`} lead={lead} readOnly={readOnly || lead.stage !== "accepted"} canClose={admin} />
+  ) : null;
+  const investorsSection = (lead.stage === "documents" || lead.stage === "accepted" || lead.stage === "in_program") && lead.intake ? (
+    <InvestorsSection leadId={lead.id} businessName={lead.business.name} readOnly={readOnly} canPresent={lead.stage === "accepted"} />
+  ) : null;
+  const fundsSection = lead.funds && lead.business_id ? (
+    <section className="space-y-2">
+      <h3 className={sectionTitle}>{t("funds.funds_title")}</h3>
+      <FundsPanel businessId={lead.business_id} mode={readOnly ? "read" : "sm"} />
+    </section>
+  ) : null;
+
+  /** The one block that needs action now, moved under the strip while it is pending. */
+  const pendingContent = (block: Exclude<PendingBlock, null>) => {
+    switch (block) {
+      case "meeting": return meetingCard;
+      case "docs": return <IntakeDocuments leadId={lead.id} readOnly={readOnly} variant="table" />;
+      case "contracts": return <IntakeContracts leadId={lead.id} readOnly={readOnly} validation={lead.validation} withHeader={false} />;
+      case "validation": return validationCard;
+      case "investors": return investorsSection;
+      case "funds": return fundsSection;
+    }
+  };
+
+  const noteBox = !readOnly && (
+    <div className="space-y-2">
+      <textarea
+        rows={2}
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder={t("pipeline.detail.note_placeholder")}
+        className="w-full resize-none rounded-md border border-input bg-surface px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30"
+      />
+      <button
+        onClick={submitNote}
+        disabled={!note.trim() || addNote.isPending}
+        className="inline-flex h-8 items-center rounded-md border border-border bg-surface px-3 text-sm font-medium hover:bg-muted disabled:opacity-50"
+      >
+        {t("pipeline.detail.note_add")}
+      </button>
+    </div>
+  );
+
+  // The activity history, newest first, grouped by day.
+  const newestFirst = [...events].reverse();
+  const days: { day: string; events: LeadEvent[] }[] = [];
+  for (const e of newestFirst) {
+    const day = e.created_at.slice(0, 10);
+    const last = days.at(-1);
+    if (last && last.day === day) last.events.push(e);
+    else days.push({ day, events: [e] });
+  }
+
+  const resultSummary = lead.result
+    ? t("pipeline.detail.result_summary", {
+        score: lead.result.score ?? 0,
+        band: lead.result.band ? t(`pipeline.bands.${lead.result.band}`) : "",
+        strengths: lead.result.strengths.length,
+        priorities: lead.result.priorities.length,
+      })
+    : "";
+  const emailSummary = lead.summary_sent_at
+    ? t("pipeline.detail.email_summary", {
+        subject: t("entry.email.subject", { name: firstName(lead.contact.name), date: lead.meeting ? formatDate(lead.meeting.starts_at, lng) : "" }),
+        date: formatDateTime(lead.summary_sent_at, lng),
+      })
+    : t("pipeline.detail.email_not_sent");
+
   return (
     <div className="flex min-h-full flex-col">
-      {/* 1. Header */}
-      <header className="border-b border-border px-6 py-5">
+      {/* 1. Sticky header: who it is, the stage and the actions */}
+      <header className="sticky top-0 z-10 border-b border-border bg-surface px-6 py-5">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
@@ -267,7 +358,7 @@ export function LeadDetail(props: {
             <h2 className="mt-2 text-xl font-semibold tracking-tight">{lead.business.name}</h2>
             <p className="mt-0.5 text-sm text-muted-foreground">
               {lead.contact.name}
- · {t(`pipeline.hispanic.${lead.contact.hispanic_owner}`)}
+               · {t(`pipeline.hispanic.${lead.contact.hispanic_owner}`)}
             </p>
             {/* The owner's closing answer to the assessment, so the consultant knows how convinced he is. */}
             <OpennessNote result={lead.result} className="mt-1" />
@@ -342,94 +433,126 @@ export function LeadDetail(props: {
         onRegisterManually={canRegister ? () => { setScheduling(false); setRegistering(true); } : undefined}
       />
 
-      <div className="flex-1 space-y-6 px-6 py-5">
-        {/* 1a. Automatic entry: the four phases, the booked meeting and the summary email */}
-        {lead.source !== "manual" && <EntryTimeline lead={lead} />}
-        <MeetingCard lead={lead} consultantName={consultant?.full_name ?? ""} readOnly={!!props.readOnly} canAnswer={(m) => canAnswerOutcome(meQ.data, lead, m)} focused={props.focus === "meeting"} pending={outcome.isPending} onOutcome={onOutcome} />
-        {/* 1b. Entry checklist (from NDA + MOU on) */}
-        {lead.intake && <IntakeChecklist leadId={lead.id} readOnly={!!props.readOnly} validation={lead.validation} />}
-        {/* After the documents: the definitive percentages, in parallel with the presentation to the Bishops. */}
-        {(lead.stage === "accepted" || (lead.stage === "in_program" && lead.validation)) && (
-          <ValidationCard key={`${lead.id}-${lead.validation?.status ?? "none"}`} lead={lead} readOnly={!!props.readOnly || lead.stage !== "accepted"} canClose={admin} />
-        )}
-        {/* Who SM presented it to and who took it; still a record once the program started (read only there). */}
-        {(lead.stage === "documents" || lead.stage === "accepted" || lead.stage === "in_program") && lead.intake && (
-          <InvestorsSection leadId={lead.id} businessName={lead.business.name} readOnly={!!props.readOnly} canPresent={lead.stage === "accepted"} />
-        )}
-        {/* 1c. Bishop funds, once the three signed the tripartite contract (SM only: money) */}
-        {lead.funds && lead.business_id && (
-          <section className="space-y-2">
-            <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("funds.funds_title")}</h3>
-            <FundsPanel businessId={lead.business_id} mode={props.readOnly ? "read" : "sm"} />
+      {/* 2. The eight-step journey strip */}
+      <JourneyStrip steps={journey} />
+
+      <div className="flex-1 px-6 py-5">
+        {/* 3. Lo que toca hacer: the one pending block, or a quiet line with the next automatic step */}
+        {pending && pendingContent(pending) ? (
+          <section aria-label={t("pipeline.detail.todo.title")} className="rounded-[4px] border border-border border-l-2 border-l-gold bg-surface p-4">
+            <h3 className={sectionTitle}>{t("pipeline.detail.todo.title")}</h3>
+            <div className="mt-3">{pendingContent(pending)}</div>
           </section>
+        ) : (
+          <div className="rounded-[4px] border border-dashed border-border px-4 py-3">
+            <p className="text-sm font-medium">{t("pipeline.detail.todo.empty")}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{nextText}</p>
+          </div>
         )}
-        {/* 1d. Business added by hand: origin and the assessment still to come */}
-        {lead.source === "manual" && <ManualLeadSection lead={lead} readOnly={!!props.readOnly} />}
-        {/* 2. Assessment result as the owner saw it */}
-        {lead.result && <section>
-          <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("pipeline.detail.result_title")}</h3>
-          <div className="mt-2"><AssessmentResult result={lead.result} submittedAt={lead.submitted_at} /></div>
-        </section>}
 
-        {/* 2b. The summary email the person got */}
-        <SummaryEmail lead={lead} copy={q.data.summary_email} />
-
-        {/* 3. Know-how */}
-        {lead.know_how_example && <KnowHow text={lead.know_how_example} />}
-
-        {/* 4. Business data in ranges */}
-        <section>
-          <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("pipeline.detail.business_title")}</h3>
-          <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 rounded-md border border-border p-4 text-sm">
-            <Item
-              label={t("pipeline.industry")}
-              value={lead.business.industry === "other_related" && lead.business.activity_other
-                ? `${t("pipeline.industries.other_related")}, ${lead.business.activity_other}`
-                : t(`pipeline.industries.${lead.business.industry}`)}
-            />
-            <Item label={t("pipeline.detail.activity")} value={lead.business.activity} />
-            <Item label={t("pipeline.revenue")} value={t(`pipeline.revenue_ranges.${lead.business.revenue_range}`)} />
-            <Item label={t("pipeline.detail.margin")} value={t(`pipeline.margin_ranges.${lead.business.margin_range ?? "unknown"}`)} />
-            <Item label={t("pipeline.detail.team")} value={t(`pipeline.team_ranges.${lead.business.team_range}`)} />
-            <Item label={t("pipeline.detail.years")} value={t(`pipeline.years_ranges.${lead.business.years_range}`)} />
-            <Item label={t("pipeline.detail.active_clients")} value={t(lead.business.has_active_clients ? "pipeline.detail.yes" : "pipeline.detail.no")} />
-          </dl>
-        </section>
-
-        {/* 5. Activity */}
-        <section>
-          <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("pipeline.detail.activity_title")}</h3>
-          <ol className="mt-2 space-y-3">
-            {[...events].reverse().map((e) => (
-              <li key={e.id} className="text-sm">
-                <p>{describe(e)}</p>
-                {/* The automatic discard logs a code, never shown raw. */}
-                {e.body && e.kind !== "transferred" && (
-                  <p className="mt-1 rounded-md border border-border bg-muted/50 px-3 py-2 text-sm">{e.kind === "discarded" && e.body === AUTO_DISCARD_MOU_NOT_SIGNED ? t("pipeline.detail.discard_mou_not_signed") : e.body}</p>
-                )}
-                <p className="mt-0.5 text-xs text-muted-foreground">{formatDateTime(e.created_at, lng)}</p>
-              </li>
-            ))}
-          </ol>
-          {!props.readOnly && (
-            <div className="mt-4 space-y-2">
-              <textarea
-                rows={2}
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder={t("pipeline.detail.note_placeholder")}
-                className="w-full resize-none rounded-md border border-input bg-surface px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30"
-              />
-              <button
-                onClick={submitNote}
-                disabled={!note.trim() || addNote.isPending}
-                className="inline-flex h-8 items-center rounded-md border border-border bg-surface px-3 text-sm font-medium hover:bg-muted disabled:opacity-50"
-              >
-                {t("pipeline.detail.note_add")}
-              </button>
+        {/* 4. Tabs */}
+        <DetailTabs tab={tab} onChange={setTab} />
+        <div role="tabpanel" id={`lead-panel-${tab}`} aria-labelledby={`lead-tab-${tab}`} className="mt-4">
+          {tab === "resumen" && (
+            <div className="space-y-6">
+              {pending !== "meeting" && meetingCard}
+              {/* Business added by hand: origin and the assessment still to come */}
+              {lead.source === "manual" && <ManualLeadSection lead={lead} readOnly={readOnly} />}
+              {intakeQ.data && (
+                <section className="space-y-2">
+                  <h3 className={sectionTitle}>{t("intake.title")}</h3>
+                  <ContractsSummaryTable contracts={intakeQ.data.contracts} />
+                  <p className="text-xs tabular-nums text-muted-foreground">
+                    {t("pipeline.detail.docs_counter", { uploaded: intakeQ.data.summary.uploaded, total: intakeQ.data.summary.required_total, accepted: intakeQ.data.summary.accepted })}
+                  </p>
+                </section>
+              )}
+              <section>
+                <h3 className={sectionTitle}>{t("pipeline.detail.business_title")}</h3>
+                <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 rounded-md border border-border p-4 text-sm">
+                  <Item
+                    label={t("pipeline.industry")}
+                    value={lead.business.industry === "other_related" && lead.business.activity_other
+                      ? `${t("pipeline.industries.other_related")}, ${lead.business.activity_other}`
+                      : t(`pipeline.industries.${lead.business.industry}`)}
+                  />
+                  <Item label={t("pipeline.detail.activity")} value={lead.business.activity} />
+                  <Item label={t("pipeline.revenue")} value={t(`pipeline.revenue_ranges.${lead.business.revenue_range}`)} />
+                  <Item label={t("pipeline.detail.margin")} value={t(`pipeline.margin_ranges.${lead.business.margin_range ?? "unknown"}`)} />
+                  <Item label={t("pipeline.detail.team")} value={t(`pipeline.team_ranges.${lead.business.team_range}`)} />
+                  <Item label={t("pipeline.detail.years")} value={t(`pipeline.years_ranges.${lead.business.years_range}`)} />
+                  <Item label={t("pipeline.detail.active_clients")} value={t(lead.business.has_active_clients ? "pipeline.detail.yes" : "pipeline.detail.no")} />
+                </dl>
+              </section>
+              {lead.know_how_example && <KnowHow text={lead.know_how_example} />}
+              {lead.result && (
+                <Collapsed label={t("pipeline.detail.result_title")} summary={resultSummary}>
+                  <AssessmentResult result={lead.result} submittedAt={lead.submitted_at} />
+                </Collapsed>
+              )}
+              <Collapsed label={t("entry.email.title")} summary={emailSummary}>
+                <SummaryEmail lead={lead} copy={q.data.summary_email} />
+              </Collapsed>
+              {newestFirst.length > 0 && (
+                <section>
+                  <h3 className={sectionTitle}>{t("pipeline.detail.activity_title")}</h3>
+                  <ol className="mt-2 space-y-3">
+                    {newestFirst.slice(0, 3).map((e) => (
+                      <li key={e.id} className="text-sm">
+                        <p>{describe(e)}</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">{formatDateTime(e.created_at, lng)}</p>
+                      </li>
+                    ))}
+                  </ol>
+                  <button onClick={() => setTab("actividad")} className="mt-2 text-sm text-link hover:underline">{t("pipeline.detail.view_all_activity")}</button>
+                </section>
+              )}
             </div>
           )}
-        </section>
+
+          {tab === "ingreso" && (
+            lead.intake
+              ? pending === "contracts"
+                ? <MovedNote />
+                : <IntakeContracts leadId={lead.id} readOnly={readOnly} validation={lead.validation} />
+              : <EmptyNote text={t("pipeline.detail.no_intake")} />
+          )}
+
+          {tab === "documentos" && (
+            lead.intake
+              ? pending === "docs"
+                ? <MovedNote />
+                : <IntakeDocuments leadId={lead.id} readOnly={readOnly} variant="table" />
+              : <EmptyNote text={t("pipeline.detail.no_intake")} />
+          )}
+
+          {tab === "inversores" && (
+            <div className="space-y-6">
+              {pending !== "validation" && validationCard}
+              {pending !== "investors" && investorsSection}
+              {pending !== "funds" && fundsSection}
+              {!validationCard && !investorsSection && !fundsSection && <EmptyNote text={t("pipeline.detail.investors_empty")} />}
+            </div>
+          )}
+
+          {tab === "actividad" && (
+            <section className="space-y-4">
+              {noteBox}
+              <ol className="space-y-4">
+                {days.map((d) => (
+                  <li key={d.day}>
+                    <h4 className="text-xs font-medium text-muted-foreground">{formatWeekdayDate(d.day, lng)}</h4>
+                    <ol className="mt-1.5 space-y-2.5">
+                      {collapseEvents(d.events).map((group) => (
+                        <EventLine key={group[0]!.id} group={group} describe={describe} actorOf={actorOf} lng={lng} />
+                      ))}
+                    </ol>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
+        </div>
       </div>
       {recording && (
         <PaymentDialog
@@ -491,6 +614,128 @@ export function LeadDetail(props: {
         />
       )}
     </div>
+  );
+}
+
+/** The eight steps of the lead in one row: date under each completed one, the current one in gold, pending in grey. */
+function JourneyStrip({ steps }: { steps: ReturnType<typeof leadJourney> }) {
+  const { t, i18n } = useTranslation();
+  return (
+    <nav aria-label={t("pipeline.detail.journey.title")} className="border-b border-border bg-surface px-6 py-3">
+      <ol className="flex gap-2 overflow-x-auto">
+        {steps.map((s) => (
+          <li key={s.key} aria-current={s.state === "current" ? "step" : undefined} className="min-w-16 flex-1">
+            <span className={cn("flex items-center gap-1.5 text-[11px] font-medium", s.state === "current" ? "text-gold" : s.state === "pending" ? "text-muted-foreground" : "text-foreground")}>
+              <span aria-hidden className={cn("h-2 w-2 shrink-0 rounded-[2px]", s.state === "done" ? "bg-primary" : s.state === "current" ? "bg-gold" : "bg-status-neutral-border")} />
+              <span className="truncate">{t(`pipeline.detail.journey.${s.key}`)}</span>
+            </span>
+            <span className="mt-0.5 block pl-3.5 text-[10px] tabular-nums text-muted-foreground">{s.at ? formatDate(s.at, i18n.language) : t("pipeline.detail.journey.pending")}</span>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  );
+}
+
+/** The tabs of the detail, keyboard navigable with the arrow keys. */
+function DetailTabs({ tab, onChange }: { tab: DetailTab; onChange: (tab: DetailTab) => void }) {
+  const { t } = useTranslation();
+  const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+    e.preventDefault();
+    const i = DETAIL_TABS.indexOf(tab);
+    const next = DETAIL_TABS[(i + (e.key === "ArrowRight" ? 1 : DETAIL_TABS.length - 1)) % DETAIL_TABS.length] ?? "resumen";
+    onChange(next);
+    refs.current[DETAIL_TABS.indexOf(next)]?.focus();
+  };
+  return (
+    <div role="tablist" aria-label={t("pipeline.detail.open_full")} onKeyDown={onKeyDown} className="mt-5 flex gap-1 overflow-x-auto border-b border-border">
+      {DETAIL_TABS.map((key, i) => (
+        <button
+          key={key}
+          ref={(el) => { refs.current[i] = el; }}
+          role="tab"
+          id={`lead-tab-${key}`}
+          aria-selected={tab === key}
+          aria-controls={`lead-panel-${key}`}
+          tabIndex={tab === key ? 0 : -1}
+          onClick={() => onChange(key)}
+          className={cn("-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium", tab === key ? "border-gold text-foreground" : "border-transparent text-muted-foreground hover:text-foreground")}
+        >
+          {t(`pipeline.detail.tabs.${key}`)}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** A section collapsed behind a button with aria-expanded and its one-line summary. */
+function Collapsed({ label, summary, children }: { label: string; summary: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <section className="rounded-md border border-border">
+      <button type="button" aria-expanded={open} onClick={() => setOpen((o) => !o)} className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left">
+        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</span>
+        <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} />
+      </button>
+      {!open && summary && <p className="px-4 pb-2.5 text-xs text-muted-foreground">{summary}</p>}
+      {open && <div className="border-t border-border px-4 py-3">{children}</div>}
+    </section>
+  );
+}
+
+/** "Lo tienes arriba, en Lo que toca hacer": the tab whose block is moved up while it is pending. */
+function MovedNote() {
+  const { t } = useTranslation();
+  return <p className="rounded-md border border-dashed border-border px-3 py-3 text-sm text-muted-foreground">{t("pipeline.detail.todo.moved")}</p>;
+}
+
+function EmptyNote({ text }: { text: string }) {
+  return <p className="rounded-md border border-dashed border-border px-3 py-3 text-sm text-muted-foreground">{text}</p>;
+}
+
+/**
+ * One line of the activity history. Consecutive events of the same kind by the same person within five minutes
+ * collapse into one line ("Marilyn Boraei aceptó 13 documentos, 10:54 p.m.") with an expander that lists them.
+ */
+function EventLine({ group, describe, actorOf, lng }: { group: LeadEvent[]; describe: (e: LeadEvent) => string; actorOf: (e: LeadEvent) => string; lng: string }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const head = group[0]!;
+  if (group.length === 1)
+    return (
+      <li className="text-sm">
+        <p>{describe(head)}</p>
+        {/* The automatic discard logs a code, never shown raw. */}
+        {head.body && head.kind !== "transferred" && (
+          <p className="mt-1 rounded-md border border-border bg-muted/50 px-3 py-2 text-sm">{head.kind === "discarded" && head.body === AUTO_DISCARD_MOU_NOT_SIGNED ? t("pipeline.detail.discard_mou_not_signed") : head.body}</p>
+        )}
+        <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">{formatDateTime(head.created_at, lng)}</p>
+      </li>
+    );
+  const text = (GROUPABLE_KINDS as readonly string[]).includes(head.kind)
+    ? t(`pipeline.events.${head.kind}_many`, { actor: actorOf(head), count: group.length })
+    : t("pipeline.events.and_more", { text: describe(head), count: group.length - 1 });
+  return (
+    <li className="text-sm">
+      <div className="flex items-start justify-between gap-2">
+        <p>
+          {text}
+          <span className="ml-1 text-xs tabular-nums text-muted-foreground">{formatTime(head.created_at, lng)}</span>
+        </p>
+        <button type="button" aria-expanded={open} aria-label={t("pipeline.detail.events_expand")} onClick={() => setOpen((o) => !o)} className="rounded-md p-0.5 text-muted-foreground hover:bg-muted">
+          <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-180")} />
+        </button>
+      </div>
+      {open && (
+        <ol className="mt-1 space-y-1 border-l border-border pl-3 text-xs text-muted-foreground">
+          {group.map((e) => (
+            <li key={e.id}>{describe(e)} · <span className="tabular-nums">{formatTime(e.created_at, lng)}</span></li>
+          ))}
+        </ol>
+      )}
+    </li>
   );
 }
 

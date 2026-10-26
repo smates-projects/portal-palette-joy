@@ -1396,7 +1396,62 @@
       "booking_from_office": "Se abrirá el link de la oficina porque {{name}} todavía no cargó el suyo.",
       "no_booking_url": "Carga un link de reservas en el perfil o en la oficina para poder agendar.",
       "reactivate_hint": "Vuelve a {{to}}, la etapa en la que estaba.",
-      "read_only": "Solo lectura. Los cambios los hace la oficina."
+      "read_only": "Solo lectura. Los cambios los hace la oficina.",
+      "tabs": {
+        "resumen": "Resumen",
+        "ingreso": "Ingreso",
+        "documentos": "Documentos",
+        "inversores": "Inversores",
+        "actividad": "Actividad"
+      },
+      "journey": {
+        "title": "Recorrido",
+        "assessment": "Assessment",
+        "reunion": "Reunión",
+        "nda": "NDA",
+        "mou": "MOU",
+        "documentos": "Documentos",
+        "inversor": "Inversor",
+        "vinculacion": "Vinculación",
+        "programa": "Programa",
+        "pending": "Pendiente"
+      },
+      "todo": {
+        "title": "Lo que toca hacer",
+        "empty": "Nada pendiente de tu lado",
+        "moved": "Lo tienes arriba, en Lo que toca hacer.",
+        "next": {
+          "schedule": "El dueño agenda su reunión desde el link.",
+          "join_meet": "La reunión es en el horario agendado.",
+          "rebook": "El dueño vuelve a agendar desde el link.",
+          "wait_investor": "El próximo paso es automático. Un inversor acepta la oportunidad.",
+          "wait_signatures": "El próximo paso es automático. Se firma el Operating Agreement.",
+          "view_program": "El programa ya corre. Lo ves en Negocios.",
+          "restore": "SM Global decide si vuelve al proceso.",
+          "generic": "El próximo paso avanza desde el botón de arriba."
+        }
+      },
+      "result_summary": "Puntaje {{score}} de 100, {{band}}, {{strengths}} fortalezas, {{priorities}} prioridades",
+      "email_summary": "{{subject}} · {{date}}",
+      "view_all_activity": "Ver toda la actividad",
+      "events_expand": "Ver una por una",
+      "contracts_table": {
+        "documento": "Documento",
+        "estado": "Estado",
+        "firmas": "Firmas",
+        "descargas": "Descargas"
+      },
+      "signatures_of": "{{n}} de {{m}}",
+      "docs_counter": "{{uploaded}} de {{total}} subidos, {{accepted}} aceptados",
+      "email_not_sent": "Todavía no se envió",
+      "no_intake": "El ingreso empieza cuando se envía el NDA.",
+      "investors_empty": "Cuando la documentación esté aprobada, aquí ves a qué inversores se presenta.",
+      "contract_state": {
+        "draft": "Borrador",
+        "in_progress": "En firma",
+        "signed": "Firmado",
+        "declined": "Rechazado"
+      }
     },
     "blocks": {
       "time_team": "Tu tiempo y tu equipo",
@@ -1452,7 +1507,10 @@
       "validation_closed": "{{actor}} cerró la validación con los porcentajes definitivos",
       "binding_sent": "Se envió el Acuerdo de Vinculación y Formalización al dueño, al inversor y a Strategic Mates",
       "doc_not_applicable": "{{actor}} marcó que un documento no aplica",
-      "other": "{{actor}} hizo un cambio en el negocio"
+      "other": "{{actor}} hizo un cambio en el negocio",
+      "doc_accepted_many": "{{actor}} aceptó {{count}} documentos",
+      "doc_requested_many": "{{actor}} pidió {{count}} documentos de nuevo",
+      "and_more": "{{text}} y {{count}} más"
     },
     "error_title": "No pudimos cargar el embudo.",
     "retry": "Reintentar",
@@ -3161,6 +3219,16 @@
       "done": "Revisión terminada"
     },
     "docs_title": "Documentos",
+    "table": {
+      "document": "Documento",
+      "state": "Estado",
+      "file": "Archivo",
+      "fact": "Nota de verificación",
+      "actions": "Acciones",
+      "help": "Qué es y para qué sirve",
+      "owner_instructions": "Instrucciones que ve el dueño",
+      "no_file": "Sin archivo"
+    },
     "required": "Obligatorio",
     "optional": "Opcional",
     "only_llc": "Solo si es LLC",

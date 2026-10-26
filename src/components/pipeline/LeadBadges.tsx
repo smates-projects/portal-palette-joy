@@ -77,3 +77,22 @@ export function BlockBadge({ status }: { status: BlockStatus }) {
   const { t } = useTranslation();
   return <span className={cn(base, BLOCK[status])}>{t(`pipeline.block_status.${status}`)}</span>;
 }
+
+const MARK = {
+  neutral: "bg-status-neutral-border",
+  info: "bg-status-info-border",
+  success: "bg-status-success-border",
+  warning: "bg-status-warning-border",
+  danger: "bg-status-danger-border",
+  gold: "bg-gold",
+} as const;
+
+/** A status word as plain text with a small square color mark before it (the lead detail's tables and strip). */
+export function StateMark({ tone, children, className }: { tone: keyof typeof MARK; children: React.ReactNode; className?: string }) {
+  return (
+    <span className={cn("inline-flex items-center gap-1.5", className)}>
+      <span aria-hidden className={cn("h-2 w-2 shrink-0 rounded-[2px]", MARK[tone])} />
+      {children}
+    </span>
+  );
+}
