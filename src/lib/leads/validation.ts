@@ -67,12 +67,12 @@ export function closeBlock(
   return null;
 }
 
-/** The form starts from what was saved, or empty with SM's share when its range is a single value. */
-export const validationInputOf = (v: LeadValidation | null | undefined, ranges: EquityRanges | null | undefined): ValidationInput => ({
+/** The form starts from what was saved, or empty with SM's share when its range is a single value; the investment prefills with the program amount of the rules. */
+export const validationInputOf = (v: LeadValidation | null | undefined, ranges: EquityRanges | null | undefined, programAmount?: number | null): ValidationInput => ({
   equity_owner: v?.equity_owner ?? null,
   equity_bishop: v?.equity_bishop ?? null,
   equity_sm: v?.equity_sm ?? (ranges && isFixed(ranges, "equity_sm") ? ranges.sm.min : null),
-  investment_amount: v?.investment_amount ?? null,
+  investment_amount: v?.investment_amount ?? programAmount ?? null,
   notes: v?.notes ?? null,
   sm_square_center: v?.sm_square_center ?? null,
   sm_square_holder_user_id: v?.sm_square_holder_user_id ?? null,
