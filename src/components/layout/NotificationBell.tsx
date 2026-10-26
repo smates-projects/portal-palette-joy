@@ -10,6 +10,7 @@ import { ALL_OFFICES, inOfficeScope, useOfficeScope } from "@/lib/office-scope";
 import { cn } from "@/lib/utils";
 import { describeChange } from "@/lib/tasks/changes";
 import { notificationText } from "@/lib/notifications/text";
+import { notificationTarget } from "@/lib/notifications/target";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -56,10 +57,8 @@ const DOT: Record<NotificationKind, string> = {
   lead_auto_discarded: "bg-status-danger-fg",
 };
 
-/** Calendar v2: these open the calendar with the meeting in focus. */
+/** Calendar v2: these name the meeting's subject (task, business) or the calendar under the text. */
 const MEETING_KINDS: ReadonlySet<NotificationKind> = new Set(["meeting_scheduled", "meeting_moved", "meeting_cancelled"]);
-/** These open Mi perfil, on the Google Calendar card. */
-const PROFILE_KINDS: ReadonlySet<NotificationKind> = new Set(["calendar_disconnected", "calendar_connect_suggested", "calendar_reconnect_required"]);
 
 export function NotificationBell() {
   const { t, i18n } = useTranslation();
@@ -93,30 +92,12 @@ export function NotificationBell() {
     return rtf.format(-Math.round(mins / 1440), "day");
   };
 
+  // Marks it read and opens what it is about, where this person acts on it (notificationTarget): a contract to sign
+  // where they sign it, a lead in the Embudo, an opportunity in Oportunidades, a task in Mis tareas.
   const openNotification = (n: AppNotification) => {
     if (!n.read_at) markRead.mutate(n.id);
     setOpen(false);
-    // Lead notifications open the lead in the Embudo; the calendar one, the profile (connect again); a rejected logo
-    // without a task, the business (load the logo again); the rest open the task.
-    // "Resultado de la reunión pendiente" opens the lead with its meeting card in focus; a Bishop's "te presentó un
-    // negocio" opens his opportunities. A portal meeting (scheduled, moved, cancelled) opens the calendar with it in focus.
-    if (MEETING_KINDS.has(n.kind) && n.meeting_id) void navigate({ to: "/tareas", search: { view: "calendar", meeting: n.meeting_id } });
-    else if (PROFILE_KINDS.has(n.kind)) void navigate({ to: "/perfil" });
-    else if (n.kind === "meeting_outcome_pending" && n.lead_id) void navigate({ to: "/embudo", search: { lead: n.lead_id, focus: "meeting" } });
-    // The owner's MOU is ready: "Tu ingreso" with the MOU step in view.
-    else if (n.kind === "mou_ready") void navigate({ to: "/", search: { step: "mou" } });
-    // Binding agreement ready, validation closed: SM opens the lead (below), the Bishop his opportunity, the owner the
-    // step of "Tu ingreso" that changed.
-    else if ((n.kind === "binding_ready" || n.kind === "validation_closed") && n.opportunity_id)
-      void navigate({ to: "/oportunidades/$opportunityId", params: { opportunityId: n.opportunity_id } });
-    else if ((n.kind === "binding_ready" || n.kind === "validation_closed") && !n.lead_id)
-      void navigate({ to: "/", search: { step: n.kind === "binding_ready" ? "binding" : "operating_agreement" } });
-    else if (n.lead_id) void navigate({ to: "/embudo", search: { lead: n.lead_id } });
-    else if (n.kind === "opportunity_presented" || n.kind === "opportunity_available") void navigate({ to: "/oportunidades" });
-    else if (n.kind === "brand_logo_rejected" && !n.task_id) void navigate({ to: "/negocios", search: { biz: n.business_id } });
-    // Contracts, entry documents, program start: about a business, not a task; the home of each role picks it up.
-    else if (!n.task_id) void navigate({ to: "/" });
-    else void navigate({ to: "/tareas", search: { task: n.task_id } });
+    void navigate(notificationTarget(n, me?.role));
   };
 
   return (
