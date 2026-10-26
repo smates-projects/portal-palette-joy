@@ -3321,7 +3321,7 @@
       },
       "mou": {
         "not_sent": "Se abre apenas firmes el NDA. No hace falta esperar la firma de Strategic Mates.",
-        "body": "El MOU explica cómo vamos a trabajar juntos. Lee cada punto y marca \"Entendí\". Cuando los marques todos, podrás firmar.",
+        "body": "Si ya lo leíste y estás de acuerdo, también puedes marcar cada punto con \"Entendí\" y firmarlo antes.",
         "understood": "Entendí",
         "ready": "Marcaste todos los puntos. Ya puedes firmar.",
         "missing": "Te faltan {{n}} puntos por marcar.",
@@ -3347,7 +3347,8 @@
             "body": "Trabajamos contigo durante los {{days}} días del programa. Si algo no sale como esperamos, no le debes dinero a nadie por el programa."
           }
         },
-        "when": "Puedes leerlo ahora. Lo firman juntos al final de la reunión",
+        "when": "Puedes leerlo ahora. Lo firman al final de tu primera reunión con {{name}}, cuando repasen juntos los cuatro puntos.",
+        "consultant": "tu consultor",
         "read_full": "Leer el MOU completo",
         "view": "Ver documento"
       },

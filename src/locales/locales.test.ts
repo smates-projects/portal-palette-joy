@@ -84,7 +84,10 @@ describe("locales", () => {
   });
 
   it("the MOU explainer and the meeting warning say it in the agreed words", () => {
-    expect(es.intake.owner.mou.when).toBe("Puedes leerlo ahora. Lo firman juntos al final de la reunión");
+    expect(es.intake.owner.mou.when).toBe(
+      "Puedes leerlo ahora. Lo firman al final de tu primera reunión con {{name}}, cuando repasen juntos los cuatro puntos.",
+    );
+    expect(en.intake.owner.mou.when).toContain("at the end of your first meeting with {{name}}");
     expect(es.entry.outcome.mou_warning_body).toBe("El MOU no está firmado. Si marcas que la reunión se hizo, el prospecto sale del proceso");
     expect(es.entry.outcome.mou_warning_reschedule).toBe("Reagendar");
     expect(es.entry.outcome.mou_warning_confirm).toBe("Confirmar igual");

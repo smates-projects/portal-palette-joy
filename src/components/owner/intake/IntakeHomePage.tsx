@@ -155,6 +155,8 @@ export function IntakeHomePage({ focusStep }: { focusStep?: OwnerStepKey | undef
       case "mou": {
         // The MOU exists as soon as the owner signs the NDA.
         if (!mou) return <p className="text-sm text-muted-foreground">{t("intake.owner.mou.not_sent")}</p>;
+        // It is signed at the end of the first meeting, with the consultant: the card says so first; signing earlier stays possible.
+        const when = t("intake.owner.mou.when", { name: entry?.consultant_name || t("intake.owner.mou.consultant") });
         if (mou.awaiting_sm_signature || s.mou_awaiting_sm)
           return <p className="text-sm">{t("intake.owner.awaiting_sm")}</p>;
         if (!ownerPending(mou))
@@ -170,12 +172,12 @@ export function IntakeHomePage({ focusStep }: { focusStep?: OwnerStepKey | undef
             {hasContractExplainer(mou) ? (
               <ContractExplainerCard contract={mou} language={contractLanguage} onLanguageChange={setContractLanguage}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-sm font-medium">{t("intake.owner.mou.when")}</p>
+                  <p className="text-sm font-medium">{when}</p>
                   {readFull(mou, "intake.owner.mou.read_full")}
                 </div>
               </ContractExplainerCard>
             ) : (
-              <p className="text-sm text-muted-foreground">{t("intake.owner.mou.when")}</p>
+              <p className="text-sm font-medium">{when}</p>
             )}
             <p className="text-sm text-muted-foreground">{t("intake.owner.mou.body")}</p>
             <MouAcceptance mou={mou} onSign={() => setSigning(mou)} />

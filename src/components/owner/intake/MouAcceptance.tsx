@@ -6,13 +6,14 @@ import { MOU_ACKNOWLEDGMENT_POINTS, type Contract, type MouAcknowledgmentPoint, 
 import { isMockRepository } from "@/lib/api/mode";
 import { acknowledgedAll } from "@/lib/leads/entry-flow";
 import { cn } from "@/lib/utils";
-import { primaryButtonCls } from "../shared";
+import { secondaryButtonCls } from "../shared";
 
 /**
  * The MOU in plain words: its points as the API sends them (Contract.acknowledgment_points, in the reading language),
  * each one with its own "Entendí". "Firmar" activates only when all of them are checked; it saves them
- * (POST /acknowledge) and then opens the signer. Only the demo, whose contracts carry no points, writes them from the
- * locale texts.
+ * (POST /acknowledge) and then opens the signer. It is a secondary button: the MOU is signed at the end of the first
+ * meeting with the consultant, signing earlier is allowed but not the step's call. Only the demo, whose contracts
+ * carry no points, writes them from the locale texts.
  */
 export function MouAcceptance({ mou, onSign }: { mou: Contract; onSign: () => void }) {
   const { t, i18n } = useTranslation();
@@ -62,7 +63,7 @@ export function MouAcceptance({ mou, onSign }: { mou: Contract; onSign: () => vo
       <p className="text-xs text-muted-foreground" aria-live="polite">
         {ready ? t("intake.owner.mou.ready") : t("intake.owner.mou.missing", { n: codes.filter((c) => !checked.includes(c)).length })}
       </p>
-      <button className={primaryButtonCls} disabled={!ready || acknowledge.isPending} onClick={sign}>{t("intake.owner.mou.sign")}</button>
+      <button className={secondaryButtonCls} disabled={!ready || acknowledge.isPending} onClick={sign}>{t("intake.owner.mou.sign")}</button>
     </div>
   );
 }
