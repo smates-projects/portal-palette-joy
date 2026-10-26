@@ -39,7 +39,7 @@ describe("leadJourney", () => {
     const steps = leadJourney(
       lead({ stage: "in_program", stage_entered_at: "2026-10-20T09:00:00Z", bishop_user_id: "u-b", tripartite: "signed" }),
       [],
-      { bishop: { user_id: "u-b", name: "Laura", accepted_at: "2026-10-12T00:00:00Z" }, tripartite: { state: "signed", signed_at: "2026-10-15" } },
+      { bishop: { accepted_at: "2026-10-12T00:00:00Z" }, tripartite: { state: "signed", signed_at: "2026-10-15" } },
     );
     expect(steps.every((s) => s.state === "done")).toBe(true);
     expect(steps[5]!.at).toBe("2026-10-12T00:00:00Z");
