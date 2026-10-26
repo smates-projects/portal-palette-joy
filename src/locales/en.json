@@ -2198,7 +2198,10 @@
       "corporate_signature": {
         "title": "{{entity}} signature",
         "hint_named": "With this signature the NDA, the MOU and the Binding Agreement go out signed by {{name}} on behalf of {{entity}}.",
-        "hint": "With this signature the NDA, the MOU and the Binding Agreement go out signed on behalf of {{entity}}. Choose in Rules who signs for the company."
+        "hint": "With this signature the NDA, the MOU and the Binding Agreement go out signed on behalf of {{entity}}. Choose in Rules who signs for the company.",
+        "uses_saved": "{{name}}'s saved signature is used.",
+        "upload_backup": "Upload a backup signature (optional)",
+        "backup_hint": "Backup signature. It is used only if {{name}} has no saved signature in My profile."
       },
       "new": "New office",
       "col_office": "Office",

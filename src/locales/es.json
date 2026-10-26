@@ -2198,7 +2198,10 @@
       "corporate_signature": {
         "title": "Firma de {{entity}}",
         "hint_named": "Con esta firma el NDA, el MOU y el Acuerdo de Vinculación salen firmados por {{name}} en nombre de {{entity}}.",
-        "hint": "Con esta firma el NDA, el MOU y el Acuerdo de Vinculación salen firmados en nombre de {{entity}}. Elige en Reglas quién firma por la empresa."
+        "hint": "Con esta firma el NDA, el MOU y el Acuerdo de Vinculación salen firmados en nombre de {{entity}}. Elige en Reglas quién firma por la empresa.",
+        "uses_saved": "Se usa la firma guardada de {{name}}.",
+        "upload_backup": "Subir una firma de respaldo (opcional)",
+        "backup_hint": "Firma de respaldo. Solo se usa si {{name}} no tiene una firma guardada en Mi perfil."
       },
       "new": "Nueva oficina",
       "col_office": "Oficina",

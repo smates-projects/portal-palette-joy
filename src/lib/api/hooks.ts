@@ -506,8 +506,12 @@ export function useRefreshSigning() {
   return () => Promise.all([qc.invalidateQueries({ queryKey: ["leads"] }), qc.invalidateQueries({ queryKey: ["documents"] }), qc.invalidateQueries({ queryKey: ["bishop"] })]);
 }
 export const useSignContract = () => useIntakeMutation((v: { contractId: string; signature?: ContractSignature | undefined; options?: import("./types").SignContractOptions | undefined }) => api.documents.signContract(v.contractId, v.signature, v.options));
-/** "Mi firma": the current person's saved signature (null without one; "forbidden" while viewing as someone). */
-export const useMySignature = () => useQuery({ queryKey: ["me", "signature"], queryFn: () => api.documents.getMySignature(), retry: false });
+/**
+ * "Mi firma": the current person's saved signature (null without one; "forbidden" while viewing as someone). enabled
+ * false: a screen that only needs it for one person (Oficinas, for the Corporate signer) reads none for anyone else.
+ */
+export const useMySignature = (enabled = true) =>
+  useQuery({ queryKey: ["me", "signature"], queryFn: () => api.documents.getMySignature(), retry: false, enabled: whenSignedIn(enabled) });
 export function useSaveMySignature() {
   const qc = useQueryClient();
   return useMutation({

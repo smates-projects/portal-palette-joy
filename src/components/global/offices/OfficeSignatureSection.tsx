@@ -18,13 +18,26 @@ const errorKey = (e: unknown) => {
 /**
  * "Firma de la oficina": the PNG the NDA and the MOU go out pre-signed with on behalf of Strategic Mates. The file is
  * uploaded, verified by the API ("Verificando el archivo") and only then attached; the saved name comes from the answer.
+ * With `collapsed` (the signer already signs with a saved signature) it is one line and a link that opens the upload
+ * as an optional backup.
  */
-export function OfficeSignatureSection({ office, title, hint }: { office: Organization; title?: string; hint?: string }) {
+export function OfficeSignatureSection({
+  office,
+  title,
+  hint,
+  collapsed,
+}: {
+  office: Organization;
+  title?: string;
+  hint?: string;
+  collapsed?: { line: string; expandLabel: string } | undefined;
+}) {
   const { t } = useTranslation();
   const input = useRef<HTMLInputElement>(null);
   const save = useSetOfficeSignature();
   const [phase, setPhase] = useState<UploadPhase | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
   // The office of the detail may be a few seconds behind the answer: the name just saved wins.
   const [saved, setSaved] = useState<Organization | null>(null);
   const current = saved?.id === office.id ? saved : office;
@@ -46,6 +59,18 @@ export function OfficeSignatureSection({ office, title, hint }: { office: Organi
       onSettled: () => setPhase(null),
     });
   };
+  if (collapsed && !expanded)
+    return (
+      <section className="mt-4 rounded-[4px] border border-border bg-surface px-4 py-3">
+        <h2 className="text-sm font-semibold">{title ?? t("global.office.signature.title")}</h2>
+        <div className="mt-0.5 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <p className="text-sm text-muted-foreground">{collapsed.line}</p>
+          <button type="button" onClick={() => setExpanded(true)} className="text-xs text-link hover:underline">
+            {collapsed.expandLabel}
+          </button>
+        </div>
+      </section>
+    );
   return (
     <section className="mt-4 rounded-[4px] border border-border bg-surface">
       <div className="border-b border-border px-4 py-3"><h2 className="text-sm font-semibold">{title ?? t("global.office.signature.title")}</h2></div>

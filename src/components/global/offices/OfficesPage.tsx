@@ -3,7 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/format";
-import { useCreateOffice, useOffices, useOrganizations, useRules, useUsers } from "@/lib/api/hooks";
+import { useCreateOffice, useCurrentUser, useMySignature, useOffices, useOrganizations, useRules, useUsers } from "@/lib/api/hooks";
 import { smEntitiesOf } from "@/lib/leads/contract-rules";
 import { ALL_OFFICES, inOfficeScope, useOfficeScope } from "@/lib/office-scope";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -29,6 +29,12 @@ export function OfficesPage() {
   const entities = smEntitiesOf(useRules().data);
   const signerId = entities.corporate.signer_user_id;
   const ceoName = useUsers().data?.find((u) => u.id === signerId)?.full_name ?? null;
+  // The API pre-signs with the signer's own saved signature (Mi perfil) before the uploaded one. Only that person can
+  // read it, so when she is the one looking and has it saved, the upload folds into an optional backup.
+  const me = useCurrentUser().data;
+  const isSigner = !!me && !!signerId && me.id === signerId;
+  const savedQ = useMySignature(isSigner);
+  const savedBy = isSigner && savedQ.data ? (me?.full_name ?? null) : null;
   const header = <GlobalHeader question={t("global.offices.question")} />;
   const open = (officeId: string) => void navigate({ to: "/oficinas/$officeId", params: { officeId } });
 
@@ -102,7 +108,18 @@ export function OfficesPage() {
           <OfficeSignatureSection
             office={corporate}
             title={t("global.offices.corporate_signature.title", { entity: entities.corporate.name })}
-            hint={ceoName ? t("global.offices.corporate_signature.hint_named", { name: ceoName, entity: entities.corporate.name }) : t("global.offices.corporate_signature.hint", { entity: entities.corporate.name })}
+            hint={
+              savedBy
+                ? t("global.offices.corporate_signature.backup_hint", { name: savedBy })
+                : ceoName
+                  ? t("global.offices.corporate_signature.hint_named", { name: ceoName, entity: entities.corporate.name })
+                  : t("global.offices.corporate_signature.hint", { entity: entities.corporate.name })
+            }
+            collapsed={
+              savedBy
+                ? { line: t("global.offices.corporate_signature.uses_saved", { name: savedBy }), expandLabel: t("global.offices.corporate_signature.upload_backup") }
+                : undefined
+            }
           />
         </div>
       )}
