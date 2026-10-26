@@ -57,7 +57,7 @@ export function GlobalHomePage() {
     );
 
   const summary = summaryQ.data!;
-  // "Viendo" in the header: one office, Corporate or the whole network. Counters, cards and areas follow it.
+  // "Viendo" in the header: Global's own option (every office) or one office. Counters, cards and areas follow it.
   const scoped = scope !== ALL_OFFICES;
   const offices = (officesQ.data ?? []).filter((o) => inOfficeScope(scope, o.office.id));
   const businesses = (bizQ.data ?? []).filter((b) => inOfficeScope(scope, b.office_id));
@@ -111,7 +111,7 @@ export function GlobalHomePage() {
       </div>
       )}
 
-      {/* One card per office; with Corporate in view there is no office card to show */}
+      {/* One card per office in view; an office that is not in the summary yet has no card to show */}
       {(!scoped || cards.length > 0) && (
       <section className="mt-6" aria-labelledby="home-offices">
         <h2 id="home-offices" className="text-sm font-semibold">{t("global.home.offices_title")}</h2>

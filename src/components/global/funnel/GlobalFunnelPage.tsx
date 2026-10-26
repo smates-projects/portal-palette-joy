@@ -11,9 +11,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyBox, ErrorBox, GlobalHeader } from "../shared";
 
 /**
- * Embudo of the whole network, read only. It looks like the office funnel (same board and table) but SM Global
- * never moves or writes on a lead: each office does. The office in view comes from "Viendo" in the header (one
- * control for every Global screen), and the API gets it as office_id.
+ * Embudo of the whole network. It looks like the office funnel (same board and table); the cards do not drag (each
+ * office moves its own stages) and a lead opens with its actions when the Global person is its consultant. The
+ * office in view comes from "Viendo" in the header (one control for every Global screen): Global's own option is
+ * every office, and the API gets one office as office_id.
  */
 export function GlobalFunnelPage({ initialLeadId }: { initialLeadId?: string | undefined } = {}) {
   const { t } = useTranslation();
@@ -50,7 +51,7 @@ export function GlobalFunnelPage({ initialLeadId }: { initialLeadId?: string | u
   const selected = leads.find((l) => l.id === leadId);
   const openConsultant = openQ.data?.lead.consultant_user_id ?? selected?.consultant_user_id;
   const office = scope === ALL_OFFICES ? null : orgsQ.data?.find((o) => o.id === scope);
-  const officeLabel = office ? (office.kind === "sm_global" ? t("topbar.viewing_corporate") : office.name) : t("global.funnel.all_offices");
+  const officeLabel = office?.name ?? t("global.funnel.all_offices");
 
   return (
     <div className="mx-auto max-w-[1440px] px-6 py-8">
@@ -71,7 +72,6 @@ export function GlobalFunnelPage({ initialLeadId }: { initialLeadId?: string | u
         </div>
         <span className="rounded-[4px] border border-border bg-surface px-2 py-1 text-sm">{officeLabel}</span>
         <span className="text-sm text-muted-foreground">{t("global.funnel.total", { count: leads.length })}</span>
-        <p className="rounded-[4px] border border-border bg-muted px-2 py-1 text-xs text-muted-foreground">{t("global.funnel.read_only")}</p>
       </div>
 
       <div className="mt-4">

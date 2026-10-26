@@ -53,6 +53,9 @@ interface ViewProps {
 function DaysInStage({ lead }: { lead: LeadWithComputed }) {
   const { t } = useTranslation();
   const d = daysSince(lead.stage_entered_at);
+  // The stage date is a UTC instant and today is the viewer's day: an evening move can land on "tomorrow". The same
+  // day (or that edge) reads "Hoy en la etapa", never a negative count.
+  if (d <= 0) return <span className="tabular-nums text-muted-foreground">{t("pipeline.days_today")}</span>;
   const stale = d > STALE_STAGE_DAYS && lead.stage !== "in_program" && lead.stage !== "discarded";
   return <span className={cn("tabular-nums", stale ? "font-medium text-status-danger-fg" : "text-muted-foreground")}>{t("pipeline.days", { count: d })}</span>;
 }

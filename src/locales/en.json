@@ -71,7 +71,6 @@
     "admin": "admin",
     "team_member": "team",
     "viewing": "Viewing",
-    "viewing_all": "All",
     "viewing_corporate": "Corporate",
     "viewing_title": "See the whole network or one office"
   },
@@ -1226,6 +1225,7 @@
     "days": "{{count}} d in stage",
     "days_one": "{{count}} day in stage",
     "days_other": "{{count}} days in stage",
+    "days_today": "Today in stage",
     "industries": {
       "construction": "Construction",
       "remodeling": "Remodeling",
@@ -2398,7 +2398,6 @@
       "all_offices": "All offices",
       "total_one": "{{count}} lead",
       "total_other": "{{count}} leads",
-      "read_only": "Read only. Each office moves its own leads.",
       "empty_title": "There are no leads yet",
       "empty_body": "When an office receives a lead, you will see it here in its stage."
     },

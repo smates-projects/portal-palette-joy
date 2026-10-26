@@ -97,7 +97,7 @@ export function OfficesPage() {
         )}
       </div>
 
-      {corporate && (scope === ALL_OFFICES || scope === corporate.id) && (
+      {corporate && scope === ALL_OFFICES && (
         <div className="mt-2">
           <OfficeSignatureSection
             office={corporate}

@@ -71,7 +71,6 @@
     "admin": "administra",
     "team_member": "equipo",
     "viewing": "Viendo",
-    "viewing_all": "Todas",
     "viewing_corporate": "Corporate",
     "viewing_title": "Ver la red completa o una oficina"
   },
@@ -1226,6 +1225,7 @@
     "days": "{{count}} d en la etapa",
     "days_one": "{{count}} día en la etapa",
     "days_other": "{{count}} días en la etapa",
+    "days_today": "Hoy en la etapa",
     "industries": {
       "construction": "Construcción",
       "remodeling": "Remodelación",
@@ -2398,7 +2398,6 @@
       "all_offices": "Todas las oficinas",
       "total_one": "{{count}} lead",
       "total_other": "{{count}} leads",
-      "read_only": "Solo lectura. Cada oficina mueve sus leads.",
       "empty_title": "Todavía no hay leads",
       "empty_body": "Cuando una oficina reciba un lead, lo verás aquí en su etapa."
     },
