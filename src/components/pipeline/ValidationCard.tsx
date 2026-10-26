@@ -60,13 +60,17 @@ function ValidationForm({ lead, readOnly, canClose, ranges, programAmount, corpo
   const { t, i18n } = useTranslation();
   const lng = i18n.language;
   const usersQ = useUsers();
+  const orgsQ = useOrganizations();
   const save = useSaveValidation();
   const close = useCloseValidation();
   const v = lead.validation ?? null;
   const smFixed = isFixed(ranges, "equity_sm");
-  const [text, setText] = useState<Text>(() => textOf(validationInputOf(v, ranges)));
+  const [text, setText] = useState<Text>(() => textOf(validationInputOf(v, ranges, programAmount)));
   const [tried, setTried] = useState(false);
   const users = usersQ.data ?? [];
+  // The SM Square centers are the SM offices of the network; the lead's office comes preselected.
+  const offices = (orgsQ.data ?? []).filter((o) => o.kind === "sm");
+  const leadOfficeName = offices.find((o) => o.id === lead.office_id)?.name ?? "";
   const nameOf = (id: string | null | undefined) => (id ? users.find((u) => u.id === id)?.full_name ?? "" : "");
   const holders = users.filter((u) => (u.role === "sm_team" && u.organization_id === lead.office_id) || u.role === "sm_global").filter((u) => u.can_sign_sm_square);
   const officeHolder = globalSigner === undefined;
