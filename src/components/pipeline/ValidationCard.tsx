@@ -98,15 +98,17 @@ function ValidationForm({ lead, readOnly, canClose, ranges, programAmount, corpo
       </section>
     );
 
-  const input = inputOfText(text, ranges);
+  const input = inputOfText(text, ranges, leadOfficeName);
   const errors: SplitErrors = splitErrors(input, ranges);
+  // Once the user tried to close, empty percentages count as errors too.
+  const shownErrors: SplitErrors = tried ? splitErrors(input, ranges, true) : errors;
   const sum = [input.equity_owner, input.equity_bishop, input.equity_sm].reduce<number>((a, b) => a + (typeof b === "number" && Number.isFinite(b) ? b : 0), 0);
   const amountBad = input.investment_amount !== null && (!Number.isFinite(input.investment_amount) || input.investment_amount < 0);
-  const block = closeBlock(input, ranges, officeHolder ? "office_holder" : "corporate");
-  const dirty = JSON.stringify(input) !== JSON.stringify(validationInputOf(v, ranges));
+  const missing = closeMissing(input, ranges, officeHolder ? "office_holder" : "corporate");
+  const dirty = JSON.stringify(input) !== JSON.stringify(validationInputOf(v, ranges, programAmount));
   const set = (key: keyof Text, value: string) => setText((x) => ({ ...x, [key]: value }));
   const fieldError = (field: "equity_owner" | "equity_bishop" | "equity_sm") => {
-    const e = errors[field];
+    const e = shownErrors[field];
     if (!e) return null;
     const { min, max } = rangeOf(ranges, field);
     return e === "required" ? t("entry_contracts.validation.err_required") : t("entry_contracts.validation.err_range", { min, max });
