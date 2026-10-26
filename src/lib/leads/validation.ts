@@ -78,6 +78,25 @@ export const validationInputOf = (v: LeadValidation | null | undefined, ranges: 
   sm_square_holder_user_id: v?.sm_square_holder_user_id ?? null,
 });
 
+export type CloseMissing = SplitField | "investment" | "center" | "holder";
+
+/**
+ * What closing is missing, as a list: each empty percentage, the investment, the SM Square center and the holder
+ * (only when the office designates who signs). Out-of-range values are not "missing": they show inline.
+ */
+export function closeMissing(
+  v: Pick<ValidationInput, SplitField | "investment_amount" | "sm_square_center" | "sm_square_holder_user_id">,
+  ranges: EquityRanges,
+  signerMode: "corporate" | "office_holder" = "corporate",
+): CloseMissing[] {
+  const missing: CloseMissing[] = [];
+  for (const field of ["equity_owner", "equity_bishop", "equity_sm"] as const) if (v[field] === null || v[field] === undefined) missing.push(field);
+  if (v.investment_amount === null || v.investment_amount === undefined) missing.push("investment");
+  if (!v.sm_square_center?.trim()) missing.push("center");
+  if (signerMode === "office_holder" && !v.sm_square_holder_user_id) missing.push("holder");
+  return missing;
+}
+
 /** "60" → 60, "" → null, anything else → NaN (shown as out of range). */
 export const parsePct = (text: string): number | null => (text.trim() === "" ? null : Number(text.replace(",", ".")));
 
