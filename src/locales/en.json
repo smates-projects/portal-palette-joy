@@ -3658,7 +3658,8 @@
       "name_required": "Type your name.",
       "password_short": "The password needs at least {{min}} characters.",
       "password_mismatch": "The two passwords are not the same. Type them again.",
-      "terms_required": "To create your account, tick that you accept the terms."
+      "terms_required": "To create your account, tick that you accept the terms.",
+      "password_breached": "This password appeared in a data breach. Choose another one."
     },
     "password_hint": {
       "min": "Use at least {{min}} characters.",
@@ -3677,7 +3678,11 @@
       "account_inactive": "Your account is deactivated",
       "account_inactive_help": "Talk to your Strategic Mates consultant to turn it back on.",
       "generic": "We could not finish this step",
-      "generic_help": "Check your internet connection and try again."
+      "generic_help": "Check your internet connection and try again.",
+      "rate_limited": "Too many attempts in a row",
+      "rate_limited_help": "Wait a minute and try again.",
+      "invalid_fields": "Check your details",
+      "invalid_fields_help": "Something is not in the expected format. Fix it and try again."
     },
     "token": {
       "token_expired": "This link has expired",
@@ -3738,7 +3743,13 @@
       "invalid_title": "We could not find this invitation",
       "request_new": "Ask for a new invitation",
       "request_new_note": "Write to your Strategic Mates consultant and ask for a new invitation. It will arrive by email.",
-      "go_login": "Go to sign in"
+      "go_login": "Go to sign in",
+      "error_title": "We could not create your account",
+      "error_body": "Try again in a few minutes. If it happens again, write to the person who invited you.",
+      "session_open": "{{name}}'s session is open in this browser. To create this account, sign out of that session first.",
+      "session_sign_out": "Sign out and continue",
+      "session_signing_out": "Signing out…",
+      "session_sign_out_error": "We could not sign out. Check your connection and try again."
     },
     "forgot": {
       "title": "Change your password",

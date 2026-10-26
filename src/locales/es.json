@@ -3658,7 +3658,8 @@
       "name_required": "Escribe tu nombre.",
       "password_short": "La contraseña necesita al menos {{min}} caracteres.",
       "password_mismatch": "Las dos contraseñas no son iguales. Escríbelas de nuevo.",
-      "terms_required": "Para crear tu cuenta, marca que aceptas los términos."
+      "terms_required": "Para crear tu cuenta, marca que aceptas los términos.",
+      "password_breached": "Esta contraseña apareció en una filtración de datos. Elige otra."
     },
     "password_hint": {
       "min": "Usa al menos {{min}} caracteres.",
@@ -3677,7 +3678,11 @@
       "account_inactive": "Tu cuenta está desactivada",
       "account_inactive_help": "Habla con tu consultor de Strategic Mates para activarla de nuevo.",
       "generic": "No pudimos completar este paso",
-      "generic_help": "Revisa tu conexión a internet e intenta de nuevo."
+      "generic_help": "Revisa tu conexión a internet e intenta de nuevo.",
+      "rate_limited": "Hiciste muchos intentos seguidos",
+      "rate_limited_help": "Espera un minuto y vuelve a intentarlo.",
+      "invalid_fields": "Revisa los datos",
+      "invalid_fields_help": "Algún dato no tiene el formato esperado. Corrígelo y vuelve a intentarlo."
     },
     "token": {
       "token_expired": "Este enlace ya venció",
@@ -3738,7 +3743,13 @@
       "invalid_title": "No encontramos esta invitación",
       "request_new": "Pedir una invitación nueva",
       "request_new_note": "Escríbele a tu consultor de Strategic Mates y pídele una invitación nueva. Te llegará por correo.",
-      "go_login": "Ir a entrar"
+      "go_login": "Ir a entrar",
+      "error_title": "No pudimos crear tu cuenta",
+      "error_body": "Intenta de nuevo en unos minutos. Si vuelve a pasar, escríbele a quien te invitó.",
+      "session_open": "Tienes abierta la sesión de {{name}}. Para crear esta cuenta, primero cierra esa sesión.",
+      "session_sign_out": "Cerrar sesión y continuar",
+      "session_signing_out": "Cerrando la sesión…",
+      "session_sign_out_error": "No pudimos cerrar la sesión. Revisa tu conexión e intenta de nuevo."
     },
     "forgot": {
       "title": "Cambia tu contraseña",
