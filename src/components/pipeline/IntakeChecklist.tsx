@@ -422,17 +422,6 @@ export function ContractsSummaryTable({ contracts }: { contracts: Contract[] }) 
   );
 }
 
-function CountRow({ label, n, m }: { label: string; n: number; m: number }) {
-  const { t } = useTranslation();
-  return (
-    <li className="flex items-center gap-2 py-2.5 text-sm">
-      {n >= m && m > 0 ? <Check className="h-4 w-4 text-status-success-fg" /> : <Circle className="h-4 w-4 text-muted-foreground" />}
-      <span className="font-medium">{label}</span>
-      <span className="ml-auto text-xs tabular-nums text-muted-foreground">{t("intake.of_required", { n, m })}</span>
-    </li>
-  );
-}
-
 export function TextDialog(props: { title: string; body: string; label: string; confirm: string; required: string; placeholder?: string | undefined; initialValue?: string | undefined; serverError?: string | undefined; pending: boolean; onClose: () => void; onConfirm: (v: string) => void }) {
   const { t } = useTranslation();
   const [value, setValue] = useState(props.initialValue ?? "");
