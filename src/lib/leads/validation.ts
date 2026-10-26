@@ -67,16 +67,35 @@ export function closeBlock(
   return null;
 }
 
-/** The form starts from what was saved, or empty with SM's share when its range is a single value. */
-export const validationInputOf = (v: LeadValidation | null | undefined, ranges: EquityRanges | null | undefined): ValidationInput => ({
+/** The form starts from what was saved, or empty with SM's share when its range is a single value; the investment prefills with the program amount of the rules. */
+export const validationInputOf = (v: LeadValidation | null | undefined, ranges: EquityRanges | null | undefined, programAmount?: number | null): ValidationInput => ({
   equity_owner: v?.equity_owner ?? null,
   equity_bishop: v?.equity_bishop ?? null,
   equity_sm: v?.equity_sm ?? (ranges && isFixed(ranges, "equity_sm") ? ranges.sm.min : null),
-  investment_amount: v?.investment_amount ?? null,
+  investment_amount: v?.investment_amount ?? programAmount ?? null,
   notes: v?.notes ?? null,
   sm_square_center: v?.sm_square_center ?? null,
   sm_square_holder_user_id: v?.sm_square_holder_user_id ?? null,
 });
+
+export type CloseMissing = SplitField | "investment" | "center" | "holder";
+
+/**
+ * What closing is missing, as a list: each empty percentage, the investment, the SM Square center and the holder
+ * (only when the office designates who signs). Out-of-range values are not "missing": they show inline.
+ */
+export function closeMissing(
+  v: Pick<ValidationInput, SplitField | "investment_amount" | "sm_square_center" | "sm_square_holder_user_id">,
+  ranges: EquityRanges,
+  signerMode: "corporate" | "office_holder" = "corporate",
+): CloseMissing[] {
+  const missing: CloseMissing[] = [];
+  for (const field of ["equity_owner", "equity_bishop", "equity_sm"] as const) if (v[field] === null || v[field] === undefined) missing.push(field);
+  if (v.investment_amount === null || v.investment_amount === undefined) missing.push("investment");
+  if (!v.sm_square_center?.trim()) missing.push("center");
+  if (signerMode === "office_holder" && !v.sm_square_holder_user_id) missing.push("holder");
+  return missing;
+}
 
 /** "60" → 60, "" → null, anything else → NaN (shown as out of range). */
 export const parsePct = (text: string): number | null => (text.trim() === "" ? null : Number(text.replace(",", ".")));
