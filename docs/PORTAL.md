@@ -4,7 +4,8 @@ State at 21 October 2026, branch `main`. This file is the full picture that does
 
 ## How this repo is built
 
-- Most of the app was built outside Lovable, directly in this repo, and is covered by 390+ Vitest tests (`npx vitest run`). The tests describe the expected behavior of the data layer: treat them as the specification.
+- Most of the app was built outside Lovable, directly in this repo, and is covered by 390+ Vitest tests. The tests describe the expected behavior of the data layer: treat them as the specification, and read them to understand a rule.
+- Lovable never runs the tests, a build or the lint, and never edits a test file unless the prompt explicitly says so. The full suite runs on GitHub Actions after every push.
 - Lovable does presentation only (layout, responsive, visual consistency) unless a prompt explicitly asks for more.
 - Never touch `src/lib`, `src/locales` or tests unless the prompt says so. If you see a logic or data problem, list it at the end of your answer and do not fix it.
 - Reference screens for visual consistency (built in Lovable): Mis tareas, task detail, owner home, embudo board, lead detail.
