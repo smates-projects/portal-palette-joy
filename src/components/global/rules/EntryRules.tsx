@@ -216,6 +216,7 @@ export function EntryFlowRules({ rules }: { rules: PlatformRules }) {
   if (daysOk && days !== saved.oa_waiting_days) patch.oa_waiting_days = days;
   if (form.require_expansion_meeting !== saved.require_expansion_meeting) patch.require_expansion_meeting = form.require_expansion_meeting;
   if (form.nda_auto_signed_by_sm !== saved.nda_auto_signed_by_sm) patch.nda_auto_signed_by_sm = form.nda_auto_signed_by_sm;
+  if (form.sm_written_delegation !== saved.sm_written_delegation) patch.sm_written_delegation = form.sm_written_delegation;
   const dirty = Object.keys(patch).length > 0;
   const save = () => {
     const undo: Partial<PlatformRules> = Object.fromEntries(Object.keys(patch).map((k) => [k, saved[k as keyof typeof saved]]));
@@ -248,7 +249,7 @@ export function EntryFlowRules({ rules }: { rules: PlatformRules }) {
         <span className="block text-xs text-muted-foreground">{t("entry.rules.flow.waiting_days_hint")}</span>
         {!daysOk && <span className="block text-xs text-status-danger-fg">{t("entry.rules.flow.waiting_days_error", { max: maxDays ?? "…" })}</span>}
       </label>
-      {(["require_expansion_meeting", "nda_auto_signed_by_sm"] as const).map((k) => (
+      {(["require_expansion_meeting", "nda_auto_signed_by_sm", "sm_written_delegation"] as const).map((k) => (
         <label key={k} className="mt-3 flex cursor-pointer items-start gap-3 text-sm">
           <input type="checkbox" className="mt-0.5 h-4 w-4 accent-primary" checked={form[k]} onChange={(e) => setForm((f) => ({ ...f, [k]: e.target.checked }))} />
           <span>

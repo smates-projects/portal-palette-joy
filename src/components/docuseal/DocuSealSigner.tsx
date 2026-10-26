@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Download, PenLine } from "lucide-react";
-import { useContractSigningPoll, useDeclineContract, useMySignature, useOpenContract, useRefreshSigning, useSignContract } from "@/lib/api/hooks";
+import { PenLine } from "lucide-react";
+import { useContractSigningPoll, useCurrentUser, useDeclineContract, useEsignConsent, useMySignature, useOpenContract, useRefreshSigning, useSignContract } from "@/lib/api/hooks";
 import { MOU_ACKNOWLEDGMENT_POINTS, type Contract, type ContractLanguage, type ContractSignature } from "@/lib/api/types";
 import { contractTextIn } from "@/lib/contracts/language";
 import { formatDate } from "@/lib/format";
@@ -10,14 +10,26 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { PrimaryButton, SecondaryButton } from "@/components/tasks/detail/dialogs";
 import { cn } from "@/lib/utils";
 import { ContractText, SignatureMark } from "./ContractDocument";
+import { DocusealEmbed } from "./DocusealEmbed";
+import { EsignConsentPanel } from "./EsignConsentPanel";
+import { SealedCopyLinks } from "./SealedCopies";
 import { SignaturePad } from "./SignaturePad";
 import { ContractFallbackNote, ContractGoverningNote, ContractLanguageToggle, useContractLanguage } from "./ContractLanguage";
 
+/** How long the dialog waits for the worker to create the DocuSeal submission (3 s each, about a minute). */
+const PREPARING_RETRY_MS = 3000;
+const PREPARING_MAX_TRIES = 20;
+
+const codeOf = (e: unknown) => (e instanceof Error ? ((e as Error & { code?: string }).code ?? e.message) : "");
+
 /**
- * DocuSeal signing. With the API's real DocuSeal driver, opening the contract answers the signer's own form
- * (signing.embed_src): the dialog embeds it and re-reads the contract until the signer's status changes (the
- * signature reaches the API by webhook), then closes. Otherwise (the mock, the API's simulated driver) it is the
- * portal's own screen, and every change goes through the repository (openContract, signContract, declineContract).
+ * Signing a contract. With the API's DocuSeal driver (real signatures): the person accepts the electronic records
+ * disclosure once (EsignConsentPanel), opening the contract answers the signer's own form (signing.embed_src) and the
+ * dialog mounts DocuSeal's official form (DocusealEmbed) with the two documents, Spanish and English, signed once. The
+ * signature reaches the API only from DocuSeal (its webhook, or the API asking DocuSeal through sync): the dialog asks
+ * for that sync every few seconds and closes once the signer's status changed. Otherwise (the mock, the API's
+ * simulated driver) it is the portal's own screen, labelled as a test signature with no legal value, and every change
+ * goes through the repository (openContract, signContract, declineContract).
  */
 export function DocuSealSigner(props: { contract: Contract; party: "owner" | "sm" | "bishop"; signerName: string; language?: ContractLanguage; onClose: () => void }) {
   const { t, i18n } = useTranslation();
@@ -25,6 +37,7 @@ export function DocuSealSigner(props: { contract: Contract; party: "owner" | "sm
   const sign = useSignContract();
   const decline = useDeclineContract();
   const refresh = useRefreshSigning();
+  const user = useCurrentUser().data;
   const [declining, setDeclining] = useState(false);
   const [reason, setReason] = useState("");
   const [tried, setTried] = useState(false);
@@ -34,6 +47,12 @@ export function DocuSealSigner(props: { contract: Contract; party: "owner" | "sm
   const [signature, setSignature] = useState<ContractSignature | null>(null);
   const [missing, setMissing] = useState(false);
   const [embedSrc, setEmbedSrc] = useState<string | null>(null);
+  // Who signs: known once the contract was opened (the mock answers no session: the portal's own test screen).
+  const [provider, setProvider] = useState<"simulated" | "docuseal" | null>(null);
+  const [preparing, setPreparing] = useState(false);
+  const [finishing, setFinishing] = useState(false);
+  const tries = useRef(0);
+  const retry = useRef<number | null>(null);
   // "Mi firma": with a saved signature the main action signs with it; "Usar otra firma" opens the pad.
   const savedQ = useMySignature();
   const saved = savedQ.data ?? null;
@@ -47,20 +66,63 @@ export function DocuSealSigner(props: { contract: Contract; party: "owner" | "sm
   const [language, setLanguage] = useContractLanguage(props.language);
   const reading = contractTextIn(props.contract, language);
   const body = reading.value;
+  // The electronic records disclosure: required before a real signing form opens.
+  const esignQ = useEsignConsent();
+  const esign = esignQ.data;
+  const needsConsent = !!esign && esign.required && !esign.accepted;
+  const canOpen = me?.status === "sent" || me?.status === "opened";
 
-  useEffect(() => {
-    // DocuSeal reports "viewed" when the signer opens the document. With the real driver a signer who already opened
-    // it opens again to get the embed back; the mock's simulated screen only opens a "sent" one, as before.
-    if (opened.current || (me?.status !== "sent" && me?.status !== "opened")) return;
-    opened.current = true;
+  /** The API's reasons a signature waits: the four MOU points, the Operating Agreement's waiting period. */
+  const fail = useCallback((e?: unknown) => {
+    const code = codeOf(e);
+    const detail = e instanceof Error ? (e as Error & { detail?: string | null }).detail ?? "" : "";
+    if (code === "signature_not_saved") { setUseOther(true); void savedQ.refetch(); toast.error(t("intake.docuseal.saved_missing")); }
+    // The number of points this MOU has (the API's list), not a written "four" (QA B4).
+    else if (code === "acknowledgment_required") toast.error(t(`entry.errors.${code}`, { count: props.contract.acknowledgment_points?.es.length || MOU_ACKNOWLEDGMENT_POINTS.length }));
+    else if (code === "waiting_period") toast.error(t("entry.errors.waiting_period", { date: /^\d{4}-\d{2}-\d{2}/.test(detail) ? formatDate(detail, i18n.language) : detail }));
+    else toast.error(t("intake.docuseal.t_error"));
+  }, [i18n.language, props.contract.acknowledgment_points, savedQ, t]);
+
+  // DocuSeal reports "viewed" when the signer opens it. A signer who already opened it opens again to get the embed
+  // back. With DocuSeal the worker creates the submission a few seconds after the contract goes out: until then the
+  // embed is null and the dialog asks again.
+  const openContract = useCallback(() => {
     open.mutate(props.contract.id, {
       onSuccess: (answer) => {
-        if (answer.signing?.provider === "docuseal" && answer.signing.embed_src) setEmbedSrc(answer.signing.embed_src);
+        const signing = answer.signing;
+        setProvider(signing?.provider ?? "simulated");
+        if (signing?.provider !== "docuseal") return;
+        if (signing.embed_src) {
+          setPreparing(false);
+          setEmbedSrc(signing.embed_src);
+        } else if (tries.current++ < PREPARING_MAX_TRIES) {
+          setPreparing(true);
+          retry.current = window.setTimeout(() => openContract(), PREPARING_RETRY_MS);
+        } else {
+          setPreparing(false);
+          toast.error(t("intake.docuseal.t_error"));
+        }
+      },
+      onError: (e) => {
+        // The disclosure changed or was withdrawn meanwhile: show it again.
+        if (codeOf(e) === "esign_consent_required") {
+          opened.current = false;
+          void esignQ.refetch();
+          return;
+        }
+        fail(e);
       },
     });
-  }, [me?.status, open, props.contract.id]);
+  }, [esignQ, fail, open, props.contract.id, t]);
 
-  // While the embed is open: re-read the contract and close once the signer signed or declined in DocuSeal.
+  useEffect(() => {
+    if (opened.current || !canOpen || !esign || needsConsent) return;
+    opened.current = true;
+    openContract();
+  }, [canOpen, esign, needsConsent, openContract]);
+  useEffect(() => () => { if (retry.current !== null) window.clearTimeout(retry.current); }, []);
+
+  // While the embed is open: ask the API (which asks DocuSeal) and close once the signer signed or declined.
   const poll = useContractSigningPoll(props.contract.id, embedSrc !== null);
   const polledStatus = poll.data?.signers.find((s) => s.party === props.party)?.status;
   const { onClose } = props;
@@ -72,17 +134,12 @@ export function DocuSealSigner(props: { contract: Contract; party: "owner" | "sm
     toast.success(t(polledStatus === "signed" ? "intake.docuseal.t_signed" : "intake.docuseal.t_declined", { name: contractName }));
     onClose();
   }, [embedSrc, polledStatus, refresh, t, contractName, onClose]);
+  // DocuSeal's form says it finished: ask right away instead of waiting for the next poll.
+  const embedFinished = useCallback(() => {
+    setFinishing(true);
+    void poll.refetch();
+  }, [poll]);
 
-  /** The API's reasons a signature waits: the four MOU points, the Operating Agreement's waiting period. */
-  const fail = (e?: unknown) => {
-    const code = e instanceof Error ? ((e as Error & { code?: string }).code ?? e.message) : "";
-    const detail = e instanceof Error ? (e as Error & { detail?: string | null }).detail ?? "" : "";
-    if (code === "signature_not_saved") { setUseOther(true); void savedQ.refetch(); toast.error(t("intake.docuseal.saved_missing")); }
-    // The number of points this MOU has (the API's list), not a written "four" (QA B4).
-    else if (code === "acknowledgment_required") toast.error(t(`entry.errors.${code}`, { count: props.contract.acknowledgment_points?.es.length || MOU_ACKNOWLEDGMENT_POINTS.length }));
-    else if (code === "waiting_period") toast.error(t("entry.errors.waiting_period", { date: /^\d{4}-\d{2}-\d{2}/.test(detail) ? formatDate(detail, i18n.language) : detail }));
-    else toast.error(t("intake.docuseal.t_error"));
-  };
   const doSign = () => {
     if (withSaved) {
       if (!consent) return setMissing(true);
@@ -106,32 +163,43 @@ export function DocuSealSigner(props: { contract: Contract; party: "owner" | "sm
       onError: fail,
     });
   };
-  const download = () => {
-    const blob = new Blob([`${props.contract.name}\n${t("intake.docuseal.sample")}\n${props.signerName}`], { type: "application/pdf" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${props.contract.name}.pdf`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+
+  // Never "DocuSeal" unless DocuSeal really signs it; the portal's own screen says it is a test signature.
+  const header = provider === "docuseal" ? t("intake.docuseal.header") : provider === "simulated" ? t("intake.docuseal.header_test") : t("intake.docuseal.header_neutral");
+  const wide = needsConsent || embedSrc !== null || (!!body && !preparing);
 
   return (
     <Dialog open onOpenChange={(o) => !o && props.onClose()}>
-      <DialogContent className={cn("max-h-[92vh] w-[calc(100vw-1.5rem)] overflow-y-auto bg-surface p-4 sm:p-6", body && !embedSrc ? "sm:max-w-2xl" : "sm:max-w-lg")}>
+      <DialogContent className={cn("max-h-[92vh] w-[calc(100vw-1.5rem)] overflow-y-auto bg-surface p-4 sm:p-6", wide ? "sm:max-w-2xl" : "sm:max-w-lg")}>
         <DialogHeader>
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t("intake.docuseal.header")}</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{header}</p>
           <DialogTitle>{props.contract.name}</DialogTitle>
           <DialogDescription>{t("intake.docuseal.signing_as", { name: props.signerName })}</DialogDescription>
         </DialogHeader>
+        {provider === "simulated" && (
+          <p role="note" className="rounded-[4px] border border-status-warning-border bg-status-warning-bg px-3 py-2 text-xs text-status-warning-fg">
+            {t("intake.docuseal.test_notice")}
+          </p>
+        )}
 
-        {embedSrc ? (
+        {needsConsent && esign ? (
+          <EsignConsentPanel consent={esign} onAccepted={() => { opened.current = false; }} />
+        ) : preparing ? (
+          <p className="text-sm text-muted-foreground" role="status">{t("intake.docuseal.preparing")}</p>
+        ) : embedSrc ? (
           <div className="space-y-3">
-            {/* DocuSeal's own form for this signer: it collects the signature; the API hears it by webhook. */}
-            <div className="overflow-hidden rounded-md border border-border bg-surface">
-              <iframe src={embedSrc} title={t("intake.docuseal.embed_title", { name: props.contract.name })} className="block h-[60vh] min-h-[420px] w-full" allow="camera; clipboard-write" />
+            {/* DocuSeal's own form for this signer: it collects the signature; the API hears it from DocuSeal. */}
+            <div className="overflow-hidden rounded-[4px] border border-border bg-surface">
+              <DocusealEmbed
+                src={embedSrc}
+                email={user?.email}
+                language={i18n.language.toLowerCase().startsWith("en") ? "en" : "es"}
+                title={t("intake.docuseal.embed_title", { name: props.contract.name })}
+                onCompleted={embedFinished}
+                onDeclined={embedFinished}
+              />
             </div>
-            <p className="text-xs text-muted-foreground" role="status">{t("intake.docuseal.embed_hint")}</p>
+            <p className="text-xs text-muted-foreground" role="status">{t(finishing ? "intake.docuseal.finishing" : "intake.docuseal.embed_hint")}</p>
             <div className="flex justify-end">
               <SecondaryButton onClick={props.onClose}>{t("intake.docuseal.close")}</SecondaryButton>
             </div>
@@ -175,10 +243,16 @@ export function DocuSealSigner(props: { contract: Contract; party: "owner" | "sm
         {signed ? (
           <div className="space-y-3">
             <p className="text-sm">{t("intake.docuseal.signed_done")}</p>
+            {/* The real sealed copies once every party signed; never a made-up file before. */}
+            {props.contract.sealed_files ? <SealedCopyLinks contract={props.contract} /> : <p className="text-xs text-muted-foreground">{t("intake.docuseal.copies_pending")}</p>}
             <div className="flex justify-end gap-2">
-              <SecondaryButton onClick={download}><Download className="mr-1.5 h-4 w-4" />{t("intake.docuseal.download")}</SecondaryButton>
               <PrimaryButton onClick={props.onClose}>{t("intake.docuseal.close")}</PrimaryButton>
             </div>
+          </div>
+        ) : provider === "docuseal" ? (
+          // DocuSeal signs (the embed is gone: someone else's turn, or the contract no longer takes signatures).
+          <div className="flex justify-end">
+            <SecondaryButton onClick={props.onClose}>{t("intake.docuseal.close")}</SecondaryButton>
           </div>
         ) : declining ? (
           <div className="space-y-2">

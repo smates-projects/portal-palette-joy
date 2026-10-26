@@ -29,6 +29,8 @@ export interface EntryRules {
   oa_waiting_days: number;
   require_expansion_meeting: boolean;
   nda_auto_signed_by_sm: boolean;
+  /** The Corporate signer's written delegation is on file: only then does the pre-signature apply (API default false). */
+  sm_written_delegation: boolean;
 }
 
 /**
@@ -40,6 +42,7 @@ export const ENTRY_RULE_DEFAULTS: EntryRules = {
   oa_waiting_days: 7,
   require_expansion_meeting: true,
   nda_auto_signed_by_sm: true,
+  sm_written_delegation: false,
 };
 
 export const entryRules = (rules: Partial<PlatformRules> | null | undefined): EntryRules => ({
@@ -47,6 +50,7 @@ export const entryRules = (rules: Partial<PlatformRules> | null | undefined): En
   oa_waiting_days: rules?.oa_waiting_days ?? ENTRY_RULE_DEFAULTS.oa_waiting_days,
   require_expansion_meeting: rules?.require_expansion_meeting ?? ENTRY_RULE_DEFAULTS.require_expansion_meeting,
   nda_auto_signed_by_sm: rules?.nda_auto_signed_by_sm ?? ENTRY_RULE_DEFAULTS.nda_auto_signed_by_sm,
+  sm_written_delegation: rules?.sm_written_delegation ?? ENTRY_RULE_DEFAULTS.sm_written_delegation,
 });
 
 // ---------- Meeting outcome ----------

@@ -23,6 +23,8 @@ const CONTRACT_TONE: Record<ContractState, Tone> = {
   opened: "info",
   signed: "success",
   declined: "danger",
+  withdrawn: "neutral",
+  expired: "warning",
 };
 const DOCUMENT_TONE: Record<DocumentState, Tone> = { requested: "warning", received: "info", reviewed: "success", rejected: "warning", not_applicable: "info" };
 

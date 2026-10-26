@@ -7,6 +7,7 @@ import type {
   ScheduleMeetingInput,
   BusinessProfilePatch,
   CatalogItemInput,
+  ContractLanguage,
   ContractSignature,
   CreateFirmInput,
   CreateOfficeInput,
@@ -486,20 +487,47 @@ export const useIntake = (businessId?: string) =>
   useQuery({ queryKey: ["documents", "intake", businessId ?? "own"], queryFn: () => api.documents.getIntake(businessId) });
 export const useOpenContract = () => useIntakeMutation((contractId: string) => api.documents.openContract(contractId));
 /** How often the signer screen re-reads a contract while DocuSeal's embedded form is open. */
-export const SIGNING_POLL_MS = 4000;
+export const SIGNING_POLL_MS = 5000;
 /**
- * DocuSeal embed: the signature arrives at the API by webhook, so the screen re-reads the contract every few seconds
- * while the form is open. Opening again is idempotent and the only per-contract read every party can make (the API
- * has no GET /contracts/{id}).
+ * DocuSeal embed: the signature reaches the API by DocuSeal's webhook or when the API asks DocuSeal itself (POST
+ * /contracts/{id}/sync), never from the browser. While the form is open the screen asks for that sync every few
+ * seconds (and at once when the form says it finished); without sync (the demo) it opens the contract again.
  */
 export const useContractSigningPoll = (contractId: string, enabled: boolean) =>
   useQuery({
     queryKey: ["signing", contractId],
-    queryFn: () => api.documents.openContract(contractId),
+    queryFn: () => (api.documents.syncContract ? api.documents.syncContract(contractId) : api.documents.openContract(contractId)),
     enabled,
     refetchInterval: enabled ? SIGNING_POLL_MS : false,
     gcTime: 0,
   });
+
+/** The ESIGN disclosure when the repository has none (the demo signs nothing for real): nothing to accept. */
+const NO_ESIGN_CONSENT: import("./repositories").EsignConsent = {
+  version: "",
+  required: false,
+  accepted: true,
+  accepted_at: null,
+  text: { es: "", en: "" },
+  text_sha256: { es: "", en: "" },
+};
+/** The electronic records disclosure in force and whether the person accepted it (GET /me/esign-consent). */
+export const useEsignConsent = (enabled = true) =>
+  useQuery({
+    queryKey: ["me", "esign-consent"],
+    queryFn: () => (api.documents.getEsignConsent ? api.documents.getEsignConsent() : Promise.resolve(NO_ESIGN_CONSENT)),
+    enabled: whenSignedIn(enabled),
+    retry: false,
+  });
+/** "Acepto": the person accepts the version read, in the language it was shown in. */
+export function useAcceptEsignConsent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { version: string; language: ContractLanguage }) =>
+      api.documents.acceptEsignConsent ? api.documents.acceptEsignConsent(v.version, v.language) : Promise.resolve(NO_ESIGN_CONSENT),
+    onSuccess: (consent) => qc.setQueryData(["me", "esign-consent"], consent),
+  });
+}
 /** Refreshes what a signature changes (leads, documents, the Bishop's agreements) once the embed reports it. */
 export function useRefreshSigning() {
   const qc = useQueryClient();

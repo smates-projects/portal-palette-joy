@@ -386,7 +386,9 @@ export function IntakeDocuments({ leadId, readOnly, variant = "full" }: { leadId
 export function ContractsSummaryTable({ contracts }: { contracts: Contract[] }) {
   const { t } = useTranslation();
   if (contracts.length === 0) return null;
-  const stateOf = (c: Contract): { key: "draft" | "in_progress" | "signed" | "declined"; tone: "neutral" | "info" | "success" | "danger" } => {
+  const stateOf = (c: Contract): { key: "draft" | "in_progress" | "signed" | "declined" | "withdrawn" | "expired"; tone: "neutral" | "info" | "success" | "danger" } => {
+    // Annulled or expired before everyone signed: said as such, never "En firma".
+    if (c.state === "withdrawn" || c.state === "expired") return { key: c.state, tone: "neutral" };
     if (c.signers.length > 0 && c.signers.every((s) => s.status === "signed")) return { key: "signed", tone: "success" };
     if (c.signers.some((s) => s.status === "declined")) return { key: "declined", tone: "danger" };
     if (c.state === "draft") return { key: "draft", tone: "neutral" };

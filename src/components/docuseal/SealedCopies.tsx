@@ -1,8 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, type MouseEvent } from "react";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Download } from "lucide-react";
+import { Download, ShieldCheck } from "lucide-react";
 import type { Contract, ContractLanguage } from "@/lib/api/types";
 import { apiBaseUrl } from "@/lib/api/http/client";
 import { isMockRepository } from "@/lib/api/mode";
@@ -14,30 +14,32 @@ const linkCls =
 
 /**
  * The sealed PDF copies of a contract every party signed, "Descargar en español" and "Download in English" (each
- * named in its own language). The links are presigned and expire: they come fresh with every read of the contract
- * and open in a new tab. Nothing shows until the API sealed them. In the demo there is no real file: it says so.
+ * named in its own language), and DocuSeal's audit certificate next to them when DocuSeal signed it (one certificate
+ * covers both copies: who signed, when, from where, how they were verified, the hash of each document). The links
+ * answer a short presigned download and open in a new tab. Nothing shows until the API sealed them. In the demo there
+ * is no real file: it says so.
  */
 export function SealedCopyLinks({ contract, className }: { contract: Pick<Contract, "sealed_files" | "name">; className?: string }) {
   const { t } = useTranslation();
   const copies = sealedCopiesOf(contract);
   if (copies.length === 0) return null;
   const demo = isMockRepository("documents");
+  const audit = contract.sealed_files?.audit?.download_url;
+  const demoClick = demo ? (e: MouseEvent) => { e.preventDefault(); toast.info(t("contracts_lang.t_demo_download")); } : undefined;
   return (
     <div role="group" aria-label={t("contracts_lang.sealed_label", { name: contract.name })} className={cn("flex flex-wrap items-center gap-2", className)}>
       {copies.map((copy) => (
-        <a
-          key={copy.language}
-          href={copy.download_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          lang={copy.language}
-          className={linkCls}
-          onClick={demo ? (e) => { e.preventDefault(); toast.info(t("contracts_lang.t_demo_download")); } : undefined}
-        >
+        <a key={copy.language} href={copy.download_url} target="_blank" rel="noopener noreferrer" lang={copy.language} className={linkCls} onClick={demoClick}>
           <Download className="h-3.5 w-3.5" />
           {t(`contracts_lang.download_${copy.language}`)}
         </a>
       ))}
+      {audit && (
+        <a href={audit} target="_blank" rel="noopener noreferrer" className={linkCls} onClick={demoClick}>
+          <ShieldCheck className="h-3.5 w-3.5" />
+          {t("contracts_lang.download_audit")}
+        </a>
+      )}
     </div>
   );
 }

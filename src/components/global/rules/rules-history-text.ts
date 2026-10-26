@@ -58,6 +58,7 @@ export function rulesValueText(field: string, value: unknown, t: Translate, lang
       return t(`entry.rules.flow.visibility_${String(value)}`);
     case "require_expansion_meeting":
     case "nda_auto_signed_by_sm":
+    case "sm_written_delegation":
       return t(value ? "entry.rules.flow.yes" : "entry.rules.flow.no");
     case "oa_waiting_days":
     case "document_review_days":

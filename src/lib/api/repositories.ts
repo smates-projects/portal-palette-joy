@@ -1,5 +1,6 @@
 import type {
   AcceptInvitationInput,
+  ContractLanguage,
   InvitationPreview,
   LoginInput,
   ResetPasswordInput,
@@ -702,6 +703,20 @@ export interface OpenedContract extends Contract {
   signing?: SigningSession | null | undefined;
 }
 
+/**
+ * GET /me/esign-consent: the electronic records and signatures disclosure (ESIGN, UETA) in force, in both languages,
+ * and whether the person accepted it. `required` is true when signatures are real (DocuSeal): the signing form opens
+ * only once this version is accepted.
+ */
+export interface EsignConsent {
+  version: string;
+  required: boolean;
+  accepted: boolean;
+  accepted_at: IsoDateTime | null;
+  text: { es: string; en: string };
+  text_sha256: { es: string; en: string };
+}
+
 export interface DocumentsRepository {
   listDocuments(businessId?: Uuid): Promise<BusinessDocument[]>;
   listContracts(businessId?: Uuid): Promise<Contract[]>;
@@ -745,6 +760,15 @@ export interface DocumentsRepository {
    * Created by itself when a Bishop is invited; Corporate countersigns it from Bishops. forbidden for anyone else.
    */
   listFrameworkAgreements(): Promise<Contract[]>;
+  /** GET /me/esign-consent. Absent in the demo (no real signatures there: nothing to consent to). */
+  getEsignConsent?(): Promise<EsignConsent>;
+  /** POST /me/esign-consent { version, language }: the person accepts the version read, in that language. */
+  acceptEsignConsent?(version: string, language: ContractLanguage): Promise<EsignConsent>;
+  /**
+   * POST /contracts/{id}/sync: the API asks DocuSeal itself how the contract stands and records it (the browser never
+   * marks a signature). Absent in the demo.
+   */
+  syncContract?(contractId: Uuid): Promise<Contract>;
 }
 
 export interface FinancialsRepository {

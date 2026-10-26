@@ -188,8 +188,10 @@ export interface PlatformRules {
   oa_waiting_days?: number | undefined;
   /** The Operating Agreement goes out only after the expansion meeting was held. */
   require_expansion_meeting?: boolean | undefined;
-  /** The NDA (and the MOU) go out already signed by Strategic Mates with the office signature. */
+  /** The NDA (and the MOU) go out already signed by Strategic Mates' Corporate signer (only with sm_written_delegation). */
   nda_auto_signed_by_sm?: boolean | undefined;
+  /** The Corporate signer's written delegation is on file: only then does the pre-signature apply (default false). */
+  sm_written_delegation?: boolean | undefined;
   /** Calendar v2: window where meetings can be scheduled. Absent = 09:00-18:00 America/New_York (lib/calendar). */
   meeting_hours?: MeetingHours | undefined;
   /** Who can enter the program. Absent = DEFAULT_ELIGIBILITY (lib/leads/readiness). */
@@ -229,7 +231,7 @@ export type RulesField =
   | "document_review_days" | "intake_documents" | "program_amount" | "assessment_area_map"
   | "program_start_requires_full_funds" | "opportunity_visibility" | "oa_waiting_days" | "require_expansion_meeting"
   | "nda_auto_signed_by_sm" | "meeting_hours" | "intake_help_text" | "owner_nda_template" | "eligibility"
-  | "sm_entities" | "contracts" | "equity_ranges";
+  | "sm_entities" | "contracts" | "equity_ranges" | "sm_written_delegation";
 
 export interface PlatformLimits {
   stale_task_days: number;
@@ -597,8 +599,11 @@ export interface BusinessDocument {
   not_applicable_reason?: string | null | undefined;
 }
 
-/** Same states DocuSeal reports. */
-export type ContractState = "draft" | "sent" | "opened" | "signed" | "declined";
+/**
+ * Same states DocuSeal reports, plus withdrawn (annulled after a party signed: kept, never deleted) and expired (the
+ * signing form expired before everyone signed).
+ */
+export type ContractState = "draft" | "sent" | "opened" | "signed" | "declined" | "withdrawn" | "expired";
 
 export type SignerStatus = "sent" | "opened" | "signed" | "declined";
 
@@ -777,6 +782,8 @@ export interface SealedFile {
 export interface SealedFiles {
   es: SealedFile | null;
   en: SealedFile | null;
+  /** DocuSeal's audit certificate (one for both copies); absent for a contract signed in the portal. */
+  audit?: SealedFile | null | undefined;
 }
 
 export interface FinancialChange {

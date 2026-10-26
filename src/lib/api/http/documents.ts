@@ -2,7 +2,7 @@
 // signing (signing module, contracts.controller.ts: the portal's own screen, or DocuSeal's embedded form when the API
 // runs the real driver). Files travel through the files module
 // (./files.ts): the adapter uploads the bytes first and then attaches the returned file_id.
-import type { DocumentUpload, DocumentsRepository, SigningSession } from "../repositories";
+import type { DocumentUpload, DocumentsRepository, EsignConsent, SigningSession } from "../repositories";
 import type { BusinessDocument, Contract, IntakeSummary, SavedSignature, SignedDocument, Uuid } from "../types";
 import { ApiError, getOrNull, type HttpClient } from "./client";
 import { signatureToPng, uploadFile } from "./files";
@@ -140,5 +140,14 @@ export function createHttpDocumentsRepository(client: HttpClient): HttpDocuments
 
     /** GET /contracts?kind=framework: the Bishops' framework agreements (SM Global). */
     listFrameworkAgreements: () => client.get<Contract[]>("/contracts", { query: { kind: "framework" } }),
+
+    /** GET /me/esign-consent: the disclosure in force and whether the person accepted it. */
+    getEsignConsent: () => client.get<EsignConsent>("/me/esign-consent"),
+
+    /** POST /me/esign-consent: the API keeps the version, the language, the text's SHA-256, the time, IP and browser. */
+    acceptEsignConsent: (version, language) => client.post<EsignConsent>("/me/esign-consent", { version, language }),
+
+    /** POST /contracts/{id}/sync: the API reads DocuSeal itself and answers the contract as it stands. */
+    syncContract: (contractId) => client.post<Contract>(`${contractPath(contractId)}/sync`),
   };
 }
